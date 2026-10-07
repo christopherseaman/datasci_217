@@ -157,6 +157,39 @@ display(outer)
 
 _“The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn’t support our hypothesis.”_
 
+## Handling Overlapping Column Names
+
+When both tables have a non-key column with the same name, `merge()` keeps both and adds the suffixes `_x` (left table) and `_y` (right table).
+
+### Reference Card: Overlapping columns
+
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| Default suffixes (`_x`, `_y`) | Distinguish overlapping columns | `a1c_x` from the left table, `a1c_y` from the right |
+| `suffixes=('_lab', '_poc')` | Say what each column means | Named output columns |
+
+### Code Snippet: Name overlapping columns
+
+```python
+lab = pd.DataFrame({'patient_id': ['P001', 'P002'], 'a1c': [7.4, 5.6]})   # central lab
+poc = pd.DataFrame({'patient_id': ['P001', 'P002'], 'a1c': [7.1, 5.9]})   # point-of-care device
+
+display(pd.merge(lab, poc, on='patient_id'))
+display(pd.merge(lab, poc, on='patient_id', suffixes=('_lab', '_poc')))
+```
+
+|  | patient_id | a1c_x | a1c_y |
+| --- | --- | --- | --- |
+| 0 | P001 | 7.4 | 7.1 |
+| 1 | P002 | 5.6 | 5.9 |
+
+|  | patient_id | a1c_lab | a1c_poc |
+| --- | --- | --- | --- |
+| 0 | P001 | 7.4 | 7.1 |
+| 1 | P002 | 5.6 | 5.9 |
+
+![xkcd 1459: Documents. Columns named a1c_x and a1c_y say as little as Untitled 138 copy 2.docx, so name them with suffixes=](media/xkcd_1459.png)
+
 ## Merging on Multiple Columns
 
 - **Composite key**: several columns that together name a row, such as `patient_id` and `visit` (Lecture 05's `patient_id` + `visit_date`).
@@ -176,7 +209,7 @@ P002        followup  124       P002        followup  5.5
 ```python
 wrong = pd.merge(vitals, a1c, on='patient_id')
 print(len(wrong))            # 8: each visit's SBP now sits next to both of that patient's A1c values
-print(list(wrong.columns))   # ['patient_id', 'visit_x', 'sbp', 'visit_y', 'a1c']
+print(list(wrong.columns))   # ['patient_id', 'visit_x', 'sbp', 'visit_y', 'a1c']: _x and _y mark the clashing visit columns
 
 merged = pd.merge(vitals, a1c, on=['patient_id', 'visit'])
 display(merged)
@@ -218,39 +251,6 @@ display(coverage)
 | 5 | South | 10 | NaN | left_only |
 
 North's 9:00 `NaN` means no report arrived; its 10:00 `0.0` is a real report of zero arrivals.
-
-## Handling Overlapping Column Names
-
-When both tables have a non-key column with the same name, `merge()` keeps both and adds suffixes, as `visit_x` and `visit_y` show above.
-
-### Reference Card: Overlapping columns
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| Default suffixes (`_x`, `_y`) | Distinguish overlapping columns | `a1c_x` from the left table, `a1c_y` from the right |
-| `suffixes=('_lab', '_poc')` | Say what each column means | Named output columns |
-
-### Code Snippet: Name overlapping columns
-
-```python
-lab = pd.DataFrame({'patient_id': ['P001', 'P002'], 'a1c': [7.4, 5.6]})   # central lab
-poc = pd.DataFrame({'patient_id': ['P001', 'P002'], 'a1c': [7.1, 5.9]})   # point-of-care device
-
-display(pd.merge(lab, poc, on='patient_id'))
-display(pd.merge(lab, poc, on='patient_id', suffixes=('_lab', '_poc')))
-```
-
-|  | patient_id | a1c_x | a1c_y |
-| --- | --- | --- | --- |
-| 0 | P001 | 7.4 | 7.1 |
-| 1 | P002 | 5.6 | 5.9 |
-
-|  | patient_id | a1c_lab | a1c_poc |
-| --- | --- | --- | --- |
-| 0 | P001 | 7.4 | 7.1 |
-| 1 | P002 | 5.6 | 5.9 |
-
-![xkcd 1459: Documents. Columns named a1c_x and a1c_y say as little as Untitled 138 copy 2.docx, so name them with suffixes=](media/xkcd_1459.png)
 
 ## Checking Merge Cardinality
 
@@ -299,84 +299,25 @@ pd.merge(visits, clinics, on='clinic_id', how='left', validate='many_to_one')
 
 # Working with DataFrame Indexes
 
-- **Index**: a DataFrame's row labels, printed down its left side.
-- **RangeIndex**: the default `0, 1, 2, …` of a table built from a dict or read from a CSV; it only counts rows.
-- Moving an identifier such as `patient_id` into the index lets `.loc['P002']` find a patient by label (Lecture 04) and lets pandas line up rows from two tables by label.
-
-## Row Labels Before and After
-
-```
-patients as built from a dict: the RangeIndex down the left edge only counts rows
-
-  patient_id  age clinic
-0       P001   67  North
-1       P002   54  South
-2       P003   41  North
-
-patients.set_index('patient_id'): the IDs are the row labels, so .loc['P002'] finds that patient
-
-            age clinic
-patient_id
-P001         67  North
-P002         54  South
-P003         41  North
-```
+Lecture 04 introduced the index (row labels) and `set_index()`/`reset_index()`. Merging, concatenating, and two-part identifiers build on them.
 
 ![xkcd 1762: Moving Boxes. A label helps only when it says what is inside: a RangeIndex numbers the rows, while patient IDs name who each row is](media/xkcd_1762.png)
 
-## set_index(): Moving Columns to Index
+## More set_index() Options
 
-### Reference Card: `set_index()`
+### Reference Card: `set_index()` options
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
-| `df.set_index('column')` | Make column the new index | A new DataFrame; `df` is unchanged, so assign the result |
-| `drop=False` | Keep the column in the DataFrame (default is True, removes it) | DataFrame retains the source column |
+| `drop=False` | Keep the column in the DataFrame as well as in the index (default is True, which removes it) | DataFrame retains the source column |
 | `df.index.is_unique` | Test that all row labels are unique; an index can repeat a label | `True` when no labels repeat; otherwise `False` |
-| `s1 - s2`, `s1 + s2`, … | Arithmetic between two labeled Series matches values by label, not by position | A label found on only one side gives `NaN` |
 
-### Code Snippet: Set an identifier index
+### Code Snippet: Check that an identifier index is unique
 
 ```python
-indexed = patients.set_index('patient_id')
+indexed = patients.set_index('patient_id', drop=False)
 print(indexed.index.is_unique)   # True: each patient appears once
-display(indexed.loc['P002'])     # one patient's record, found by label
 ```
-
-|  | P002 |
-| --- | --- |
-| age | 54 |
-| clinic | South |
-
-## reset_index(): Moving Index to Columns
-
-`reset_index()` moves the index labels back into an ordinary column; `drop=True` discards them instead, which suits labels that carry no information, such as the gaps a filter leaves in a RangeIndex.
-
-### Reference Card: `reset_index()`
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `df.reset_index()` | Move index labels into columns | New `DataFrame` with a default `RangeIndex` |
-| `df.reset_index(drop=True)` | Discard old labels instead of saving them as columns | New `DataFrame` with a default `RangeIndex` |
-
-### Code Snippet: Restore an identifier column
-
-```python
-display(indexed.reset_index())
-display(indexed.reset_index(drop=True))
-```
-
-|  | patient_id | age | clinic |
-| --- | --- | --- | --- |
-| 0 | P001 | 67 | North |
-| 1 | P002 | 54 | South |
-| 2 | P003 | 41 | North |
-
-|  | age | clinic |
-| --- | --- | --- |
-| 0 | 67 | North |
-| 1 | 54 | South |
-| 2 | 41 | North |
 
 ## Two-Level Row Labels
 

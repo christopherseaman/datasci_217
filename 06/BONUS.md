@@ -84,75 +84,6 @@ result = data.swaplevel(0, 1).sort_index(level=0)
 Sorting the levels prepares a MultiIndex for label-range slices with `.loc`; an unsorted index can reject those slices. Selecting one complete label does not require sorting first.
 
 
-## Summary Statistics by Level
-
-Aggregate data at specific levels of a MultiIndex without flattening the entire structure.
-
-### Reference Card: Summary statistics by level
-
-- `df.groupby(level='level_name').sum()`: Aggregate by named level
-- `df.groupby(level=0).mean()`: Aggregate by level position
-- `df.groupby(level=['level1', 'level2']).agg(['sum', 'mean'])`: Multiple levels and functions
-- Works with any aggregation function (sum, mean, count, std, etc.)
-
-### Code Snippet: Aggregate by level
-
-```python
-# Store performance by region and quarter, same shape as the swaplevel example
-data = pd.DataFrame(
-    np.arange(12).reshape((4, 3)),
-    index=[['West', 'West', 'East', 'East'], ['Q1', 'Q2', 'Q1', 'Q2']],
-    columns=['Revenue', 'Costs', 'Profit']
-)
-data.index.names = ['Region', 'Quarter']
-
-# Sum across all quarters for each region
-regional_totals = data.groupby(level='Region').sum()
-print(regional_totals)
-#         Revenue  Costs  Profit
-# Region
-# East         15     17      19
-# West          3      5       7
-
-# Average by quarter across all regions
-quarterly_avg = data.groupby(level='Quarter').mean()
-print(quarterly_avg)
-#          Revenue  Costs  Profit
-# Quarter
-# Q1           3.0    4.0     5.0
-# Q2           6.0    7.0     8.0
-
-# Columns can have levels too: sum across states for each color
-frame = pd.DataFrame(
-    np.arange(12).reshape((3, 4)),
-    index=['a', 'b', 'c'],
-    columns=[['Ohio', 'Ohio', 'Colorado', 'Colorado'],
-             ['Green', 'Red', 'Green', 'Red']]
-)
-frame.columns.names = ['state', 'color']
-print(frame)
-# state  Ohio     Colorado
-# color Green Red    Green Red
-# a         0   1        2   3
-# b         4   5        6   7
-# c         8   9       10  11
-
-# Sum across states (transpose so color is a row-index level while grouping)
-by_color = frame.T.groupby(level='color').sum().T
-print(by_color)
-# color  Green  Red
-# a          2    4
-# b         10   12
-# c         18   20
-```
-
-### Real-World Use Cases
-
-- Sales data: Total by product category ignoring individual products
-- Time series: Monthly totals from daily data with Year/Month/Day index
-- Organizational data: Department totals ignoring individual teams
-
-
 # 2. Merging on Index
 
 _Sometimes your "key" isn't a column; it's the index itself. This is common with time series or when you've already structured data with meaningful indexes._
@@ -260,109 +191,33 @@ print(combined)
 ```
 
 
-# 3. Advanced concat Options
+# 3. Validating concat with verify_integrity
 
-_Basic concat is straightforward, but these options give you fine control over how pieces are labeled and validated._
+_Vertical concat keeps each piece's index, so labels can repeat. `verify_integrity=True` turns that into an error._
 
-Beyond basic concatenation, you can add hierarchical labels, name levels, and validate data integrity.
+## Rejecting Repeated Labels
 
-## Labeling and Validating Concatenation
+### Reference Card: `verify_integrity`
 
-### Reference Card: `pd.concat()` labeling and validation options
-
-- `keys=['name1', 'name2']`: Add outer level with these labels
-- `names=['level1', 'level2']`: Name the hierarchical levels
-- `verify_integrity=True`: Raise error if indexes overlap
-- `join='inner'/'outer'`: Handle column mismatches
-- `ignore_index=True`: Discard existing indexes
-
-### Code Snippet: Concatenate with keys
-
-```python
-# Sales from two different systems
-system_a = pd.DataFrame({
-    'product': ['Laptop', 'Mouse'],
-    'amount': [999.99, 25.99]
-})
-
-system_b = pd.DataFrame({
-    'product': ['Keyboard', 'Monitor'],
-    'amount': [79.99, 299.99]
-})
-
-# Concatenate with source labels
-combined = pd.concat([system_a, system_b],
-                     keys=['SystemA', 'SystemB'])
-print(combined)
-#             product  amount
-# SystemA 0    Laptop  999.99
-#         1     Mouse   25.99
-# SystemB 0  Keyboard   79.99
-#         1   Monitor  299.99
-
-# Now you can select by source
-print(combined.loc['SystemA'])
-#   product  amount
-# 0  Laptop  999.99
-# 1   Mouse   25.99
-
-# Name the levels for clarity
-combined_named = pd.concat([system_a, system_b],
-                           keys=['SystemA', 'SystemB'],
-                           names=['source', 'original_index'])
-print(combined_named)
-#                          product  amount
-# source  original_index
-# SystemA 0                 Laptop  999.99
-#         1                  Mouse   25.99
-# SystemB 0               Keyboard   79.99
-#         1                Monitor  299.99
-```
+- `pd.concat([df1, df2], verify_integrity=True)`: Raise `ValueError` if the pieces share an index label on the concatenation axis
+- It does not detect duplicate records that carry different labels
+- Fix an overlap with `ignore_index=True` or by making the labels unique
 
 ### Code Snippet: Validate indexes with verify_integrity
 
 ```python
-# Data with overlapping indexes
 df1 = pd.DataFrame({'A': [1, 2, 3]}, index=[0, 1, 2])
-df2 = pd.DataFrame({'A': [4, 5, 6]}, index=[2, 3, 4])  # Index 2 overlaps!
+df2 = pd.DataFrame({'A': [4, 5, 6]}, index=[2, 3, 4])  # Index 2 overlaps
 
-# Default: allows duplicate indexes
-result = pd.concat([df1, df2])
-print(result)
-#    A
-# 0  1
-# 1  2
-# 2  3  # Duplicate!
-# 2  4  # Duplicate!
-# 3  5
-# 4  6
-
-# With verify_integrity: raises error
 try:
-    result = pd.concat([df1, df2], verify_integrity=True)
+    pd.concat([df1, df2], verify_integrity=True)
 except ValueError as e:
     print(f"Error: {e}")
 # Error: Indexes have overlapping values: Index([2], dtype='int64')
 
-# Solution: Use ignore_index or handle duplicates
-result = pd.concat([df1, df2], ignore_index=True)
-print(result)
-#    A
-# 0  1
-# 1  2
-# 2  3
-# 3  4
-# 4  5
-# 5  6
+print(pd.concat([df1, df2], ignore_index=True)['A'].tolist())
+# [1, 2, 3, 4, 5, 6]
 ```
-
-### When to Use These Options
-
-- **keys**: Tracking data source after concatenation
-- **names**: Making MultiIndex levels meaningful
-- **verify_integrity**: Rejecting repeated labels on the concatenation axis; it does not detect duplicate records with different labels
-- **join='inner'**: Only keeping columns common to all DataFrames
-
 
 # 4. MultiIndex Creation Methods
 
@@ -454,66 +309,7 @@ print(sales)
 - Programmatically generating report structures
 
 
-# 5. Stack/Unstack and Missing Values in pandas 3
-
-In pandas 3, `stack()` uses the new implementation and preserves missing combinations. The former `dropna=` argument is no longer accepted. Remove missing values explicitly after stacking when that is the intended analysis.
-
-## Preserving Missing Combinations
-
-### Reference Card: `stack()` and `unstack()` missing-value behavior
-
-- `df.stack()`: Move columns into an index level while preserving missing combinations
-- `df.stack().dropna()`: Keep only observed values after reshaping
-- `series.unstack(fill_value=0)`: Rebuild a table and fill combinations absent from the Series index
-- Preserving a missing marker is different from replacing it with zero
-
-### Code Snippet: Preserve vs. drop missing responses
-
-```python
-# Survey data with missing responses
-survey = pd.DataFrame({
-    'Q1': [5, 4, np.nan, 3],
-    'Q2': [4, np.nan, 5, 4],
-    'Q3': [np.nan, 5, 4, np.nan]
-}, index=['Alice', 'Bob', 'Charlie', 'Diana'])
-
-# pandas 3 preserves all 12 respondent-question combinations.
-stacked_all = survey.stack()
-print(len(stacked_all))       # 12
-print(stacked_all.isna().sum())  # 4 missing responses
-
-# Drop missing responses only when the question calls for observed values.
-stacked_observed = stacked_all.dropna()
-print(len(stacked_observed))  # 8 observed responses
-
-# Filling with zero is a separate substantive decision.
-zero_filled = stacked_observed.unstack(fill_value=0)
-print(zero_filled)
-#           Q1   Q2   Q3
-# Alice    5.0  4.0  0.0
-# Bob      4.0  0.0  5.0
-# Charlie  0.0  5.0  4.0
-# Diana    3.0  4.0  0.0
-```
-
-For a time-indexed table, the same distinction applies:
-
-```python
-dates = pd.date_range('2024-01-01', periods=4)
-data = pd.DataFrame({
-    'Store1': [100, np.nan, 150, 200],
-    'Store2': [120, 140, np.nan, 180]
-}, index=dates)
-
-stacked_all = data.stack()
-print(len(stacked_all))            # 8 time-store combinations
-print(len(stacked_all.dropna()))   # 6 observed values
-```
-
-Keeping the full result lets a later analysis distinguish a recorded missing value from a combination removed from the table.
-
-
-# 6. Hierarchical Columns from Pivot
+# 5. Hierarchical Columns from Pivot
 
 _pivot() can create MultiIndex not just in rows, but in columns too. This happens when you don't specify the values parameter or when pivoting multiple value columns._
 
@@ -646,64 +442,11 @@ print(swapped)
 3. Restructure the data to long format and avoid hierarchical columns
 
 
-# 7. Repeated Pairs and pivot_table()
+# 6. Repeated Pairs and pivot_table()
 
-`pivot()` stops with `ValueError: Index contains duplicate entries, cannot reshape` when an index/column pair holds more than one value. If the repeats are real observations rather than data errors, `pivot_table()` aggregates them into one cell on the way to the wide shape. Picking `sum` instead of `mean` changes the question being answered, so treat it as an analysis decision, not a formatting fix. Lecture 08 teaches aggregation and pivot tables properly.
-
-## Reshaping Repeated Observations
-
-### Code Snippet: Aggregate duplicates while reshaping
-
-```python
-# The lecture's rechecked readings: P002's follow-up was measured twice
-rechecked = pd.DataFrame({
-    'patient_id': ['P001', 'P001', 'P002', 'P002', 'P002'],
-    'visit': ['baseline', 'followup', 'baseline', 'followup', 'followup'],
-    'sbp': [152, 138, 138, 148, 136],
-})
-
-# pivot() fails because P002/followup appears twice.
-# Use this only when averaging the two readings is part of the question.
-sbp_wide = pd.pivot_table(rechecked, values='sbp',
-                          index='patient_id', columns='visit',
-                          aggfunc='mean')
-
-print(sbp_wide)
-# visit       baseline  followup
-# patient_id
-# P001           152.0     138.0
-# P002           138.0     142.0
-```
+`pivot()` stops with `ValueError: Index contains duplicate entries, cannot reshape` when an index/column pair holds more than one value. `pivot_table(values=..., index=..., columns=..., aggfunc='mean')` aggregates the repeats into one cell; choosing `mean` or `sum` is an analysis decision, and Lecture 08 teaches it.
 
 # Further Reading
 
 - Hadley Wickham, [Tidy Data](https://www.jstatsoft.org/article/view/v059i10), _Journal of Statistical Software_ 59(10), 2014: the paper behind the name "tidy" for long data with one observation per row and one variable per column.
 - Wes McKinney, _Python for Data Analysis_, 3rd edition, Chapter 8 (Data Wrangling: Join, Combine, and Reshape): the source of most topics on this page.
-
-# Extended Example: Build a MultiIndex
-
-This variation uses the example tables and imports from the lecture.
-
-## Code Snippet: Build a MultiIndex
-
-```python
-quarterly = pd.DataFrame({'clinic': ['North', 'North', 'South', 'South'],
-                          'quarter': ['Q1', 'Q2', 'Q1', 'Q2'],
-                          'visits': [410, 455, 380, 362]})
-summary = quarterly.set_index(['clinic', 'quarter']).sort_index()
-display(summary)
-#                 visits
-# clinic quarter
-# North  Q1          410
-#        Q2          455
-# South  Q1          380
-#        Q2          362
-
-display(summary.loc['South'])   # every row under one outer label
-#          visits
-# quarter
-# Q1          380
-# Q2          362
-
-print(list(summary.reset_index().columns))   # ['clinic', 'quarter', 'visits']
-```

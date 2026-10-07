@@ -277,6 +277,97 @@ def hierarchical_analysis(df):
     return result
 ```
 
+## Summary Statistics by Level
+
+`groupby(level=...)` takes a level name as well as a position, and columns with levels can be grouped by transposing first.
+
+### Reference Card: Summary statistics by level
+
+- `df.groupby(level='level_name').sum()`: Aggregate by level name instead of position
+- `df.T.groupby(level='col_level').sum().T`: Aggregate by a column level; transpose so it becomes a row level, then transpose back
+
+### Code Snippet: Aggregate by level
+
+```python
+data = pd.DataFrame(
+    np.arange(12).reshape((4, 3)),
+    index=[['West', 'West', 'East', 'East'], ['Q1', 'Q2', 'Q1', 'Q2']],
+    columns=['Revenue', 'Costs', 'Profit']
+)
+data.index.names = ['Region', 'Quarter']
+
+print(data.groupby(level='Region').sum())
+#         Revenue  Costs  Profit
+# Region
+# East         15     17      19
+# West          3      5       7
+
+print(data.groupby(level='Quarter').mean())
+#          Revenue  Costs  Profit
+# Quarter
+# Q1           3.0    4.0     5.0
+# Q2           6.0    7.0     8.0
+```
+
+Columns can have levels too. Transpose so the column level becomes a row level while grouping:
+
+```python
+frame = pd.DataFrame(
+    np.arange(12).reshape((3, 4)),
+    index=['a', 'b', 'c'],
+    columns=[['Ohio', 'Ohio', 'Colorado', 'Colorado'],
+             ['Green', 'Red', 'Green', 'Red']]
+)
+frame.columns.names = ['state', 'color']
+print(frame.T.groupby(level='color').sum().T)
+# color  Green  Red
+# a          2    4
+# b         10   12
+# c         18   20
+```
+
+# Reshaping Grouped Results with stack() and unstack()
+
+- The lecture's two-key results have a `MultiIndex`; `unstack()` moves the inner row level into columns and `stack()` moves columns back into rows.
+- In pandas 3, `stack()` keeps missing combinations as `NaN` rows; dropping or zero-filling them is a separate choice.
+
+## Preserving Missing Combinations
+
+### Reference Card: `stack()` and `unstack()` missing-value behavior
+
+- `df.stack()`: Move columns into an inner row level, preserving missing combinations; the former `dropna=` argument is no longer accepted
+- `df.stack().dropna()`: Keep only observed values after reshaping
+- `series.unstack(fill_value=0)`: Rebuild a table and fill combinations absent from the Series index
+- Preserving a missing marker is different from replacing it with zero
+
+### Code Snippet: Preserve vs. drop missing responses
+
+```python
+survey = pd.DataFrame({
+    'Q1': [5, 4, np.nan, 3],
+    'Q2': [4, np.nan, 5, 4],
+    'Q3': [np.nan, 5, 4, np.nan]
+}, index=['Alice', 'Bob', 'Charlie', 'Diana'])
+
+stacked_all = survey.stack()
+print(len(stacked_all))          # 12
+print(stacked_all.isna().sum())  # 4
+
+# Drop missing responses only when the question calls for observed values.
+stacked_observed = stacked_all.dropna()
+print(len(stacked_observed))     # 8
+
+# Filling with zero is a separate substantive decision.
+print(stacked_observed.unstack(fill_value=0))
+#           Q1   Q2   Q3
+# Alice    5.0  4.0  0.0
+# Bob      4.0  0.0  5.0
+# Charlie  0.0  5.0  4.0
+# Diana    3.0  4.0  0.0
+```
+
+Keeping the full result lets a later analysis distinguish a recorded missing value from a combination removed from the table.
+
 # Advanced Statistical Aggregations
 
 ## Rolling Statistics
@@ -561,20 +652,9 @@ result = custom_gb.custom_agg('value', lambda x: x.quantile(0.95))
 
 # Measure, Then Optimize
 
-Measure first, with `%timeit` for time and `df.memory_usage(deep=True)` for memory, and change only the step where the time or memory goes.
+Measure first, with the tools from the lecture's Measure Before Optimizing card, and change only the step where the time or memory goes.
 
 ## Timing and Memory Tools
-
-### Reference Card: Measure, Then Optimize
-
-| Task | Tool | Use when | Typical output |
-| --- | --- | --- | --- |
-| Measure time | `%timeit expression` | Comparing two ways to get the same result in a notebook | `8.8 ms ± 0.1 ms per loop ...` |
-| Measure time | `time python3 analysis.py` | Timing a whole script in the terminal | `real 0m12.3s` |
-| Measure memory | `df.memory_usage(deep=True)` | Finding the largest columns | Bytes per column |
-| Faster | One `.agg(...)` with several summaries | You need several statistics per group | One pass, one table |
-| Faster | String aggregations and `transform('mean')` instead of `lambda`/`apply` | The statistic is built in | Same numbers, much faster |
-| Smaller | `.astype('category')` on repeated text keys | Few distinct values repeated many times | Less memory |
 
 ### Code Snippet: Measure Before and After
 

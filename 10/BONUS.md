@@ -15,9 +15,9 @@ The lecture's main path uses linear models, random forests, and gradient boostin
 
 - Classification: `SVC`, a support vector classifier that looks for the widest possible boundary between classes, beside the lecture's `LogisticRegression`.
 - Unsupervised work: `KMeans` for clustering and `PCA` for dimensionality reduction. Neither uses a target column.
-- Selection: `cross_val_score` for cross-validation and `GridSearchCV` for hyperparameter tuning within the training data (examples under Hyperparameter Tuning Strategies below).
-
-**Cross-validation** splits the training rows into k parts (folds), fits on all but one of them, scores on the fold left out, and repeats until every fold has been scored once. It stands in for a single validation set when rows are scarce, and it never touches the test set. For time-ordered rows, `TimeSeriesSplit` keeps every validation fold later than the rows it trains on. Delayed targets still need Lecture 10's label-availability check: exclude training labels that would not yet be known at a fold's first prediction cutoff.
+- Selection: `GridSearchCV` for hyperparameter tuning within the training data (examples under Hyperparameter Tuning Strategies below).
+- Independent rows: `cv=5` uses plain k-fold cross-validation, where every fold takes a turn as the scored block whatever its order, instead of `TimeSeriesSplit`.
+- Delayed targets: `TimeSeriesSplit(gap=n)` leaves `n` rows out between each training block and the block it scores, so training labels not yet known at the fold's first prediction cutoff stay out.
 
 _Let validation evidence decide, not a favorite algorithm. Blue steel is a style, not a model-selection rule._
 
@@ -487,68 +487,9 @@ When each observation depends on the ones just before it, `statsmodels` offers d
 
 Lecture 09's bonus has worked examples of decomposition and ARIMA and exponential smoothing.
 
-## Persistence Baselines for Time-Ordered Rows
+## Weekly Persistence on an Hourly Grid
 
-Before fitting anything, check how far "the next value equals the last one" gets you. A grouped `shift(1)` builds that persistence baseline in one line, and every candidate model has to beat it on the same validation rows.
-
-### Code Snippet: A Persistence Baseline
-
-```python
-import pandas as pd
-
-readings = pd.DataFrame({
-    'patient_id': ['P1', 'P1', 'P1', 'P2', 'P2', 'P2'],
-    'visit': [1, 2, 3, 1, 2, 3],
-    'sbp': [138, 142, 135, 150, 147, 139],
-})
-readings['persistence'] = readings.groupby('patient_id')['sbp'].shift(1)
-print(readings)
-```
-
-```text
-  patient_id  visit  sbp  persistence
-0         P1      1  138          NaN
-1         P1      2  142        138.0
-2         P1      3  135        142.0
-3         P2      1  150          NaN
-4         P2      2  147        150.0
-5         P2      3  139        147.0
-```
-
-P2's first visit gets `NaN`, not P1's last reading. Compare every approach on the same rows: those where the baseline has a value. On a complete elapsed-hour grid, `shift(168)` gives 168 hours earlier; across a daylight-saving change this can differ from the same local clock hour last week.
-
-## ARIMA Models
-
-### Reference Card: ARIMA Tools
-
-- `from statsmodels.tsa.arima.model import ARIMA`: ARIMA models
-- `model = ARIMA(data, order=(p, d, q))`: Create ARIMA
-- `result = model.fit()`: Fit model
-- `result.forecast(steps)`: Forecast
-
-### Code Snippet: Fitting and Forecasting an ARIMA Model
-
-```python
-from statsmodels.tsa.arima.model import ARIMA
-import numpy as np
-import pandas as pd
-
-# A random-walk-like series (for example, daily readings)
-rng = np.random.default_rng(42)
-dates = pd.date_range('2024-01-01', periods=100, freq='D')
-data = pd.Series(np.cumsum(rng.normal(0, 1, size=100)) + 50, index=dates)
-
-# Create ARIMA model
-model = ARIMA(data, order=(1, 1, 1))  # AR(1), I(1), MA(1)
-result = model.fit()
-
-# Summary
-print(result.summary())
-
-# Forecast
-forecast = result.forecast(steps=10)
-conf_int = result.get_forecast(steps=10).conf_int()
-```
+On a complete elapsed-hour grid, `shift(168)` gives the value 168 hours earlier; across a daylight-saving change this can differ from the same local clock hour last week.
 
 ## Prophet for Time Series
 

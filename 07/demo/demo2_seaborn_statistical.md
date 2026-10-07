@@ -79,11 +79,7 @@ plt.show()
 
 Expect one point per country-year, with color and shape identifying the country. USA observations extend farthest right without having the highest life expectancy. Shared time trends and country differences prevent a causal claim from this comparison.
 
-## Independent practice
-
-Continue on your own after class. If the runtime closed, run the cells above again first.
-
-### 1. pandas `.plot()`: the index becomes the x-axis
+### 2. pandas `.plot()`: the index becomes the x-axis
 
 One row per week of flu visits, one column per clinic. `df.plot()` draws the index on the x-axis and one line per numeric column.
 
@@ -114,7 +110,45 @@ print(ax.get_xlabel())
 
 Expect two lines, North and South, over weeks 1 to 10, and `week` printed as the x-axis label.
 
-### 2. One table, four views
+### 3. Density plots: a distribution a mean would hide
+
+Fasting glucose in a clinic that serves people with and without diabetes: 300 readings centered near 95 mg/dL and 100 near 165 mg/dL. `95 + 8 * rng.standard_normal(300)` gives 300 bell-curve values around 95 that spread by about 8 mg/dL, and `pd.concat(..., ignore_index=True)` (Lecture 06) stacks the two groups into one Series.
+
+```python
+rng = np.random.default_rng(42)
+without_diabetes = pd.Series(95 + 8 * rng.standard_normal(300))   # mg/dL
+with_diabetes = pd.Series(165 + 25 * rng.standard_normal(100))    # mg/dL
+glucose = pd.concat([without_diabetes, with_diabetes], ignore_index=True)
+display(pd.Series({'count': len(glucose), 'mean': round(glucose.mean(), 1), 'median': round(glucose.median(), 1)}, dtype=object))
+```
+
+Expect a table with count 400, mean 112.9 mg/dL, and median 97.5 mg/dL. Neither number shows that there are two groups; a density plot does.
+
+```python
+fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
+
+sns.histplot(x=glucose, kde=True, ax=axes[0])
+axes[0].set(title='Histogram + density', xlabel='Fasting glucose (mg/dL)')
+
+sns.kdeplot(x=glucose, bw_adjust=0.3, ax=axes[1], label='bw_adjust=0.3')
+sns.kdeplot(x=glucose, bw_adjust=2, ax=axes[1], label='bw_adjust=2')
+axes[1].set(title='Bandwidth changes the story', xlabel='Fasting glucose (mg/dL)')
+axes[1].legend()
+
+glucose.plot.density(ax=axes[2], title='pandas density (uses SciPy)')
+axes[2].set_xlabel('Fasting glucose (mg/dL)')
+
+fig.tight_layout()
+plt.show()
+```
+
+Expect a tall peak near 95 and a lower, wider hump around 170 to 180 mg/dL in the left and right panels. In the middle, `bw_adjust=0.3` keeps both peaks but adds small wiggles, while `bw_adjust=2` blurs them into one broad hump with a flat shoulder, so the second group is easy to miss. The middle and right y-axes are density, not a count; the left panel keeps the histogram's counts and scales its curve to match.
+
+## Independent practice
+
+Continue on your own after class. If the runtime closed, run the cells above again first.
+
+### 1. One table, four views
 
 `kind=` picks the mark, and `ax=` draws into one panel of a `plt.subplots()` grid.
 
@@ -131,7 +165,7 @@ plt.show()
 
 Expect four panels from the same ten rows. The bar panel has ten pairs of bars, one pair per week, starting at 0. The box panel shows North's box taller and higher than South's, because North's weekly counts vary more.
 
-### 3. Small multiples with a shared y-axis
+### 2. Small multiples with a shared y-axis
 
 `subplots=True` gives each clinic its own panel; `sharey=True` puts every panel on one y-scale, so the levels compare directly.
 
@@ -154,7 +188,7 @@ print(axes[0].get_ylim() == axes[2].get_ylim())  # get_ylim() reads back the lim
 
 Expect three stacked panels on the same y-scale: North high and falling, South rising, East lowest. `(3,)` and `True` print: one Axes per clinic, and North's and East's panels share limits.
 
-### 4. Country trends and distributions
+### 3. Country trends and distributions
 
 Continue comparing the same country-year table with line and box plots.
 
@@ -171,7 +205,7 @@ plt.show()
 
 Expect two panels: health spending rises over the years at all six countries, steepest in the USA; the life-expectancy boxes compare the country-year distributions. These summaries describe observations, not a spending effect.
 
-### 5. A correlation matrix, its heatmap, and a CSV
+### 4. A correlation matrix, its heatmap, and a CSV
 
 `corr()` needs numeric columns. `Country` holds words, so asking for every column fails.
 
@@ -216,7 +250,7 @@ with open('health_corr.csv', encoding='utf-8') as file:
 
 Expect four lines: a header starting `feature,Year,Spending_USD,Life_Expectancy`, then one line per variable, such as `Spending_USD,0.826,1.0,0.579`.
 
-### 6. Watch the grain: what a seaborn line averages
+### 5. Watch the grain: what a seaborn line averages
 
 Three patients each have a systolic reading in each of four weeks. `sns.lineplot()` draws one value per week: the mean of the three readings.
 
@@ -243,37 +277,3 @@ display(pd.DataFrame({'line_y': line_y, 'mean_by_hand': by_hand}, index=[1, 2, 3
 ```
 
 Expect 12 points on the left and a four-point line on the right. The table lists the line's y-values beside the weekly means computed by hand; the two columns match (145.0, 141.67, 139.0, 135.67). The unit displayed changed from one reading to a weekly mean, so the right panel's axis label says so.
-
-### 7. Density plots: a distribution a mean would hide
-
-Fasting glucose in a clinic that serves people with and without diabetes: 300 readings centered near 95 mg/dL and 100 near 165 mg/dL. `95 + 8 * rng.standard_normal(300)` gives 300 bell-curve values around 95 that spread by about 8 mg/dL, and `pd.concat(..., ignore_index=True)` (Lecture 06) stacks the two groups into one Series.
-
-```python
-rng = np.random.default_rng(42)
-without_diabetes = pd.Series(95 + 8 * rng.standard_normal(300))   # mg/dL
-with_diabetes = pd.Series(165 + 25 * rng.standard_normal(100))    # mg/dL
-glucose = pd.concat([without_diabetes, with_diabetes], ignore_index=True)
-display(pd.Series({'count': len(glucose), 'mean': round(glucose.mean(), 1), 'median': round(glucose.median(), 1)}, dtype=object))
-```
-
-Expect a table with count 400, mean 112.9 mg/dL, and median 97.5 mg/dL. Neither number shows that there are two groups; a density plot does.
-
-```python
-fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
-
-sns.histplot(x=glucose, kde=True, ax=axes[0])
-axes[0].set(title='Histogram + density', xlabel='Fasting glucose (mg/dL)')
-
-sns.kdeplot(x=glucose, bw_adjust=0.3, ax=axes[1], label='bw_adjust=0.3')
-sns.kdeplot(x=glucose, bw_adjust=2, ax=axes[1], label='bw_adjust=2')
-axes[1].set(title='Bandwidth changes the story', xlabel='Fasting glucose (mg/dL)')
-axes[1].legend()
-
-glucose.plot.density(ax=axes[2], title='pandas density (uses SciPy)')
-axes[2].set_xlabel('Fasting glucose (mg/dL)')
-
-fig.tight_layout()
-plt.show()
-```
-
-Expect a tall peak near 95 and a lower, wider hump around 170 to 180 mg/dL in the left and right panels. In the middle, `bw_adjust=0.3` keeps both peaks but adds small wiggles, while `bw_adjust=2` blurs them into one broad hump with a flat shoulder, so the second group is easy to miss. The middle and right y-axes are density, not a count; the left panel keeps the histogram's counts and scales its curve to match.

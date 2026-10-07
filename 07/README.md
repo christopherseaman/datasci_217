@@ -30,7 +30,6 @@ uv sync
 This lecture covers:
 
 - McKinney, _Python for Data Analysis_ (3rd ed.):
-    - 5.3 (correlation)
     - 6.1 (JSON data)
     - 9.1 (the matplotlib API: figures and subplots; colors, markers, and line styles; ticks, labels, and legends; annotations; saving plots to file)
     - 9.2 (line, bar, histogram, density, and scatter plots with pandas and seaborn)
@@ -90,7 +89,7 @@ This lecture covers:
 | **Audience and claim** | Who reads it and the one descriptive conclusion it supports; a visible pattern does not show why it occurred | Appropriate labels, title, and annotation |
 | **Unit and grain** | What one mark and one plotting-table row represent | A defensible aggregation level |
 | **Variable role** | Type plus role: measure, group, time, or identifier | Candidate x, y, color, or shape encoding |
-| **Accessibility** | A redundant cue and text alternative for the main comparison | A chart usable without color or hover |
+| **Accessibility** | A redundant cue and text alternative (a caption stating chart type, axes, and main pattern) for the main comparison | A chart usable without color or hover |
 
 ### Code Snippet: Storage dtype Is Not Visualization Type
 
@@ -355,8 +354,8 @@ Expected output: two lines, one per clinic, with `week` on the x-axis and a lege
 ## Plot Kinds
 
 - `kind=` picks the mark, so one table gives many views.
-- **Pearson correlation**: how two columns relate, as a number from `-1` (one rises as the other falls) through `0` (no straight-line link) to `1` (both move the same way). It measures straight-line association only, not causation.
-- **Correlation matrix**: `df.corr()` gives the correlation of every pair of selected columns.
+- Recall Lecture 04's Pearson correlation: how two columns relate, as a number from `-1` (one rises as the other falls) through `0` (no straight-line link) to `1` (both move the same way). It measures straight-line association only, not causation.
+- `df.corr()` gives the correlation of every pair of selected columns.
 - Select the numeric columns yourself: a text column of words raises `ValueError`, but text that parses as numbers, such as zero-padded patient IDs or ZIP codes, is correlated silently as though it were a measurement.
 
 ### Reference Card: pandas Plotting and Correlation
@@ -371,7 +370,7 @@ Expected output: two lines, one per clinic, with `week` on the x-axis and a lege
 | `df.plot(kind='box')` | Compare distributions and outliers | `Axes` |
 | `df.plot(kind='pie', y='col')` | Show nonnegative values as parts of their total | `Axes` |
 | `df.plot.bar()`, `df.plot.hist()` | Same as `kind='bar'` / `kind='hist'`; `df.plot.density()` below uses this form | `Axes` |
-| `corr = df[['age', 'bmi']].corr()` | Correlation matrix of the listed columns; `method=` also accepts `'spearman'` and `'kendall'` | Square `DataFrame`, `1.0` down the diagonal; a column with nothing to vary (one repeated value, or only one non-missing value) is `NaN` throughout |
+| `corr = df[['age', 'bmi']].corr()` | Correlation matrix of the listed columns; `method=` also accepts `'spearman'` and `'kendall'` | Square `DataFrame`, `1.0` down the diagonal; a constant column gives `NaN` |
 | `corr.to_csv(path, index=True, index_label='feature')` | Write a frame whose row labels are data, not row numbers: `index=True` keeps them and `index_label=` names the column they land in | CSV file whose first column is headed `feature` |
 
 ### Code Snippet: Change the Plot Kind
@@ -441,14 +440,15 @@ Each plotting function below takes the DataFrame as `data=` and column names for
 | `import seaborn as sns` | Load seaborn under its standard alias, which the snippets assume | `sns` |
 | `sns.load_dataset(name)` | Download a small example table, such as `'healthexp'` (needs internet) | `DataFrame` |
 | `sns.set_style(name)` / `sns.set_palette(name)` | Set defaults for readable plots | Updated seaborn defaults |
-| `sns.scatterplot(data=df, x=..., y=..., hue=...)` | Show relationships and optional groups | `Axes` |
-| `sns.lineplot(data=df, x=..., y=..., hue=...)` | Show ordered trends; averages rows that share an x value | `Axes` |
+| `sns.scatterplot(data=df, x=..., y=..., hue=..., style=...)` | Show relationships and optional groups; `style=` gives one marker shape per category, a redundant cue to pair with `hue=` | `Axes` |
+| `sns.lineplot(data=df, x=..., y=..., hue=..., style=...)` | Show ordered trends; averages rows that share an x value; `style=` gives one dash pattern per category | `Axes` |
 | `sns.barplot(data=df, x=..., y=..., hue=...)` | One bar per category showing the mean of y, with an error bar | `Axes` |
 | `sns.histplot(data=df, x=..., kde=True)` | Show distribution, optionally with density | `Axes` |
 | `sns.boxplot(data=df, x=..., y=...)` | Compare distributions and outliers | `Axes` |
 | `sns.heatmap(data=df, annot=True)` | Encode a wide table of numbers (index as rows, columns as columns) as color; `annot=True` writes each value in its cell | `Axes` |
 | `sns.heatmap(corr, annot=True, cmap='RdBu_r', center=0, vmin=-1, vmax=1)` | Color a correlation matrix with two hues that meet at 0: blue for negative, white near 0, red for positive, over the full range from -1 to 1 | `Axes` |
 | `errorbar=None` | Hide the error band or bar on lineplot/barplot | Updated `Axes` |
+| `ax.get_lines()[0].get_ydata()` | Read back the y-values of the first line drawn, to check what a plot shows | NumPy array |
 
 ### Code Snippet: Load a Teaching Dataset
 
@@ -738,7 +738,7 @@ scatter.interactive()
 | :--- | :--- | :--- |
 | `chart.save('chart.json')` / `chart.save('chart.html')` | Write the Vega-Lite spec (data embedded) or a web page | File |
 | `chart.to_dict()` | Return the same spec as a Python dictionary | `dict` |
-| `json.dump(obj, file, indent=2, ensure_ascii=False)` | Write a dict or list as readable JSON; `ensure_ascii=False` keeps characters such as é unescaped. It does not end the file with a newline; call `file.write('\n')` afterward if one is required | JSON file |
+| `json.dump(obj, file, indent=2, ensure_ascii=False)` | Write a dict or list as readable JSON; `ensure_ascii=False` keeps characters such as é unescaped | JSON file |
 | `json.load(file)` | Read a JSON file back | `dict` or `list` |
 | `json.dumps(obj)` / `json.loads(text)` | The same JSON as a string instead of a file, such as a settings dictionary stored in one CSV cell; `json.loads()` turns the string back | `'{"alpha": 1.0}'` / `dict` or `list` |
 

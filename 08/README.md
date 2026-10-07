@@ -85,6 +85,7 @@ The snippets in this lecture use `visits`, six clinic visits:
 | Count | `['col'].count()` | Non-missing values of `col` per group | One count per group |
 | Count | `['col'].nunique()` | Distinct non-missing values of `col` per group | One count per group |
 | Several at once | `.agg(name=('col', 'func'), ...)` | **Named aggregation**: each keyword names an output column; its value is a `(source column, function)` pair | One flat column per name |
+| Several at once | `grouped['col'].agg(['mean', 'std'])` | A list of functions for one column | One column per function, named `mean`, `std` |
 | Several at once | `.agg({'col': ['mean', 'max']})` | Several functions per column | Two-level column labels |
 | Result shape | `groupby(..., as_index=False)` | Keep keys as ordinary columns | Flat table, `0..n-1` index |
 | Result shape | `groupby(..., sort=True)` | Sort rows by key (the default); categorical keys follow category order | Ordered rows |
@@ -353,6 +354,7 @@ That visit was East's only one, so the default report drops East entirely: six v
 | `grouped.transform('mean')` | Broadcast each group's mean to its original rows | Series aligned to original index |
 | `grouped.transform('std')` | Broadcast within-group spread | Series aligned to original index |
 | `grouped.transform(lambda x: x - x.mean())` | Compute a custom within-group value | Same row count as input |
+| `df['col'].fillna(df.groupby('key')['col'].transform('median'))` | **Group-specific fill**: replace each missing value with its own group's median | Series aligned to original index |
 
 ### Code Snippet: Compare Each Visit with Its Clinic
 
@@ -373,6 +375,24 @@ display(with_context[['clinic', 'patient_id', 'wait_min', 'clinic_mean_wait', 'w
 | 5 | East | P05 | 9 | 9.0 | 0.0 |
 
 East's one visit sits exactly at its clinic's mean: it is easy to be average when you are the whole group.
+
+### Code Snippet: Fill Missing Scores with the Clinic Median
+
+```python
+clinic_median = visits.groupby('clinic')['satisfaction'].transform('median')
+display(visits['satisfaction'].fillna(clinic_median))
+```
+
+|  | satisfaction |
+| --- | --- |
+| 0 | 4.0 |
+| 1 | 4.5 |
+| 2 | 5.0 |
+| 3 | 3.0 |
+| 4 | 3.0 |
+| 5 | 4.0 |
+
+North's missing score becomes 4.5, the median of North's 4.0 and 5.0, and South's becomes 3.0. A whole-column `fillna(visits['satisfaction'].median())` would give both 4.0.
 
 <callout icon="⚠️" color="yellow_bg">
 	## A group summary does not line up with the rows
@@ -477,6 +497,15 @@ display(top2[['patient_id', 'wait_min']])
 - A repeated text key stored as `category` (Lecture 05) uses far less memory.
 
 ![Performance benchmarks on about 100 million rows (lower is better): three separate groupby calls vs one agg, a per-group z-score with apply vs transform, and memory before and after categorical keys](media/perf_combined.png)
+
+## Measuring Speed and Memory
+
+### Reference Card: Measure Before Optimizing
+
+- `%timeit expression`: Time one line in a notebook by running it many times; output looks like `8.8 ms ± 0.1 ms per loop (mean ± std. dev. of 7 runs, 100 loops each)`.
+- `df.memory_usage(deep=True)`: Bytes used by each column, counting the text inside it; shows which column to shrink.
+- `df['key'].astype('category')`: Store a repeated text key as a few labels plus a small code per row; same groups, less memory.
+- `grouped['col'].agg(['mean', 'std', 'count'])`: Several summaries from one split instead of one `groupby()` per summary.
 
 ![xkcd 1319: Automation. Making code faster is work too, so measure first and spend the effort only where the time goes](media/xkcd_1319.png)
 

@@ -110,7 +110,7 @@ December 25, 2023 at 02:30 PM
 
 ## pandas DatetimeIndex
 
-For a whole column, use `pd.to_datetime()`. It converts a text column into **`datetime64`** values, which sort by time rather than character by character:
+For a whole column, use Lecture 05's `pd.to_datetime()`: its `datetime64` values sort by time rather than character by character, and invalid text becomes `NaT` with `errors='coerce'`.
 
 | Two clinic dates | As text (dtype `str`) | After `pd.to_datetime()` (dtype `datetime64[us]`) |
 | --- | --- | --- |
@@ -118,7 +118,6 @@ For a whole column, use `pd.to_datetime()`. It converts a text column into **`da
 | Second minus first | `TypeError` | `1 days 00:00:00` |
 
 - **`Timestamp`**: one value in the column.
-- **`NaT`** ("Not a Time"): a missing date, the datetime version of `NaN`. Invalid text raises `ValueError`; `errors='coerce'` turns it into `NaT` instead.
 - **`DatetimeIndex`**: timestamps used as row labels, which date selection, resampling, and time windows all read.
 
 ### Reference Card: Parsing and Indexing Dates
@@ -135,6 +134,7 @@ For a whole column, use `pd.to_datetime()`. It converts a text column into **`da
 | Round | `s.dt.floor('h')` | Round each time down to the hour (`'D'` for the day) | Series |
 | Format | `s.dt.strftime('%Y%m%d%H')` | Write each time as text with `strftime` codes, such as `'2024030108'` for 08:00 on 1 March 2024 | Series of text |
 | Duration | `pd.Timedelta(days=2)`, `pd.Timedelta(hours=6)` | pandas' `timedelta`; add it to or subtract it from a timestamp | `Timedelta` |
+| Elapsed | `df['end'] - df['start']` | Time between two datetime columns, row by row, such as length of stay; `.dt.total_seconds() / 3600` gives hours and `.dt.days` whole days | `timedelta64` Series |
 
 `pd.to_datetime(format=...)` and `.dt.strftime()` use the same format codes as the `datetime` card above.
 
@@ -161,7 +161,7 @@ Index([8, 20, 8], dtype='int32', name='recorded_at')
 
 <callout icon="⚠️" color="yellow_bg">
 	## Sort by time first
-	On unsorted rows, a date slice can raise `KeyError` and `shift()` pairs each reading with whatever row sits above it. Run `sort_index()`, or `sort_values(['patient_id', 'recorded_at'])` for a panel.
+	On unsorted rows, a date slice can raise `KeyError`. Run `sort_index()`, or `sort_values(['patient_id', 'recorded_at'])` for a panel.
 </callout>
 
 ![xkcd 2867: DateTime. T2 minus T1 looks like simple subtraction until time zones and clock changes, later in this lecture, get involved.](media/xkcd_2867.png)
@@ -241,6 +241,110 @@ display(study_day.loc['2024-01-30':'2024-02-02'])
 | 2024-01-31 | 31 |
 | 2024-02-01 | 32 |
 | 2024-02-02 | 33 |
+
+# Time Zone Handling
+
+- **Time zone**: a region's rule for turning an instant into a wall-clock reading, including when daylight saving time moves the clocks.
+- A multi-site trial records each visit on its clinic's wall clock: 09:00 in New York and 09:00 in Chicago are different moments, so ordering the visits needs every timestamp tied to one instant.
+
+## Basic Time Zone Operations
+
+- A **naive** timestamp is a clock reading with no zone attached, like `2024-03-09 09:00`. pandas cannot tell which instant it means.
+- An **aware** timestamp carries a zone or UTC offset, like `2024-03-09 09:00-05:00`, so it pins down one instant.
+- **UTC** (Coordinated Universal Time) has no daylight saving time, which makes it the safe zone for storing and ordering data.
+
+| New York visit time | Attached offset | Same instant in UTC |
+| --- | --- | --- |
+| March 9, 2024 at 09:00 | UTC-5 | March 9 at 14:00 |
+| March 11, 2024 at 09:00 | UTC-4 | March 11 at 13:00 |
+
+### Reference Card: Time Zones
+
+- `ts.tz_localize('America/New_York')`: Attach the recording zone to a naive DatetimeIndex; clock times are unchanged.
+- `ts.tz_convert('UTC')`: Show aware timestamps in another zone; instants are unchanged. Raises `TypeError` on naive data.
+- `df['t'].dt.tz_localize(...)` and `.dt.tz_convert(...)`: The same operations on a datetime column.
+- `ts.index.tz` / `s.dt.tz`: The attached zone; `None` means naive.
+- `pd.to_datetime(text, utc=True)`: Parse text with an offset, or known to be UTC, straight to aware UTC values.
+- `pd.Timestamp('2024-03-09 14:00', tz='UTC')`, `pd.Timestamp.now(tz='UTC')`, `pd.date_range(..., tz='UTC')`: Build aware timestamps and ranges directly; `.tz_convert(...)` works on all of them.
+- Zone names: full names from the IANA time-zone database (the standard list of world time zones), such as `'America/New_York'`; `'US/Eastern'` exists only for backward compatibility.
+
+### Code Snippet: Local Clinic Times to UTC
+
+`clinic` holds readings of 120 and 118 indexed by naive New York times: March 9 and March 11, 2024, both at 09:00.
+
+```python
+local = clinic.tz_localize('America/New_York')
+display(local)
+display(local.tz_convert('UTC'))
+```
+
+|  | value |
+| --- | --- |
+| 2024-03-09 09:00:00-05:00 | 120 |
+| 2024-03-11 09:00:00-04:00 | 118 |
+
+|  | value |
+| --- | --- |
+| 2024-03-09 14:00:00+00:00 | 120 |
+| 2024-03-11 13:00:00+00:00 | 118 |
+
+Daylight saving time began March 10, so the two 9 AM local visits are 14:00 and 13:00 UTC.
+
+<callout icon="⚠️" color="yellow_bg">
+	## Localize in the recording zone
+	Localizing these New York readings as `'UTC'` raises no error but shifts each instant by 4 or 5 hours. Localize with the recording zone, convert to UTC to store and order, and convert back only for display.
+</callout>
+
+![xkcd 1799: Bad Map Projection: Time Zones. Each country is redrawn where its clocks say it should be; a wall-clock reading alone does not pin down where, or when, something happened.](media/xkcd_time_zones.png)
+
+## Clock Changes: Repeated and Skipped Times
+
+Twice a year, some local clock readings do not name exactly one instant:
+
+- **Nonexistent**: on the spring-forward night (March 10, 2024 in New York), clocks jump from 02:00 to 03:00, so 02:30 never happens.
+- **Ambiguous**: on the fall-back night (November 3, 2024), clocks return from 02:00 to 01:00, so 01:30 happens twice, first in daylight time (EDT) and then standard time (EST).
+
+| UTC instant | New York clock | Offset |
+| --- | --- | --- |
+| 2024-11-03 05:00 | 01:00 EDT | UTC-4 |
+| 2024-11-03 06:00 | 01:00 EST | UTC-5 |
+| 2024-11-03 07:00 | 02:00 EST | UTC-5 |
+
+By default, `tz_localize()` raises `ValueError` at these times; the arguments below set them aside as `NaT` instead.
+
+### Reference Card: Daylight-Saving Arguments
+
+- `s.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')`: Repeated (fall-back) and skipped (spring-forward) clock times become `NaT`.
+- `aware.isna().sum()`: Count the readings set aside, and report that count before dropping them.
+- `pd.date_range(start, end, freq='h', tz='America/New_York', inclusive='left')`: Every elapsed hour from `start` up to, but not including, `end`; a spring-forward day has 23 and a fall-back day has 25.
+
+### Code Snippet: Flag Clock-Change Timestamps
+
+`local` holds naive New York timestamps: March 10, 2024 at 01:00 and 02:30, and November 3 at 01:30 and 03:00.
+
+```python
+aware = local.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')
+display(aware.dt.tz_convert('UTC'))
+print("Set aside:", aware.isna().sum())
+
+spring_day = pd.date_range('2024-03-10', '2024-03-11', freq='h',
+                           tz='America/New_York', inclusive='left')
+print(len(spring_day))  # hours in that local day
+```
+
+|  | value |
+| --- | --- |
+| 0 | 2024-03-10 06:00:00+00:00 |
+| 1 | NaT |
+| 2 | NaT |
+| 3 | 2024-11-03 08:00:00+00:00 |
+
+```text
+Set aside: 2
+23
+```
+
+_Time series analysis is 90% datetime wrangling, 5% actual analysis, and 5% swearing at time zone conversions._
 
 # LIVE DEMO!
 
@@ -550,110 +654,6 @@ At 11:00, the count window averages in the 08:00 reading from three hours earlie
 
 [Open Demo 2 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo2_indexing_resampling.ipynb)
 
-# Time Zone Handling
-
-- **Time zone**: a region's rule for turning an instant into a wall-clock reading, including when daylight saving time moves the clocks.
-- A multi-site trial records each visit on its clinic's wall clock: 09:00 in New York and 09:00 in Chicago are different moments, so ordering the visits needs every timestamp tied to one instant.
-
-## Basic Time Zone Operations
-
-- A **naive** timestamp is a clock reading with no zone attached, like `2024-03-09 09:00`. pandas cannot tell which instant it means.
-- An **aware** timestamp carries a zone or UTC offset, like `2024-03-09 09:00-05:00`, so it pins down one instant.
-- **UTC** (Coordinated Universal Time) has no daylight saving time, which makes it the safe zone for storing and ordering data.
-
-| New York visit time | Attached offset | Same instant in UTC |
-| --- | --- | --- |
-| March 9, 2024 at 09:00 | UTC-5 | March 9 at 14:00 |
-| March 11, 2024 at 09:00 | UTC-4 | March 11 at 13:00 |
-
-### Reference Card: Time Zones
-
-- `ts.tz_localize('America/New_York')`: Attach the recording zone to a naive DatetimeIndex; clock times are unchanged.
-- `ts.tz_convert('UTC')`: Show aware timestamps in another zone; instants are unchanged. Raises `TypeError` on naive data.
-- `df['t'].dt.tz_localize(...)` and `.dt.tz_convert(...)`: The same operations on a datetime column.
-- `ts.index.tz` / `s.dt.tz`: The attached zone; `None` means naive.
-- `pd.to_datetime(text, utc=True)`: Parse text with an offset, or known to be UTC, straight to aware UTC values.
-- `pd.Timestamp('2024-03-09 14:00', tz='UTC')`, `pd.Timestamp.now(tz='UTC')`, `pd.date_range(..., tz='UTC')`: Build aware timestamps and ranges directly; `.tz_convert(...)` works on all of them.
-- Zone names: full names from the IANA time-zone database (the standard list of world time zones), such as `'America/New_York'`; `'US/Eastern'` exists only for backward compatibility.
-
-### Code Snippet: Local Clinic Times to UTC
-
-`clinic` holds readings of 120 and 118 indexed by naive New York times: March 9 and March 11, 2024, both at 09:00.
-
-```python
-local = clinic.tz_localize('America/New_York')
-display(local)
-display(local.tz_convert('UTC'))
-```
-
-|  | value |
-| --- | --- |
-| 2024-03-09 09:00:00-05:00 | 120 |
-| 2024-03-11 09:00:00-04:00 | 118 |
-
-|  | value |
-| --- | --- |
-| 2024-03-09 14:00:00+00:00 | 120 |
-| 2024-03-11 13:00:00+00:00 | 118 |
-
-Daylight saving time began March 10, so the two 9 AM local visits are 14:00 and 13:00 UTC.
-
-<callout icon="⚠️" color="yellow_bg">
-	## Localize in the recording zone
-	Localizing these New York readings as `'UTC'` raises no error but shifts each instant by 4 or 5 hours. Localize with the recording zone, convert to UTC to store and order, and convert back only for display.
-</callout>
-
-![xkcd 1799: Bad Map Projection: Time Zones. Each country is redrawn where its clocks say it should be; a wall-clock reading alone does not pin down where, or when, something happened.](media/xkcd_time_zones.png)
-
-## Clock Changes: Repeated and Skipped Times
-
-Twice a year, some local clock readings do not name exactly one instant:
-
-- **Nonexistent**: on the spring-forward night (March 10, 2024 in New York), clocks jump from 02:00 to 03:00, so 02:30 never happens.
-- **Ambiguous**: on the fall-back night (November 3, 2024), clocks return from 02:00 to 01:00, so 01:30 happens twice, first in daylight time (EDT) and then standard time (EST).
-
-| UTC instant | New York clock | Offset |
-| --- | --- | --- |
-| 2024-11-03 05:00 | 01:00 EDT | UTC-4 |
-| 2024-11-03 06:00 | 01:00 EST | UTC-5 |
-| 2024-11-03 07:00 | 02:00 EST | UTC-5 |
-
-By default, `tz_localize()` raises `ValueError` at these times; the arguments below set them aside as `NaT` instead.
-
-### Reference Card: Daylight-Saving Arguments
-
-- `s.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')`: Repeated (fall-back) and skipped (spring-forward) clock times become `NaT`.
-- `aware.isna().sum()`: Count the readings set aside, and report that count before dropping them.
-- `pd.date_range(start, end, freq='h', tz='America/New_York', inclusive='left')`: Every elapsed hour from `start` up to, but not including, `end`; a spring-forward day has 23 and a fall-back day has 25.
-
-### Code Snippet: Flag Clock-Change Timestamps
-
-`local` holds naive New York timestamps: March 10, 2024 at 01:00 and 02:30, and November 3 at 01:30 and 03:00.
-
-```python
-aware = local.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')
-display(aware.dt.tz_convert('UTC'))
-print("Set aside:", aware.isna().sum())
-
-spring_day = pd.date_range('2024-03-10', '2024-03-11', freq='h',
-                           tz='America/New_York', inclusive='left')
-print(len(spring_day))  # hours in that local day
-```
-
-|  | value |
-| --- | --- |
-| 0 | 2024-03-10 06:00:00+00:00 |
-| 1 | NaT |
-| 2 | NaT |
-| 3 | 2024-11-03 08:00:00+00:00 |
-
-```text
-Set aside: 2
-23
-```
-
-_Time series analysis is 90% datetime wrangling, 5% actual analysis, and 5% swearing at time zone conversions._
-
 # Entity-Aware Features and Past-Only Windows
 
 - **Feature**: an input column for a risk score or model.
@@ -708,7 +708,7 @@ In a panel, a plain `shift(1)` runs down the whole stacked column (`wrong_previo
 | 4 | P2 | 2024-03-01 10:00:00 | 86 | 88.0 | 88.0 |
 | 5 | P2 | 2024-03-01 11:00:00 | 84 | 86.0 | 86.0 |
 
-Row 3 is the leak: P2's "previous" heart rate is P1's 95.
+Row 3 is the leak: P2's "previous" heart rate is P1's 95. Sort by patient and time first, because on unsorted rows `shift()` pairs each reading with whatever row sits above it.
 
 ### Reference Card: Past-Only Panel Features
 
@@ -780,14 +780,15 @@ At P1's 11:30 reading, the previous two readings average 76, but no reading fall
 ```python
 prediction_time = pd.Timestamp('2024-03-01 11:00')
 labs['available'] = labs['resulted_at'] <= prediction_time
+labs['turnaround_h'] = ((labs['resulted_at'] - labs['collected_at']).dt.total_seconds() / 3600).round(2)
 display(labs)
 ```
 
-|  | test | collected_at | resulted_at | available |
-| --- | --- | --- | --- | --- |
-| 0 | lactate | 2024-03-01 08:00:00 | 2024-03-01 08:45:00 | True |
-| 1 | creatinine | 2024-03-01 09:30:00 | 2024-03-01 11:15:00 | False |
-| 2 | troponin | 2024-03-01 10:30:00 | 2024-03-01 10:50:00 | True |
+|  | test | collected_at | resulted_at | available | turnaround_h |
+| --- | --- | --- | --- | --- | --- |
+| 0 | lactate | 2024-03-01 08:00:00 | 2024-03-01 08:45:00 | True | 0.75 |
+| 1 | creatinine | 2024-03-01 09:30:00 | 2024-03-01 11:15:00 | False | 1.75 |
+| 2 | troponin | 2024-03-01 10:30:00 | 2024-03-01 10:50:00 | True | 0.33 |
 
 ### Code Snippet: Chronological Holdout
 
@@ -823,8 +824,8 @@ P2's 11:00 reading falls in the holdout, because `<` keeps the cutoff itself out
 
 - `ts.plot()`: Line plot with the DatetimeIndex on the x-axis; returns the `Axes` (`ax = ts.plot()`) for further customization
 - `ts.plot(figsize=(12, 6), title='Title', marker='o')`: Figure size, title, and a marker at each reading
-- `ts.asfreq('D').plot()`: Inserts `NaN` for missing days, so the line breaks at gaps instead of bridging them
-- `ts.groupby(ts.index.month).mean().plot(kind='bar', ax=ax)`: Calendar-month averages as bars, to show a seasonal pattern; draw them on a new `fig, ax = plt.subplots()`, because bars on the dated line's Axes raise `AttributeError`. Bars start at zero (Lecture 07), which suits counts; for a reading such as temperature, plot the difference from a baseline such as 98.6 °F
+- `ts.asfreq('D').plot()`: Inserts `NaN` for missing days, so the line breaks at gaps instead of bridging them; `ts.asfreq('D')` is the shortcut for `ts.resample('D').asfreq()`
+- `ts.groupby(ts.index.month).mean().plot(kind='bar', ax=ax)`: Calendar-month averages as bars, to show a seasonal pattern; besides column names, `groupby()` accepts an array of keys as long as the series, such as `ts.index.month`; draw them on a new `fig, ax = plt.subplots()`, because bars on the dated line's Axes raise `AttributeError`. Bars start at zero (Lecture 07), which suits counts; for a reading such as temperature, plot the difference from a baseline such as 98.6 °F
 - `ax.axhline(98.6, linestyle='--', label='Normal')`: Horizontal reference line for a clinical threshold
 
 ### Code Snippet: Time-Series Plotting

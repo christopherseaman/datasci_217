@@ -158,7 +158,7 @@ Compare values after `.str.strip()` unless the definition says otherwise.
 
 | Issue | What it counts |
 | --- | --- |
-| `schema mismatch` | Columns of the six in "The data" that `raw` lacks, plus any columns `raw` has beyond them |
+| `schema mismatch` | Columns of the six listed in Overview that `raw` lacks, plus any columns `raw` has beyond them |
 | `empty full-name tokens` | Rows whose `full_name` is empty |
 | `empty date tokens` | Rows whose `visit_date` is empty |
 | `age sentinel tokens` | Rows whose `age_text` is `unknown` or `-9` |

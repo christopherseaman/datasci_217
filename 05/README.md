@@ -66,6 +66,7 @@ Two dtypes are new: `datetime64` stores calendar dates rather than text, and `In
 - **Missing value**: a cell with nothing recorded, which pandas calls NA (_not available_), such as a blood pressure left blank when the cuff failed.
 - pandas statistics skip gaps silently: `pd.Series([140, None, 160]).mean()` returns `150.0` as if only two patients existed, so count the gaps before trusting a summary.
 - **Sentinel values** (sentinels): codes a source system uses for "nothing recorded", such as `-9`, `-999`, or `unknown`. They stay real data to pandas until you convert them, with Lecture 04's `na_values=` at read time or `replace()` afterward.
+- **`np.nan`**: NumPy's constant for a missing number (after `import numpy as np`), used to write a missing value yourself.
 - `isna()` recognizes every NA marker below; `==` does not (`np.nan == np.nan` is `False`).
 
 | Column dtype | Marker shown | Example |
@@ -477,10 +478,11 @@ Categories (3, str): ['Young' < 'Middle' < 'Senior']
 | `series.str.strip()` | Remove leading/trailing whitespace | String `Series` |
 | `series.str.lower()` / `series.str.upper()` | Convert to lowercase / uppercase | String `Series` |
 | `series.str.title()` | Capitalize each word (Lecture 01's `str.title()` for a whole column) | String `Series` |
+| `series.str.contains(pattern, na=False)` | Test whether each value contains `pattern`, read as a **regular expression** (regex): a text pattern in which plain letters and digits match themselves; `regex=False` searches for literal text. Write patterns as raw strings, `r'...'`: the `r` prefix stops Python from treating backslashes as escapes | Boolean `Series`; missing becomes `False` |
 | `series.str.replace(old, new, regex=False)` | Replace literal substrings | String `Series` |
-| `series.str.replace(r' +', '_', regex=True)` | Replace each run of spaces with one underscore; `+` means one or more of the preceding character (here a space) | String `Series`; `'north  clinic'` becomes `'north_clinic'` |
 | `df.columns.str.replace(' ', '_')` | The same `.str` methods work on column labels | New `Index` of labels; assign it back to `df.columns` |
-| `series.str.contains(pattern, na=False)` | Test whether each value contains `pattern`, read as a **regular expression** (regex): a text pattern in which plain letters and digits match themselves; `regex=False` searches for literal text | Boolean `Series`; missing becomes `False` |
+| `series.str.replace(r' +', '_', regex=True)` | Replace each run of spaces with one underscore; as a regex, `+` means one or more of the preceding character (here a space) | String `Series`; `'north  clinic'` becomes `'north_clinic'` |
+| `series.str.split(sep)` | Split each value at a literal separator; `.str[0]` takes the first part and `expand=True` returns one column per part. `vitals['pain'].str.split('/').str[0].astype(int)` is the column-method form of the `apply` snippet above | `Series` of lists; `[2, 7, 0, 5]` after `.str[0].astype(int)`; `DataFrame` with `expand=True` |
 | `series.str.startswith(prefix, na=False)` | Test a literal prefix | Boolean `Series` |
 | `series.str.endswith(suffix, na=False)` | Test a literal suffix | Boolean `Series` |
 
@@ -571,7 +573,7 @@ With `pyarrow` installed, as in Colab, the counts read `69132` and `5175` bytes;
 | `drop_first=True` | Omit the first category as the reference | `k - 1` columns for `k` categories |
 | `dtype='int64'` | Request integer indicators | Columns containing `0` and `1` |
 | `dummy_na=True` | Give missing values their own indicator | Extra missing-value column; otherwise missing rows are all zero |
-| `pd.concat([df, dummies], axis=1)` | Place the indicator columns beside the original table | `DataFrame` with the original and indicator columns |
+| `df.join(dummies)` | Place the indicator columns beside the original table, matching rows by index | `DataFrame` with the original and indicator columns |
 
 ### Code Snippet: Encode categories
 
@@ -625,7 +627,7 @@ display(pd.get_dummies(colors, prefix='color', drop_first=True, dtype='int64')) 
 | --- | --- | --- |
 | Inclusive range | `series.between(low, high)` | Boolean `Series`; `True` when `low <= value <= high` |
 | Allowed list | `series.isin(['north', 'south', 'west'])` | Boolean `Series`; `True` for listed values |
-| Describe a pattern | `r'P[0-9]{3}'` | A regular expression: `P`, then `[0-9]` (any digit) exactly `{3}` times; the `r` prefix (raw string) is the usual way to write patterns |
+| Describe a pattern | `r'P[0-9]{3}'` | A regular expression: `P`, then `[0-9]` (any digit) exactly `{3}` times; the `r` prefix marks a raw string, as in `str.contains` above |
 | Whole-value pattern | `series.str.fullmatch(pattern, na=False)` | `True` only when the whole value matches; `na=False` makes a missing value fail the rule |
 | Start-only pattern | `series.str.match(pattern)` | Checks the start only, so `'P0012'` passes `P[0-9]{3}`; prefer `fullmatch` for rules |
 | Exact date text | `series.str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')` | `True` only for exact `YYYY-MM-DD` text; needed because `to_datetime(..., format='%Y-%m-%d')` still accepts `2026-7-01` |

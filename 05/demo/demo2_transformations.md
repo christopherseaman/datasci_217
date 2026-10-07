@@ -198,7 +198,7 @@ print(intake['site'].cat.codes.tolist())
 
 ```python
 smoking_dummies = pd.get_dummies(intake['smoking_status'], prefix='smoking', drop_first=True, dtype='int64')
-display(pd.concat([intake[['patient_id', 'smoking_status']], smoking_dummies], axis=1))
+display(intake[['patient_id', 'smoking_status']].join(smoking_dummies))
 ```
 
 **Expect:** two columns, `smoking_former` and `smoking_never`. `drop_first=True` dropped the alphabetically first label, `current`, so current smokers (P102 and P105) are 0 in both columns: `current` is the reference.

@@ -237,7 +237,7 @@ display(frame)
 
 | Capstone decision or concept | Earlier canonical lecture | Related demo stage or final question |
 | --- | --- | --- |
-| Question, claim, and evidence | Lecture 07, Data Visualization | `01_setup.ipynb`: trust and inspect the release |
+| Question, claim, and evidence | Lecture 07, Write the contract down | `01_setup.ipynb`: trust and inspect the release |
 | Release files: Parquet tables and a JSON manifest | Lecture 04, Data Loading and Storage (Parquet); Lecture 07, Save the Chart and Its Record (JSON) | `01_setup.ipynb`: verify the release |
 | File fingerprint: SHA-256 hash (`hashlib.sha256`) and size in bytes (`path.stat().st_size`) | Lecture 05, Data Cleaning Pipeline | `01_setup.ipynb`: verify the release; final Q1: release audit |
 | Settings saved as JSON text in one CSV cell (`json.dumps`, `json.loads`) | Lecture 07, Save the Chart and Its Record | `03_model_prep.ipynb`: split manifest; final Q7 and Q8: model specification |
@@ -249,8 +249,8 @@ display(frame)
 | Past-only lags and rolling windows | Lecture 09, Entity-Aware Features and Past-Only Windows | `02_wrangling.ipynb`: construct history features |
 | Aggregation and a question-shaped table | Lecture 08, Data Aggregation and Group Operations | `03_model_prep.ipynb`: training-only summaries; `04_modeling.ipynb`: error slices |
 | Aware UTC target times compared with a zoned local cutoff | Lecture 10, Splitting on Target Time | `03_model_prep.ipynb`: split boundaries; final Q5 and Q6: split boundaries |
-| Cyclic calendar features (sine and cosine) and recorded model settings (`get_params(deep=False)`) | Lecture 10, From Statistics to Deep Learning | final Q4: calendar features; final Q7: model specification |
-| Candidate models, baselines, leakage boundaries, and evaluation | Lecture 10, From Statistics to Deep Learning | `03_model_prep.ipynb`: freeze the split; `04_modeling.ipynb`: compare and evaluate |
+| Cyclic calendar features (sine and cosine) and recorded model settings (`get_params(deep=False)`) | Lecture 10, Cyclic Time Features; Freeze, Then Test Once | final Q4: calendar features; final Q7: model specification |
+| Candidate models, baselines, leakage boundaries, and evaluation | Lecture 10, Training, Validation, and Test Rows; Baselines and Pipelines; Measuring Prediction Error | `03_model_prep.ipynb`: freeze the split; `04_modeling.ipynb`: compare and evaluate |
 
 # Transfer to the final project
 

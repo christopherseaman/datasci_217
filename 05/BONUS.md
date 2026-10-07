@@ -17,68 +17,29 @@ The core lecture introduces nullable `Int64`, `string`, and `boolean`. This bonu
 
 _Fun fact: For years, pandas had to convert integers to floats when there was missing data. Extension types finally fixed this: no more mysterious float64 columns!_
 
-## Extension Types for Better Missing Data Handling
+## Float64 and convert_dtypes()
 
-Traditional NumPy-based types couldn't represent missing integers or booleans. Extension types provide proper NA support across all data types.
+### Reference Card: Extra nullable conversions
 
-### Reference Card: Nullable extension types
+- `astype('Float64')`: Nullable float; missing shows as `<NA>` instead of `NaN`.
+- `df.convert_dtypes()`: Convert every column to the best nullable type in one call (`Int64`, `string`, `boolean`, `Float64`).
+- `pd.NA`: The missing marker used by nullable types; `np.nan` remains the marker for NumPy `float64`.
 
-- `astype('Int64')`: Nullable integer (note capital I)
-- `astype('Float64')`: Nullable float
-- `astype('boolean')`: Nullable boolean
-- `astype('string')`: Explicit nullable string type
-- `pd.NA`: Missing value marker used by nullable extension types
-- `np.nan`: Floating missing-value sentinel also used by pandas 3's inferred `str` dtype
-
-### Code Snippet: Old vs. new missing-data handling
+### Code Snippet: Convert every column at once
 
 ```python
-# Old way: integers become floats with missing data
-s_old = pd.Series([1, 2, None])
-print(s_old.dtype)  # float64 (forced conversion!)
-
-# New way: integers stay integers
-s_new = pd.Series([1, 2, None], dtype='Int64')
-print(s_new.dtype)  # Int64
-print(s_new)  # [1, 2, <NA>]
-
-# Boolean with proper missing values
-bools = pd.Series([True, False, None], dtype='boolean')
-print(bools)  # [True, False, <NA>]
+df = pd.DataFrame({'age': [25, 30, None, 45], 'name': ['Ana', 'Bo', 'Cy', None], 'member': [True, False, None, True]})
+print(df.convert_dtypes().dtypes)
 ```
 
-## Why Use Extension Types?
-
-Extension types provide consistent missing-data semantics and can improve memory use or performance for some workloads. Measure those properties on the actual data and operations rather than assuming every extension type is smaller or faster.
-
-Under pandas 3, inferred text uses the `str` dtype. Its storage may be backed by PyArrow when PyArrow is installed; otherwise pandas uses its non-PyArrow implementation. An explicit `string` dtype remains useful when nullable-string semantics are part of the data contract. Neither representation is guaranteed to use less memory than `object` for every dataset.
-
-### Choosing an extension type
-
-- **Int64, Int32, Int16, Int8**: Integer data that might have missing values
-- **Float64, Float32**: When you need explicit control over precision
-- **boolean**: Boolean data with potential missing values
-- **str or string**: Text data; choose explicit `string` when nullable-string semantics are required, and measure memory for the actual backing and data
-- **category**: Repeated low-cardinality values when category semantics fit; measure the memory effect
-
-### Code Snippet: Convert a DataFrame to extension types
-
-```python
-# Convert existing DataFrame to extension types
-df = pd.DataFrame({
-    'age': [25, 30, None, 45],
-    'name': ['Alice', 'Bob', 'Charlie', None],
-    'is_member': [True, False, None, True]
-})
-
-# Convert to extension types
-df['age'] = df['age'].astype('Int64')
-df['name'] = df['name'].astype('string')
-df['is_member'] = df['is_member'].astype('boolean')
-
-print(df.dtypes)
-print(df)
+```text
+age         Int64
+name       string
+member    boolean
+dtype: object
 ```
+
+Extension types give consistent missing-data semantics, but measure memory and speed on the actual data rather than assuming they are smaller or faster. Under pandas 3, inferred text uses the `str` dtype; an explicit `string` dtype remains useful when nullable-string semantics are part of the data contract.
 
 # Advanced Regular Expressions for Text Data
 
@@ -138,77 +99,55 @@ Beyond simple threshold-based outlier detection, statistical methods can identif
 
 ### Reference Card: Outlier detection methods
 
-- **IQR Method**: Values below `Q1 - 1.5 * IQR` or above `Q3 + 1.5 * IQR`
-- **Z-Score Method**: Values with |z-score| > 3; `scipy.stats.zscore` needs SciPy, which `uv add scipy` installs
-- **Modified Z-Score**: Uses the median and median absolute deviation (MAD), which resist extreme values; skewed distributions still need an appropriate outlier rule
-- **Isolation Forest**: Machine learning approach (sklearn)
+- **IQR rule**: taught in the lecture (Flag unusual values).
+- **Z-score**: values with |z| > 3; `scipy.stats.zscore` needs SciPy, which `uv add scipy` installs.
+- **Modified z-score**: `0.6745 * (x - median) / MAD`, flagged above 3.5; the median and median absolute deviation (MAD) resist extreme values.
+- **Isolation Forest**: machine-learning approach (`sklearn`).
 
-### Code Snippet: Flag outliers with IQR and z-score
+### Code Snippet: Compare z-score and modified z-score
+
+`value` holds twenty cholesterol readings (mg/dL), 18 near 185 and two far outside, 450 and 460:
 
 ```python
-# Twenty patients' cholesterol readings (mg/dL); two are far outside the rest
-df = pd.DataFrame({'value': [180, 190, 175, 185, 195, 200, 178, 182, 188, 192,
-                              176, 184, 198, 179, 186, 191, 183, 450, 460, 187]})
-
-# IQR-based outlier detection
-Q1 = df['value'].quantile(0.25)
-Q3 = df['value'].quantile(0.75)
-IQR = Q3 - Q1
-
-lower_bound = Q1 - 1.5 * IQR
-upper_bound = Q3 + 1.5 * IQR
-
-outliers = df[(df['value'] < lower_bound) | (df['value'] > upper_bound)]
-print(f"Found {len(outliers)} outliers")
-
-# Z-score method
 from scipy import stats
-z_scores = np.abs(stats.zscore(df['value']))
-outliers_z = df[z_scores > 3]
-print(f"Found {len(outliers_z)} outlier")
+z = np.abs(stats.zscore(value))
+mad = (value - value.median()).abs().median()
+modified_z = 0.6745 * (value - value.median()) / mad
+print(value[z > 3].tolist(), value[modified_z.abs() > 3.5].tolist())
 ```
 
 ```text
-Found 2 outliers
-Found 1 outlier
+[460] [450, 460]
 ```
 
-The z-score rule misses 450: the two extreme values inflate the standard deviation they are measured against, so 450 scores only 2.93. That masking is why the IQR rule or the modified z-score, built on quartiles or the median, is more robust.
+The z-score rule misses 450: the two extreme values inflate the standard deviation they are measured against, so 450 scores only 2.93. The median-based rule catches both.
 
 # Complex String Transformations
 
 Advanced string operations for specialized text cleaning tasks.
 
-## Splitting and Joining Values
+## Joining Values
 
-Splitting breaks each value into parts; joining puts parts back together. Use this when one column holds several facts, such as a full name or a `city, state` pair.
+The lecture's string card teaches `str.split()`; these methods put strings back together.
 
-### Reference Card: String splitting
+### Reference Card: String joining
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
-| `series.str.split(sep, regex=False)` | Split on a literal separator | `Series` of lists |
-| `series.str.split(sep, expand=True, regex=False)` | Expand split parts into columns | `DataFrame` |
 | `series.str.cat(sep=' ')` | Combine all non-missing strings into one | One string |
 | `series.str.join(sep)` | Join the strings within each list value | String `Series` |
 
-### Code Snippet: Split a compound field
+### Code Snippet: Rejoin split parts
 
 ```python
-full_names = pd.Series(['Alice Smith', 'Bob Jones', 'Charlie Brown'])
-print(full_names.str.split(' '))               # a list per value
-print(full_names.str.split(' ', expand=True))  # one column per part
+parts = pd.Series(['Alice Smith', 'Bob Jones']).str.split(' ')
+print(parts.str.join('_').tolist())
+print(pd.Series(['Alice', 'Bob']).str.cat(sep=' & '))
 ```
 
 ```text
-0      [Alice, Smith]
-1        [Bob, Jones]
-2    [Charlie, Brown]
-dtype: object
-         0      1
-0    Alice  Smith
-1      Bob  Jones
-2  Charlie  Brown
+['Alice_Smith', 'Bob_Jones']
+Alice & Bob
 ```
 
 ## Extracting and normalizing text

@@ -15,13 +15,14 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 1: Parse, Index, and Select Patient Readings
+# Demo 1: Parse, Index, Select, and Localize Patient Readings
 
 A heart-failure clinic receives a home-scale log with text timestamps, out-of-order rows, and one impossible date.
 
 - Parse text into dates and find the impossible one.
 - Make a sorted `DatetimeIndex` and format an hour key.
-- Select a calendar interval.
+- Build visit schedules and select a calendar interval.
+- Convert clinic times to UTC and set aside the clock readings that happened twice or never.
 - All patient data are synthetic.
 
 Run the cells from top to bottom.
@@ -112,24 +113,18 @@ print(log.index.day_name())
 **Expect:** `Sorted? False`, then `Sorted? True`, and a table of four rows with columns `patient_id`, `weight_kg`, and `resting_hr`, from `2024-03-01 07:05:00` (81.9 kg) to `2024-03-04 06:55:00` (83.4 kg). The day names run `Friday`, `Saturday`, `Sunday`, `Monday`.
 
 
-## 3. Optional extension: schedules and frequency inference
+## 3. Build visit schedules
 
-Prerequisite: BONUS.md, Frequency Inference and Specialized Schedules. Uses the `log` from section 2.
-
-`pd.date_range()` builds a schedule from a frequency alias, and `pd.infer_freq()` reads the spacing back from an index.
+`pd.date_range()` builds a schedule from a start date, a number of dates, and a frequency alias.
 
 ```python
 weekly_calls = pd.date_range('2024-03-04', periods=4, freq='W-MON')   # Monday phone check-ins
 monthly_labs = pd.date_range('2024-03-01', periods=3, freq='MS')      # first-of-month blood tests
-clinic_days = pd.bdate_range('2024-03-01', '2024-03-14')              # weekdays the clinic is open
 display(weekly_calls)
 display(monthly_labs)
-print('Clinic days:', len(clinic_days))
-print('Weekly calls:', pd.infer_freq(weekly_calls))
-print('Home weigh-ins:', pd.infer_freq(log.index))
 ```
 
-**Expect:** Mondays `2024-03-04`, `03-11`, `03-18`, `03-25`; lab dates `2024-03-01`, `04-01`, `05-01`; `Clinic days: 10` (two weekends skipped). `infer_freq` returns `W-MON` for the calls and `None` for the weigh-ins: the patient steps on the scale at a slightly different minute each morning, so the log has no single frequency.
+**Expect:** Mondays `2024-03-04`, `2024-03-11`, `2024-03-18`, `2024-03-25` with `freq='W-MON'`, and lab dates `2024-03-01`, `2024-04-01`, `2024-05-01` with `freq='MS'`.
 
 
 ## 4. Select a calendar interval
@@ -145,7 +140,118 @@ print('Hours:', log.index.hour.tolist())
 **Expect:** `(4, 3)` for March. The date slice has March 1 at 07:05 (81.9 kg, 72 bpm) and March 2 at 07:15 (82.1 kg, 75 bpm). `Hours: [7, 7, 7, 6]` extracts the clock hour without turning the dates back into text.
 
 
-## 5. Optional extension: select by clock time
+## 5. One instant on several clinic clocks
+
+A telehealth consult starts at 14:00 UTC. `tz_convert()` shows what each site's wall clock read at that instant. Zone names come from the **IANA time-zone database**, the standard list of world time zones, such as `'America/New_York'`.
+
+```python
+consult = pd.Timestamp('2024-03-15 14:00', tz='UTC')
+for zone in ['UTC', 'America/New_York', 'America/Chicago', 'America/Los_Angeles', 'Europe/London']:
+    print(f'{zone:<20} {consult.tz_convert(zone)}')
+```
+
+**Expect:** the same instant as `10:00-04:00` in New York, `09:00-05:00` in Chicago, `07:00-07:00` in Los Angeles, and `14:00+00:00` in London. The US had already switched to daylight saving time on March 10, and the UK had not yet (it switches on March 31).
+
+
+## 6. Two clinics' visit times, ordered in UTC
+
+A blood-pressure trial runs clinics in New York and Chicago. Each exports visit times as naive text on its own wall clock. Localize each site in the zone where it recorded, then convert both to UTC, and stack them with `pd.concat()` (Lecture 06).
+
+```python
+new_york = pd.DataFrame({'site': 'New York', 'patient_id': ['NY-01', 'NY-02'],
+                         'visit_local': ['2024-03-15 09:00', '2024-03-15 10:30'], 'sbp': [142, 128]})
+chicago = pd.DataFrame({'site': 'Chicago', 'patient_id': ['CH-01', 'CH-02'],
+                        'visit_local': ['2024-03-15 08:30', '2024-03-15 09:00'], 'sbp': [135, 150]})
+
+new_york['visit_utc'] = (pd.to_datetime(new_york['visit_local'], format='%Y-%m-%d %H:%M')
+                         .dt.tz_localize('America/New_York').dt.tz_convert('UTC'))
+chicago['visit_utc'] = (pd.to_datetime(chicago['visit_local'], format='%Y-%m-%d %H:%M')
+                        .dt.tz_localize('America/Chicago').dt.tz_convert('UTC'))
+visits = pd.concat([new_york, chicago], ignore_index=True)
+
+display(visits.sort_values('visit_local'))
+display(visits.sort_values('visit_utc'))
+```
+
+**Expect:** sorted by the local text, Chicago's 08:30 visit comes first. Sorted by `visit_utc`, New York's 09:00 visit (`13:00+00:00`) comes first and Chicago's 08:30 (`13:30+00:00`) second: 08:30 in Chicago happened half an hour after 09:00 in New York.
+
+
+## 7. The night the clocks fell back
+
+The New York ICU's export covers the night of November 2 to 3, 2024, for three patients. At 02:00 that night, clocks went back to 01:00, so every local time from 01:00 to 01:59 happened twice. One of P02's readings was charted at 01:30, and the export does not say which 01:30 it was.
+
+```python
+raw = pd.DataFrame({
+    'patient_id': ['P01'] * 5 + ['P02'] * 5 + ['P03'] * 4,
+    'recorded_local': [
+        '2024-11-02 22:00', '2024-11-02 23:30', '2024-11-03 00:30', '2024-11-03 03:00', '2024-11-03 04:00',
+        '2024-11-02 22:30', '2024-11-03 00:00', '2024-11-03 01:30', '2024-11-03 02:00', '2024-11-03 03:30',
+        '2024-11-02 23:00', '2024-11-03 00:15', '2024-11-03 02:15', '2024-11-03 04:00',
+    ],
+    'heart_rate': [88, 94, 101, 112, 118, 72, 70, 68, 71, 69, 104, 99, 95, 92],
+})
+display(raw)
+```
+
+**Expect:** 14 rows, 3 columns. P01's heart rate climbs from 88 to 118 bpm (deteriorating), P02 stays near 70, and P03 falls from 104 to 92 (recovering).
+
+Localize with `ambiguous='NaT'` and `nonexistent='NaT'`, so pandas marks the uncertain reading instead of guessing, and report how many were set aside before dropping them.
+
+```python
+local = pd.to_datetime(raw['recorded_local'], format='%Y-%m-%d %H:%M')
+aware = local.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')
+print('Set aside:', aware.isna().sum())
+display(raw[aware.isna()])
+
+raw['recorded_at'] = aware.dt.tz_convert('UTC')
+vitals = (raw.dropna(subset=['recorded_at'])[['patient_id', 'recorded_at', 'heart_rate']]
+          .sort_values(['patient_id', 'recorded_at'])
+          .reset_index(drop=True))
+display(vitals)
+```
+
+**Expect:** `Set aside: 1`, the P02 row at `2024-11-03 01:30`. `vitals` has 13 rows, sorted by patient and then time, all in UTC. P01's local 00:30 and 03:00 look 2.5 hours apart, but in UTC they are `04:30` and `08:00`: 3.5 hours passed, because the 01:00 hour happened twice.
+
+
+## 8. Check both clock-change days
+
+A monitor that records every hour produces 24 readings on an ordinary day. On clock-change days, count the elapsed hours in the local day instead of assuming 24.
+
+```python
+day_hours = {}
+for day in ['2024-03-10', '2024-11-03', '2024-11-04']:
+    hours = pd.date_range(day, pd.Timestamp(day) + pd.Timedelta(days=1), freq='h',
+                          tz='America/New_York', inclusive='left')
+    day_hours[day] = len(hours)
+display(pd.Series(day_hours, name='hours'))
+
+# A dose charted at 02:30 on the spring-forward night names a time that never happened
+charted = pd.Series(pd.to_datetime(['2024-03-10 01:30', '2024-03-10 02:30', '2024-03-10 03:30']))
+spring = charted.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')
+display(spring)
+print('Set aside:', spring.isna().sum())
+```
+
+**Expect:** `hours` is `23` for `2024-03-10`, `25` for `2024-11-03`, and `24` for `2024-11-04`. The 02:30 dose becomes `NaT` (`Set aside: 1`); the 01:30 and 03:30 doses keep offsets of `-05:00` and `-04:00`, one hour of elapsed time apart.
+
+
+## 9. Optional extension: clinic days and frequency inference
+
+Prerequisite: BONUS.md, Frequency Inference and Specialized Schedules. Uses `weekly_calls` from section 3 and `log` from section 2.
+
+`pd.bdate_range()` keeps weekdays only, and `pd.infer_freq()` reads the spacing back from an index.
+
+```python
+clinic_days = pd.bdate_range('2024-03-01', '2024-03-14')              # weekdays the clinic is open
+print('Clinic days:', len(clinic_days))
+print('Weekly calls:', pd.infer_freq(weekly_calls))
+print('Home weigh-ins:', pd.infer_freq(log.index))
+```
+
+**Expect:** `Clinic days: 10` (two weekends skipped). `infer_freq` returns `W-MON` for the calls and `None` for the weigh-ins: the patient steps on the scale at a slightly different minute each morning, so the log has no single frequency.
+
+
+## 10. Optional extension: select by clock time
 
 Prerequisite: BONUS.md, Time-of-Day Selection Example. Builds its own data.
 

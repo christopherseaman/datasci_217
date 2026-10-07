@@ -30,9 +30,9 @@ uv sync
 This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 
 - 12.1 (interfacing between pandas and model code)
-- 12.2 (model descriptions with Patsy formulas, including categorical data with `C()`)
+- 12.2 (model descriptions with Patsy formulas: transforms, interactions, and categorical data with `C()`)
 - 12.3 (estimating linear models with statsmodels)
-- 12.4 (introduction to scikit-learn)
+- 12.4 (introduction to scikit-learn, including cross-validation)
 
 # What Is a Model?
 
@@ -47,7 +47,7 @@ This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 
 ## The Modeling Landscape
 
-- More flexible models fit more complex patterns but can also overfit; flexibility does not guarantee better predictions.
+- More flexible models fit more complex patterns but can also overfit (fit noise in the training rows); flexibility does not guarantee better predictions.
 - Shortlist libraries by the question, then compare candidates on held-out rows from the workflow you intend to use.
 
 ### Reference Card: Which Library for Which Question
@@ -82,7 +82,7 @@ _Think of linear regression as the Derek Zoolander of modeling: simple, reliable
 
 ## Formulas and Arrays
 
-`statsmodels` has two interfaces. In a formula, read `~` as "is modeled by" and `+` as "also include this predictor", not arithmetic:
+`statsmodels` has two interfaces. The formula syntax comes from the **Patsy** library. In a formula, read `~` as "is modeled by" and `+` as "also include this predictor", not arithmetic:
 
 ```text
 Formula: smf.ols('sbp ~ age + bmi', data=clinic)                         intercept added for you
@@ -97,6 +97,7 @@ Array:   sm.OLS(clinic['sbp'], sm.add_constant(clinic[['age', 'bmi']]))  interce
 | `sm.OLS(y, sm.add_constant(X))` | Build an array-based OLS model; `sm.add_constant(X)` adds the intercept column (`import statsmodels.api as sm`). | Unfitted model |
 | `'sbp ~ ' + ' + '.join(predictors)` | Build a formula string from a list of column names. | `'sbp ~ age + bmi'` |
 | `C(column)` in a formula | Treat a column as categorical: one level becomes the reference and each other level gets its own coefficient, compared with the reference. This is Lecture 05's `drop_first=True`: with an intercept, a 0/1 column for every level would be redundant, because those columns always add up to 1. | Extra coefficient rows |
+| `np.log(age)`, `I(bmi ** 2)`, `age:bmi`, `age * bmi` in a formula | Transform a column inside the formula; `I()` makes `**` ordinary arithmetic. `a:b` adds only the interaction (product) term, so one feature's slope can depend on the other; `a * b` is shorthand for `a + b + a:b`. | Extra coefficient rows named after each term |
 | `model.fit()` | Estimate the coefficients. | Results object |
 | `results.summary()` | Print coefficients, uncertainty, fit statistics, and diagnostics. | Formatted text table |
 
@@ -126,6 +127,18 @@ display(results.params.round(2).rename('coef'))
 | bmi | 1.19 |
 
 `results.summary()` shows the same numbers under `coef`, beside `std err`, `P>|t|`, and `[0.025 0.975]` (next section), and reports R-squared, 0.536 here.
+
+Transforms and interactions name their own coefficient rows:
+
+```python
+print(smf.ols('sbp ~ age * bmi', data=clinic).fit().params.index.tolist())
+print(smf.ols('sbp ~ np.log(age) + I(bmi ** 2)', data=clinic).fit().params.index.tolist())
+```
+
+```text
+['Intercept', 'age', 'bmi', 'age:bmi']
+['Intercept', 'np.log(age)', 'I(bmi ** 2)']
+```
 
 <callout icon="⚠️" color="yellow_bg">
 	## Check `results.nobs` after every fit
@@ -281,6 +294,8 @@ To estimate performance honestly, give rows three roles:
 - **Validation set**: compares candidate models and settings.
 - **Test set**: opened once, after the choice is frozen, to report final performance.
 
+**Cross-validation** rotates the validation role through several blocks of the training rows and averages the scores, which helps when rows are scarce. With time-ordered rows, a model fit only on earlier rows scores each block (`TimeSeriesSplit`, in the next topic). The test set stays sealed.
+
 Comparing the errors on these sets shows two failure modes:
 
 - **Overfitting**: a model memorizing its training rows instead of learning patterns that carry over, like memorizing the practice exam's answers and then failing the real exam. A much lower training error than validation error can warn of it, but a changed patient mix or time period can also create a gap.
@@ -324,7 +339,7 @@ Disjoint target periods are only the first check:
 
 ### Code Snippet: A Chronological Split
 
-`visits` holds ten weekly visits from Sunday, January 4, 2026, each with `sbp_today` and the target, `sbp_next_visit`, measured a week later.
+`visits` holds ten weekly visits from Sunday, January 4, 2026, each with `sbp_today` and the target, `sbp_next_visit`, measured a week later. `sbp_today` is 138, 142, 135, 150, 147, 139, 144, 152, 141, 137; `sbp_next_visit` is the same list shifted one visit earlier and ends with 145.
 
 ```python
 visits['target_date'] = visits['visit_date'] + pd.Timedelta(days=7)
@@ -370,13 +385,14 @@ Create estimator and choose settings
 | `train_test_split(X, y, test_size=0.2, random_state=42)` | Split independent rows at random when they have no time order (`from sklearn.model_selection import train_test_split`); `random_state` makes the split repeat. Call it twice to carve out train, validation, and test. | `X_train, X_test, y_train, y_test` |
 | `model.fit(X, y)` | Learn parameters from features and targets. | The fitted estimator (`model`) |
 | `model.predict(X)` | Generate predictions for new rows. | NumPy array |
-| `model.score(X, y)` | Return the estimator's default score (R² for regressors, accuracy for classifiers). | Float |
+| `model.score(X, y)` | Return the estimator's default score (R² for regressors; for classifiers, accuracy, the fraction predicted correctly; both defined below). | Float |
+| `cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=3), scoring=...)` | Cross-validate time-ordered rows: each fold fits a fresh copy on earlier rows and scores the next block (`from sklearn.model_selection import cross_val_score, TimeSeriesSplit`). | One score per fold (array) |
 
 ## Linear Regression for Prediction
 
 `LinearRegression` fits the same least-squares line as `statsmodels` without standard errors, p-values, or diagnostics, but it plugs into pipelines beside dozens of other model families.
 
-- **Regularization**: a penalty that shrinks coefficients and can reduce overfitting when features are many or correlated. It treats every coefficient alike, so scale features first.
+- **Regularization**: a penalty that shrinks coefficients and can reduce overfitting when features are many or correlated. It treats every coefficient alike, so scale features first (`StandardScaler`, below).
 - **Ridge** (L2) penalizes the sum of squared coefficients.
 - **Lasso** (L1) penalizes the sum of absolute values, which can set some to exactly zero and so drops those features.
 
@@ -461,6 +477,7 @@ print(model.predict(clinic_valid).round(1))  # [141.6 147.7]
     - False positives (FP): flagged but not readmitted.
     - False negatives (FN): readmitted but not flagged.
     - True negatives (TN): neither.
+- **Logistic regression** (`LogisticRegression` on the linear-estimator card) turns a linear score into a probability between 0 and 1 and labels rows above 0.5 as 1.
 
 ### Reference Card: `sklearn.metrics`
 
@@ -494,6 +511,27 @@ linear_pipeline: MAE=7.20 RMSE=9.65 R2=0.510
 ```
 
 The baseline's R² is negative because it predicts the _training_ mean (140.0), which misses the validation rows' own mean (143.2).
+
+### Code Snippet: Cross-Validation Over Time
+
+Cross-validate only the training and validation rows (`target_date` before 2026-03-01); the test rows stay out. Each fold fits on earlier rows and scores the next one. Scorers are "higher is better", so MAE comes back negated.
+
+```python
+dev = visits[visits['target_date'] < '2026-03-01']
+cv = TimeSeriesSplit(n_splits=3)
+for fit_rows, score_rows in cv.split(dev):
+    print(fit_rows, score_rows)
+scores = cross_val_score(LinearRegression(), dev[['sbp_today']], dev['sbp_next_visit'],
+                         cv=cv, scoring='neg_mean_absolute_error')
+print((-scores).round(1))
+```
+
+```text
+[0 1 2 3] [4]
+[0 1 2 3 4] [5]
+[0 1 2 3 4 5] [6]
+[4.  0.7 9.6]
+```
 
 ### Code Snippet: Accuracy Hides Missed Readmissions
 
