@@ -142,6 +142,7 @@ After an install, restart the kernel if the package was already imported; Colab 
 | --- | --- | --- |
 | A bare last expression, such as `len(temps_c)` | Shown below the cell | Shown nowhere |
 | `display(data_frame)` | Draws a formatted table | Unavailable; use `print()` |
+| `display(Markdown(f"**Mean:** {mean_c:.1f} °C"))`, after `from IPython.display import Markdown` | Renders formatted text, such as a bold label beside a result | Unavailable; use `print()` |
 | Magic commands (`%pwd`, `%pip`) | Work | `SyntaxError` |
 | Values from earlier runs | Kept until the kernel restarts | Every run starts fresh |
 
