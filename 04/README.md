@@ -261,6 +261,7 @@ display(visits)
 - `df.info()`: Index range, **non-null counts** (values present rather than missing), and dtypes; prints and returns `None`.
 - `df.describe()`: Count, mean, std, min, quartiles, and max for each numeric column.
 - `df.mean(numeric_only=True)`: One mean per numeric column; text columns are left out.
+- `df1.equals(df2)`: `True` when two tables have the same labels, values, and dtypes.
 
 ### Code Snippet: Look at a DataFrame
 
@@ -346,7 +347,6 @@ display(visits[["age", "temp_c"]])
 - `df.loc["P002"]`: One whole row, as a `Series`.
 - `df.loc["P001":"P002", ["age", "temp_c"]]`: Rows and columns together; a list picks several columns.
 - `df.loc[:, ["age"]]`: `:` means every row.
-- `df1.equals(df2)`: `True` when two tables have the same labels, values, and dtypes.
 
 ### Code Snippet: Compare label and position selection
 
