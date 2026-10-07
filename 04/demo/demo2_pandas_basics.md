@@ -126,6 +126,42 @@ sbp.loc[high_at_follow_up, ["baseline_sbp", "follow_up_sbp"]]
 
 Expect `False` for `P001` and `True` for the other three, `rows: 3`, and a table of `P002`, `P003`, and `P004`.
 
+### Square brackets look up labels
+
+On a Series, `[]` means index labels, not positions. Here the labels are patient IDs, so asking for position `1` fails. This error is intentional; `try`/`except` prints it instead of stopping the notebook.
+
+```python
+baseline = sbp["baseline_sbp"]
+
+try:
+    baseline[1]
+except KeyError as error:
+    print("KeyError:", error)
+
+print("by label:", baseline["P002"])
+print("by position with .iloc:", baseline.iloc[1])
+```
+
+Expect `KeyError: 1`, then `by label: 142` and `by position with .iloc: 142`.
+
+A default `0, 1, 2, ...` index hides the difference until a filter drops a row. `plain` holds the same readings with the default index; the mask keeps rows labeled `1`, `2`, and `3`.
+
+```python
+plain = pd.DataFrame(sbp_readings, columns=["baseline_sbp", "follow_up_sbp"])
+high_plain = plain["follow_up_sbp"] >= 130
+kept = plain[high_plain]["baseline_sbp"]
+
+display(kept)
+try:
+    kept[0]
+except KeyError as error:
+    print("KeyError:", error)
+
+print("first kept row with .iloc:", kept.iloc[0])
+```
+
+Expect `kept` to show labels `1`, `2`, `3` with `142`, `150`, `118`, then `KeyError: 0` (the filter removed label `0`) and `first kept row with .iloc: 142`.
+
 ### Narrow the selection with a second condition
 
 `&` keeps rows where both masks are `True`; `|` keeps rows where either is. Written inline, each comparison needs its own parentheses. Which of those patients were below 130 mmHg at baseline, so their high reading is new?

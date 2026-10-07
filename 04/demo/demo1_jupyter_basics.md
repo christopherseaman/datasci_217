@@ -81,16 +81,19 @@ print("total doses in kernel:", total_doses)
 
 Expect `visits: 10` and `total doses: 25` from the dependent cell. The third cell, the **check cell**, reports what the kernel holds right now: expect `P005 doses in kernel: 1` and `total doses in kernel: 25`.
 
-### Show a result three ways
+### Show a result four ways
 
-`display()` drew the table above; `print()` shows the same table as plain text, and a cell's bare last line is shown without either.
+`display()` drew the table above; `print()` shows the same table as plain text, a cell's bare last line is shown without either, and `Markdown` renders formatted text.
 
 ```python
+from IPython.display import Markdown
+
 print(visits)
+display(Markdown(f"**Total doses:** {total_doses}"))
 len(visits)
 ```
 
-Expect the table in plain monospaced text, then `10` below it, shown because `len(visits)` is the cell's last line.
+Expect the table in plain monospaced text, then **Total doses:** 25 rendered with a bold label, then `10` below it, shown because `len(visits)` is the cell's last line.
 
 ### Repair the hidden dependency
 
@@ -188,7 +191,9 @@ print("Now viewing:", fake_patient)
 The printed line is now part of the notebook file. Remove it:
 
 1. Clear the outputs: VS Code **Clear All Outputs**; Colab **Edit → Clear all outputs**. The printed line disappears from under the cell.
-2. Save the notebook (`Ctrl+S`, or `Cmd+S` on macOS).
+2. Save the notebook (`Ctrl+S`, or `Cmd+S` on macOS). Saving is its own step; it does not commit anything.
 3. In VS Code, look inside the saved file: in the **Explorer**, right-click `demo1_jupyter_basics.ipynb`, choose **Open With…**, then **Text Editor**, and search (`Ctrl+F`, or `Cmd+F` on macOS) for the made-up name. The only match is the line that defines `fake_patient`; before step 1, a second sat in the cell's `"outputs"`. Colab has no text view, so this check is VS Code only.
+
+4. To keep the clean notebook, commit after saving: in VS Code, **Source Control**, a message, **Commit**; in Colab, **File → Save a copy in GitHub**.
 
 Clearing outputs does not change kernel state: `fake_patient` still exists until the kernel restarts. A made-up value is safe here; a real one should never be printed in a notebook you commit.
