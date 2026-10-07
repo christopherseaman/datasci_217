@@ -42,7 +42,8 @@ Run the cells from top to bottom; after each step, an **Expect** line says what 
 | `site` | clinic | `string` | `north`, `south`, or `west`; missing allowed but flagged |
 | `age` | age at visit (years) | `Int64` | whole number, 0 to 120; missing allowed but flagged |
 | `sbp` | systolic blood pressure (mmHg) | `Int64` | 60 to 250; missing allowed but flagged |
-| `needs_review` | follow-up needed | `boolean` | `True` exactly when a date, site, age, or SBP is missing |
+| `heart_rate` | resting pulse (beats per minute) | `Int64` | whole number, 30 to 220; missing allowed but flagged |
+| `needs_review` | follow-up needed | `boolean` | `True` exactly when a date, site, age, SBP, or heart rate is missing |
 
 ### 2. Load the raw table and keep it unchanged
 
@@ -53,20 +54,20 @@ from pathlib import Path
 
 import pandas as pd
 
-export_text = """visit_id,patient_id,visit_date,site,age,sbp
-V001,P001,2026-01-05,north,34,122
-V002,P002,2026-01-06,South,41,135
-V003,P0003,2026-01-07,north,52,128
-V004,P004,2026-7-01,west,150,118
-V005,P005,2026-02-30,south,67,141
-V006,P006,2026-02-11,east,45,NA
-V007,P007,2026-02-12,north,,131
-V007,P007,2026-02-12,north,,131
-V008,P008,2026-02-13,south,38,1320
-V009,P009,2026-02-14,west,59,210
-V010,P010,2026-02-15,north,29,117
-V011,P011,2026-02-16, North ,71,138
-V012,P012,2026-02-17,south,48,126
+export_text = """visit_id,patient_id,visit_date,site,age,sbp,heart_rate
+V001,P001,2026-01-05,north,34,122,78
+V002,P002,2026-01-06,South,41,135,82
+V003,P0003,2026-01-07,north,52,128,74
+V004,P004,2026-7-01,west,150,118,88
+V005,P005,2026-02-30,south,67,141,91
+V006,P006,2026-02-11,east,45,NA,69
+V007,P007,2026-02-12,north,,131,80
+V007,P007,2026-02-12,north,,131,80
+V008,P008,2026-02-13,south,38,1320,76
+V009,P009,2026-02-14,west,59,210,104
+V010,P010,2026-02-15,north,29,117,72
+V011,P011,2026-02-16, North ,71,138,85
+V012,P012,2026-02-17,south,48,126,79
 """
 output_dir = Path('output')
 output_dir.mkdir(exist_ok=True)
@@ -80,7 +81,7 @@ display(raw)
 print('Blank cells:', (raw == '').sum().sum(), '| cells holding the text NA:', (raw == 'NA').sum().sum())
 ```
 
-**Expect:** 13 rows, all `string`. V007's age is blank in both of its rows, and V006's SBP shows the text `NA`: `Blank cells: 2 | cells holding the text NA: 1`.
+**Expect:** 13 rows and 7 columns, all `string`. V007's age is blank in both of its rows, and V006's SBP shows the text `NA`: `Blank cells: 2 | cells holding the text NA: 1`.
 
 Record the file itself too: its name, its size, and its SHA-256 hash. Step 7 saves the hash with the decisions, so anyone can check they are cleaning the same file.
 
@@ -92,7 +93,7 @@ print(raw_path.name, raw_path.stat().st_size, 'bytes')
 print('SHA-256:', raw_sha256)
 ```
 
-**Expect:** `clinic_visits_raw.csv 482 bytes` and `SHA-256: 5275014743fb5d4055a20782c2e592a3e2d0f2fd7bda49e70464571faf56a402`. On Windows outside WSL, the file is `496 bytes` and the hash is completely different: Windows text files end each of the 14 lines with two characters instead of one, and any changed byte changes the hash.
+**Expect:** `clinic_visits_raw.csv 533 bytes` and `SHA-256: d7e9d9ad3ab3ca5a2f146853b14e432314a187c643bd14ebaf5ec0bda033de93`.
 
 ### 3. Audit with validation rules
 
@@ -103,6 +104,7 @@ allowed_sites = ['north', 'south', 'west']
 missing_codes = ['', 'NA']
 age_number = pd.to_numeric(raw['age'], errors='coerce')
 sbp_number = pd.to_numeric(raw['sbp'], errors='coerce')
+hr_number = pd.to_numeric(raw['heart_rate'], errors='coerce')
 
 rules = pd.DataFrame({
     'patient_id P+3 digits': raw['patient_id'].str.fullmatch(r'P[0-9]{3}'),
@@ -110,12 +112,13 @@ rules = pd.DataFrame({
     'site allowed': raw['site'].isin(allowed_sites),
     'age whole 0-120 or missing': raw['age'].isin(missing_codes) | (age_number.between(0, 120) & age_number.mod(1).eq(0)),
     'sbp whole 60-250 or missing': raw['sbp'].isin(missing_codes) | (sbp_number.between(60, 250) & sbp_number.mod(1).eq(0)),
+    'heart rate whole 30-220 or missing': raw['heart_rate'].isin(missing_codes) | (hr_number.between(30, 220) & hr_number.mod(1).eq(0)),
 })
 display((~rules).sum())               # rows failing each rule
 display(raw[~rules.all(axis=1)])      # rows to review
 ```
 
-**Expect:** failures `patient_id` 1 (V003's `P0003`), date text 1 (V004's `2026-7-01`), site 3 (`South`, `east`, and `' North '`), age 1 (V004's 150), and SBP 1 (V008's 1320). Six rows to review: V002, V003, V004, V006, V008, and V011.
+**Expect:** failures `patient_id` 1 (V003's `P0003`), date text 1 (V004's `2026-7-01`), site 3 (`South`, `east`, and `' North '`), age 1 (V004's 150), SBP 1 (V008's 1320), and heart rate 0. Six rows to review: V002, V003, V004, V006, V008, and V011.
 
 Two problems pass every text rule. `2026-02-30` has the right shape but is not a real date, and V007 appears twice.
 
@@ -179,12 +182,13 @@ working['site'] = working['site'].where(working['site'].isin(allowed_sites))
 working['visit_date'] = parsed
 working['age'] = age_number.where(age_number.between(0, 120) & age_number.mod(1).eq(0)).astype('Int64')
 working['sbp'] = sbp_number.where(sbp_number.between(60, 250) & sbp_number.mod(1).eq(0)).astype('Int64')
-working['needs_review'] = working[['visit_date', 'site', 'age', 'sbp']].isna().any(axis=1).astype('boolean')
+working['heart_rate'] = hr_number.where(hr_number.between(30, 220) & hr_number.mod(1).eq(0)).astype('Int64')
+working['needs_review'] = working[['visit_date', 'site', 'age', 'sbp', 'heart_rate']].isna().any(axis=1).astype('boolean')
 display(working)
 display(working.dtypes)
 ```
 
-**Expect:** 13 rows still (the repeated V007 is still there), with `<NA>` or `NaT` in place of every bad value, and `needs_review` `True` for V004, V005, V006, both V007 rows, and V008.
+**Expect:** 13 rows still (the repeated V007 is still there), with `<NA>` or `NaT` in place of every bad value, a new whole-number `heart_rate` column (`Int64`), and `needs_review` `True` for V004, V005, V006, both V007 rows, and V008.
 
 ### 7. Check the contract before saving
 
@@ -200,9 +204,10 @@ def run_checks(table):
         'sites allowed when present': table['site'].dropna().isin(allowed_sites).all(),
         'ages 0-120 when present': table['age'].dropna().between(0, 120).all(),
         'SBP 60-250 when present': table['sbp'].dropna().between(60, 250).all(),
+        'heart rate 30-220 when present': table['heart_rate'].dropna().between(30, 220).all(),
         'only the repeated row removed': len(table) == len(raw) - raw.duplicated().sum(),
         'review flags match missing values': table['needs_review'].equals(
-            table[['visit_date', 'site', 'age', 'sbp']].isna().any(axis=1).astype('boolean')),
+            table[['visit_date', 'site', 'age', 'sbp', 'heart_rate']].isna().any(axis=1).astype('boolean')),
         'raw table unchanged': raw.equals(raw_snapshot),
     })
 
@@ -252,7 +257,7 @@ decision_log.to_csv(output_dir / 'decision_log.csv', index=False)
 display(decision_log[['field', 'action', 'source', 'rows_before', 'rows_after']])
 ```
 
-**Expect:** the 8 decisions from step 5, each with `source` `output/clinic_visits_raw.csv` (`output\clinic_visits_raw.csv` on Windows outside WSL), `rows_before` 13, and `rows_after` 12. Every row also carries the step 2 hash in `source_sha256`.
+**Expect:** the 8 decisions from step 5, each with `source` `output/clinic_visits_raw.csv`, `rows_before` 13, and `rows_after` 12. Every row also carries the step 2 hash in `source_sha256`.
 
 ### 8. Read the saved file back
 
@@ -262,7 +267,7 @@ A round trip proves the file holds what the table held. Give `read_csv` the inte
 round_trip = pd.read_csv(
     output_dir / 'clinic_visits_clean.csv',
     dtype={'visit_id': 'string', 'patient_id': 'string', 'site': 'string',
-           'age': 'Int64', 'sbp': 'Int64', 'needs_review': 'boolean'},
+           'age': 'Int64', 'sbp': 'Int64', 'heart_rate': 'Int64', 'needs_review': 'boolean'},
     parse_dates=['visit_date'],
 )
 display(round_trip.dtypes)

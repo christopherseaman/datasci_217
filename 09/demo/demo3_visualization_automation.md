@@ -19,7 +19,7 @@ jupyter:
 
 A New York ICU exports charted heart rates on the local wall clock, and the export spans the night the clocks fell back.
 
-- Rebuild Demo 1's UTC panel of three patients.
+- Rebuild Demo 1's UTC panel of three patients, with each patient's ICU unit and oxygen saturation added.
 - Build lags and past-only means inside each patient's history.
 - Check which values were known at a prediction time, and split the rows chronologically.
 - Plot the panel and three years of emergency-department visits.
@@ -41,7 +41,7 @@ import seaborn as sns
 
 ## 1. Rebuild the ICU panel
 
-Demo 1, section 7 built this table: three patients' heart rates from the night of November 2 to 3, 2024, localized in New York, with the one ambiguous 01:30 reading set aside, then converted to UTC.
+Demo 1, section 7 built this table with two extra columns here, `unit` and `spo2` (oxygen saturation, %): three patients' heart rates from the night of November 2 to 3, 2024, localized in New York, with the one ambiguous 01:30 reading set aside, then converted to UTC.
 
 ```python
 raw = pd.DataFrame({
@@ -52,17 +52,19 @@ raw = pd.DataFrame({
         '2024-11-02 23:00', '2024-11-03 00:15', '2024-11-03 02:15', '2024-11-03 04:00',
     ],
     'heart_rate': [88, 94, 101, 112, 118, 72, 70, 68, 71, 69, 104, 99, 95, 92],
+    'spo2': [97, 96, 95, 93, 91, 98, 98, 97, 98, 98, 92, 93, 95, 96],
 })
+raw['unit'] = raw['patient_id'].map({'P01': 'ICU-A', 'P02': 'ICU-B', 'P03': 'ICU-A'})
 local = pd.to_datetime(raw['recorded_local'], format='%Y-%m-%d %H:%M')
 raw['recorded_at'] = (local.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')
                       .dt.tz_convert('UTC'))
-vitals = (raw.dropna(subset=['recorded_at'])[['patient_id', 'recorded_at', 'heart_rate']]
+vitals = (raw.dropna(subset=['recorded_at'])[['patient_id', 'unit', 'recorded_at', 'heart_rate', 'spo2']]
           .sort_values(['patient_id', 'recorded_at'])
           .reset_index(drop=True))
 display(vitals)
 ```
 
-**Expect:** 13 rows, sorted by patient and then time, all in UTC. P01's heart rate climbs from 88 to 118 bpm (deteriorating), P02 stays near 70, and P03 falls from 104 to 92 (recovering).
+**Expect:** 13 rows and 5 columns, sorted by patient and then time, all in UTC. P01 (`ICU-A`) heart rate climbs from 88 to 118 bpm while `spo2` slips from 97 to 91 (deteriorating), P02 (`ICU-B`) stays near 70 bpm and 98%, and P03 (`ICU-A`) falls from 104 to 92 bpm while `spo2` recovers from 92 to 96 (recovering).
 
 
 ## 2. Previous readings within each patient
@@ -108,7 +110,7 @@ print(vitals.shape)
 display(vitals[['patient_id', 'recorded_at', 'heart_rate', 'mean_prev_2', 'mean_prev_2h']])
 ```
 
-**Expect:** `(13, 7)`: the merge kept one row per reading. At P01's `08:00` reading, `mean_prev_2` is `97.5` (the 94 and 101 readings) but `mean_prev_2h` is `NaN`, because nothing was recorded in the two hours before 08:00 UTC. At P03's `09:00` reading, the two-hour mean is `95.0`, only the 07:15 reading.
+**Expect:** `(13, 9)`: the merge kept one row per reading. At P01's `08:00` reading, `mean_prev_2` is `97.5` (the 94 and 101 readings) but `mean_prev_2h` is `NaN`, because nothing was recorded in the two hours before 08:00 UTC. At P03's `09:00` reading, the two-hour mean is `95.0`, only the 07:15 reading.
 
 
 ## 4. What was known at the prediction time?
