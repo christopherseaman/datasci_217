@@ -339,7 +339,7 @@ def run() -> None:
         # The printed report says each shared fix once, says what a wrong value should be, and ends by
         # naming the checks left to fix, grouped by file.
         def printed(checks: Path) -> str:
-            return subprocess.run([sys.executable, "-B", str(checks / "check_assignment.py"), str(root)],
+            return subprocess.run([sys.executable, "-B", str(checks / "check_assignment.py"), str(root), "--local-checks"],
                                   capture_output=True, text=True, check=False).stdout
 
         write_submission(root, report=report.replace(f"{mean:.1f}", f"{mean + 4:.1f}"), followup=followup)
@@ -393,17 +393,17 @@ def run_handout_copy() -> None:
         "vitals_tools.py",
     }, sorted(handout_python)
 
-    # A fresh handout prints exactly the "Before Task 1" example README.md shows, and ends by naming every file.
-    readme = (ASSIGNMENT / "README.md").read_text(encoding="utf-8")
+    # A fresh handout prints exactly the "Before Task 1" example CHECKS.md shows, and ends by naming every file.
+    readme = (ASSIGNMENT / "CHECKS.md").read_text(encoding="utf-8")
     shown = re.search(r"Before Task 1, for example, the first check reports:\n\n```text\n(.*?)```", readme, re.DOTALL)
-    assert shown is not None, "README.md no longer shows the Before Task 1 example"
+    assert shown is not None, "CHECKS.md no longer shows the Before Task 1 example"
     with tempfile.TemporaryDirectory(dir=REPO / "scratch", prefix="a02-handout-") as temporary:
         fresh = Path(temporary) / "fresh"
         shutil.copytree(ASSIGNMENT, fresh, ignore=shutil.ignore_patterns("__pycache__"))
         for artifact in (fresh / "output").iterdir():
             if artifact.name != ".gitkeep":
                 artifact.unlink()
-        printed = subprocess.run([sys.executable, "-B", "check_assignment.py"], cwd=fresh, capture_output=True,
+        printed = subprocess.run([sys.executable, "-B", "check_assignment.py", "--local-checks"], cwd=fresh, capture_output=True,
                                  text=True, check=False).stdout
     assert shown.group(1) in printed, (shown.group(1), printed)
     assert printed.endswith(
@@ -411,7 +411,7 @@ def run_handout_copy() -> None:
         "output/vitals_report.txt (all 7 checks); output/followup_list.txt (all 3 checks).\n"), printed
 
     print(f"Assignment 02 handout: all {len(files)} check files match 02/assignment_checks byte for byte, and a "
-          "fresh handout prints the README's Before Task 1 example.")
+          "fresh handout prints CHECKS.md's Before Task 1 example.")
 
 
 if __name__ == "__main__":

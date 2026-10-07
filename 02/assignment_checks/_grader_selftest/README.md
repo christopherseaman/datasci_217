@@ -27,8 +27,8 @@ For the handout: every file the workflow lists in `CHECKS_FILES` is
 byte-identical in `02/assignment/` and here, so students run locally exactly
 the checks GitHub runs; the list names every checker file here, so a download
 never misses a module; the handout's only other Python files are the two
-scaffolds the student completes; and a fresh handout prints the README's
-"Before Task 1" example exactly.
+scaffolds the student completes; and a fresh handout prints CHECKS.md's
+"Before Task 1" example exactly (the self-test runs the checker with `--local-checks`).
 
 It is not a separate scoring mode; graders use the supplied checker from a
 trusted copy.

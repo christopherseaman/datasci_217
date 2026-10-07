@@ -15,6 +15,7 @@ what the GitHub run reports.
 
 from pathlib import Path
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -22,6 +23,9 @@ import sys
 import tempfile
 
 import numpy as np
+
+# Self-tests grade with the working copy, never the copy downloaded from GitHub.
+os.environ["DS217_LOCAL_CHECKS"] = "1"
 
 
 CHECKS = Path(__file__).resolve().parents[1]
@@ -955,10 +959,11 @@ def run() -> None:
                 artifact.unlink()
         shown = re.search(
             r"Before Task 1, for example, the first two checks report:\n\n```text\n(.*?)```",
-            (FORK / "README.md").read_text(encoding="utf-8"),
+            (FORK / "CHECKS.md").read_text(encoding="utf-8"),
             re.DOTALL,
         )
-        assert shown is not None, "README.md no longer shows the Before Task 1 example"
+        assert "(CHECKS.md)" in (FORK / "README.md").read_text(encoding="utf-8"), "README.md no longer links CHECKS.md"
+        assert shown is not None, "CHECKS.md no longer shows the Before Task 1 example"
         printed = subprocess.run(
             [sys.executable, "-B", "check_assignment.py"], cwd=fresh, capture_output=True, text=True, check=False
         ).stdout

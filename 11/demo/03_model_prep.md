@@ -14,16 +14,20 @@ jupyter:
 
 # Demo 3: Analyze training patterns and freeze the split
 
-Before any model, fix which target hours each part of the data may be used for, then explore patterns in the training rows only. The split follows the target's local time: training before May 2023, validation in May, and test in June. The test rows stay unopened here; Demo 4 uses validation to choose a model and opens test exactly once. It uses Lecture 11 up to the demo break, plus aggregation (Lecture 08), zoned split boundaries and leakage (Lecture 10), and JSON (Lecture 07). Assignment 11's Q5 and Q6 follow the same pattern with sensor data.
+Fix which target hours each part of the data may be used for, then explore the training rows only.
 
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
+- Split by the target's local time: training before May 2023, validation in May, test in June.
+- Test rows stay unopened here.
+- Save the policy as a split manifest.
+
+Run the cells from top to bottom; an **Expect** line after each step says what you should see.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-This notebook reads the release manifest and the zone-hour panel. This cell is supplied plumbing, as in Demo 1: it keeps any file already in `data/` and downloads the rest.
+This notebook reads the release manifest and the zone-hour panel. This supplied cell keeps any file already in `data/` and downloads the rest.
 
 ```python
 import hashlib
@@ -47,7 +51,7 @@ for filename in ["demo_release_manifest.json", "yellow_taxi_2023_h1_zone_hour_co
 
 ## 1. Rebuild the model table
 
-This supplied cell repeats Demo 2's first step and its `build_model_table()` function unchanged: verify the panel against the manifest, then add the calendar and past-only history features.
+This supplied cell repeats Demo 2's panel check and `build_model_table()` unchanged.
 
 ```python
 manifest_path = data_dir / "demo_release_manifest.json"
@@ -90,7 +94,8 @@ print("Model table rows:", f"{len(model_table):,}")
 
 ## 2. Split by target time
 
-The boundaries are local midnights in New York, written as aware timestamps (Lecture 10's "Splitting on Target Time" card). The target times stay in UTC, the table's key, and pandas compares the instants, so nothing needs converting: local midnight on 1 May is 04:00 UTC.
+- The boundaries are local midnights in New York, written as time-zone-aware timestamps.
+- The target times stay in UTC, the table's key; pandas compares the instants, so nothing needs converting (local midnight on 1 May is 04:00 UTC).
 
 ```python
 validation_start = pd.Timestamp("2023-05-01", tz="America/New_York")
@@ -114,11 +119,17 @@ assert train["target_hour_utc"].max() < validation["target_hour_utc"].min()
 assert validation["target_hour_utc"].max() < test["target_hour_utc"].min()
 ```
 
-**Expect:** the split table from Lecture 11: `train` 32,532 rows from `2023-01-08 00:00:00-05:00` to `2023-04-30 23:00:00-04:00`, `validation` 8,928 rows for May, and `test` 8,640 rows for June, each starting at local midnight. Every row lands in exactly one split, and the three periods do not overlap.
+**Expect:** a three-row table:
+
+- `train`: 32,532 rows, `2023-01-08 00:00:00-05:00` to `2023-04-30 23:00:00-04:00`.
+- `validation`: 8,928 rows for May.
+- `test`: 8,640 rows for June.
+
+Each split starts at local midnight; every row lands in exactly one split and the periods do not overlap.
 
 ## 3. Look for patterns without peeking at test
 
-These summaries use `train` only (Lecture 08's named aggregation). Choosing features from validation or test rows would leak those periods into decisions they are meant to judge.
+These named aggregations use `train` only. Choosing features from validation or test rows would leak those periods into decisions they are meant to judge.
 
 ```python
 train_hour_pattern = train.groupby("hour_of_day", as_index=False).agg(
@@ -135,11 +146,21 @@ display(train_zone_pattern.sort_values("mean_pickups", ascending=False).round(1)
 print("Pattern-analysis rows used:", f"{len(train):,} train, 0 validation, 0 test")
 ```
 
-**Expect:** a 24-row hour table whose mean falls from 75.1 pickups per zone-hour at local hour 0 to about 10.0 at 04:00, then climbs to its peak of 293.2 at 18:00; and a 12-row zone table led by zone 132 (JFK Airport) at 219.4 and ending with zone 239 at 124.6. The strong daily cycle is why hour of day is a feature, and the gap between zones is why each zone gets its own category rather than being treated as a number.
+**Expect:**
+
+- A 24-row hour table: the mean falls from 75.1 pickups per zone-hour at local hour 0 to about 10.0 at 04:00, then peaks at 293.2 at 18:00.
+- A 12-row zone table: zone 132 (JFK Airport) leads at 219.4; zone 239 ends at 124.6.
+
+The daily cycle is why hour of day is a feature; the gap between zones is why each zone gets its own category rather than being treated as a number.
 
 ## 4. Check feature availability and leakage
 
-At the start of target hour _t_, the zone and the calendar fields are known, and every lag and rolling feature reads only hours before _t_. This teaching forecast assumes each completed hour's count is available immediately; a real reporting delay would require older lags and a label-availability check (Lecture 10). The current `pickup_count` is the target, so it must never appear among the features.
+At the start of target hour _t_:
+
+- The zone and calendar fields are known.
+- Every lag and rolling feature reads only hours before _t_.
+- This forecast assumes each completed hour's count is available immediately; a real reporting delay would require older lags and a label-availability check.
+- The current `pickup_count` is the target and must never appear among the features.
 
 ```python
 FEATURES = [
@@ -163,11 +184,11 @@ assert "target_hour_utc" not in FEATURES and "target_hour_local" not in FEATURES
 assert model_table[FEATURES].notna().all().all()
 ```
 
-**Expect:** a 10-row table with `True` in every `available_before_target_hour` cell, and no error: the target and the raw timestamps are not features, and no feature is missing in any row.
+**Expect:** a 10-row table with `True` in every `available_before_target_hour` cell, and no error: the target and raw timestamps are not features, and no feature is missing.
 
 ## 5. Save a compact split manifest
 
-A **split manifest** records the policy (grain, target, metrics, boundaries, and features) and the resulting row counts, rather than saving three large copies of the rows. `json.dump()` writes it as readable JSON (Lecture 07).
+A **split manifest** records the policy (grain, target, metrics, boundaries, features) and the row counts, instead of three copies of the rows. `json.dump()` writes it as readable JSON.
 
 ```python
 split_manifest = {
@@ -193,5 +214,3 @@ print("Final checks passed: training-only analysis, fixed split, and leakage aud
 ```
 
 **Expect:** `Saved output/03_split_manifest.json`, then `{"train": 32532, "validation": 8928, "test": 8640}` and `Final checks passed: training-only analysis, fixed split, and leakage audit.` Open the JSON file to see the whole policy.
-
-Demo 4 uses these boundaries and features to compare a baseline with one model.

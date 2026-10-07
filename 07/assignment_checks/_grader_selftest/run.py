@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -30,6 +31,9 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+
+# Self-tests grade with the working copy, never the copy downloaded from GitHub.
+os.environ["DS217_LOCAL_CHECKS"] = "1"
 
 CHECKS = Path(__file__).resolve().parents[1]
 HANDOUT = CHECKS.parent / "assignment"
@@ -494,19 +498,21 @@ def run() -> None:
 
     # A fresh handout prints exactly the "Before Task 1" example README.md shows, and a clean run ends as shown.
     readme = (HANDOUT / "README.md").read_text(encoding="utf-8")
-    shown = re.search(r"Before Task 1, for example, the first check reports:\n\n```text\n(.*?)```", readme, re.DOTALL)
-    assert shown is not None, "README.md no longer shows the Before Task 1 example"
+    checks_md = (HANDOUT / "CHECKS.md").read_text(encoding="utf-8")
+    assert "(CHECKS.md)" in readme, "README.md no longer links CHECKS.md"
+    shown = re.search(r"Before Task 1, for example, the first check reports:\n\n```text\n(.*?)```", checks_md, re.DOTALL)
+    assert shown is not None, "CHECKS.md no longer shows the Before Task 1 example"
     printed = subprocess.run(
         [sys.executable, "-B", "check_assignment.py"], cwd=HANDOUT, capture_output=True, text=True, check=False
     ).stdout
     assert shown.group(1) in printed, (shown.group(1), printed)
-    last = re.search(r"A clean run ends with:\n\n```text\n(\[PASS\][^\n]*)\n", readme)
-    assert last is not None and last.group(1).endswith(NAMES[-1]), "README's clean-run example ends on the last check"
+    last = re.search(r"A clean run ends with:\n\n```text\n(\[PASS\][^\n]*)\n", checks_md)
+    assert last is not None and last.group(1).endswith(NAMES[-1]), "CHECKS.md's clean-run example ends on the last check"
 
-    # README's completion contract agrees with the checks, name for name and point for point.
+    # CHECKS.md's completion contract agrees with the checks, name for name and point for point.
     contract = {
         name: int(points)
-        for name, points in re.findall(r"^\| `output/[^|]+\| [^|]+\| ([^|]+) \| (\d+) \|$", readme, re.MULTILINE)
+        for name, points in re.findall(r"^\| `output/[^|]+\| [^|]+\| ([^|]+) \| (\d+) \|$", checks_md, re.MULTILINE)
     }
     assert contract == CHECK_POINTS, (contract, CHECK_POINTS)
 

@@ -17,10 +17,15 @@ jupyter:
 
 # Demo 3: Time Zones, Past-Only Patient Features, and Time-Series Plots
 
-A New York ICU exports charted heart rates on the local wall clock, and the export spans the night the clocks fell back. You convert clinic times to UTC, set aside the clock readings that happened twice, build lags and past-only means inside each patient's history, check which values were known at a prediction time, split the rows into a chronological holdout, and plot the panel and three years of emergency-department visits. Everything here comes from Lecture 09, plus Lectures 01 to 08. Patient values and visit counts are synthetic.
+A New York ICU exports charted heart rates on the local wall clock, and the export spans the night the clocks fell back.
 
+- Convert clinic times to UTC and set aside the clock readings that happened twice.
+- Build lags and past-only means inside each patient's history.
+- Check which values were known at a prediction time, and split the rows chronologically.
+- Plot the panel and three years of emergency-department visits.
+- Patient values and visit counts are synthetic.
 
-Run the cells from top to bottom; after each step, the text says what to expect.
+Run the cells from top to bottom.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -36,7 +41,7 @@ import seaborn as sns
 
 ## 1. One instant on several clinic clocks
 
-A telehealth consult starts at 14:00 UTC. `tz_convert()` shows what each site's wall clock read at that instant. Zone names come from the IANA time-zone database, the standard list of world time zones, such as `'America/New_York'`.
+A telehealth consult starts at 14:00 UTC. `tz_convert()` shows what each site's wall clock read at that instant. Zone names come from the **IANA time-zone database**, the standard list of world time zones, such as `'America/New_York'`.
 
 ```python
 consult = pd.Timestamp('2024-03-15 14:00', tz='UTC')
@@ -84,10 +89,10 @@ raw = pd.DataFrame({
     ],
     'heart_rate': [88, 94, 101, 112, 118, 72, 70, 68, 71, 69, 104, 99, 95, 92],
 })
-print(raw.shape)
+display(raw)
 ```
 
-**Expect:** `(14, 3)`. P01's heart rate climbs from 88 to 118 bpm (deteriorating), P02 stays near 70, and P03 falls from 104 to 92 (recovering).
+**Expect:** 14 rows, 3 columns. P01's heart rate climbs from 88 to 118 bpm (deteriorating), P02 stays near 70, and P03 falls from 104 to 92 (recovering).
 
 Localize with `ambiguous='NaT'` and `nonexistent='NaT'`, so pandas marks the uncertain reading instead of guessing, and report how many were set aside before dropping them.
 
@@ -112,10 +117,12 @@ display(vitals)
 A monitor that records every hour produces 24 readings on an ordinary day. On clock-change days, count the elapsed hours in the local day instead of assuming 24.
 
 ```python
+day_hours = {}
 for day in ['2024-03-10', '2024-11-03', '2024-11-04']:
     hours = pd.date_range(day, pd.Timestamp(day) + pd.Timedelta(days=1), freq='h',
                           tz='America/New_York', inclusive='left')
-    print(day, len(hours), 'hours')
+    day_hours[day] = len(hours)
+display(pd.Series(day_hours, name='hours'))
 
 # A dose charted at 02:30 on the spring-forward night names a time that never happened
 charted = pd.Series(pd.to_datetime(['2024-03-10 01:30', '2024-03-10 02:30', '2024-03-10 03:30']))
@@ -124,7 +131,7 @@ display(spring)
 print('Set aside:', spring.isna().sum())
 ```
 
-**Expect:** `2024-03-10 23 hours`, `2024-11-03 25 hours`, and `2024-11-04 24 hours`. The 02:30 dose becomes `NaT` (`Set aside: 1`); the 01:30 and 03:30 doses keep offsets of `-05:00` and `-04:00`, one hour of elapsed time apart.
+**Expect:** `hours` is `23` for `2024-03-10`, `25` for `2024-11-03`, and `24` for `2024-11-04`. The 02:30 dose becomes `NaT` (`Set aside: 1`); the 01:30 and 03:30 doses keep offsets of `-05:00` and `-04:00`, one hour of elapsed time apart.
 
 
 ## 5. Previous readings within each patient
@@ -243,7 +250,7 @@ plt.show()
 
 ## 10. Three years of flu-like illness visits
 
-Independent reference: `infer_freq()` below uses Frequency Inference from BONUS.md; the date plots, reporting counts, and rolling mean use the main lecture.
+Optional extension inside this section: `infer_freq()` needs BONUS.md, Frequency Inference. Everything else uses the main lecture.
 
 The emergency department counts visits for influenza-like illness (fever with cough or sore throat) every day. Visits peak each winter. The reporting feed failed for two weeks in February 2023, so those days have no rows at all.
 
@@ -313,9 +320,11 @@ plt.show()
 
 ## 11. Daily weights: lags, leads, and a fluid-gain alert
 
-Independent practice: the lag, lead, difference, and alert use the main lecture. The frequency diagnostic and `pct_change()` use the optional Frequency Inference and Percentage Changes topics in BONUS.md. This section builds its own data.
+Heart-failure patients are commonly told to call the clinic if their weight rises by more than about 1 kg in a day or 2 kg in a week, because fluid is building up. This section builds one patient's daily weight for January through March, with a fluid-gain episode in March.
 
-Heart-failure patients are commonly told to call the clinic if their weight rises by more than about 1 kg in a day or 2 kg in a week, because fluid is building up. Here is one patient's daily weight for January through March, with a fluid-gain episode in March. `rng` makes the same "random" values on every run (Lecture 03), so your numbers match the ones below.
+- The lag, lead, difference, and alert use the main lecture.
+- Optional: the frequency check and `pct_change()` need BONUS.md, Frequency Inference and Percentage Changes.
+- `rng` makes the same "random" values on every run (Lecture 03), so your numbers match the ones below.
 
 ```python
 rng = np.random.default_rng(42)

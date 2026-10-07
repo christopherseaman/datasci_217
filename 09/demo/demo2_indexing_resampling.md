@@ -17,10 +17,15 @@ jupyter:
 
 # Demo 2: Resampling Summaries, Patient Grids, and Rolling Windows
 
-An ICU patient's bedside monitor records heart rate and temperature every hour for four weeks. The monitor was unplugged for part of one day, and the patient ran a fever for three days. You summarize the readings by day and week, count what the monitor missed, lay sparse charted readings onto an hourly grid, resample two patients separately, and smooth the daily series with rolling windows and an EWM. Everything here comes from Lecture 09 up to the second demo break, plus Lectures 01 to 08. Patient values are synthetic.
+An ICU patient's bedside monitor records vitals every hour for four weeks. The monitor was unplugged for part of one day, and the patient ran a fever for three days.
 
+- Summarize the readings by day and week, and count what the monitor missed.
+- Lay sparse charted readings onto an hourly grid.
+- Resample two patients separately.
+- Smooth the daily series with rolling windows and an EWM.
+- Patient values are synthetic.
 
-Run the cells from top to bottom; after each step, the text says what to expect.
+Run the cells from top to bottom.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -35,7 +40,10 @@ import pandas as pd
 
 ## 1. One patient's monitor export
 
-The monitor writes one row per hour for January 1 to 28, 2024. Two things happened that the summaries should reveal: a fever from January 15 through 17 (temperature up 2.5 °F, heart rate up 15 beats per minute), and a 10-hour disconnection on January 5, from 08:00 through 17:00, when the monitor wrote no rows at all. `rng` makes the same "random" values on every run (Lecture 03).
+The monitor writes one row per hour for January 1 to 28, 2024, with heart rate (bpm), temperature (°F), and oxygen saturation (`spo2`, %). `rng` makes the same "random" values on every run (Lecture 03). Two events are built in for the summaries to reveal:
+
+- A fever from January 15 through 17: temperature up 2.5 °F, heart rate up 15 bpm.
+- A 10-hour disconnection on January 5, 08:00 through 17:00: no rows at all.
 
 ```python
 rng = np.random.default_rng(42)
@@ -43,6 +51,7 @@ hours = pd.date_range('2024-01-01', periods=24 * 28, freq='h')
 monitor = pd.DataFrame({
     'heart_rate': rng.normal(78, 4, len(hours)).round().astype(int),  # mean 78, standard deviation 4
     'temperature': (98.4 + rng.normal(0, 0.2, len(hours))).round(1),
+    'spo2': rng.integers(95, 100, len(hours)),
 }, index=hours)
 
 fever = (monitor.index >= '2024-01-15') & (monitor.index < '2024-01-18')
@@ -56,9 +65,12 @@ print(monitor.shape)
 display(monitor.loc['2024-01-05 06:00':'2024-01-05 19:00'])
 ```
 
-**Expect:** `(662, 2)`: 28 days × 24 hours is 672, minus the 10 missing hours. The January 5 rows jump straight from `07:00` to `18:00`.
+**Expect:** `(662, 3)`: 28 days × 24 hours is 672, minus the 10 missing hours. The January 5 rows jump straight from `07:00` to `18:00`.
 
-Two masks built the story. Comparing a DatetimeIndex with a date string compares instants, so `fever` is `True` from January 15 at 00:00 up to, but not including, January 18. `isin()` (Lecture 05) marks the 10 unplugged hours, and `~` keeps every other row.
+Two masks built the story:
+
+- `fever`: comparing a `DatetimeIndex` with a date string compares instants, so it is `True` from January 15 at 00:00 up to, but not including, January 18.
+- `isin()` (Lecture 05) marks the 10 unplugged hours, and `~` keeps every other row.
 
 
 ## 2. Daily summaries: averages, extremes, and counts
@@ -87,7 +99,7 @@ display(daily_named.loc['2024-01-13':'2024-01-19'].round(1))
 
 **Expect:** the fever days, January 15 to 17, show `mean_hr` near 93 (`93.2`, `93.6`, `92.7`) and `max_temp` above 101 °F (`101.2`, `101.4`, `101.5`); the days around them sit near 78 bpm and 98.8 °F.
 
-A dictionary asks for different summaries of different columns. Weeks end on Sunday, and January 1, 2024 was a Monday, so the four weeks are complete.
+A dictionary asks for different summaries of different columns. Weeks end on Sunday and January 1, 2024 was a Monday, so the four weeks are complete.
 
 ```python
 weekly = monitor.resample('W').agg({'heart_rate': ['mean', 'max'], 'temperature': ['mean', 'max']})
@@ -121,7 +133,7 @@ display(hourly.isna().sum())
 
 ## 4. Two patients: resample each separately
 
-Now a step-down unit's charted vitals for two patients, P01 and P02, taken at irregular hours. P01 is deteriorating; P02 is stable. At 12:00 a nurse started a row for P01 but did not record the heart rate.
+A step-down unit charts vitals for two patients at irregular hours. P01 is deteriorating; P02 is stable. At 12:00 a nurse started a row for P01 but did not record the heart rate.
 
 ```python
 charted = pd.DataFrame({
@@ -131,11 +143,12 @@ charted = pd.DataFrame({
         '2024-01-15 09:00', '2024-01-15 10:00', '2024-01-15 11:00', '2024-01-15 14:00',
     ]),
     'heart_rate': [88, 92, np.nan, 104, 110, 71, 69, 74, 72],
+    'spo2': [96, 95, 94, 93, 91, 98, 98, 97, 98],
 })
 display(charted)
 ```
 
-**Expect:** nine rows, five for P01 and four for P02; row 2 (P01 at 12:00) has `NaN` heart rate.
+**Expect:** nine rows with `spo2` beside `heart_rate`, five for P01 and four for P02; row 2 (P01 at 12:00) has `NaN` heart rate.
 
 Resampling the whole table averages the two patients together.
 
@@ -205,7 +218,7 @@ display(runs.groupby('patient_id')['gap_hours'].agg(['count', 'max']))
 
 ## 6. Compare two recent windows
 
-Use P02's charted readings from section 4. Its last two readings are at 11:00 and 14:00; the earlier one is outside the two hours ending at 14:00.
+Use P02's charted readings from section 4. Its last two readings are at 11:00 and 14:00; the 11:00 one is outside the two hours ending at 14:00.
 
 ```python
 patient = charted[charted['patient_id'] == 'P02'].set_index('recorded_at')['heart_rate'].sort_index()
@@ -222,7 +235,7 @@ display(patient_windows)
 
 ## 7. Rolling windows and EWM on the daily means
 
-Back to the four-week monitor. Smooth the daily mean heart rate four ways and watch how each responds to the fever.
+Smooth the daily mean heart rate four ways and watch how each responds to the fever.
 
 ```python
 daily_hr = monitor['heart_rate'].resample('D').mean()
@@ -289,7 +302,7 @@ plt.show()
 
 ## 10. Home weights: calendar, weekly, and monthly reports
 
-Build the same daily home-weight history used by Demo 3. This notebook constructs it here so the reports run independently.
+Build a daily home-weight history for one heart-failure patient.
 
 ```python
 rng = np.random.default_rng(42)
@@ -310,18 +323,18 @@ Partial dates select whole months, and a date slice keeps both ends. `resample()
 
 ```python
 print(home_weights.loc['2024-02'].shape)
-print(home_weights.loc['2024-03-08':'2024-03-16', 'weight_kg'].tolist())
+display(home_weights.loc['2024-03-08':'2024-03-16'].T)
 
 display(home_weights['weight_kg'].resample('W').mean().head(3).round(2))
 display(home_weights['weight_kg'].resample('ME').agg(['mean', 'max']).round(2))
 ```
 
-**Expect:** `(29, 1)` for February, then nine March weights from `81.9` to `82.1`. Weekly means are labeled with the Sunday that ends each week: `2024-01-07`, `2024-01-14`, `2024-01-21`. The monthly table has three rows; March's `max` is `84.4`, against `82.3` in January and `82.2` in February.
+**Expect:** `(29, 1)` for February, then a one-row table of nine March weights from `81.9` to `82.1`. Weekly means are labeled with the Sunday that ends each week: `2024-01-07`, `2024-01-14`, `2024-01-21`. The monthly table has three rows; March's `max` is `84.4`, against `82.3` in January and `82.2` in February.
 
 
 ## 11. ICU summaries and exact bin boundaries
 
-First build the same one-week ICU monitor used in Demo 1's optional clock filters; no earlier notebook output is needed.
+Build a one-week hourly ICU monitor.
 
 ```python
 rng = np.random.default_rng(42)

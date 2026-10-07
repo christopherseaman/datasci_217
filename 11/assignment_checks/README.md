@@ -9,6 +9,8 @@ uv run --isolated --project 11/assignment --locked \
     python3 11/assignment_checks/check_assignment.py path/to/submission --json
 ```
 
+By default the checker downloads the latest `grading.py` from the course repository's `main` into `.checks/` and falls back to the bundled copy; `--local-checks` or `DS217_LOCAL_CHECKS=1` uses the bundled copy.
+
 The first prints a readable report; `--json` prints the `datasci217/grading-result/v1` report instead. `uv run --isolated --project 11/assignment --locked` runs the command in a temporary environment built from the handout's `pyproject.toml` and `uv.lock`, so it leaves no `.venv` in the handout folder.
 
 The report covers the 75 points graded from files; the other 25 come from human review of `report.md` and the notebooks, five 5-point categories that the handout README's Completion contract lists with the report sections and notebook cells each one reads. The command exits 0 only when every check passes, 1 when any does not, and 2 when the supplied release is missing or changed, so judge a run by its JSON, not its exit status. A run takes about 15 seconds.

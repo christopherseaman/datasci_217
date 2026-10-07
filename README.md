@@ -43,7 +43,7 @@ The Fall 2026 repositories are listed in [assignments.json](assignments.json) fo
 
 ### Grading
 
-Homework handouts ship the course's artifact checks. From a homework directory, run `python3 check_assignment.py`; GitHub Actions downloads the current whole checker set and runs it through pytest. On PowerShell or Git Bash in a uv environment, use `python` instead of `python3`. Automated grading reads saved submission artifacts without running notebooks or inspecting how students wrote their solutions. Exam handouts ship no checks; their course-owned checks run after the deadline.
+Homework handouts ship the course's artifact checks. From a homework directory, run `python3 check_assignment.py`; GitHub Actions downloads the current whole checker set and runs it through pytest. Automated grading reads saved submission artifacts without running notebooks or inspecting how students wrote their solutions. Exam handouts ship no checks; their course-owned checks run after the deadline.
 
 Points are awarded only for documented student grading materials, not supplied notebooks, input files, grader files, or repository bookkeeping. A grading target can contain just the required outputs and written responses; extra files are ignored. Expected results use the trusted grader's input data. Untouched scaffolds earn zero. Run `uv run scripts/test_assignment_grading.py` to verify the empty/scaffold contract across all eleven assignments; each course-owned `_grader_selftest` exercises completed and incorrect artifacts.
 

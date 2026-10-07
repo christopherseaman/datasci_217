@@ -13,13 +13,20 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 [Live Demo Guide](demo/DEMO_GUIDE.md)
 
-- McKinney, _Python for Data Analysis_, Chapter 2: §2.1 “The Python Interpreter” and §2.3 “Python Language Basics” (syntax, scalar types, and control flow).
-- Shotts, _The Linux Command Line_, Chapters 1–4 (the shell, navigation, exploring files, and file operations), Chapter 6 (output redirection), and Chapter 24 (a first shell script).
-- MIT _Missing Semester_: “Course Overview + The Shell” and “Version Control (Git)” (the basic Git/GitHub workflow).
+This lecture covers:
+
+- McKinney, _Python for Data Analysis_ (3rd ed.), Chapter 2:
+    - 2.1 (the Python interpreter)
+    - 2.3 (Python language basics: syntax, scalar types, and control flow)
+- Shotts, _The Linux Command Line_:
+    - Chapters 1–4 (the shell, navigation, exploring files, and file operations)
+    - Chapter 6 (output redirection)
+    - Chapter 24 (a first shell script)
+- MIT _Missing Semester_:
+    - Course Overview + The Shell
+    - Version Control (Git), the basic Git/GitHub workflow
 
 **Quick references**
-
-[WSL Troubleshooting](../wsl_troubleshooting.md)
 
 - [Command-line (Bash) cheat sheet](https://cheatsheets.zip/bash)
 - [Python cheat sheet](https://cheatsheets.zip/python)
@@ -74,7 +81,7 @@ VS Code's integrated terminal normally uses Zsh. macOS **Terminal** (**Cmd+Space
 
 [GitHub Codespaces](https://docs.github.com/en/codespaces/developing-in-a-codespace/creating-a-codespace-for-a-repository) runs VS Code and a Linux terminal in your browser, with no local VS Code, WSL, or Homebrew.
 
-1. Create your GitHub account and fork the assignment repository using **Starting with GitHub** and **Fork and Clone** below.
+1. Create your GitHub account and fork the repository using **Starting with GitHub** and **Fork and Clone** below.
 2. On **your fork**: **Code → Codespaces → Create codespace on main**. Your repository opens automatically; skip cloning.
 3. In **Terminal → New Terminal**, run the uv/Python installation below, check `python3 --version` for **3.13.x**, then choose **Python: Select Interpreter**.
 4. Edit, run, commit, and sync in the browser as in desktop VS Code. Stop the codespace when finished; usage allowances are limited.
@@ -83,7 +90,7 @@ VS Code's integrated terminal normally uses Zsh. macOS **Terminal** (**Cmd+Space
 
 ### macOS, Windows WSL, and Codespaces
 
-Use [uv](https://docs.astral.sh/uv/guides/install-python/) to install Python **3.13**. Run these commands in **VS Code's integrated terminal**. On Windows, use the **WSL-connected window**, not PowerShell. Lecture 03 covers uv environments and packages.
+Use [uv](https://docs.astral.sh/uv/guides/install-python/) to install Python **3.13**. Run these commands in **VS Code's integrated terminal**. On Windows, use the **WSL-connected window**, not PowerShell.
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -100,7 +107,7 @@ python3 --version
 
 Expect `Python 3.13.x`.
 
-[Homebrew](https://brew.sh/) is recommended for other macOS command-line tools; use uv for the course Python. Native Windows PowerShell setup is in BONUS.md; the course shell demos still require WSL.
+[Homebrew](https://brew.sh/) is recommended for other macOS command-line tools; use uv for the course Python. The course shell demos require WSL on Windows.
 
 ![xkcd 1654: Universal Install Script. What installing looks like when you do not know which installer your system actually uses](media/xkcd_1654.png)
 
@@ -108,7 +115,7 @@ Expect `Python 3.13.x`.
 
 ![IDE Choice Guidance](media/IDE_choice.png)
 
-We use VS Code: free, on every platform, and it puts the editor, terminal, debugger, and Git interface in one window. Microsoft's Python extension adds Python support, and `code filename.py` opens a file from the terminal. On macOS, first open the Command Palette and run **Shell Command: Install 'code' command in PATH**, then reopen the terminal ([macOS setup](https://code.visualstudio.com/docs/setup/mac#launch-vs-code-from-the-command-line)). Other editors work too, including Sublime Text, PyCharm, nano, and Vim; see BONUS.md.
+We use VS Code: free, on every platform, and it puts the editor, terminal, debugger, and Git interface in one window. Microsoft's Python extension adds Python support, and `code filename.py` opens a file from the terminal. On macOS, first open the Command Palette and run **Shell Command: Install 'code' command in PATH**, then reopen the terminal ([macOS setup](https://code.visualstudio.com/docs/setup/mac#launch-vs-code-from-the-command-line)). Other editors work too, including Sublime Text, PyCharm, nano, and Vim.
 
 ### VS Code Basics
 
@@ -142,21 +149,21 @@ git config user.name "Your Name"
 git config user.email "YOUR GITHUB NOREPLY EMAIL"
 ```
 
-## Getting the First Assignment
+## Getting a Copy of a Repository
 
-A **fork** is your copy of a repository on GitHub; a **clone** is its working copy on your computer. Assignment 01 starts with a fork, so your changes go to your own account.
+A **fork** is your copy of a repository on GitHub; a **clone** is its working copy on your computer. Working in a fork sends your changes to your own account.
 
 ![Copy your fork's HTTPS URL from the Code menu](assignment/media/github-clone-url.png)
 
 ### Reference Card: Fork and Clone
 
-- On the assignment repository: **Fork → Create fork**, with your account as Owner.
+- On the original repository: **Fork → Create fork**, with your account as Owner.
 - On **your fork**: **Code → HTTPS**, then copy the URL; its owner should be your username.
 - In VS Code: Command Palette → **Git: Clone**, paste that URL, choose a folder, and open the clone. On Windows, stay in **WSL: Ubuntu** and choose a folder in your Linux home directory.
 
-Demo 1 shows each screen. Keep assignment work in the cloned folder.
+Keep your work in the cloned folder.
 
-## Submit Your Assignment Files
+## Save Your Work to GitHub
 
 A **commit** saves a version of your files. **Staging** selects which changes go into that commit; unstaged edits stay on your computer. **Push** sends local commits to GitHub. VS Code's **Sync Changes** pushes yours and pulls any incoming commits.
 
@@ -169,11 +176,9 @@ A **commit** saves a version of your files. **Staging** selects which changes go
 ### Reference Card: Save, Commit, and Sync
 
 - Save your files, then review each changed file in **Source Control**.
-- Stage with **+**, enter a message such as `Complete Assignment 01`, and select **Commit**.
+- Stage with **+**, enter a message such as `Add readiness report`, and select **Commit**.
 - Select **Sync Changes** and sign in if prompted.
 - On GitHub, open the committed files to verify their contents. **Actions** shows the automatic checks; enable workflows once if a new fork prompts you.
-
-For Assignment 01, include the completed scripts, both files in `terminal-practice/`, and both in `output/`. Your fork is the submission; there is no pull request to the course repository. Demo 1 practices the workflow.
 
 ### GitHub Website: Upload Files
 
@@ -181,8 +186,8 @@ For Assignment 01, include the completed scripts, both files in `terminal-practi
 
 ![GitHub's Add file menu with Upload files highlighted.](assignment/media/github-upload-files.png)
 
-2. Drag in the completed scripts and the `terminal-practice` and `output` folders, not the whole project folder. Keep the folders intact so paths such as `output/readiness.txt` stay correct.
-3. Enter `Complete Assignment 01`, choose **Commit directly to the main branch**, and click **Commit changes**. A web upload commits on GitHub; no separate push is needed.
+2. Drag in the changed files and folders, not the whole project folder. Keep the folders intact so paths such as `output/report.txt` stay correct.
+3. Enter a commit message, choose **Commit directly to the main branch**, and click **Commit changes**. A web upload commits on GitHub; no separate push is needed.
 
 <synced_block url="https://app.notion.com/p/271d9fdd1a1a805784e1fe68dc985696#3dcd9fdd1a1a806b8fb4fffbf0fdabab">
 
@@ -399,7 +404,7 @@ python3
 python3 script.py
 ```
 
-The first command starts interactive Python; the second runs a saved script. These are shell commands; native Windows PowerShell uses `python`. Enter `exit()` at the `>>>` prompt to leave the REPL.
+The first command starts interactive Python; the second runs a saved script. Enter `exit()` at the `>>>` prompt to leave the REPL.
 
 #### Interactive Mode Example
 
@@ -493,8 +498,6 @@ average_grade = 87.3     # float: has a decimal part
 height_meters = 1.75
 ```
 
-Scientific notation, such as `1.4e9`, and the `math` module are in BONUS.md.
-
 ### Text: Essential for Data Labels and Categories
 
 #### Reference Card: Strings
@@ -542,7 +545,7 @@ print(type(mysterious_data)) # <class 'str'>: aha! That's the problem
 
 ### Lists: Ordered Collections
 
-A **list** holds several values in order inside square brackets, such as one patient's systolic readings across three visits: `[118, 142, 131]`. For now, create a list, count its items with `len()`, and visit each item with a `for` loop (Control Structures, below). Lecture 02 adds indexing and slicing.
+A **list** holds several values in order inside square brackets, such as one patient's systolic readings across three visits: `[118, 142, 131]`. For now, create a list, count its items with `len()`, and visit each item with a `for` loop (Control Structures, below).
 
 #### Reference Card: Lists So Far
 
@@ -710,7 +713,7 @@ Can drive
 
 ## For Loops
 
-A list supplies its items in order, and `range()` supplies integers; Lecture 02 covers lists in more depth.
+A list supplies its items in order, and `range()` supplies integers.
 
 ### Code Snippet: Basic For Loops
 
@@ -787,8 +790,6 @@ for reading in [128, 142, 118]:
     print(reading)   # 142
     break           # stop after the first reading at or above 130
 ```
-
-Demo 4.3 practices each form separately.
 
 # Debugging and Error Handling Basics
 
@@ -896,6 +897,6 @@ age = int(raw_age)
 print("Age:", age)
 ```
 
-Do not replace unknown ages with invented numbers just to make the error disappear. Lecture 02 introduces `try`/`except` for responding to expected failures.
+Do not replace unknown ages with invented numbers just to make the error disappear.
 
 # LIVE DEMO!

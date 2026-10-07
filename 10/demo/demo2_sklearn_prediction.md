@@ -18,9 +18,16 @@ jupyter:
 
 # Demo 2: Honest Prediction with scikit-learn
 
-Demo 1 asked how disease progression _relates_ to BMI in 442 diabetes patients. This demo asks a prediction question about the same records: from a new patient's baseline measurements, how close can we get to their progression score one year later? You split the patients into training, validation, and test rows, set a baseline to beat, write down a selection rule, compare linear pipelines, read what the chosen one relies on, turn its predictions into a yes/no flag, and evaluate it on the test rows exactly once. Everything here comes from Lecture 10 up to the second demo break, plus Lectures 01 to 09. The records are real and de-identified.
+The same 442 diabetes patients, now with a prediction question: from baseline measurements, how close can we get to a patient's progression score one year later?
 
-Run the cells from top to bottom; after each step, the text says what to expect.
+- Split the patients into training, validation, and test rows.
+- Set a baseline to beat and write down a selection rule.
+- Compare linear pipelines and read what the chosen one relies on.
+- Turn its predictions into a yes/no flag.
+- Evaluate on the test rows exactly once.
+- **Data:** the records are real and de-identified.
+
+Run the cells from top to bottom.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -29,9 +36,10 @@ Run the cells from top to bottom; after each step, the text says what to expect.
 
 ## 1. Load the diabetes records
 
-The same table as Demo 1: ten baseline measurements per patient (age, sex, BMI, average blood pressure, and six blood tests) and the progression score one year later, which runs from 25 to 346. Every error below is in those score points.
+Ten baseline measurements per patient (age, sex, BMI, average blood pressure, and six blood tests) and the progression score one year later, which runs from 25 to 346. Every error below is in those score points.
 
 ```python
+from IPython.display import Markdown
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -54,13 +62,14 @@ feature_cols = ['age', 'sex', 'bmi', 'bp', 'tc', 'ldl', 'hdl', 'tch', 'ltg', 'gl
 X = diabetes[feature_cols]
 y = diabetes['progression']
 print(X.shape, y.shape)
+display(diabetes.head(5))
 ```
 
-**Expect:** `(442, 10) (442,)`: ten feature columns in `X` and one target column in `y`.
+**Expect:** `(442, 10) (442,)`: ten feature columns in `X` and one target column in `y`, then the first five patients as a table: age 59.0, 48.0, 72.0, 24.0, 50.0 with `progression` 151.0, 75.0, 141.0, 206.0, 135.0.
 
 ## 2. Train, validation, and test rows
 
-These patients were all measured at one baseline and have no time order, so a seeded random split is fair here; Demo 1's weekly readings needed a chronological one. Set the test rows aside first, then split the rest into training and validation rows.
+These patients were all measured at one baseline and have no time order, so a seeded random split is fair here. Set the test rows aside first, then split the rest into training and validation rows.
 
 ```python
 # Reserve 20% as the untouched test set, then take 25% of the rest for validation.
@@ -111,21 +120,22 @@ preprocess = ColumnTransformer([('numeric', numeric, ['age', 'ldl']),
 clinic_model = Pipeline([('preprocess', preprocess), ('model', Ridge(alpha=1.0))])
 clinic_model.fit(clinic_train, clinic_sbp)
 
-print('What the model sees for the two validation rows:')
-print(clinic_model.named_steps['preprocess'].transform(clinic_valid).round(2))
+seen = clinic_model.named_steps['preprocess'].transform(clinic_valid)
+display(Markdown('**What the model sees for the two validation rows**'))
+display(pd.DataFrame(seen, columns=['age_scaled', 'ldl_scaled', 'site_north', 'site_south']).round(2))
 print('Predicted SBP:', clinic_model.predict(clinic_valid).round(1))
 ```
 
 **Expect:**
 
 ```text
-What the model sees for the two validation rows:
-[[0.   0.1  0.   0.  ]
- [0.94 1.71 1.   0.  ]]
+   age_scaled  ldl_scaled  site_north  site_south
+0        0.00        0.10         0.0         0.0
+1        0.94        1.71         1.0         0.0
 Predicted SBP: [141.6 147.7]
 ```
 
-Read the columns as scaled age, scaled LDL, `site_north`, `site_south`. The first row's age, 58, equals the training mean, so it scales to 0.0; its missing LDL was filled with the training median, 130 mg/dL, which scales to 0.1; and its unseen site, `west`, became all zeros. The second row is a `north` patient, `[1, 0]`. `named_steps['preprocess']` reached inside the fitted pipeline to show this.
+The first row's age, 58, equals the training mean, so it scales to 0.0; its missing LDL was filled with the training median, 130 mg/dL, which scales to 0.1; and its unseen site, `west`, became all zeros. The second row is a `north` patient, `[1, 0]`. `named_steps['preprocess']` reached inside the fitted pipeline to show this.
 
 ## 4. A baseline, and the rule for choosing
 
@@ -179,8 +189,8 @@ linear.fit(X_train, y_train)
 score_candidate('linear regression', linear)
 
 print(f"Training R²: {r2_score(y_train, linear.predict(X_train)):.3f}")
-print("\nCoefficients on scaled features (score points per standard deviation):")
-display(pd.Series(linear.named_steps['model'].coef_, index=feature_cols).round(1))
+display(Markdown('**Coefficients on scaled features (score points per standard deviation)**'))
+display(pd.DataFrame({'linear': linear.named_steps['model'].coef_}, index=feature_cols).round(1))
 ```
 
 **Expect:**
@@ -188,8 +198,7 @@ display(pd.Series(linear.named_steps['model'].coef_, index=feature_cols).round(1
 ```text
 linear regression: MAE=42.94  RMSE=51.19  R²=0.522
 Training R²: 0.520
-
-Coefficients on scaled features (score points per standard deviation):
+     linear
 age     1.1
 sex   -11.4
 bmi    25.1
@@ -200,7 +209,6 @@ hdl    10.8
 tch    15.0
 ltg    37.3
 glu     3.8
-dtype: float64
 ```
 
 - **Better than guessing:** the typical miss drops from 64 points to 43.
@@ -226,7 +234,7 @@ coefficients = pd.DataFrame({
     'lasso': lasso.named_steps['model'].coef_,
 }, index=feature_cols)
 display(coefficients.round(1))
-print(f"\nFeatures Lasso keeps: {(coefficients['lasso'] != 0).sum()} of {len(feature_cols)}")
+print(f"Features Lasso keeps: {(coefficients['lasso'] != 0).sum()} of {len(feature_cols)}")
 ```
 
 **Expect:**
@@ -245,7 +253,6 @@ hdl    10.8   -5.8   -9.7
 tch    15.0    9.3    0.0
 ltg    37.3   22.5   23.7
 glu     3.8    4.4    2.6
-
 Features Lasso keeps: 7 of 10
 ```
 
@@ -276,7 +283,7 @@ Apply Part 4's rule. The Lasso has the lowest MAE, 42.451. Linear regression (42
 
 ## 8. Look at the validation predictions
 
-Two plots of the selected pipeline's validation predictions, with Lecture 07's Axes methods and Lecture 09's `axhline`: predicted against actual, where perfect predictions would sit on the dashed diagonal, and residuals against predictions, where we hope for a shapeless cloud around zero.
+Two plots of the selected pipeline's validation predictions: predicted against actual, where perfect predictions would sit on the dashed diagonal, and residuals against predictions, where we hope for a shapeless cloud around zero.
 
 ```python
 lasso_valid_pred = lasso.predict(X_valid)
@@ -357,8 +364,9 @@ for name, predicted in [('lasso_flag', lasso_flag), ('never_flag', never_flag)]:
     })
 display(pd.DataFrame(binary_rows).set_index('policy').round(3))
 
-print("\nLasso flag, confusion matrix [[TN, FP], [FN, TP]]:")
-print(confusion_matrix(actual_high, lasso_flag))
+display(Markdown('**Lasso flag, confusion matrix**'))
+display(pd.DataFrame(confusion_matrix(actual_high, lasso_flag),
+                     index=['actual below', 'actual above'], columns=['flagged no', 'flagged yes']))
 ```
 
 **Expect:**
@@ -370,9 +378,9 @@ policy
 lasso_flag     0.753      0.706   0.414
 never_flag     0.674      0.000   0.000
 
-Lasso flag, confusion matrix [[TN, FP], [FN, TP]]:
-[[55  5]
- [17 12]]
+              flagged no  flagged yes
+actual below          55            5
+actual above          17           12
 ```
 
 Never flagging anyone is right 67.4% of the time and finds nobody: accuracy mostly measures how common the negatives are. `zero_division=0` keeps `precision_score` from warning about the 0/0 that policy produces. The Lasso flag is right when it fires 12 times out of 17 (precision 0.706), but it misses 17 of the 29 patients who went above 200 (recall 0.414). Whether a missed patient costs more than an unneeded appointment is the clinic's call, and that answer decides whether 200 is the right point to flag at.
@@ -389,10 +397,12 @@ final_model = Pipeline([('scale', StandardScaler()), ('model', Lasso(alpha=2.0))
 final_model.fit(X_train_valid, y_train_valid)
 
 final_test_pred = final_model.predict(X_test)
-print("\nFinal test performance, frozen Lasso pipeline:")
-print(f"Test MAE:  {mean_absolute_error(y_test, final_test_pred):.2f}")
-print(f"Test RMSE: {np.sqrt(mean_squared_error(y_test, final_test_pred)):.2f}")
-print(f"Test R²:   {r2_score(y_test, final_test_pred):.3f}")
+display(Markdown('**Final test performance, frozen Lasso pipeline**'))
+display(pd.DataFrame({
+    'test_MAE': [mean_absolute_error(y_test, final_test_pred)],
+    'test_RMSE': [np.sqrt(mean_squared_error(y_test, final_test_pred))],
+    'test_R2': [r2_score(y_test, final_test_pred)],
+}, index=['frozen Lasso']).round(3))
 ```
 
 **Expect:**
@@ -400,11 +410,8 @@ print(f"Test R²:   {r2_score(y_test, final_test_pred):.3f}")
 ```text
 Frozen steps: ['scale', 'model']
 Frozen alpha: 2.0
-
-Final test performance, frozen Lasso pipeline:
-Test MAE:  42.84
-Test RMSE: 52.90
-Test R²:   0.472
+              test_MAE  test_RMSE  test_R2
+frozen Lasso     42.84     52.904    0.472
 ```
 
 The test MAE (42.84) is close to the validation MAE (42.45); the test R² (0.472) is a little below the validation R² (0.525). A small drop is the normal cost of having _chosen_ on the validation rows, and these are also 89 different patients. This is the number that goes in the report, with no going back to try another `alpha`.

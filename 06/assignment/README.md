@@ -1,32 +1,8 @@
 # Assignment 06: Merge, Stack, and Reshape Clinic Data
 
-## Files
+## Overview
 
-```text
-assignment/
-├── assignment.ipynb        # the notebook you complete
-├── data/                   # supplied files; keep them exactly as handed out
-│   ├── specimens.csv
-│   ├── clinics_history.csv
-│   ├── specimens_batch_a.csv
-│   ├── specimens_batch_b.csv
-│   ├── transit_times.csv
-│   └── sbp_wide.csv
-├── pyproject.toml          # supplied: the project's packages, numpy, pandas, and ipykernel
-├── uv.lock                 # supplied: the exact versions `uv sync` installs
-├── .python-version         # supplied: tells uv to use Python 3.13
-├── check_assignment.py     # supplied: run it to check your work; keep unchanged
-├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
-├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
-└── output/
-    ├── specimen_merge_audit.csv  # you generate in Task 1.2
-    ├── combined_specimens.csv    # you generate in Task 2.1
-    ├── aligned_features.csv      # you generate in Task 2.3
-    ├── sbp_long.csv              # you generate in Task 3.1
-    └── sbp_round_trip.csv        # you generate in Task 3.2
-```
-
-## The data
+Merge specimens with their clinic records, stack two delivery batches, line up volumes with transit times, and reshape blood pressure readings between wide and long, saving each result for the checks.
 
 All six files are synthetic. A hospital's central lab receives specimens collected at its neighborhood clinics.
 
@@ -51,32 +27,50 @@ P201,148,136
 
 ## Setup
 
-Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open it. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect the six CSV files above. This clone is a new repository, so before your first commit run Lecture 02's two `git config user.name "..."` and `git config user.email "..."` lines in this terminal, with your name and GitHub noreply email.
+1. Fork the assignment repository on GitHub, clone your fork as in Lecture 01, and open the cloned folder itself.
+2. In the integrated terminal, create the environment, activate it, and install the packages `pyproject.toml` and `uv.lock` list. Do not run `uv init`: the project files already exist.
 
-> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. Git Bash and PowerShell also work: there the environment activates with `source .venv/Scripts/activate` (Git Bash) or `.\.venv\Scripts\Activate.ps1` (PowerShell), and you type `python` wherever these instructions say `python3`.
+    ```bash
+    uv venv --seed
+    source .venv/bin/activate
+    uv sync
+    ```
 
-The handout lists numpy, pandas, and ipykernel in `pyproject.toml`, records their exact versions in `uv.lock`, and names Python 3.13 in `.python-version`, so `uv sync` rebuilds the environment, as in Lecture 03's "Recreate from the Records" snippet. Create the project environment, activate it, and sync:
+    - Expect: `uv sync` lists `+ pandas==3.0.5` and `+ ipykernel==6.29.5` among the packages it installs.
+3. Open `assignment.ipynb`, click **Select Kernel**, and choose the Python inside this project's `.venv`.
+4. Run the notebook's first two code cells.
+    - Expect: `pandas: 3.0.5` and `data folder found: True`, then `specimens: (7, 6)` first among the shapes. `False` means the notebook is not running from the assignment folder.
 
-```bash
-uv venv --seed
-source .venv/bin/activate
-uv sync
+## Files
+
+```text
+assignment/
+├── assignment.ipynb        # the notebook you complete
+├── data/                   # supplied files; keep them exactly as handed out
+│   ├── specimens.csv
+│   ├── clinics_history.csv
+│   ├── specimens_batch_a.csv
+│   ├── specimens_batch_b.csv
+│   ├── transit_times.csv
+│   └── sbp_wide.csv
+├── pyproject.toml          # supplied: the project's packages, numpy, pandas, and ipykernel
+├── uv.lock                 # supplied: the exact versions `uv sync` installs
+├── .python-version         # supplied: tells uv to use Python 3.13
+├── CHECKS.md               # supplied: what each check looks for
+├── check_assignment.py     # supplied: run it to check your work; keep unchanged
+├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
+├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
+└── output/
+    ├── specimen_merge_audit.csv  # you generate in Task 1.2
+    ├── combined_specimens.csv    # you generate in Task 2.1
+    ├── aligned_features.csv      # you generate in Task 2.3
+    ├── sbp_long.csv              # you generate in Task 3.1
+    └── sbp_round_trip.csv        # you generate in Task 3.2
 ```
-
-`uv sync` lists the packages it installs, including `+ pandas==3.0.5` and `+ ipykernel==6.29.5`. **ipykernel** is the package that lets a notebook run on this environment's Python (Lecture 04), so the notebook needs nothing more. Do not run `uv init`: the handout's `pyproject.toml` already exists. If you ever need another package, add it with `uv add` (Lecture 03), because the next `uv sync` removes anything installed with `uv pip install`.
-
-If `.venv` already exists, for example when you run these lines a second time, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next two lines work as before. Answering `y` gives a new, empty environment, so run `uv sync` again after it.
-
-> **Checkpoint: the environment**
-> With it active, `python3 -c "import pandas as pd; print(pd.__version__)"` prints `3.0.5`, the version `pyproject.toml` lists.
-
-Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept.
-
-Run the notebook's first two code cells. The first prints the pandas version and `data folder found: True`; `False` means the notebook is not running from the assignment directory, so open the folder itself in VS Code, not a folder above it. The second reads the six files and prints their shapes, starting with `specimens: (7, 6)`.
 
 ## Task 1: Merge specimens with their clinics
 
-Each specimen should get the name and region of the clinic that collected it: a left merge of `specimens` with the clinic records on `clinic_id`, many specimens to one clinic. Lecture 06's "Checking Merge Cardinality" section walks through the same steps.
+Each specimen should get the name and region of the clinic that collected it: a left merge of `specimens` with the clinic records on `clinic_id`, many specimens to one clinic.
 
 ### 1.1 Find the repeated clinic key
 
@@ -84,7 +78,7 @@ In the Task 1.1 cells:
 
 1. Set `specimen_ids_unique` to `specimens["specimen_id"].is_unique`. It prints `specimen_id unique: True`.
 2. Select every `clinics_history` row whose `clinic_id` appears more than once, with `duplicated(subset=["clinic_id"], keep=False)` as the mask, and name the result `repeated_clinic_rows`. It shows K01's two rows: `Bayview Annex` (retired) and `Bayview Clinic` (current).
-3. In the next cell, try the merge with the contract written down, and catch the error it raises with `try`/`except` (Lecture 02), as Demo 1's core step 2 does. The lecture's "Catch a Broken Merge Contract" snippet shows the merge that raises it:
+3. In the next cell, try the merge with the contract written down, and catch the error it raises with `try`/`except` (Lecture 02). The lecture's "Catch a Broken Merge Contract" snippet shows the merge that raises it:
 
 ```python
 try:
@@ -168,78 +162,12 @@ In the Task 3.2 cell:
 This step saves nothing. P202's follow-up blood pressure was rechecked, so the supplied lines at the top of the cell add a second P202 `followup` reading, 147 mmHg, in `sbp_rechecked`.
 
 1. Select every `sbp_rechecked` row whose `patient_id` and `visit` pair appears more than once, with `duplicated(subset=["patient_id", "visit"], keep=False)` as the mask, and name the result `repeated_pairs`. It shows two rows: P202 `followup` 151 and P202 `followup` 147.
-2. Try the Task 3.2 pivot on `sbp_rechecked` inside `try`, catch `ValueError`, and print it, as Demo 2's practice step 7 does. The lecture's "Find the Pair that Stops a Pivot" snippet explains the error. It prints `ValueError: Index contains duplicate entries, cannot reshape`.
+2. Try the Task 3.2 pivot on `sbp_rechecked` inside `try`, catch `ValueError`, and print it. The lecture's "Find the Pair that Stops a Pivot" snippet explains the error. It prints `ValueError: Index contains duplicate entries, cannot reshape`.
 
 ## Check your work
 
-Click **Restart**, then **Run All**. The last cell prints `Fresh-run check passed`, or names the task to fix. Then, with the environment active, run the checks from the assignment directory:
+- Click **Restart**, then **Run All**.
+- The last cell prints your score and what to fix, using the latest checks from the course repository: the same checks GitHub runs on each push.
+- Commit `assignment.ipynb` and the `output/` files, then push.
 
-```bash
-python3 check_assignment.py
-```
-
-`check_assignment.py` runs the same checks GitHub runs. They read only the five CSV files in `output/` and compare them with the supplied data. They never run or read your notebook, so any way of producing correct files counts.
-
-Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, such as a missing file, they say `(same fix as above)`. Before Task 1, for example, the first check reports:
-
-```text
-[FIX ]  0/8  merge audit: columns
-         output/specimen_merge_audit.csv is missing; run the Task 1.2 cell to write it, then commit it.
-```
-
-Below the score, `Left to fix` lists the checks still failing and the points they are worth. Fix what they name, rerun the notebook and then the checks, and repeat until every check passes. A clean run ends with:
-
-```text
-[PASS]  4/4  SBP round trip: followup values
-
-Score: 100/100
-All checks passed.
-```
-
-How the files are read:
-
-- Each check is scored on its own, so one mistake costs only that check's points. The round trip also accepts the pivot of your own long table, so a mistake in Task 3.1 is not charged again in Task 3.2.
-- Any two nonempty source labels that distinguish batch A from batch B count.
-- Spacing, line endings, quoting, column order, and row order never cost points.
-- Numbers are compared as numbers, so `5`, `5.0`, and `5.00` are the same value.
-- IDs, labels, and column names are compared in any letter case.
-- An empty cell may be written empty or as `NaN`.
-- A leading column of row numbers, which `to_csv()` writes when `index=False` is left out, is ignored.
-- A first column with no header that holds the IDs, which `to_csv()` writes for an index without a name, counts as the ID column.
-
-Every push also runs GitHub Actions, which downloads the course's current copy of the checks and reruns them on the files you committed and pushed. That run is what counts, and a check corrected after handout reaches you there on your next push.
-
-### Completion contract
-
-Grading totals 100 points and reads these files relative to the assignment root.
-
-| Artifact | Complete when | Check | Points |
-| --- | --- | --- | ---: |
-| `output/specimen_merge_audit.csv` | Its columns are the nine in the Task 1.2 header line; `record_status` may be there too. | merge audit: columns | 8 |
-| `output/specimen_merge_audit.csv` | It holds SP101 to SP107, once each. | merge audit: one row per specimen | 8 |
-| `output/specimen_merge_audit.csv` | Each specimen's own columns match `data/specimens.csv`. | merge audit: specimen values | 8 |
-| `output/specimen_merge_audit.csv` | Each specimen has its clinic's current `clinic_name` and `region`, and SP106's are empty. | merge audit: current clinic names and regions | 8 |
-| `output/specimen_merge_audit.csv` | `_merge` is `left_only` for SP106 and `both` for the other six. | merge audit: _merge indicator | 8 |
-| `output/combined_specimens.csv` | Its columns are the seven in the Task 2.1 header line. | combined specimens: columns | 3 |
-| `output/combined_specimens.csv` | It holds SP101 to SP107, once each. | combined specimens: one row per specimen | 4 |
-| `output/combined_specimens.csv` | Each row's values match its batch file. | combined specimens: specimen values | 4 |
-| `output/combined_specimens.csv` | `source_partition` consistently distinguishes SP101 to SP104 from SP105 to SP107 with two nonempty labels, such as `batch_a` and `batch_b`. | combined specimens: source_partition labels | 4 |
-| `output/aligned_features.csv` | Its columns are `specimen_id`, `volume_ml`, and `transit_min`. | aligned features: columns | 3 |
-| `output/aligned_features.csv` | It holds SP101 to SP104 and SP108, once each. | aligned features: one row per specimen | 4 |
-| `output/aligned_features.csv` | `volume_ml` matches batch A, and SP108's is empty. | aligned features: volume_ml values | 4 |
-| `output/aligned_features.csv` | `transit_min` matches `data/transit_times.csv`, and SP101's and SP104's are empty. | aligned features: transit_min values | 4 |
-| `output/sbp_long.csv` | Its columns are `patient_id`, `visit`, and `sbp`. | SBP long: columns | 5 |
-| `output/sbp_long.csv` | It holds each of the eight patient and visit pairs once. | SBP long: one row per patient and visit | 5 |
-| `output/sbp_long.csv` | Each `sbp` matches that patient's reading at that visit in `data/sbp_wide.csv`. | SBP long: sbp values | 5 |
-| `output/sbp_round_trip.csv` | Its columns are `patient_id`, `baseline`, and `followup`. | SBP round trip: columns | 3 |
-| `output/sbp_round_trip.csv` | It holds P201 to P204, once each. | SBP round trip: one row per patient | 4 |
-| `output/sbp_round_trip.csv` | Each `baseline` matches `data/sbp_wide.csv`. | SBP round trip: baseline values | 4 |
-| `output/sbp_round_trip.csv` | Each `followup` matches `data/sbp_wide.csv`. | SBP round trip: followup values | 4 |
-
-Extra files are ignored.
-
-## Submit
-
-Before you commit a notebook, follow Lecture 04's "Before You Commit a Notebook": click **Clear All Outputs**, then save. In VS Code Source Control, stage `assignment.ipynb` and the five files in `output/`. Commit with `Complete Assignment 06 notebook` and select **Sync Changes**. Keep `.venv/` out of the commit; `.gitignore` already lists it.
-
-Confirm the notebook and the five CSV files on `main` in the repository browser. GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. If a run cannot download the course's current checks, it grades with the copy in your repository and says so in its log. If your local run and the GitHub run ever disagree, the GitHub run counts, because it uses the course's current checks. If a required VS Code control is unavailable, record its message and contact the instructor.
+What each check looks for: [CHECKS.md](CHECKS.md)

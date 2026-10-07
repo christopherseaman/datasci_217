@@ -17,9 +17,15 @@ jupyter:
 
 # Demo 2: pandas plotting, seaborn, and density
 
-Quick pandas plots of clinic visit tables, then seaborn on real health-spending data, a correlation matrix saved to CSV, a check on what a seaborn line actually averages, and density plots of fasting glucose. Everything here comes from Lecture 07 up to the second demo break, plus Lectures 01 to 06. The clinic tables and glucose values are synthetic; `healthexp` is real OECD data, supplied as a CSV for this demo.
+- seaborn on real health-spending data.
+- Quick pandas plots of clinic visit tables.
+- A correlation matrix saved to CSV.
+- A check on what a seaborn line actually averages.
+- Density plots of fasting glucose.
 
-Run the cells from top to bottom; after each step, the text says what to expect.
+The clinic tables and glucose values are synthetic; `healthexp` is real OECD data, supplied as a CSV for this demo.
+
+Run the cells from top to bottom.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -89,6 +95,7 @@ weekly_raw = pd.DataFrame({
     'North': [12, 15, 21, 30, 42, 51, 47, 36, 24, 17],
     'South': [10, 11, 14, 18, 23, 29, 34, 33, 27, 20],
 })
+display(weekly_raw.head())
 ax = weekly_raw.plot(marker='o', ylabel='Flu visits', title='Wrong: row numbers on x')
 plt.show()
 print(weekly_raw.index.tolist())
@@ -135,6 +142,7 @@ monthly = pd.DataFrame({
     'South': [260, 270, 265, 280, 290, 300],
     'East': [150, 160, 170, 165, 180, 175],
 }).set_index('month')
+display(monthly)
 
 axes = monthly.plot(subplots=True, sharey=True, figsize=(8, 7),
                     title='Primary-care visits by month', ylabel='Visits', grid=True)
@@ -218,6 +226,7 @@ readings = pd.DataFrame({
     'patient_id': ['P01', 'P02', 'P03'] * 4,
     'systolic_bp': [152, 138, 145, 148, 136, 141, 143, 135, 139, 140, 131, 136],
 })
+display(readings.head(6))
 
 fig, axes = plt.subplots(1, 2, figsize=(11, 4), sharey=True)
 sns.scatterplot(data=readings, x='week', y='systolic_bp', ax=axes[0])
@@ -228,11 +237,12 @@ axes[1].set(title='One point per week: the mean', xlabel='Week', ylabel='Mean sy
 axes[1].set_xticks([1, 2, 3, 4])
 plt.show()
 
-print(axes[1].get_lines()[0].get_ydata())
-print(readings.loc[readings['week'] == 1, 'systolic_bp'].mean())
+line_y = axes[1].get_lines()[0].get_ydata()
+by_hand = [readings.loc[readings['week'] == w, 'systolic_bp'].mean() for w in [1, 2, 3, 4]]
+display(pd.DataFrame({'line_y': line_y, 'mean_by_hand': by_hand}, index=[1, 2, 3, 4]))
 ```
 
-Expect 12 points on the left and a four-point line on the right. The line's y-values print as `[145.         141.66666667 139.         135.66666667]`, and the week-1 mean computed by hand is `145.0`, the first of them. The unit displayed changed from one reading to a weekly mean, so the right panel's axis label says so.
+Expect 12 points on the left and a four-point line on the right. The table lists the line's y-values beside the weekly means computed by hand; the two columns match (145.0, 141.67, 139.0, 135.67). The unit displayed changed from one reading to a weekly mean, so the right panel's axis label says so.
 
 ### 7. Density plots: a distribution a mean would hide
 
@@ -243,11 +253,10 @@ rng = np.random.default_rng(42)
 without_diabetes = pd.Series(95 + 8 * rng.standard_normal(300))   # mg/dL
 with_diabetes = pd.Series(165 + 25 * rng.standard_normal(100))    # mg/dL
 glucose = pd.concat([without_diabetes, with_diabetes], ignore_index=True)
-print(len(glucose))
-print(round(glucose.mean(), 1), round(glucose.median(), 1))
+display(pd.Series({'count': len(glucose), 'mean': round(glucose.mean(), 1), 'median': round(glucose.median(), 1)}, dtype=object))
 ```
 
-Expect `400`, then `112.9 97.5`: a mean of 112.9 mg/dL and a median of 97.5 mg/dL. Neither number shows that there are two groups; a density plot does.
+Expect a table with count 400, mean 112.9 mg/dL, and median 97.5 mg/dL. Neither number shows that there are two groups; a density plot does.
 
 ```python
 fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))

@@ -29,6 +29,7 @@ from __future__ import annotations
 from pathlib import Path
 import codecs
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -36,6 +37,9 @@ import sys
 import tempfile
 
 import pandas as pd
+
+# Self-tests grade with the working copy, never the copy downloaded from GitHub.
+os.environ["DS217_LOCAL_CHECKS"] = "1"
 
 
 CHECKS = Path(__file__).resolve().parents[1]
@@ -168,18 +172,20 @@ def check_supplied_data() -> None:
 def check_readme() -> None:
     """Each README checkpoint names its artifact's header, and the contract table matches the checks."""
     readme = (HANDOUT / "README.md").read_text(encoding="utf-8")
+    checks_md = (HANDOUT / "CHECKS.md").read_text(encoding="utf-8")
+    assert "(CHECKS.md)" in readme, "README.md no longer links CHECKS.md"
     checkpoints = re.findall(r"> \*\*Checkpoint: `([^`]+)`\*\*\n> The header line `([^`]+)`", readme)
     assert {path: header for path, header in checkpoints} == {
         path: ",".join(artifact.columns) for path, artifact in ARTIFACTS.items()
     }, checkpoints
-    contract = re.findall(r"^\| `(output/[^`]+)` \| .* \| ([^|]+) \| (\d+) \|$", readme, re.M)
+    contract = re.findall(r"^\| `(output/[^`]+)` \| .* \| ([^|]+) \| (\d+) \|$", checks_md, re.M)
     assert [(name.strip(), int(points)) for _, name, points in contract] == list(zip(NAMES, POINTS)), contract
     for path, name, _ in contract:
         assert name.strip().startswith(PREFIX[path]), (path, name)
     first = value_checks.CHECKS[0].name
-    assert f"[FIX ]  0/{POINTS[0]}  {first}\n         {value_checks._missing(HANDOUT, value_checks.CLINIC_COUNTS)}" in readme
+    assert f"[FIX ]  0/{POINTS[0]}  {first}\n         {value_checks._missing(HANDOUT, value_checks.CLINIC_COUNTS)}" in checks_md
     last = value_checks.CHECKS[-1].name
-    assert f"[PASS]  {POINTS[-1]}/{POINTS[-1]}  {last}\n\nScore: 100/100" in readme
+    assert f"[PASS]  {POINTS[-1]}/{POINTS[-1]}  {last}\n\nScore: 100/100" in checks_md
     # The README and the notebook number their tasks the same way.
     notebook = json.loads((HANDOUT / "assignment.ipynb").read_text(encoding="utf-8"))
     notebook_headings = [

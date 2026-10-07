@@ -23,17 +23,24 @@ source .venv/bin/activate
 uv sync
 ```
 
-Then open the `09-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
+→ Then open the `09-demo` folder in VS Code.
 
 ![xkcd 2048: Curve-Fitting. One scatter plot, twelve fitted curves, twelve different messages; not every pattern in a time series is meaningful.](media/xkcd_2048.png)
 
-This lecture covers:
+This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 
-- McKinney, _Python for Data Analysis_ (3rd ed.): 9.2 (line and bar plots), 11.1 to 11.4 (dates and times, indexing and selection, date ranges, frequencies, shifting, and time zones), 11.6 (resampling), and 11.7 (moving window functions)
+- 9.2 (line and bar plots)
+- 11.1 (date and time data types and tools)
+- 11.2 (time series basics: indexing and selection)
+- 11.3 (date ranges, frequencies, and shifting)
+- 11.4 (time zone handling)
+- 11.6 (resampling and frequency conversion)
+- 11.7 (moving window functions)
 
 # Understanding Time Series Data
 
-A **time series** is one measurement recorded again and again over time, such as an ICU patient's heart rate every minute or a hospital's daily flu admissions. Its row order carries meaning, so questions like "what was the previous reading?" and "how many admissions this week?" need tools that read dates and times.
+- **Time series**: one measurement recorded again and again over time, such as an ICU patient's heart rate every minute or a hospital's daily flu admissions.
+- Row order carries meaning: "what was the previous reading?" and "how many admissions this week?" need tools that read dates and times.
 
 ## Forms of Time
 
@@ -54,7 +61,9 @@ A calendar rule does not always mean equal elapsed time: months have different l
 
 ## Single Series and Panels
 
-A **single series** is one history, such as one patient's weight. A **panel** stacks one history per **entity** (a patient, sensor, or site) in one table, with an entity column such as `patient_id`; most panel calculations run inside each entity's history with Lecture 08's `groupby()`. State the **grain**, what one row represents, before computing anything: "one heart-rate reading for one patient at one time."
+- **Single series**: one history, such as one patient's weight.
+- **Panel**: one history per **entity** (a patient, sensor, or site) stacked in one table with an entity column such as `patient_id`; most calculations run inside each entity's history with Lecture 08's `groupby()`.
+- **Grain**: what one row represents, stated before computing anything: "one heart-rate reading for one patient at one time."
 
 ```text
 patient_id  recorded_at        heart_rate
@@ -66,17 +75,11 @@ P2          2024-03-01 10:00           86   ┘
 
 # Date and Time Data Types
 
-A **datetime** is one value holding a date and a clock time, which Python can compare, subtract, and print in any format; text such as `"2023-12-25 14:30"` cannot, so subtracting two text times raises `TypeError`. **Parsing** turns text into datetimes and **formatting** turns datetimes into text, one value at a time with Python's `datetime` module or a whole column with pandas.
+- **Datetime**: one value holding a date and a clock time, which Python can compare, subtract, and print in any format. Text such as `"2023-12-25 14:30"` cannot: subtracting two text times raises `TypeError`.
+- **Parsing** turns text into datetimes; **formatting** turns datetimes into text.
+- Python's `datetime` module works one value at a time, such as stamping a lab report; pandas converts a whole column.
 
 ## Python datetime Module
-
-Python's built-in `datetime` module handles one value at a time, such as stamping a lab report or scheduling a follow-up visit.
-
-| Operation | Starting value | Result |
-| --- | --- | --- |
-| Parse a lab time | Text `"2023-12-25 14:30:00"` | A datetime for December 25 at 14:30 |
-| Format it for a letter | That datetime | Text `"December 25, 2023 at 02:30 PM"` |
-| Add 30 days | That datetime | `2024-01-24 14:30:00` |
 
 ### Reference Card: Python `datetime`
 
@@ -94,9 +97,9 @@ from datetime import datetime, timedelta
 
 lab_time = datetime.strptime("2023-12-25 14:30:00", "%Y-%m-%d %H:%M:%S")
 print(lab_time.strftime("%B %d, %Y at %I:%M %p"))
-print(lab_time + timedelta(days=30))
+print(lab_time + timedelta(days=30))  # 30-day follow-up
 age = datetime(2024, 3, 1) - datetime(1990, 5, 15)
-print(age.days)
+print(age.days)  # age in days on March 1, 2024
 ```
 
 ```text
@@ -104,10 +107,6 @@ December 25, 2023 at 02:30 PM
 2024-01-24 14:30:00
 12344
 ```
-
-The last two lines are the 30-day follow-up visit and a patient's age in days on March 1, 2024.
-
-_A datetime is the Swiss Army knife of temporal data: precise to the microsecond, and `pandas` wields a million at a time._
 
 ## pandas DatetimeIndex
 
@@ -118,7 +117,9 @@ For a whole column, use `pd.to_datetime()`. It converts a text column into **`da
 | Sorted | `'3/10/2024'`, then `'3/9/2024'` | `2024-03-09`, then `2024-03-10` |
 | Second minus first | `TypeError` | `1 days 00:00:00` |
 
-Each single value is a **`Timestamp`**, and a missing date becomes **`NaT`** ("Not a Time"), the datetime version of `NaN`. Invalid text raises `ValueError` unless `errors='coerce'` marks it as `NaT` instead. Timestamps used as row labels form a **`DatetimeIndex`**, which date selection, resampling, and time windows all read.
+- **`Timestamp`**: one value in the column.
+- **`NaT`** ("Not a Time"): a missing date, the datetime version of `NaN`. Invalid text raises `ValueError`; `errors='coerce'` turns it into `NaT` instead.
+- **`DatetimeIndex`**: timestamps used as row labels, which date selection, resampling, and time windows all read.
 
 ### Reference Card: Parsing and Indexing Dates
 
@@ -144,29 +145,32 @@ Each single value is a **`Timestamp`**, and a missing date becomes **`NaT`** ("N
 ```python
 vitals['recorded_at'] = pd.to_datetime(vitals['recorded_at'], format='%Y-%m-%d %H:%M')
 vitals = vitals.set_index('recorded_at').sort_index()
-print(vitals)
+display(vitals)
 print(vitals.index.hour)
 ```
 
+| recorded_at | heart_rate |
+| --- | --- |
+| 2024-03-01 08:00:00 | 72 |
+| 2024-03-01 20:00:00 | 76 |
+| 2024-03-02 08:00:00 | 88 |
+
 ```text
-                     heart_rate
-recorded_at
-2024-03-01 08:00:00          72
-2024-03-01 20:00:00          76
-2024-03-02 08:00:00          88
 Index([8, 20, 8], dtype='int32', name='recorded_at')
 ```
 
 <callout icon="⚠️" color="yellow_bg">
-	## Sort by time before you slice, shift, or roll
-	Exports often arrive out of order. On unsorted rows, a date-range slice can raise `KeyError`, and `shift()` (taught below) quietly pairs each reading with whatever row sits above it, so run `sort_index()` first, or `sort_values(['patient_id', 'recorded_at'])` for a panel.
+	## Sort by time first
+	On unsorted rows, a date slice can raise `KeyError` and `shift()` pairs each reading with whatever row sits above it. Run `sort_index()`, or `sort_values(['patient_id', 'recorded_at'])` for a panel.
 </callout>
 
 ![xkcd 2867: DateTime. T2 minus T1 looks like simple subtraction until time zones and clock changes, later in this lecture, get involved.](media/xkcd_2867.png)
 
 # Date Ranges and Frequencies
 
-A **frequency** is the repeating rule of a regular series, written as a short text **alias** such as `'D'` (daily) or `'h'` (hourly). pandas uses it to build schedules such as weekly check-in dates, to name a series' spacing, and to define reporting bins.
+- **Frequency**: the repeating rule of a regular series, such as daily or hourly.
+- **Alias**: its short text name, such as `'D'` (daily) or `'h'` (hourly).
+- pandas uses frequencies to build schedules such as weekly check-in dates, to name a series' spacing, and to define reporting bins.
 
 ## Date Range Generation
 
@@ -202,17 +206,12 @@ DatetimeIndex(['2024-01-01 08:00:00', '2024-01-01 09:00:00',
               dtype='datetime64[us]', freq='h')
 ```
 
-Frequency inference and business-day, quarterly, and annual schedules are optional BONUS.md references.
-
-_Every Monday? Business days only? `pandas` generates just about any date pattern you can imagine, and some you probably can't._
-
 # Time Series Indexing and Selection
 
-**Time series selection** picks rows by when they were recorded: a whole month, a date range, or the same clock hours on every day, such as overnight ICU readings. A sorted DatetimeIndex makes each one a short expression.
+- **Time series selection**: picking rows by when they were recorded, such as a whole month or a date range. A sorted DatetimeIndex makes each one a short expression.
+- **Partial-string indexing**: on a DatetimeIndex, Lecture 04's `.loc` accepts partial dates; `'2024-03'` selects every row in March 2024.
 
 ## Basic Time Series Selection
-
-On a DatetimeIndex, Lecture 04's `.loc` also accepts partial dates, called **partial-string indexing**: `'2024-03'` selects every row in March 2024.
 
 ![Slicing by year, month, or date range: `pandas` reads string dates the way a human would.](media/time_series_indexing.png)
 
@@ -228,20 +227,20 @@ On a DatetimeIndex, Lecture 04's `.loc` also accepts partial dates, called **par
 `study_day` numbers the dates in January–February 2024, starting at 1.
 
 ```python
-print(study_day.loc['2024-02'].shape)
-print(study_day.loc['2024-01-30':'2024-02-02'])
+print(study_day.loc['2024-02'].shape)  # leap year: 29 days
+display(study_day.loc['2024-01-30':'2024-02-02'])
 ```
 
 ```text
 (29,)
-2024-01-30    30
-2024-01-31    31
-2024-02-01    32
-2024-02-02    33
-Freq: D, dtype: int64
 ```
 
-February 2024 has 29 days (a leap year). Clock-time selection alternatives are in BONUS.md.
+|  | value |
+| --- | --- |
+| 2024-01-30 | 30 |
+| 2024-01-31 | 31 |
+| 2024-02-01 | 32 |
+| 2024-02-02 | 33 |
 
 # LIVE DEMO!
 
@@ -249,7 +248,9 @@ February 2024 has 29 days (a leap year). Clock-time selection alternatives are i
 
 # Resampling and Frequency Conversion
 
-**Resampling** changes a time series' frequency, such as turning minute-by-minute heart rates into one summary per hour for a ward report. **Downsampling** combines many readings into fewer, longer bins, and **upsampling** spreads them over more, shorter slots, most of which start empty.
+- **Resampling**: changing a time series' frequency, such as turning minute-by-minute heart rates into one summary per hour for a ward report.
+- **Downsampling**: many readings combined into fewer, longer bins.
+- **Upsampling**: readings spread over more, shorter slots, most of which start empty.
 
 ![Daily data (many points) resampled to monthly (few): the monthly view smooths out daily swings.](media/resampling_example.png)
 
@@ -270,23 +271,22 @@ February 2024 has 29 days (a leap year). Clock-time selection alternatives are i
 `day_num` holds the values 1–30 on January 1–30, 2023.
 
 ```python
-print(day_num.resample('W').mean())
-print(day_num.resample('ME').mean())   # all 30 days fall in January
+display(day_num.resample('W').mean())
+display(day_num.resample('ME').mean())   # all 30 days fall in January
 ```
 
-```text
-2023-01-01     1.0
-2023-01-08     5.0
-2023-01-15    12.0
-2023-01-22    19.0
-2023-01-29    26.0
-2023-02-05    30.0
-Freq: W-SUN, dtype: float64
-2023-01-31    15.5
-Freq: ME, dtype: float64
-```
+|  | value |
+| --- | --- |
+| 2023-01-01 | 1.0 |
+| 2023-01-08 | 5.0 |
+| 2023-01-15 | 12.0 |
+| 2023-01-22 | 19.0 |
+| 2023-01-29 | 26.0 |
+| 2023-02-05 | 30.0 |
 
-_Resampling is like changing the lens on your camera: zoom in for detail, zoom out for the big picture._
+|  | value |
+| --- | --- |
+| 2023-01-31 | 15.5 |
 
 ## How Resampling Draws Bins
 
@@ -313,31 +313,25 @@ _Resampling is like changing the lens on your camera: zoom in for detail, zoom o
 `readings` contains the five March 1, 2024 readings above, with a DatetimeIndex.
 
 ```python
-print(readings.resample('2h').agg(['mean', 'count']))
+display(readings.resample('2h').agg(['mean', 'count']))
 ```
 
-```text
-                          mean  count
-2024-03-01 08:00:00  72.333333      3
-2024-03-01 10:00:00  79.000000      2
-```
+|  | mean | count |
+| --- | --- | --- |
+| 2024-03-01 08:00:00 | 72.333333 | 3 |
+| 2024-03-01 10:00:00 | 79.000000 | 2 |
 
 ![xkcd 1985: Meteorologist. Five hourly 20% chances of rain do not say how likely rain is this afternoon; a longer bin needs an aggregation that answers the question being asked.](media/xkcd_1985.png)
 
 # Resampling Summaries, Grids, and Groups
 
-**Grouped resampling** bins each patient's readings separately, so no bin averages one patient with another, and any aggregation can summarize a bin: a maximum heart rate flags a crisis, and a reading count shows whether the monitor stayed connected. Upsampling to an hourly grid adds empty slots between readings to fill or leave missing.
+- Any aggregation can summarize a bin: a maximum heart rate flags a crisis, and a reading count shows whether the monitor stayed connected.
+- **Grouped resampling**: binning each patient's readings separately, so no bin averages one patient with another.
+- Upsampling to an hourly grid adds empty slots between readings, to fill or leave missing.
 
 ## Resampling with Different Aggregations
 
 Any aggregation that works after `groupby()` works after `resample()`, including several at once and Lecture 08's named aggregation.
-
-| Weekly bin | Mean heart rate (bpm) | Readings behind the mean |
-| --- | ---: | ---: |
-| January 1, 2023 | 72.0 | 1 |
-| January 8, 2023 | 75.9 | 7 |
-
-The first mean describes one day, the second seven; the count makes that difference visible.
 
 ### Reference Card: Resampling Aggregations
 
@@ -351,17 +345,16 @@ The first mean describes one day, the second seven; the count makes that differe
 `daily` has eight rows, January 1–8, 2023, indexed by date, with `temperature` (°F) and `heart_rate` (bpm).
 
 ```python
-print(daily.resample('W').agg({'temperature': ['mean', 'max'], 'heart_rate': ['mean', 'count']}).round(1))
+display(daily.resample('W').agg({'temperature': ['mean', 'max'], 'heart_rate': ['mean', 'count']}).round(1))
 ```
 
-```text
-           temperature        heart_rate
-                  mean    max       mean count
-2023-01-01        98.6   98.6       72.0     1
-2023-01-08        99.0  100.2       75.9     7
-```
+|  | temperature |  | heart_rate |  |
+| --- | --- | --- | --- | --- |
+|  | mean | max | mean | count |
+| 2023-01-01 | 98.6 | 98.6 | 72.0 | 1 |
+| 2023-01-08 | 99.0 | 100.2 | 75.9 | 7 |
 
-The `count` column shows that the first weekly bin holds only January 1.
+The `count` column shows that the first weekly mean describes one day and the second seven.
 
 ## Upsampling: Filling a Finer Grid
 
@@ -380,20 +373,19 @@ Filled values are estimates, not measurements; keep a flag or the original colum
 `pulse` records 70.0 and 76.0 bpm (floats) at 08:00 and 11:00 on March 1, 2024, with a DatetimeIndex.
 
 ```python
-print(pd.DataFrame({
+display(pd.DataFrame({
     'asfreq': pulse.resample('h').asfreq(),
     'ffill': pulse.resample('h').ffill(),
     'interpolate': pulse.resample('h').interpolate(),
 }))
 ```
 
-```text
-                     asfreq  ffill  interpolate
-2024-03-01 08:00:00    70.0   70.0         70.0
-2024-03-01 09:00:00     NaN   70.0         72.0
-2024-03-01 10:00:00     NaN   70.0         74.0
-2024-03-01 11:00:00    76.0   76.0         76.0
-```
+|  | asfreq | ffill | interpolate |
+| --- | --- | --- | --- |
+| 2024-03-01 08:00:00 | 70.0 | 70.0 | 70.0 |
+| 2024-03-01 09:00:00 | NaN | 70.0 | 72.0 |
+| 2024-03-01 10:00:00 | NaN | 70.0 | 74.0 |
+| 2024-03-01 11:00:00 | 76.0 | 76.0 | 76.0 |
 
 ## Resampling Each Patient Separately
 
@@ -422,16 +414,15 @@ per_patient = (
     vitals.set_index('recorded_at').groupby('patient_id')['heart_rate']
     .resample('2h').agg(['mean', 'count']).reset_index()
 )
-print(per_patient)
+display(per_patient)
 ```
 
-```text
-  patient_id         recorded_at  mean  count
-0         P1 2024-03-01 08:00:00  73.5      2
-1         P1 2024-03-01 10:00:00  80.0      1
-2         P2 2024-03-01 08:00:00  90.0      1
-3         P2 2024-03-01 10:00:00  94.0      1
-```
+|  | patient_id | recorded_at | mean | count |
+| --- | --- | --- | --- | --- |
+| 0 | P1 | 2024-03-01 08:00:00 | 73.5 | 2 |
+| 1 | P1 | 2024-03-01 10:00:00 | 80.0 | 1 |
+| 2 | P2 | 2024-03-01 08:00:00 | 90.0 | 1 |
+| 3 | P2 | 2024-03-01 10:00:00 | 94.0 | 1 |
 
 ### Code Snippet: Hourly Grid per Patient
 
@@ -446,19 +437,21 @@ grid = (
 )
 grid['grid_created'] = grid['source_row'].isna()
 grid['value_missing'] = grid['source_row'].notna() & grid['heart_rate'].isna()
-print(grid.drop(columns='source_row'))
+display(grid.drop(columns='source_row'))
 ```
 
 ```text
 True
-  patient_id         recorded_at  heart_rate  grid_created  value_missing
-0         P1 2024-03-01 08:00:00        72.0         False          False
-1         P1 2024-03-01 09:00:00         NaN          True          False
-2         P1 2024-03-01 10:00:00         NaN          True          False
-3         P1 2024-03-01 11:00:00         NaN         False           True
-4         P2 2024-03-01 09:00:00        90.0         False          False
-5         P2 2024-03-01 10:00:00        94.0         False          False
 ```
+
+|  | patient_id | recorded_at | heart_rate | grid_created | value_missing |
+| --- | --- | --- | --- | --- | --- |
+| 0 | P1 | 2024-03-01 08:00:00 | 72.0 | False | False |
+| 1 | P1 | 2024-03-01 09:00:00 | NaN | True | False |
+| 2 | P1 | 2024-03-01 10:00:00 | NaN | True | False |
+| 3 | P1 | 2024-03-01 11:00:00 | NaN | False | True |
+| 4 | P2 | 2024-03-01 09:00:00 | 90.0 | False | False |
+| 5 | P2 | 2024-03-01 10:00:00 | 94.0 | False | False |
 
 P1's three `NaN` rows look alike; only the flags show that the grid created 09:00 and 10:00, while 11:00 is a real reading with no heart rate.
 
@@ -484,20 +477,20 @@ gap run                     1      1            2      2      2   → 2 runs; th
 hours['run_id'] = hours.groupby('patient_id')['source_observed'].cumsum()
 gaps = hours[~hours['source_observed']]
 runs = gaps.groupby(['patient_id', 'run_id']).size().rename('gap_hours').reset_index()
-print(runs)
-print(runs.groupby('patient_id')['gap_hours'].agg(['count', 'max']))
+display(runs)
+display(runs.groupby('patient_id')['gap_hours'].agg(['count', 'max']))
 ```
 
-```text
-  patient_id  run_id  gap_hours
-0         P1       1          2
-1         P1       2          3
-2         P2       2          1
-            count  max
-patient_id
-P1              2    3
-P2              1    1
-```
+|  | patient_id | run_id | gap_hours |
+| --- | --- | --- | --- |
+| 0 | P1 | 1 | 2 |
+| 1 | P1 | 2 | 3 |
+| 2 | P2 | 2 | 1 |
+
+| patient_id | count | max |
+| --- | --- | --- |
+| P1 | 2 | 3 |
+| P2 | 1 | 1 |
 
 A patient with no gaps has no rows in `runs`; report 0 runs for them rather than leaving them out.
 
@@ -505,7 +498,8 @@ A patient with no gaps has no rows in `runs`; report 0 runs for them rather than
 
 # Rolling Window Operations
 
-A **rolling window** slides a fixed-size frame along a series and computes a statistic at every row, such as the mean of the last seven daily blood pressures, steadier than any single noisy reading. Where `resample('W').mean()` returns one row per week, `rolling(7).mean()` returns one row per original reading.
+- **Rolling window**: a fixed-size frame that slides along a series and computes a statistic at every row, such as the mean of the last seven daily blood pressures, steadier than any single noisy reading.
+- `resample('W').mean()` returns one row per week; `rolling(7).mean()` returns one row per original reading.
 
 ## Basic Rolling Operations
 
@@ -521,7 +515,7 @@ A **rolling window** slides a fixed-size frame along a series and computes a sta
 - `ts.rolling(window=7, center=True).mean()`: A **centered window**: 3 rows before, the current row, and 3 after, so each value uses later readings
 - `ax.fill_between(ts.index, mean - std, mean + std, alpha=0.2)`: Shade the band in the figure above on a Lecture 07 `Axes`; `alpha` keeps the lines visible through it
 
-A centered window reads future rows: its smooth curve is useful for describing a completed series, but unsuitable as a feature available at the current row. The extended window comparison is in BONUS.md.
+A centered window reads future rows: its smooth curve suits describing a completed series, not a feature available at the current row.
 
 ### Code Snippet: Count Window vs Time Window
 
@@ -533,24 +527,22 @@ compare = pd.DataFrame({
     'last_2_readings': glucose.rolling(2).mean(),
     'last_2_hours': glucose.rolling('2h').mean(),
 })
-print(compare)
+display(compare)
 ```
 
-```text
-                     glucose  last_2_readings  last_2_hours
-2024-03-01 07:00:00      110              NaN         110.0
-2024-03-01 08:00:00      145            127.5         127.5
-2024-03-01 11:00:00      130            137.5         130.0
-2024-03-01 11:30:00      180            155.0         155.0
-```
+|  | glucose | last_2_readings | last_2_hours |
+| --- | --- | --- | --- |
+| 2024-03-01 07:00:00 | 110 | NaN | 110.0 |
+| 2024-03-01 08:00:00 | 145 | 127.5 | 127.5 |
+| 2024-03-01 11:00:00 | 130 | 137.5 | 130.0 |
+| 2024-03-01 11:30:00 | 180 | 155.0 | 155.0 |
 
 At 11:00, the count window averages in the 08:00 reading from three hours earlier; the two-hour window sees only 11:00.
 
-_A rolling window is a security camera that keeps only the last seven days of footage: great for smoothing out noise, no help with anything older._
-
 ## Another Smoother: Exponentially Weighted Means
 
-An **exponentially weighted moving average (EWM)** weights recent readings more heavily than older ones: `ts.ewm(span=7).mean()` returns one smoothed value per row. Larger `span` means slower decay. This is an optional alternative to rolling means; BONUS.md and Demo 2's independent practice compare them.
+- **Exponentially weighted moving average (EWM)**: an optional alternative to rolling means that weights recent readings more heavily than older ones.
+- `ts.ewm(span=7).mean()` returns one smoothed value per row; a larger `span` means slower decay.
 
 ![EWM against a simple moving average: recent readings receive more weight in EWM.](media/ewm_comparison.png)
 
@@ -560,7 +552,8 @@ An **exponentially weighted moving average (EWM)** weights recent readings more 
 
 # Time Zone Handling
 
-A **time zone** is a region's rule for turning an instant into a wall-clock reading, including when daylight saving time moves the clocks. A multi-site trial records each visit on its clinic's wall clock, so 09:00 in New York and 09:00 in Chicago are different moments, and ordering the visits needs every timestamp tied to one instant.
+- **Time zone**: a region's rule for turning an instant into a wall-clock reading, including when daylight saving time moves the clocks.
+- A multi-site trial records each visit on its clinic's wall clock: 09:00 in New York and 09:00 in Chicago are different moments, so ordering the visits needs every timestamp tied to one instant.
 
 ## Basic Time Zone Operations
 
@@ -589,31 +582,35 @@ A **time zone** is a region's rule for turning an instant into a wall-clock read
 
 ```python
 local = clinic.tz_localize('America/New_York')
-print(local)
-print(local.tz_convert('UTC'))
+display(local)
+display(local.tz_convert('UTC'))
 ```
 
-```text
-2024-03-09 09:00:00-05:00    120
-2024-03-11 09:00:00-04:00    118
-dtype: int64
-2024-03-09 14:00:00+00:00    120
-2024-03-11 13:00:00+00:00    118
-dtype: int64
-```
+|  | value |
+| --- | --- |
+| 2024-03-09 09:00:00-05:00 | 120 |
+| 2024-03-11 09:00:00-04:00 | 118 |
+
+|  | value |
+| --- | --- |
+| 2024-03-09 14:00:00+00:00 | 120 |
+| 2024-03-11 13:00:00+00:00 | 118 |
 
 Daylight saving time began March 10, so the two 9 AM local visits are 14:00 and 13:00 UTC.
 
 <callout icon="⚠️" color="yellow_bg">
-	## Localize once, in the zone where the clock was read
-	Localizing these New York readings as `'UTC'` raises no error but moves each instant by the zone's offset: 5 hours on March 9 and 4 on March 11. Localize with the recording zone, convert to UTC for storing and ordering, and convert back to local time only for display.
+	## Localize in the recording zone
+	Localizing these New York readings as `'UTC'` raises no error but shifts each instant by 4 or 5 hours. Localize with the recording zone, convert to UTC to store and order, and convert back only for display.
 </callout>
 
 ![xkcd 1799: Bad Map Projection: Time Zones. Each country is redrawn where its clocks say it should be; a wall-clock reading alone does not pin down where, or when, something happened.](media/xkcd_time_zones.png)
 
 ## Clock Changes: Repeated and Skipped Times
 
-Twice a year, some local clock readings do not name exactly one instant. On the spring-forward night (March 10, 2024 in New York), clocks jump from 02:00 to 03:00, so 02:30 is **nonexistent**. On the fall-back night (November 3, 2024), clocks return from 02:00 to 01:00, so 01:30 happens twice, first in daylight time (EDT) and then standard time (EST): it is **ambiguous**.
+Twice a year, some local clock readings do not name exactly one instant:
+
+- **Nonexistent**: on the spring-forward night (March 10, 2024 in New York), clocks jump from 02:00 to 03:00, so 02:30 never happens.
+- **Ambiguous**: on the fall-back night (November 3, 2024), clocks return from 02:00 to 01:00, so 01:30 happens twice, first in daylight time (EDT) and then standard time (EST).
 
 | UTC instant | New York clock | Offset |
 | --- | --- | --- |
@@ -635,7 +632,7 @@ By default, `tz_localize()` raises `ValueError` at these times; the arguments be
 
 ```python
 aware = local.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')
-print(aware.dt.tz_convert('UTC'))
+display(aware.dt.tz_convert('UTC'))
 print("Set aside:", aware.isna().sum())
 
 spring_day = pd.date_range('2024-03-10', '2024-03-11', freq='h',
@@ -643,12 +640,14 @@ spring_day = pd.date_range('2024-03-10', '2024-03-11', freq='h',
 print(len(spring_day))  # hours in that local day
 ```
 
+|  | value |
+| --- | --- |
+| 0 | 2024-03-10 06:00:00+00:00 |
+| 1 | NaT |
+| 2 | NaT |
+| 3 | 2024-11-03 08:00:00+00:00 |
+
 ```text
-0   2024-03-10 06:00:00+00:00
-1                         NaT
-2                         NaT
-3   2024-11-03 08:00:00+00:00
-dtype: datetime64[us, UTC]
 Set aside: 2
 23
 ```
@@ -657,11 +656,15 @@ _Time series analysis is 90% datetime wrangling, 5% actual analysis, and 5% swea
 
 # Entity-Aware Features and Past-Only Windows
 
-A **feature** is an input column for a risk score or model. A **past-only feature** summarizes a patient's history using only that patient's earlier rows, such as the previous heart rate or the mean of the last two hours for an early-warning score. Reading a later row is **future leakage**, information that did not exist yet at the **prediction time** when the score runs, and it makes the score look better than it will be, with no error to warn you.
+- **Feature**: an input column for a risk score or model.
+- **Past-only feature**: a summary of a patient's history from only that patient's earlier rows, such as the previous heart rate or the mean of the last two hours for an early-warning score.
+- **Prediction time**: when the score runs.
+- **Future leakage**: reading a row from after the prediction time. It makes the score look better than it will be, with no error to warn you.
 
 ## Shifting and Lagging
 
-**Shifting** slides values down or up the rows while the dates stay in place, so each row can carry a **lag** (the previous row's value, such as the last visit's blood pressure) or a **lead** (the next row's).
+- **Shifting**: sliding values down or up the rows while the dates stay in place.
+- **Lag**: the previous row's value, such as the last visit's blood pressure; a **lead** is the next row's.
 
 ![Lag looks back, lead looks ahead, and the difference is the day-to-day change.](media/shifting_lagging.png)
 
@@ -681,31 +684,29 @@ Shifting counts rows, not time: with irregular clinic visits, the "previous" rea
 weight['lag_1'] = weight['weight'].shift(1)
 weight['lead_1'] = weight['weight'].shift(-1)
 weight['diff'] = weight['weight'].diff()
-print(weight)
+display(weight)
 ```
 
-```text
-            weight  lag_1  lead_1  diff
-2023-01-01    70.5    NaN    70.8   NaN
-2023-01-02    70.8   70.5    70.2   0.3
-2023-01-03    70.2   70.8    71.0  -0.6
-2023-01-04    71.0   70.2    70.9   0.8
-2023-01-05    70.9   71.0     NaN  -0.1
-```
+|  | weight | lag_1 | lead_1 | diff |
+| --- | --- | --- | --- | --- |
+| 2023-01-01 | 70.5 | NaN | 70.8 | NaN |
+| 2023-01-02 | 70.8 | 70.5 | 70.2 | 0.3 |
+| 2023-01-03 | 70.2 | 70.8 | 71.0 | -0.6 |
+| 2023-01-04 | 71.0 | 70.2 | 70.9 | 0.8 |
+| 2023-01-05 | 70.9 | 71.0 | NaN | -0.1 |
 
 ## Grouped Lags and Past-Only Windows
 
 In a panel, a plain `shift(1)` runs down the whole stacked column (`wrong_previous`); grouping by `patient_id` first keeps each shift inside one patient's history (`previous_hr`):
 
-```text
-  patient_id         recorded_at  heart_rate  wrong_previous  previous_hr
-0         P1 2024-03-01 08:00:00          72             NaN          NaN
-1         P1 2024-03-01 09:00:00          80            72.0         72.0
-2         P1 2024-03-01 11:30:00          95            80.0         80.0
-3         P2 2024-03-01 09:00:00          88            95.0          NaN
-4         P2 2024-03-01 10:00:00          86            88.0         88.0
-5         P2 2024-03-01 11:00:00          84            86.0         86.0
-```
+| | patient_id | recorded_at | heart_rate | wrong_previous | previous_hr |
+| --- | --- | --- | --- | --- | --- |
+| 0 | P1 | 2024-03-01 08:00:00 | 72 | NaN | NaN |
+| 1 | P1 | 2024-03-01 09:00:00 | 80 | 72.0 | 72.0 |
+| 2 | P1 | 2024-03-01 11:30:00 | 95 | 80.0 | 80.0 |
+| 3 | P2 | 2024-03-01 09:00:00 | 88 | 95.0 | NaN |
+| 4 | P2 | 2024-03-01 10:00:00 | 86 | 88.0 | 88.0 |
+| 5 | P2 | 2024-03-01 11:00:00 | 84 | 86.0 | 86.0 |
 
 Row 3 is the leak: P2's "previous" heart rate is P1's 95.
 
@@ -720,8 +721,6 @@ Row 3 is the leak: P2's "previous" heart rate is P1's 95.
 | Mean of previous n readings | `df.groupby('patient_id')['heart_rate'].transform(lambda s: s.shift(1).rolling(n, min_periods=1).mean())` | Excludes the current row; aligned to the original rows |
 | Mean over previous 2 hours | `df.set_index('recorded_at').groupby('patient_id')['heart_rate'].rolling('2h', closed='left').mean()` | `closed='left'` excludes the current time; `reset_index()`, then `merge(..., validate='one_to_one')` it back |
 
-Leads (`shift(-1)`) and centered windows (`center=True`) read the future. A lead can define a target or describe a finished record; neither is an input available at prediction time.
-
 ### Code Snippet: Grouped Lag
 
 `vitals` has the six readings above, with datetime `recorded_at` values.
@@ -730,7 +729,7 @@ Leads (`shift(-1)`) and centered windows (`center=True`) read the future. A lead
 vitals = vitals.sort_values(['patient_id', 'recorded_at'])
 vitals['wrong_previous'] = vitals['heart_rate'].shift(1)
 vitals['previous_hr'] = vitals.groupby('patient_id')['heart_rate'].shift(1)
-print(vitals)  # the table above
+display(vitals)  # the table above
 ```
 
 ### Code Snippet: Grouped Past-Only Windows
@@ -747,18 +746,17 @@ prev_2h = (
     .rolling('2h', closed='left').mean().rename('mean_prev_2h').reset_index()
 )
 vitals = vitals.merge(prev_2h, on=['patient_id', 'recorded_at'], validate='one_to_one')
-print(vitals)
+display(vitals)
 ```
 
-```text
-  patient_id         recorded_at  heart_rate  mean_prev_2  mean_prev_2h
-0         P1 2024-03-01 08:00:00          72          NaN           NaN
-1         P1 2024-03-01 09:00:00          80         72.0          72.0
-2         P1 2024-03-01 11:30:00          95         76.0           NaN
-3         P2 2024-03-01 09:00:00          88          NaN           NaN
-4         P2 2024-03-01 10:00:00          86         88.0          88.0
-5         P2 2024-03-01 11:00:00          84         87.0          87.0
-```
+|  | patient_id | recorded_at | heart_rate | mean_prev_2 | mean_prev_2h |
+| --- | --- | --- | --- | --- | --- |
+| 0 | P1 | 2024-03-01 08:00:00 | 72 | NaN | NaN |
+| 1 | P1 | 2024-03-01 09:00:00 | 80 | 72.0 | 72.0 |
+| 2 | P1 | 2024-03-01 11:30:00 | 95 | 76.0 | NaN |
+| 3 | P2 | 2024-03-01 09:00:00 | 88 | NaN | NaN |
+| 4 | P2 | 2024-03-01 10:00:00 | 86 | 88.0 | 88.0 |
+| 5 | P2 | 2024-03-01 11:00:00 | 84 | 87.0 | 87.0 |
 
 At P1's 11:30 reading, the previous two readings average 76, but no reading falls in the two hours before, so the elapsed-time mean is `NaN`.
 
@@ -766,9 +764,9 @@ At P1's 11:30 reading, the previous two readings average 76, but no reading fall
 
 ## Availability at Prediction Time
 
-A timestamp says when something happened, not when anyone could know it: a lab is resulted after collection, and a monthly case count is published weeks after the month ends. A feature is **available** only if the latest timestamp it reads is at or before the prediction time.
-
-A **chronological holdout** builds a method on rows before a cutoff and tests it on rows from the cutoff onward, the way it would meet future patients.
+- A timestamp says when something happened, not when anyone could know it: a lab is resulted after collection, and a monthly case count is published weeks after the month ends.
+- **Available**: a feature whose latest timestamp read is at or before the prediction time.
+- **Chronological holdout**: build a method on rows before a cutoff and test it on rows from the cutoff onward, the way it would meet future patients.
 
 ### Reference Card: Availability and Chronological Blocks
 
@@ -782,39 +780,38 @@ A **chronological holdout** builds a method on rows before a cutoff and tests it
 ```python
 prediction_time = pd.Timestamp('2024-03-01 11:00')
 labs['available'] = labs['resulted_at'] <= prediction_time
-print(labs)
+display(labs)
 ```
 
-```text
-         test        collected_at         resulted_at  available
-0     lactate 2024-03-01 08:00:00 2024-03-01 08:45:00       True
-1  creatinine 2024-03-01 09:30:00 2024-03-01 11:15:00      False
-2    troponin 2024-03-01 10:30:00 2024-03-01 10:50:00       True
-```
+|  | test | collected_at | resulted_at | available |
+| --- | --- | --- | --- | --- |
+| 0 | lactate | 2024-03-01 08:00:00 | 2024-03-01 08:45:00 | True |
+| 1 | creatinine | 2024-03-01 09:30:00 | 2024-03-01 11:15:00 | False |
+| 2 | troponin | 2024-03-01 10:30:00 | 2024-03-01 10:50:00 | True |
 
 ### Code Snippet: Chronological Holdout
 
 ```python
 cutoff = pd.Timestamp('2024-03-01 11:00')
 vitals['block'] = np.where(vitals['recorded_at'] < cutoff, 'earlier', 'later_holdout')
-print(vitals[['patient_id', 'recorded_at', 'block']])
+display(vitals[['patient_id', 'recorded_at', 'block']])
 ```
 
-```text
-  patient_id         recorded_at          block
-0         P1 2024-03-01 08:00:00        earlier
-1         P1 2024-03-01 09:00:00        earlier
-2         P1 2024-03-01 11:30:00  later_holdout
-3         P2 2024-03-01 09:00:00        earlier
-4         P2 2024-03-01 10:00:00        earlier
-5         P2 2024-03-01 11:00:00  later_holdout
-```
+|  | patient_id | recorded_at | block |
+| --- | --- | --- | --- |
+| 0 | P1 | 2024-03-01 08:00:00 | earlier |
+| 1 | P1 | 2024-03-01 09:00:00 | earlier |
+| 2 | P1 | 2024-03-01 11:30:00 | later_holdout |
+| 3 | P2 | 2024-03-01 09:00:00 | earlier |
+| 4 | P2 | 2024-03-01 10:00:00 | earlier |
+| 5 | P2 | 2024-03-01 11:00:00 | later_holdout |
 
 P2's 11:00 reading falls in the holdout, because `<` keeps the cutoff itself out of `earlier`.
 
 # Time Series Visualization
 
-A **time-series plot** draws readings against time on the x-axis, in order, showing trends, seasonal cycles, and gaps that a summary table hides. Draw the raw readings faintly with a smoother such as a rolling mean over them, let the line break where data is missing, and name the time zone when it matters.
+- **Time-series plot**: readings drawn against time on the x-axis, in order, showing trends, seasonal cycles, and gaps that a summary table hides.
+- Draw the raw readings faintly with a smoother such as a rolling mean over them, let the line break where data is missing, and name the time zone when it matters.
 
 ## Basic Time Series Plots
 
@@ -848,8 +845,6 @@ monthly_mean.plot(kind='bar', ax=ax, rot=0, title='Mean Daily Visits by Calendar
                   xlabel='Month', ylabel='Visits per day')
 plt.show()
 ```
-
-Decomposition and component plots are in BONUS.md.
 
 # LIVE DEMO!
 

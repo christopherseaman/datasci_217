@@ -1,13 +1,13 @@
 # Assignment 05 checks (course-owned)
 
-These checks grade the midterm. The handout in `05/assignment/` ships none of them, with no checker, workflow, or test, so its README names every output file with the task that makes it, its first line, and its line count instead. After the deadline, `uv run scripts/grade_submissions.py 05` clones each fork and runs `check_assignment.py` from this folder on the fork's committed files. To grade one submission by hand:
+These checks grade the midterm. The handout in `05/assignment/` ships none of them, with no checker, workflow, or test, so its README names every output file with the task that makes it, its first line, and its line count instead. After the deadline, `uv run scripts/grade_submissions.py 05` clones each fork and runs `check_assignment.py` from this folder on the fork's committed files. It grades with main's `grading.py`; add `--local-checks` to use this folder's copy. To grade one submission by hand:
 
 ```bash
 python3 05/assignment_checks/check_assignment.py path/to/submission          # readable report
 python3 05/assignment_checks/check_assignment.py path/to/submission --json   # datasci217/grading-result/v1
 ```
 
-The report covers the 75 points graded from files; the other 25 come from human review of the notebook and the decision reasons, five 5-point categories that the handout README's Completion contract lists with the cell each one reads. The command exits 0 only when every check passes, so judge a run by its JSON, not its exit status.
+The report covers the 75 points graded from files; the other 25 come from human review of the notebook and the decision reasons, five 5-point categories that the handout's CHECKS.md lists with the cell each one reads. The command exits 0 only when every check passes, so judge a run by its JSON, not its exit status.
 
 The checks read only the seven files in the submission's `output/`. They never import, run, or read submitted code, and the notebook is left to human review. The expected values are constants in `grading.py`, fixed by the supplied `05/assignment/data/people_raw.csv`; `_grader_selftest/run.py` recomputes every one of them from that file with pandas.
 
@@ -30,7 +30,7 @@ What never costs points: line endings, blank lines, a byte-order mark, spaces at
 
 ## Changing a check
 
-Edit `grading.py`, keep the handout README's Completion contract and file checklist in agreement with it, and rerun both tests:
+Edit `grading.py`, keep the handout's CHECKS.md contract and the README file checklist in agreement with it, and rerun both tests:
 
 ```bash
 uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 python 05/assignment_checks/_grader_selftest/run.py

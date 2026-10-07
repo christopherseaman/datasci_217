@@ -18,7 +18,7 @@ jupyter:
 
 # Demo 3: From Raw Clinic Visits to a Validated Clean Table
 
-This demo runs the whole cleaning pipeline from Lecture 05 on a clinic visit export: state the contract, load, fingerprint, and preserve the raw table, audit it with validation rules, flag unusual readings, record each decision, transform a working copy, and save only after the checks pass. Everything here comes from Lecture 05 and Lectures 01 to 04.
+This demo runs the whole cleaning pipeline from Lecture 05 on a clinic visit export: state the contract, load, fingerprint, and preserve the raw table, audit it with validation rules, flag unusual readings, record each decision, transform a working copy, and save only after the checks pass.
 
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 

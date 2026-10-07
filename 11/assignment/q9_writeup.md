@@ -17,7 +17,7 @@ jupyter:
 
 **25 points, human review**
 
-Complete the root [`report.md`](report.md) using facts from your saved files. Concise, factual writing is welcome, and the model does not need to beat persistence. The [README's completion contract](README.md#completion-contract) says which report sections and notebook cells each review category reads and what earns full credit:
+Complete the root [`report.md`](report.md) using facts from your saved files. Concise, factual writing is welcome, and the model does not need to beat persistence. The [completion contract in CHECKS.md](CHECKS.md#completion-contract) says which report sections and notebook cells each review category reads and what earns full credit:
 
 | Category | Points |
 | --- | ---: |

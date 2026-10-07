@@ -18,9 +18,12 @@ jupyter:
 
 # Demo 1: GroupBy Summaries and Pivot Tables
 
-A health system's visit log has one row per clinic visit: 100,000 synthetic visits across five clinics and six departments. This demo answers the questions a clinic manager asks of that log (how long each department's patients wait, how many patients each one sees, how the answers differ by clinic) with `groupby`, named aggregation, two-key groups, pivot tables with totals, and cross-tabulations. Everything here comes from Lecture 08 up to the first demo break, plus Lectures 01 to 07.
+A health system's visit log has one row per clinic visit: 100,000 synthetic visits across five clinics and six departments.
 
-Run the cells from top to bottom; after each step, an **Expect** line says what to expect. The patient IDs and values are synthetic.
+- **Questions answered:** how long each department's patients wait, how many patients each sees, and how that differs by clinic.
+- **Tools:** `groupby`, named aggregation, two-key groups, pivot tables with totals, and cross-tabulations.
+
+Run the cells from top to bottom; each **Expect** line says what the output should show. Patient IDs and values are synthetic.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -38,6 +41,7 @@ The next cell generates the log. You do not need to follow every line: it draws 
 ```python
 import numpy as np
 import pandas as pd
+from IPython.display import Markdown
 
 rng = np.random.default_rng(42)
 n_visits = 100_000
@@ -90,10 +94,10 @@ visits.loc[rng.random(n_visits) < 0.03, "satisfaction"] = np.nan
 print(visits.shape)
 print(f"Distinct patients: {visits['patient_id'].nunique():,}")
 print(f"Visits with no satisfaction survey: {visits['satisfaction'].isna().sum():,}")
-visits.head()
+display(visits.head())
 ```
 
-**Expect:** `(100000, 9)`, 28,929 distinct patients, and 2,984 visits with no survey. The grain is one row per visit, so a patient who came three times has three rows.
+**Expect:** `(100000, 9)`, 28,929 distinct patients, and 2,984 visits with no survey, then five visits with nine columns: IDs, age, clinic, visit type, department, wait, blood pressure, and satisfaction (`NaN` where no survey came back). The grain is one row per visit, so a patient who came three times has three rows.
 
 ### Basic Aggregation
 
@@ -228,11 +232,11 @@ display(two_day["visits"].unstack())
 
 ```python
 # .loc on the outer level keeps the inner level as the index
-print("North only:")
+display(Markdown("**North only**"))
 display(two_day.loc["North"])
 
 # reset_index() (Lecture 06) turns both levels back into ordinary columns
-print("\nFlattened:")
+display(Markdown("**Flattened**"))
 display(two_day.reset_index())
 ```
 
@@ -270,9 +274,9 @@ wait_multi = pd.pivot_table(
     visits, values="wait_min", index="department", columns="clinic",
     aggfunc=["count", "mean"],
 )
-print("=== Visits behind each cell ===")
+display(Markdown("**Visits behind each cell**"))
 display(wait_multi["count"])
-print("\n=== Mean wait in each cell ===")
+display(Markdown("**Mean wait in each cell**"))
 display(wait_multi["mean"].round(1))
 # .sum() adds up each clinic's column; the second .sum() adds those totals
 print("\nTotal visits counted:", wait_multi["count"].sum().sum())
@@ -308,12 +312,12 @@ nurses = pd.DataFrame({
 })
 
 raw = pd.pivot_table(nurses, values="nurses", index="department", columns="clinic", aggfunc="sum")
-print("=== The absent combination shows as NaN ===")
+display(Markdown("**The absent combination shows as NaN**"))
 display(raw)
 
 filled = pd.pivot_table(nurses, values="nurses", index="department", columns="clinic",
                         aggfunc="sum", fill_value=0)
-print("\n=== fill_value=0: Dermatology really has no nurses in the South ===")
+display(Markdown("**fill_value=0: Dermatology really has no nurses in the South**"))
 display(filled)
 ```
 

@@ -14,16 +14,22 @@ jupyter:
 
 # Optional Demo 5: Map zone-level model error
 
-This notebook is **demo-only and non-graded**: nothing in it is assumed prior knowledge, and the assignment never needs it. It maps Demo 4's test error for each of the 12 taxi zones. The course concepts are reading a results table, validating a join, and making an honest labeled figure; the geospatial machinery (the geo packages, the zone boundaries, the shapefile, and drawing polygons) is supplied.
+This notebook is **optional and non-graded**: it maps Demo 4's test error for each of the 12 taxi zones.
 
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
+- Practiced here: reading a results table, validating a join, making an honest labeled figure.
+- Supplied: the geo packages, the zone boundaries, the shapefile, and drawing polygons.
+
+Run the cells from top to bottom; an **Expect** line after each step says what you should see.
 
 ```python
 # Colab installs these here; locally, run `uv add geopandas==1.1.1 shapely==2.1.1 pyogrio==0.11.1` once. If Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5 geopandas==1.1.1 shapely==2.1.1 pyogrio==0.11.1
 ```
 
-This notebook reads two files. Demo 4's zone error summary comes from `output/` when Demo 4 ran in this folder; otherwise the cell downloads the course's committed copy of it into `data/`. The zone boundaries are the Taxi and Limousine Commission's (TLC) official shapefile, a zipped set of map files that holds each taxi zone's boundary as a polygon. This cell is supplied plumbing: it keeps any file already present and downloads the rest.
+This supplied cell keeps any file already present and downloads the rest:
+
+- Demo 4's zone error summary: from `output/` when Demo 4 ran in this folder, otherwise the course's committed copy, downloaded into `data/`.
+- The Taxi and Limousine Commission's (TLC) official **shapefile**: a zipped set of map files holding each taxi zone's boundary as a polygon.
 
 ```python
 import hashlib
@@ -64,14 +70,14 @@ zone_errors = pd.read_csv(summary_path)
 assert zone_errors["pickup_zone_id"].is_unique
 assert len(zone_errors) == 12
 print("Read", summary_path)
-zone_errors.round(1).head()
+display(zone_errors.round(1).head())
 ```
 
 **Expect:** `Read output/04_zone_error_summary.csv` (or `data/04_zone_error_summary.csv` for the downloaded copy) and the first five zones, starting with zone 132 at MAE 36.5, the same values as Demo 4's zone table.
 
 ## 2. Check the zone boundaries and join them
 
-The supplied cell checks the shapefile archive's SHA-256 hash, as Demo 1 did for the release, then unzips it and reads it with geopandas. The join is the familiar part: a one-to-one inner merge on the zone ID (Lecture 06), which must keep all 12 zones.
+The supplied cell checks the shapefile archive's SHA-256 hash, as Demo 1 did, then unzips it and reads it with geopandas. The join is a one-to-one inner merge on the zone ID, which must keep all 12 zones.
 
 ```python
 shapefile = geo_dir / "taxi_zones" / "taxi_zones.shp"
@@ -89,7 +95,7 @@ mapped = zones.merge(zone_errors, left_on="LocationID", right_on="pickup_zone_id
 
 assert len(mapped) == 12
 assert mapped.geometry.notna().all()
-mapped[["LocationID", "zone", "borough", "MAE"]].sort_values("MAE", ascending=False).round(1)
+display(mapped[["LocationID", "zone", "borough", "MAE"]].sort_values("MAE", ascending=False).round(1))
 ```
 
 **Expect:** a 12-row table sorted by MAE, from `JFK Airport` (Queens, 36.5) and `LaGuardia Airport` (Queens, 35.5) down to `Upper West Side South` (Manhattan, 17.4).

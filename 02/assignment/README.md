@@ -1,23 +1,37 @@
 # Assignment 02: Clinic Encounter Summary
 
-## Project description
+## Overview
 
-TODO: Replace this line with a 30-300 character description of what this project does. (This is part of the assignment, read on and it will make more sense.)
+Document a small Python project, summarize a week of clinic encounters into one report, and choose a follow-up cutoff, saving each result for the checks.
 
-## Run
+- `data/clinic_encounters.csv` is synthetic: one row per encounter with a patient ID, a visit date, and the **systolic blood pressure** (the top number, in mmHg) recorded at that visit.
+- Like any export, it has rows nobody can use. Lecture 02's Demo 3 reads a file of this shape.
+- Keep the file exactly as it ships: the checks compare your answers with the ones it gives.
 
-TODO: Replace this line with the Python 3.13 terminal command that runs your report script.
+```text
+patient_id,visit_date,systolic
+P001,2026-03-02,118
+P004,2026-03-02,not recorded
+```
+
+## Setup
+
+1. Fork the assignment repository on GitHub and clone your fork as in Lecture 01: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open the cloned folder itself.
+2. Command Palette → **Git: Create Branch**, and name it `feature/clinic-report`.
+3. In the integrated terminal, run `ls data`.
+    - Expect: `clinic_encounters.csv`.
 
 ## Files
 
 ```text
 assignment/
-├── README.md                    # these instructions; you complete the two TODO lines above
+├── README.md                    # these instructions; you complete the two TODO lines below
 ├── .gitignore                   # you complete the Python cache patterns
 ├── data/
-│   └── clinic_encounters.csv    # supplied: one week of encounters, exactly as the clinic exported them
+│   └── clinic_encounters.csv    # supplied: one week of encounters; keep it exactly as handed out
 ├── vitals_tools.py              # scaffold: the calculations you reuse
 ├── clinic_report.py             # scaffold: reads the data and writes both artifacts
+├── CHECKS.md                    # supplied: what each check looks for
 ├── check_assignment.py          # supplied: run it to check your work; keep unchanged
 ├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
 ├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
@@ -26,52 +40,59 @@ assignment/
     └── followup_list.txt        # you generate in Task 3
 ```
 
-## Setup
-
-Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open it. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect `clinic_encounters.csv`. This clone is a new repository, so before your first commit run Lecture 02's two `git config user.name "..."` and `git config user.email "..."` lines in this terminal, with your name and GitHub noreply email.
-
-Open the repository in VS Code, switch to `main`, select **Sync Changes** if Source Control shows it, and finish any outstanding changes. Open the Command Palette, select **Git: Create Branch**, and name the new branch `feature/clinic-report`. Work on that branch until the Submit section.
-
 ## Task 1: Document the project
 
 ### 1.1 Describe the project
 
-Replace the `TODO` line under `## Project description` at the top of this file with 30-300 characters of your own text saying what this project reads and what it produces.
+Replace the `TODO` line under `## Project description` below with 30-300 characters of your own text saying what this project reads and what it produces.
 
 ### 1.2 Say how to run it
 
-Replace the `TODO` line under `## Run` with a Python 3.13 command that runs your report script: `python3 clinic_report.py` in Bash, `py -3.13 clinic_report.py` in native Windows PowerShell, or `python clinic_report.py` in an activated Python 3.13 environment. The bare command, a bullet, a fenced code block, and a sentence such as "Run `python3 clinic_report.py` from this folder." all count.
+Replace the `TODO` line under `## Run` below with a command that runs your report script, such as `python3 clinic_report.py`.
 
 ### 1.3 Keep the Python cache out of Git
 
-Importing `vitals_tools` creates a `__pycache__/` folder of compiled files. Replace the two `TODO` comments in `.gitignore` with the pattern for that folder and the pattern for the compiled files it holds. The standard pair is `__pycache__/` and `*.pyc`; GitHub's own Python template writes the second one as `*.py[codz]`, which is equally good.
+In `.gitignore`, replace the two `TODO` comments with the patterns for Python's cache folder and compiled files: `__pycache__/` and `*.pyc`.
+- Expect: Source Control lists `README.md` and `.gitignore` under **Changes**.
 
 > **Checkpoint: `README.md` and `.gitignore`**
-> Confirm in Source Control that both files appear under **Changes**, stage them, and commit with `Document the clinic report`.
+> Stage both files and commit with `Document the clinic report`.
+
+## Project description
+
+TODO: Replace this line with a 30-300 character description of what this project does.
+
+## Run
+
+TODO: Replace this line with the Python 3.13 terminal command that runs your report script.
 
 ## Task 2: Summarize the supplied encounters
 
-`data/clinic_encounters.csv` is a week of encounters from one clinic: a patient ID, a visit date, and the systolic blood pressure recorded at that visit, in mmHg. Like any export, it has rows nobody can use. Demo 3 of the [Lecture 02 demo guide](https://github.com/christopherseaman/datasci_217/blob/main/02/demo/DEMO_GUIDE.md) reads a file of this shape. Keep the file exactly as it ships: the checks compare your answers with the ones the supplied file gives.
-
 ### 2.1 Decide which rows you can use
 
-A **data row** is every line after the header, blank lines included. This export has one in the middle, and Demo 3's loop reports it as `Skipping a blank row.` (The newline that ends the last row is not a row of its own; `readlines()` and `splitlines()` already treat it that way.)
+A **data row** is every line after the header, blank lines included. The export has one blank line in the middle, which Demo 3's loop reports as `Skipping a blank row.`
 
-A data row is **usable** when all three of these hold:
+A data row is **usable** when all three hold:
 
-1. it splits into exactly three comma-separated fields;
-2. `int()` can read the third field; and
-3. the reading is from 60 to 250 mmHg inclusive. Anything outside that range is a recording error, not a blood pressure.
+1. It splits into exactly three comma-separated fields.
+2. `int()` can read the third field.
+3. The reading is from 60 to 250 mmHg inclusive; anything outside is a recording error.
 
-Every other data row is **skipped**, the blank line included. Print one line per skipped row while you develop, so you can see which rows dropped out and why.
+Every other data row is skipped, the blank line included. Print one line per skipped row while you develop.
+
+- Expect: each skipped row printed with its reason.
 
 ### 2.2 Split the work across the two scripts
 
-Complete the calculations in `vitals_tools.py` and the reading, printing, and saving in `clinic_report.py`, which imports from `vitals_tools` the way Demo 2 and Demo 3 do. `read_encounters()` gives back two values, the usable encounters and the number of skipped rows, because your report needs both. Keep `clinic_report.py` safe to import: `python3 -c "import clinic_report"` should print nothing and write nothing.
+1. Complete the calculations in `vitals_tools.py`.
+2. Complete the reading, printing, and saving in `clinic_report.py`, importing from `vitals_tools` as Demo 2 and Demo 3 do.
+3. Have `read_encounters()` return two values: the usable encounters and the number of skipped rows.
+4. Keep `clinic_report.py` safe to import.
+    - Expect: `python3 -c "import clinic_report"` prints nothing and writes nothing.
 
 ### 2.3 Write the summary
 
-Write these six lines to `output/vitals_report.txt`, one per line, in any order:
+Write these six lines to `output/vitals_report.txt`, in any order:
 
 ```text
 Usable encounters: <how many data rows were usable>
@@ -82,22 +103,22 @@ Highest systolic: <largest usable reading> mmHg
 Lowest systolic: <smallest usable reading> mmHg
 ```
 
-- Some patients came in twice, so `Patients seen` is not the same as `Usable encounters`. A patient whose only row was skipped was not seen.
-- `Mean systolic` averages every usable reading, including a patient's second visit. Give at least one decimal place. Rounding is not a trap: a value within 0.1 mmHg of the mean passes, and so does the mean rounded to however many decimal places you wrote.
-- Write each label exactly as shown, followed by a colon and then the number. Around that, the checks are relaxed: letter case and the spaces between words do not matter, the `mmHg` unit is optional (`mm Hg` is fine too), and words around the number are ignored. Extra lines in the file are ignored. What is not optional is the label wording and the colon, so `Usable encounters = 12` or `usable -> 12` does not count.
+- `Patients seen` counts different IDs among usable rows, so a repeat visit counts once and a patient whose only row was skipped is not counted.
+- `Mean systolic` averages every usable reading, repeat visits included, with at least one decimal place.
+- Write each label as shown, followed by a colon and the number. Case, spacing, the `mmHg` unit, and extra lines do not matter.
 
-Read the file back and print it, the way Demo 3 does, so you can see what landed on disk.
+Read the file back and print it, as Demo 3 does.
 
 > **Checkpoint: `output/vitals_report.txt`**
-> Open the saved file in the Explorer and confirm it holds your six labelled lines.
+> Your six labelled lines.
 
 ## Task 3: Choose the follow-up cutoff
 
-The clinic can call back a limited number of patients this week, and asks you for the list. You choose the systolic cutoff: any value from 120 to 180 mmHg inclusive. A lower cutoff calls in more patients with borderline readings; a higher one calls only the most urgent.
+The clinic can call back a limited number of patients and asks you for the list. Choose a systolic cutoff from 120 to 180 mmHg inclusive: a lower one calls more borderline patients, a higher one only the most urgent.
 
 ### 3.1 Record the decision and the list it produces
 
-Write `output/followup_list.txt` in this shape:
+Write `output/followup_list.txt`:
 
 ```text
 Cutoff: <the cutoff you chose> mmHg
@@ -107,68 +128,17 @@ Reason: <one line, 20-300 characters, saying why you chose it>
 ...
 ```
 
-List the patient ID of every patient with at least one usable reading at or above your cutoff, one per line. Order does not matter, a repeated ID counts once, the `mmHg` unit on the cutoff is optional, and any other line is ignored, whether it is a heading, a blank line, or a row of dashes.
-
-The checks recompute the list from the cutoff you declared, so every cutoff in range is correct, as long as the patients you list are the ones your cutoff selects. A numeric cutoff outside that range loses only its cutoff points when the list correctly follows it.
+- List every patient with at least one usable reading at or above your cutoff, one ID per line.
+    - Expect: order and repeated IDs do not matter; any other line is ignored.
+- The checks recompute the list from your declared cutoff, so every cutoff in range is correct when the list matches it.
 
 > **Checkpoint: `output/followup_list.txt`**
-> Open the saved file and confirm it starts with your `Cutoff:` and `Reason:` lines, followed by one patient ID per line.
+> A `Cutoff:` line, a `Reason:` line, then one patient ID per line.
 
 ## Check your work
 
-Run your script, then the checks, from the assignment directory:
+- Run `python3 clinic_report.py`, then `python3 check_assignment.py`.
+- The checker prints your score and what to fix, using the latest checks from the course repository: the same checks GitHub runs on each push.
+- Commit `vitals_tools.py`, `clinic_report.py`, and the `output/` files, push, then merge `feature/clinic-report` into `main` and push again.
 
-```bash
-python3 clinic_report.py
-python3 check_assignment.py
-```
-
-`check_assignment.py` runs the same checks GitHub runs. They look only at your artifacts: this `README.md`, `.gitignore`, and the two files in `output/`. They work out what your answers should be from their own copy of the supplied `data/clinic_encounters.csv`, and never run or read your Python code, so any way of producing a correct artifact counts.
-
-Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, such as a missing file, they say `(same fix as above)`. Before Task 1, for example, the first check reports:
-
-```text
-[FIX ]  0/5  README project description
-         README.md still has the TODO line under `## Project description`. Replace it with 30-300 characters of your own saying what this project reads and what it produces (Task 1.1).
-```
-
-Below the score, `Left to fix` lists the checks still failing, by file, and the points they are worth. Fix what they name, rerun your script and the checks, and repeat until every check passes. A clean local run ends with:
-
-```text
-[PASS]  5/5  follow-up cutoff
-[PASS]  5/5  follow-up reason
-[PASS] 15/15 follow-up patient list
-
-Score: 100/100
-All checks passed.
-```
-
-Every push also runs GitHub Actions, which downloads the course's current copy of the checks and reruns them on the files you committed and pushed. That run is what counts, and a check corrected after handout reaches you there on your next push.
-
-### Completion contract
-
-Commit these files at the assignment repository root. Grading totals 100 points.
-
-| Artifact | Complete when | Points |
-|---|---|---:|
-| `README.md` | `## Project description` holds 30-300 characters of your own text. | 5 |
-| `README.md` | `## Run` holds a Python command that runs a `.py` script; any Python version counts. | 5 |
-| `.gitignore` | It lists a standard pattern for Python's bytecode cache, such as `__pycache__/` or `*.py[cod]`. | 5 |
-| `output/vitals_report.txt` | UTF-8 text with at least one readable labelled numeric answer from Task 2.3; each missing answer is checked separately. | 10 |
-| `output/vitals_report.txt` | `Usable encounters` matches the supplied encounters. | 8 |
-| `output/vitals_report.txt` | `Skipped rows` matches the supplied encounters. | 7 |
-| `output/vitals_report.txt` | `Patients seen` matches the distinct patient IDs among the usable encounters. | 10 |
-| `output/vitals_report.txt` | `Mean systolic` matches the mean of the usable readings. | 15 |
-| `output/vitals_report.txt` | `Highest systolic` matches the largest usable reading. | 5 |
-| `output/vitals_report.txt` | `Lowest systolic` matches the smallest usable reading. | 5 |
-| `output/followup_list.txt` | `Cutoff` is a number from 120 to 180 mmHg. | 5 |
-| `output/followup_list.txt` | `Reason` is 20-300 characters on one line. | 5 |
-| `output/followup_list.txt` | The listed patient IDs are exactly the patients with a usable reading at or above your cutoff. | 15 |
-
-Each row is scored on its own, so a right value earns its points whatever else is wrong. The patient list is checked against your declared numeric `Cutoff`, even when the cutoff itself is outside the allowed range. Extra files and extra lines are ignored.
-
-## Submit
-
-Inspect your changes in VS Code Source Control, then stage `vitals_tools.py`, `clinic_report.py`, `output/vitals_report.txt`, and `output/followup_list.txt` and commit with `Summarize clinic encounters`. Select **Publish Branch** or **Sync Changes**. With no unfinished changes left, switch to `main`, run **Git: Merge...**, and select `feature/clinic-report`. Resolve any conflict, inspect the result, and sync. Confirm in the repository browser that `main` holds both scripts and both files under `output/`.
-
-GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. If your local run and the GitHub run ever disagree, the GitHub run counts, because it uses the course's current checks.
+What each check looks for: [CHECKS.md](CHECKS.md)

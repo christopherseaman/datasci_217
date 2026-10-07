@@ -16,18 +16,23 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 3: Measure, Then Optimize, and Keep a Long Job Running
+# Demo 3: Apply, Measure, and Keep a Long Job Running
 
-Part 1 runs here in the notebook: it times grouped summaries of one million synthetic fasting-glucose results and measures how much memory a repeated text key costs. Part 2 runs in a terminal on your own computer: it creates a practice SSH key pair and keeps a long job alive in tmux, the steps you will repeat on a remote server. Everything here comes from Lecture 08 up to the third demo break, plus Lectures 01 to 07.
+One million synthetic fasting-glucose results, then a practice session for a remote server.
 
-Run Part 1's cells from top to bottom; after each step, an **Expect** line says what to expect. Timings depend on the computer, so compare the ratio between two timings, not the exact milliseconds. The patient IDs and values are synthetic.
+- **Parts 1 and 2** run in this notebook: a custom `apply` summary per clinic, then timings of grouped summaries and the memory a repeated text key costs.
+- **Part 3** runs in a terminal on your own computer: it creates a practice SSH key pair and keeps a long job alive in tmux, the steps you repeat on a remote server.
+
+Run the notebook cells from top to bottom; each **Expect** line says what the output should show. Timings depend on the computer, so compare the ratio between two timings, not the exact milliseconds. Patient IDs and values are synthetic.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-## Part 1: Measure, Then Optimize
+## Part 1: Apply Runs Your Own Function per Group
+
+`apply` hands each group to your function as a small DataFrame and stitches the results together. Use it when no built-in aggregation fits; its output shape depends on what your function returns.
 
 ### Build One Million Lab Results
 
@@ -42,12 +47,54 @@ labs = pd.DataFrame({
     "clinic": rng.choice(["North", "South", "East", "West"], n),
     "glucose": rng.normal(100, 15, n).round(1),              # fasting glucose, mg/dL
 })
+# One age per patient (drawn last so the glucose values stay the same), placed after patient_id
+labs.insert(1, "age", rng.integers(18, 96, 10_000)[labs["patient_id"]])
 print(labs.shape)
 print(f"Patients: {labs['patient_id'].nunique():,}")
-labs.head()
+display(labs.head())
 ```
 
-**Expect:** `(1000000, 3)`, `Patients: 10,000`, and five rows of patient numbers, clinic names, and glucose values around 100 mg/dL. The grain is one row per lab result.
+**Expect:** `(1000000, 4)`, `Patients: 10,000`, and five rows with patient number, age (18 to 95), clinic, and a glucose value around 100 mg/dL. The grain is one row per lab result.
+
+### A Custom Summary per Clinic
+
+```python
+def glucose_summary(group):
+    """Summarize one clinic's fasting glucose (mg/dL) as a Series."""
+    q25 = group["glucose"].quantile(0.25)
+    q75 = group["glucose"].quantile(0.75)
+    return pd.Series({
+        "results": len(group),
+        "median": group["glucose"].median(),
+        "q25": q25,
+        "q75": q75,
+        "iqr": q75 - q25,
+        "over_126": (group["glucose"] > 126).sum(),
+    })
+
+clinic_summary = labs.groupby("clinic").apply(glucose_summary, include_groups=False)
+display(clinic_summary)
+
+# Checkpoint: the medians match the built-in aggregation
+builtin = labs.groupby("clinic")["glucose"].median()
+print("Same medians as agg('median')?", clinic_summary["median"].equals(builtin))
+```
+
+**Expect:** one row per clinic, like `agg`, with the columns your function named. Counts show `.0` because a `Series` that holds a median stores all its values as floats. Each clinic has about 250,000 results (East 249,785, North 249,815, South 250,430, West 249,970), a median near 100 mg/dL, an interquartile range of about 20 mg/dL, and about 10,300 to 10,450 results over 126 mg/dL. Then `True`.
+
+### The Highest Glucose in Each Clinic
+
+```python
+highest = labs.groupby("clinic").apply(
+    lambda g: g.nlargest(2, "glucose"), include_groups=False
+)
+display(highest[["patient_id", "age", "glucose"]])
+print("Rows:", len(highest))
+```
+
+**Expect:** 8 rows: the two highest glucose results in each clinic, with the clinic as the outer index level and each result's original row number as the inner one. North has the highest value, 175.0 mg/dL (patient 9336, age 84). When the function returns whole rows, `apply` returns rows; when it returns one `Series` per group, it returns one row per group. When `agg` or `transform` can do the job, prefer them: they run as compiled code instead of once per group.
+
+## Part 2: Measure, Then Optimize
 
 ### One `.agg()` Instead of Three `groupby()` Calls
 
@@ -130,7 +177,7 @@ print(f"clinic as category: {category_mb:.1f} MB")
 
 **Expect:** `clinic` is the largest column: 53,500,245 bytes (about 12.5 million in Colab, as explained below), against 8,000,000 for each number column. Then `53.5 MB` as text and `1.0 MB` as a category: four labels stored once, plus one small code per row. Colab has the `pyarrow` package installed, which stores text more compactly, so there the text line reads about `12.5 MB`; the category version is still far smaller.
 
-## Part 2: Keep a Long Job Running (Terminal)
+## Part 3: Keep a Long Job Running (Terminal)
 
 This part runs on your own computer, which plays the server: you run the commands you would type after `ssh`, and closing a terminal window stands in for a dropped connection. This rehearses key creation and tmux locally; it does not test an SSH login, file copy, or tunnel. Those need an actual server account and its administrator's connection instructions. Type the commands below into a terminal, not into this notebook.
 
@@ -236,9 +283,12 @@ tmux ls
 
 **Expect:** `[exited]`. If this was your only session, `tmux ls` then says `no server running on /tmp/tmux-1000/default` (the path differs by computer); any other sessions you already had stay listed.
 
-### Step 3: Run Jupyter Inside tmux
+### Optional Extension: Run Jupyter Inside tmux
 
-On a server, Jupyter runs inside tmux and your browser reaches it through an SSH tunnel. On your own computer you can rehearse everything except the tunnel. `~/08-demo` from the lecture's local setup has JupyterLab, because its `pyproject.toml` lists it (in another project, `uv add jupyterlab` adds it). If you ran the demos in Colab and have no `~/08-demo` yet, run the setup commands at the top of the Lecture 08 page first.
+Prerequisite: BONUS.md, Run Jupyter Through an SSH Tunnel. Not needed for the core route.
+
+- On a server, Jupyter runs inside tmux and your browser reaches it through an SSH tunnel. This rehearses everything except the tunnel.
+- `~/08-demo` has JupyterLab because its `pyproject.toml` lists it. Colab users: run the local setup commands first.
 
 ```shell
 cd ~/08-demo
@@ -247,12 +297,12 @@ source .venv/bin/activate
 jupyter lab --ip=127.0.0.1 --port=8888 --no-browser
 ```
 
-**Expect:** log lines ending in a URL such as `http://127.0.0.1:8888/lab?token=...`. Copy that URL into your browser, and JupyterLab opens. (If port 8888 is busy, Jupyter picks 8889 and prints that URL instead. On a server, use the printed port as the last field of the tunnel, such as `-L 8888:127.0.0.1:8889`, and open the URL with 8888 in place of 8889.)
+**Expect:** log lines ending in a URL such as `http://127.0.0.1:8888/lab?token=...`. Copy that URL into your browser, and JupyterLab opens. If port 8888 is busy, Jupyter picks 8889 and prints that URL instead.
 
 Detach with `Ctrl+b`, then `d`, and reload the browser page.
 
-**Expect:** JupyterLab still works, because Jupyter keeps running inside tmux. On a server, the one extra step is the `ssh -N -L 8888:127.0.0.1:8888 ...` tunnel from the lecture, in a second terminal on your laptop.
+**Expect:** JupyterLab still works, because Jupyter keeps running inside tmux.
 
-Clean up the running session: `tmux attach -t notebooks`, press `Ctrl+C` twice to stop Jupyter, then type `exit`.
+Clean up: `tmux attach -t notebooks`, press `Ctrl+C` twice to stop Jupyter, then type `exit`.
 
 **Expect:** `[exited]` after `exit`. The practice files remain in `~/ds217_ssh_practice`; keep its private key out of Git, just like a real one.

@@ -32,6 +32,8 @@ jobs:
     timeout-minutes: 15
     env:
       PYTHONDONTWRITEBYTECODE: "1"
+      # This job fetches and smoke-tests the checks itself; the checker must use those files.
+      DS217_LOCAL_CHECKS: "1"
 
     steps:
       - name: Check out assignment

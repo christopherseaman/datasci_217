@@ -17,9 +17,9 @@ jupyter:
 
 # Demo 1: Contract first, then matplotlib
 
-A clinic network hands you two prepared plotting tables: one row per blood-pressure reading, and one row per week of flu visits. You write the visualization contract first, let it pick the chart, then draw exploratory and explanatory charts with `fig, ax = plt.subplots()` and Axes methods. Everything here comes from Lecture 07 up to the first demo break, plus Lectures 01 to 06. The patient IDs and values are synthetic.
+Two prepared clinic tables (readings and weekly flu visits), then charts drawn with `fig, ax = plt.subplots()` and Axes methods. The patient IDs and values are synthetic.
 
-Run the cells from top to bottom; after each step, the text says what to expect.
+Run the cells from top to bottom.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -30,12 +30,16 @@ Run the cells from top to bottom; after each step, the text says what to expect.
 
 ### 1. Meet the plotting tables
 
-The first table has one row per systolic blood-pressure reading: 20 patients at the North clinic and 20 at the South clinic. `rng` makes the same "random" values on every run (Lecture 03), so your numbers match the ones below. Each reading rises with age, runs 6 mmHg higher at South, and varies by a random amount: `rng.standard_normal(40) * 8` gives 40 bell-curve values spread around 0 by about 8 mmHg.
+The first table has one row per systolic blood-pressure reading: 20 patients at each of two clinics.
+
+- `rng` makes the same "random" values on every run (Lecture 03), so your numbers match the ones below.
+- Each reading rises with age, runs 6 mmHg higher at South, and varies by `rng.standard_normal(40) * 8`: 40 bell-curve values spread around 0 by about 8 mmHg.
 
 ```python
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from IPython.display import Markdown
 
 rng = np.random.default_rng(42)
 ages = rng.integers(30, 80, size=40)             # 30 through 79 years
@@ -54,7 +58,7 @@ display(readings.head())
 display(readings.dtypes)
 ```
 
-Expect `(40, 4)`, five rows starting with patient `1001`, and three `int64` columns plus `clinic` as `str`.
+Expect `(40, 4)`, five rows starting with patient `1001` (North, age 34, 114 mmHg), and three `int64` columns plus `clinic` as `str`.
 
 The second table is already one row per week: flu visits at each clinic over a ten-week season.
 
@@ -71,7 +75,10 @@ Expect ten rows. North peaks at 51 visits in week 6; South peaks at 34 in week 7
 
 ### 2. Customize: units, a legend, and a redundant cue
 
-The question is whether BP varies with age and clinic. One point is one reading; age and BP are quantitative, and clinic is nominal. The chart describes these synthetic rows and supports no causal claim. Draw each clinic as its own series, giving each a color **and** a marker shape, so the groups stay distinct in grayscale.
+- **Question**: does BP vary with age and clinic?
+- **Marks**: one point is one reading; age and BP are quantitative, clinic is nominal.
+- **Claim**: descriptive only; these synthetic rows support no causal claim.
+- **Encoding**: each clinic is its own series with a color **and** a marker shape, so the groups stay distinct in grayscale.
 
 ```python
 north = readings.loc[readings['clinic'] == 'North']
@@ -106,11 +113,10 @@ contract = {
     'variables': 'systolic_bp: quantitative measure (y); clinic: categorical group (x); '
                  'age: quantitative, not used here; patient_id: identifier, never averaged or plotted',
 }
-for part, answer in contract.items():
-    print(f'{part}: {answer}')
+display(Markdown('\n'.join(f'- **{part}**: {answer}' for part, answer in contract.items())))
 ```
 
-Expect four lines, one per part of the contract.
+Expect a four-item list, one per part of the contract.
 
 The question compares a distribution across two groups, so the chart-selection figure in the lecture points to a **box plot** (one box per clinic), with a **histogram** to check the overall shape first. The other questions in this demo pick other charts:
 
@@ -129,12 +135,11 @@ The question compares a distribution across two groups, so the chart-selection f
 ```python
 north_bp = readings.loc[readings['clinic'] == 'North', 'systolic_bp']
 south_bp = readings.loc[readings['clinic'] == 'South', 'systolic_bp']
-print('North median:', north_bp.median(), 'mmHg')
-print('South median:', south_bp.median(), 'mmHg')
-print('Total flu visits:', weekly['North'].sum(), 'North,', weekly['South'].sum(), 'South')
+display(pd.DataFrame({'count': [north_bp.count(), south_bp.count()], 'median': [north_bp.median(), south_bp.median()]}, index=['North', 'South']))
+display(weekly[['North', 'South']].sum())
 ```
 
-Expect `North median: 130.5 mmHg`, `South median: 139.0 mmHg`, and totals of 295 (North) and 219 (South).
+Expect medians of 130.5 mmHg (North) and 139.0 mmHg (South) over 20 readings each, and flu-visit totals of 295 (North) and 219 (South).
 
 ```python
 fig, axes = plt.subplots(2, 2, figsize=(10, 8))
@@ -172,11 +177,10 @@ flu_contract = {
     'unit_and_grain': 'One point per clinic per week',
     'variables': 'week: temporal order (x); North and South: quantitative visit counts (y), one line each',
 }
-for part, answer in flu_contract.items():
-    print(f'{part}: {answer}')
+display(Markdown('\n'.join(f'- **{part}**: {answer}' for part, answer in flu_contract.items())))
 ```
 
-Expect four lines, one per part of the contract.
+Expect a four-item list, one per part of the contract.
 
 The line chart pairs each color with its own marker and line style, points an arrow at North's peak, hides the two frame lines that carry no data, and puts the legend outside the plotting area.
 

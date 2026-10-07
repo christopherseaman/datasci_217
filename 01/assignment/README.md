@@ -1,10 +1,23 @@
 # Assignment 01: Terminal and Python Readiness
 
+## Overview
+
+Practice terminal file operations, finish two Python scripts, fix three prepared errors, and generate two output files for the checks. The files in `terminal-practice/` and `output/` are what is graded; your code is never run or read.
+
+## Setup
+
+1. Fork the assignment repository on GitHub and clone your fork as in Lecture 01: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open the cloned folder.
+2. Open **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac).
+    - Expect: `pwd` ends in the assignment folder, and `ls` lists this `README.md`.
+3. Check the Python version.
+    - Expect: `python3 --version` prints `Python 3.13` and a patch number.
+
 ## Files
 
 ```text
 assignment/
 ├── README.md                     # these instructions
+├── CHECKS.md                     # supplied: what each check looks for
 ├── readiness.py                  # scaffold: you complete it in Task 1.2
 ├── measurement_summary.py        # scaffold: you complete it in Task 2.1
 ├── debug_report.py               # scaffold: three prepared errors you fix in Task 3.1
@@ -22,14 +35,6 @@ assignment/
     ├── readiness.txt             # you generate in Task 3.2
     └── student_identity.txt      # you generate in Task 3.3
 ```
-
-## Setup
-
-Fork and clone the assignment using the [Lecture 01 instructions](https://app.notion.com/p/271d9fdd1a1a805784e1fe68dc985696). Open your clone in VS Code, then **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac). Use `pwd` and `ls` to confirm that you are in the folder containing this `README.md`.
-
-Use Python 3.13: `python3 --version` should print `Python 3.13` and a patch number. The commands below use `python3`, as in Lecture 01.
-
-If using a separate terminal app, open Terminal on macOS/Linux or Ubuntu on Windows and `cd` to your cloned assignment folder before running the commands.
 
 ## Task 1: Paths and readiness
 
@@ -160,41 +165,21 @@ The helper trims whitespace, lowercases the address, requires `@ucsf.edu`, and h
 
 ## Check your work
 
-Run the checks from the assignment directory:
+1. Run the checker from the assignment folder. It uses the latest checks from the course repository, the same checks GitHub runs.
 
-```bash
-python3 check_assignment.py
-```
+    ```bash
+    python3 check_assignment.py
+    ```
 
-These are the same checks GitHub runs. They look only at the four files you commit in `terminal-practice/` and `output/`, and never run or read your Python code. Letter case, equivalent number formats, whitespace, and blank lines are ignored, and so is the report's first line, your Python version.
+    - Expect: a `Checks:` line naming which copy ran, one `PASS` or `FIX` line per check, then `Score: 100/100` and `All checks passed.`
+2. Fix what `Left to fix` names, rerun `python3 make_output.py` if a report line changed, and check again.
+3. Commit the three scripts, `terminal-practice/`, and `output/` (Source Control: stage with **+**, commit, **Sync Changes**). Your fork is the submission; no pull request is needed. GitHub Actions runs the checks on every push; in a new fork, enable Actions once if prompted.
+    - Expect: the files appear on GitHub, and the Actions run, which is the one that counts, shows the same score.
+    - If the commit or push stops and asks who you are, set your Git identity as in Lecture 01, then commit again:
 
-Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, such as a missing file, they say `(same fix as above)`. A report line that differs shows what it should read, what yours reads, and which script prints it.
+    ```bash
+    git config user.name "Your Name"
+    git config user.email "YOUR GITHUB NOREPLY EMAIL"
+    ```
 
-Below the score, `Left to fix` lists the checks still failing and the points they are worth, as in `Left to fix (5 points): output/readiness.txt: Total.` Fix what they name, rerun `python3 make_output.py` when a report line changed, and check again until every check passes. A clean local run ends with:
-
-```text
-[PASS] 15/15 identity hash on the roster
-
-Score: 100/100
-All checks passed.
-```
-
-GitHub Actions reruns these checks on every push with the course's current copy of them, and that run is what counts. A check corrected after you forked reaches you on your next push. If a run cannot download the course's copy, it uses the copy in your repository and says so in its log.
-
-### Completion contract
-
-Commit these files in your fork. Grading totals 100 points, and each check is scored on its own.
-
-| Artifact | Complete when | Points |
-|---|---|---:|
-| `terminal-practice/source.txt` and `terminal-practice/path-check.txt` | Each exists as a regular file in a regular `terminal-practice` directory. Their contents are not checked. | 20 (10 each) |
-| `output/readiness.txt` | A UTF-8 text file in a regular `output` directory holding the 13 lines this README shows after the Python version in Tasks 1.2, 2.2, and 3.1, in the same order. Letter case, equivalent number formats, whitespace, blank lines, and extra lines are ignored, and the Python version line is not checked. | 65 (5 each) |
-| `output/student_identity.txt` | A regular file in a regular `output` directory holding one hash from the course roster; surrounding whitespace and letter case are ignored. | 15 |
-
-A wrong or missing report line costs only its own 5 points. `Mean` also earns credit when it is calculated correctly from your declared `Total` and `Count`; `Review count` earns credit when it counts the four measurement labels you saved. The identity hash is checked separately from the report. Extra files are ignored, but keep the supplied ones, because `capture_identity.py` needs `process_email.py` and the checks need their own files.
-
-## Submit
-
-Commit your three completed scripts and the four checkpoint files to **your fork**: in VS Code Source Control, stage each file with **+**, commit, and select **Sync Changes**. Follow the [Lecture 01 submission walkthrough](https://app.notion.com/p/271d9fdd1a1a805784e1fe68dc985696) for VS Code or GitHub web upload. On GitHub, open both files under `output/` and confirm their contents. Your fork is the submission; no pull request is needed.
-
-GitHub Actions runs the checks automatically on every push; in a new fork, open **Actions** and enable workflows once if GitHub prompts you. Open the latest run to see which artifacts need attention. If your local run and the GitHub run ever disagree, the GitHub run counts, because it uses the course's current copy of the checks.
+What each check looks for: [CHECKS.md](CHECKS.md)

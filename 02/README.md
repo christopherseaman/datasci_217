@@ -13,9 +13,17 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 [Live Demo Guide](demo/DEMO_GUIDE.md)
 
-- McKinney, _Python for Data Analysis_ (3rd ed.): 2.3 (strings and modules), 3.1 (lists, tuples, dictionaries, and sets), 3.2 (functions, return values, and exceptions), and 3.3 (files)
-- Shotts, _The Linux Command Line_: Chapter 8 (editing command lines)
-- MIT, _The Missing Semester_: Version Control (Git), through branches, merging, and merge conflicts
+This lecture covers:
+
+- McKinney, _Python for Data Analysis_ (3rd ed.):
+    - 2.3 (strings and modules)
+    - 3.1 (lists, tuples, dictionaries, and sets)
+    - 3.2 (functions, return values, and exceptions)
+    - 3.3 (files)
+- Shotts, _The Linux Command Line_:
+    - Chapter 8 (editing command lines)
+- MIT, _The Missing Semester_:
+    - Version Control (Git), through branches, merging, and merge conflicts
 
 # VS Code Basics
 
@@ -59,11 +67,7 @@ These work while the terminal has focus, and **Ctrl** means Control even on Mac.
 
 ![Python: Select Interpreter with Python 3.13 chosen; your list shows the Pythons on your computer](media/vscode-selected-interpreter.png)
 
-Make it Py-pretty: extensions, themes, window layouts, and format-on-save are in BONUS.md.
-
 ## Command-Line Catalog
-
-Commands to recognize from the shell; the command-line bonus has examples.
 
 | Area | Commands | Purpose |
 | --- | --- | --- |
@@ -96,7 +100,7 @@ analysis_fixed_broken_computer_recovery.py
 
 Git records a project as a series of **commits**: snapshots of the tracked files, each with an author, time, and message saying why. A change moves through these steps:
 
-![git add stages, git commit records in your local repository, and git push and git pull sync it with the remote; the git reset arrow, which unstages, is covered in BONUS.md](media/git_local_remote_areas.png)
+![git add stages, git commit records in your local repository, and git push and git pull sync it with the remote](media/git_local_remote_areas.png)
 
 ### Reference Card: Git Vocabulary
 
@@ -188,7 +192,7 @@ Experiment: compare three systolic summaries.
 
 Open the file from **Merge Changes**. Select **Accept Current Change**, **Accept Incoming Change**, or **Accept Both Changes** above the block, or edit the result yourself and delete the marker lines. Use **Compare Changes** to inspect both versions before choosing. Save, review the result, stage with **+**, then **Commit** to finish the merge.
 
-**Resolve in Merge Editor** shows Incoming on the left, Current on the right, and Result below. Select **Accept Incoming** or **Accept Current**, review Result, then **Complete Merge** to save and stage it; **Commit** finishes the merge. Demo 1 gives a complete conflict to resolve independently.
+**Resolve in Merge Editor** shows Incoming on the left, Current on the right, and Result below. Select **Accept Incoming** or **Accept Current**, review Result, then **Complete Merge** to save and stage it; **Commit** finishes the merge.
 
 Microsoft's [VS Code merge-conflict guide](https://code.visualstudio.com/docs/sourcecontrol/merge-conflicts) walks through both views with screenshots.
 
@@ -200,7 +204,7 @@ Microsoft's [VS Code merge-conflict guide](https://code.visualstudio.com/docs/so
 
 ## Alternative: Git in the Terminal
 
-Every Source Control button runs a Git command. Demo 1's terminal path uses these; BONUS.md covers the rest.
+Every Source Control button runs a Git command.
 
 ### Reference Card: Git in the Terminal
 

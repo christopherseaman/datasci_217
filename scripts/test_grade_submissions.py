@@ -193,8 +193,10 @@ def complete_as_written(root: Path) -> None:
     assert "course roster" in failing(report)["identity hash on the roster"], report
     identity.write_text(ROSTER_HASH + "\n", encoding="utf-8")
 
-    # Check your work: the README's promised local ending, and full marks from the course checks.
-    promised = block(sections, "Check", "text")
+    # Check your work: CHECKS.md's promised local ending, and full marks from the course checks.
+    promised = re.findall(r"^```text\n(.*?)^```", (HANDOUT / "CHECKS.md").read_text(encoding="utf-8"), re.M | re.S)
+    assert len(promised) == 1, f"CHECKS.md should hold exactly one ```text block; found {len(promised)}"
+    promised = promised[0]
     checked = run([sys.executable, "-B", "check_assignment.py"], root)
     assert checked.endswith(promised), f"check_assignment.py printed:\n{checked}\nThe README promises:\n{promised}"
     assert value_report(root)["score"] == 100

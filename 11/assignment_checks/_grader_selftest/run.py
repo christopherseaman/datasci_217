@@ -11,6 +11,7 @@ writes submissions in ignored `scratch/`, and confirms what each one scores:
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -21,6 +22,9 @@ import tempfile
 import numpy as np
 import pandas as pd
 
+
+# Self-tests grade with the working copy, never the copy downloaded from GitHub.
+os.environ["DS217_LOCAL_CHECKS"] = "1"
 
 CHECKS = Path(__file__).resolve().parents[1]
 HANDOUT = CHECKS.parent / "assignment"
@@ -36,6 +40,7 @@ FEATURES = grading.FEATURES
 NUMERIC = grading.NUMERIC_FEATURES
 AUTOMATED = sum(points for _, points, _ in grading.CHECKS)
 README = HANDOUT / "README.md"
+CHECKS_DOC = HANDOUT / "CHECKS.md"
 
 
 def graded_points(part) -> dict[str, int]:
@@ -48,9 +53,9 @@ def graded_points(part) -> dict[str, int]:
 
 
 def readme_contract() -> dict[str, int]:
-    """Each output file's points from the README's Completion contract table."""
+    """Each output file's points from CHECKS.md's Completion contract table."""
     points = {}
-    for line in README.read_text(encoding="utf-8").splitlines():
+    for line in CHECKS_DOC.read_text(encoding="utf-8").splitlines():
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
         if len(cells) == 3 and (name := re.fullmatch(r"`output/([^`]+)`", cells[0])) and cells[2].isdigit():
             points[name.group(1)] = int(cells[2])
@@ -66,8 +71,8 @@ def readme_questions() -> dict[str, int]:
 def readme_rubric() -> tuple[int, list[str]]:
     """The human-review rubric's full credit per category and its category names."""
     table = re.search(r"^\| Category \| What it reads \| Full credit \((\d+)\) \|.*\n\|[- |]+\|\n((?:\|.*\n)+)",
-                      README.read_text(encoding="utf-8"), re.M)
-    assert table, "the README shows no human-review rubric table"
+                      CHECKS_DOC.read_text(encoding="utf-8"), re.M)
+    assert table, "CHECKS.md shows no human-review rubric table"
     return int(table.group(1)), [line.split("|")[1].strip() for line in table.group(2).splitlines()]
 
 
@@ -75,12 +80,12 @@ def check_points_documented() -> None:
     """The README, the notebooks, and assignment.md state the points the checks and the rubric give."""
     readme = README.read_text(encoding="utf-8")
     by_file = graded_points(lambda name: name.split()[1].split(":")[0].replace("train/validation/test", "*"))
-    assert readme_contract() == by_file, ("README Completion contract points", readme_contract(), by_file)
+    assert readme_contract() == by_file, ("CHECKS.md Completion contract points", readme_contract(), by_file)
     credit, categories = readme_rubric()
     review = credit * len(categories)
     assert AUTOMATED + review == 100 and review == check_assignment.HUMAN_REVIEW_POINTS, (AUTOMATED, review)
     assert (f"{AUTOMATED} points graded from your committed files after the deadline, {review} by human review"
-            in readme), "the README states a different point split"
+            in CHECKS_DOC.read_text(encoding="utf-8")), "CHECKS.md states a different point split"
     by_question = {**graded_points(lambda name: name.split()[0]), "Q9": review}
     assert readme_questions() == by_question, ("README question points", readme_questions(), by_question)
     for question, points in by_question.items():
@@ -92,7 +97,7 @@ def check_points_documented() -> None:
             assert stated in text, (path.name, stated)
     writeup = (HANDOUT / "q9_writeup.md").read_text(encoding="utf-8")
     assert re.findall(r"^\| (.+) \| (\d+) \|$", writeup, re.M) == [(name, str(credit)) for name in categories], \
-        "q9_writeup's category table differs from the README rubric"
+        "q9_writeup's category table differs from the CHECKS.md rubric"
     assert f"{review} human-review points" in (HANDOUT / "assignment.md").read_text(encoding="utf-8"), \
         "assignment.md states different human-review points"
 
@@ -758,7 +763,7 @@ def run() -> None:
         print("q8_test_predictions.csv missing: -6, its own checks only; with a wrong model n as well, the metrics -1")
 
         # Documented handout contract: tree and checklist name every artifact with its header.
-        readme = (HANDOUT / "README.md").read_text(encoding="utf-8")
+        readme = (HANDOUT / "README.md").read_text(encoding="utf-8") + CHECKS_DOC.read_text(encoding="utf-8")
         contract = (HANDOUT / "assignment.md").read_text(encoding="utf-8")
         for name, (columns, _) in grading.ARTIFACTS.items():
             assert f"output/{name}" in readme and name in contract, f"README or assignment.md omits {name}"

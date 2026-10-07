@@ -18,7 +18,7 @@ jupyter:
 
 # Demo 1: Missing Values, Duplicates, Sentinels, and Types
 
-A clinic sends a small visit export. Before anyone averages a blood pressure, find the gaps, tell a double entry from a repeat visit, turn disguised missing values into real ones, and convert text columns to numbers and dates. Everything here comes from Lecture 05 up to the first demo break, plus Lectures 01 to 04.
+A clinic sends a small visit export. Before anyone averages a blood pressure, find the gaps, tell a double entry from a repeat visit, turn disguised missing values into real ones, and convert text columns to numbers and dates.
 
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 

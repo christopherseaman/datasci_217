@@ -30,6 +30,7 @@ from __future__ import annotations
 from pathlib import Path
 import codecs
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -38,6 +39,9 @@ import tempfile
 
 import numpy as np
 import pandas as pd
+
+# Self-tests grade with the working copy, never the copy downloaded from GitHub.
+os.environ["DS217_LOCAL_CHECKS"] = "1"
 
 
 CHECKS = Path(__file__).resolve().parents[1]
@@ -262,14 +266,15 @@ def check_readme() -> None:
         "\n".join("".join(cell["source"]) for cell in notebook_cells() if cell["cell_type"] == "markdown"),
     )
     assert dict(notebook_checkpoints) == expected, notebook_checkpoints
-    contract = re.findall(r"^\| `(output/[^`]+)` \| .* \| ([^|]+) \| (\d+) \|$", readme, re.M)
+    checks_doc = (HANDOUT / "CHECKS.md").read_text(encoding="utf-8")
+    contract = re.findall(r"^\| `(output/[^`]+)` \| .* \| ([^|]+) \| (\d+) \|$", checks_doc, re.M)
     assert [(name.strip(), int(points)) for _, name, points in contract] == list(zip(NAMES, POINTS)), contract
     for path, name, _ in contract:
         assert name.strip().startswith(PREFIX[path]), (path, name)
     first = value_checks.CHECKS[0].name
-    assert f"[FIX ]  0/{POINTS[0]}  {first}\n         {value_checks._missing(HANDOUT, value_checks.PREPARED)}" in readme
+    assert f"[FIX ]  0/{POINTS[0]}  {first}\n         {value_checks._missing(HANDOUT, value_checks.PREPARED)}" in checks_doc
     last = value_checks.CHECKS[-1].name
-    assert f"[PASS]  {POINTS[-1]}/{POINTS[-1]}  {last}\n\nScore: 100/100" in readme
+    assert f"[PASS]  {POINTS[-1]}/{POINTS[-1]}  {last}\n\nScore: 100/100" in checks_doc
     # The README and the notebook number their tasks the same way.
     notebook_headings = [
         line for cell in notebook_cells() if cell["cell_type"] == "markdown"
@@ -277,7 +282,7 @@ def check_readme() -> None:
     ]
     readme_headings = [line for line in readme.splitlines() if re.match(r"#{2,3} (Task \d|\d\.\d)", line)]
     assert notebook_headings == readme_headings, (notebook_headings, readme_headings)
-    assert chr(0x2014) not in readme and " - " not in readme.replace("\n- ", "\n")
+    assert chr(0x2014) not in readme and not re.search(r"\S - ", readme)
 
 
 def check_handout_files() -> None:
@@ -288,7 +293,7 @@ def check_handout_files() -> None:
     shipped = sorted(
         path.relative_to(CHECKS).as_posix()
         for path in CHECKS.rglob("*")
-        if path.is_file() and not {"__pycache__", ".pytest_cache", "_grader_selftest"} & set(path.relative_to(CHECKS).parts)
+        if path.is_file() and not {"__pycache__", ".pytest_cache", "_grader_selftest", ".checks"} & set(path.relative_to(CHECKS).parts)
         and path.name != "README.md"
     )
     assert sorted(listed) == shipped, (listed, shipped)
@@ -296,7 +301,7 @@ def check_handout_files() -> None:
         assert (HANDOUT / name).read_bytes() == (CHECKS / name).read_bytes(), f"{name} differs from the handout copy"
     handout_python = sorted(
         path.relative_to(HANDOUT).as_posix() for path in HANDOUT.rglob("*.py")
-        if "__pycache__" not in path.parts and ".venv" not in path.parts
+        if "__pycache__" not in path.parts and ".venv" not in path.parts and ".checks" not in path.parts
     )
     assert handout_python == sorted(name for name in listed if name.endswith(".py")), handout_python
     assert not (HANDOUT / "_grader_selftest").exists()

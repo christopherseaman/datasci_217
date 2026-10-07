@@ -22,7 +22,7 @@ Each demo has a **core walkthrough** for class and **independent practice** to w
 
 Follow one path for each action; the terminal listings perform the same operations as the VS Code steps. The core route can jump from its first successful merge to **Ignore a file**. Work through the other sections on your own after class.
 
-Run every command in VS Code's **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac). On Windows, use the **WSL: Ubuntu** window from Lecture 01. If you use Git Bash with an activated uv environment, type `python` wherever the guide says `python3`.
+Run every command in VS Code's **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac). On Windows, use the **WSL: Ubuntu** window from Lecture 01.
 
 Make a practice folder **outside** your cloned course repository, such as `ds217-practice` in your home folder, and open it with **File → Open Folder…**. It must sit outside the clone because VS Code hides **Initialize Repository** in any folder already inside a repository. Open **View → Source Control** (Ctrl+Shift+G, including Control on macOS) and select **Initialize Repository**. Or from the terminal, starting in your home folder:
 

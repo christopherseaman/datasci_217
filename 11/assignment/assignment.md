@@ -1,6 +1,6 @@
 # Assignment 11 Contract
 
-This file defines the forecasting question, the rules every question follows, and each output file: its path, its first line (the header), its line count, and how its values are computed. The [README](README.md) says how the files are graded.
+This file defines the forecasting question, the rules every question follows, and each output file: its path, its first line (the header), its line count, and how its values are computed. [CHECKS.md](CHECKS.md) says how the files are graded.
 
 ## Forecasting Question
 
@@ -267,4 +267,4 @@ Under **Model Results**, keep the six-column metrics table with columns `Evaluat
 ![Final model results](output/q8_final_visualizations.png)
 ```
 
-The report and the notebooks earn the 25 human-review points, 5 for each of five categories; the [README](README.md#completion-contract) says what each category reads and what earns full credit. The model does not need to beat persistence.
+The report and the notebooks earn the 25 human-review points, 5 for each of five categories; the [completion contract](CHECKS.md#completion-contract) says what each category reads and what earns full credit. The model does not need to beat persistence.

@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -22,6 +23,9 @@ import tempfile
 import numpy as np
 import pandas as pd
 
+
+# Self-tests grade with the working copy, never the copy downloaded from GitHub.
+os.environ["DS217_LOCAL_CHECKS"] = "1"
 
 CHECKS = Path(__file__).resolve().parents[1]
 HANDOUT = CHECKS.parent / "assignment"
@@ -33,6 +37,7 @@ import grading  # noqa: E402
 DATA = HANDOUT / "data" / "people_raw.csv"
 FIXTURE = HANDOUT / "data" / "fixture.json"
 README = HANDOUT / "README.md"
+CHECKS_MD = HANDOUT / "CHECKS.md"
 EXACT_DATE = r"[0-9]{4}-[0-9]{2}-[0-9]{2}"
 AGE_SENTINELS = ["unknown", "-9"]
 STATUS_SENTINEL = "NA"
@@ -77,21 +82,21 @@ def readme_checklist() -> dict[str, tuple[str, int]]:
     return {name: (header, int(lines)) for name, header, lines in rows}
 
 
-def readme_contract() -> dict[str, int]:
-    """Each output file's points from the README's Completion contract table."""
+def checks_contract() -> dict[str, int]:
+    """Each output file's points from the CHECKS.md's Completion contract table."""
     points = {}
-    for line in README.read_text(encoding="utf-8").splitlines():
+    for line in CHECKS_MD.read_text(encoding="utf-8").splitlines():
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
         if len(cells) == 3 and (name := re.fullmatch(r"`output/([^`]+)`", cells[0])) and cells[2].isdigit():
             points[name.group(1)] = int(cells[2])
     return points
 
 
-def readme_review_points() -> int:
-    """The human-review points in the README's rubric: each category's full credit times the categories."""
+def checks_review_points() -> int:
+    """The human-review points in the CHECKS.md's rubric: each category's full credit times the categories."""
     table = re.search(r"^\| Category \| What it reads \| Full credit \((\d+)\) \|.*\n\|[- |]+\|\n((?:\|.*\n)+)",
-                      README.read_text(encoding="utf-8"), re.M)
-    assert table, "the README shows no human-review rubric table"
+                      CHECKS_MD.read_text(encoding="utf-8"), re.M)
+    assert table, "CHECKS.md shows no human-review rubric table"
     return int(table.group(1)) * len(table.group(2).splitlines())
 
 
@@ -287,30 +292,31 @@ def run() -> None:
     files = solve()
 
     readme = README.read_text(encoding="utf-8")
+    checks_md = CHECKS_MD.read_text(encoding="utf-8")
     checklist = readme_checklist()
     assert set(checklist) == set(files), ("README checklist rows", sorted(checklist))
     for name, text in files.items():
         header, count = checklist[name]
         assert header == HEADERS[name], (name, header)
         assert len(text.splitlines()) == count, (name, count, len(text.splitlines()))
-        tree = readme.split("## The data")[0]
+        tree = readme.split("## Task 1")[0]
         assert re.search(rf"── {re.escape(name)} +# you make in Task", tree), (name, "missing from the file tree")
     graded: dict[str, int] = {}
     for check in grading.CHECKS:
         file_name = check.name.split(":")[0]
         graded[file_name] = graded.get(file_name, 0) + check.points
-    assert readme_contract() == graded, ("README Completion contract points", readme_contract(), graded)
-    review = readme_review_points()
+    assert checks_contract() == graded, ("README Completion contract points", checks_contract(), graded)
+    review = checks_review_points()
     assert grading.MAX_SCORE + review == 100 and check_assignment.HUMAN_REVIEW_POINTS == review, review
     assert (f"{grading.MAX_SCORE} points graded from your committed files after the deadline, "
-            f"{review} by human review") in readme, "the README states a different point split"
+            f"{review} by human review") in checks_md, "CHECKS.md states a different point split"
     # Every line of every answer file except the labels and headers the README has to show.
     shown = {HEADERS[name] for name in files} | {"$ tail -n 2 data/people_raw.csv", ",".join(RAW_COLUMNS)}
     leaks = [line for name in files if name != "decision_log.csv"
-             for line in files[name].splitlines() if line not in shown and line in readme]
+             for line in files[name].splitlines() if line not in shown and line in readme + checks_md]
     assert not leaks, ("the README publishes expected values", leaks)
     for phrase in ("check_assignment", "GitHub Actions", "final newline", "grading.py", "automated feedback"):
-        assert phrase not in readme, ("the exam README mentions", phrase)
+        assert phrase not in readme + checks_md, ("the exam README mentions", phrase)
 
     shipped = [name for name in ("check_assignment.py", "grading.py", "test_assignment.py", "_grader_selftest",
                                  ".github", ".badmath.toml") if (HANDOUT / name).exists()]

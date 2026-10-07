@@ -1,35 +1,8 @@
 # Assignment 10: Modeling Blood Pressure and Testing Predictions Honestly
 
-## Files
+## Overview
 
-```text
-assignment/
-├── assignment.ipynb        # the notebook you complete
-├── data/
-│   ├── clinic_bp.csv             # supplied: Task 1's patients
-│   ├── feature_availability.csv  # supplied: Task 2.1's candidate features
-│   ├── followup_visits.csv       # supplied: Tasks 2.2 to 3.2's visits
-│   └── readmission_flags.csv     # supplied: Task 3.3's flags
-├── pyproject.toml          # supplied: the packages the notebook uses, and ipykernel
-├── uv.lock                 # supplied: the exact versions `uv sync` installs
-├── .python-version         # supplied: tells uv to use Python 3.13
-├── check_assignment.py     # supplied: run it to check your work; keep unchanged
-├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
-├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
-└── output/
-    ├── ols_coefficients.csv         # you generate in Task 1.1
-    ├── new_patient_intervals.csv    # you generate in Task 1.2
-    ├── ols_residuals.csv            # you generate in Task 1.3
-    ├── residuals_vs_fitted.png      # you generate in Task 1.3
-    ├── availability_decisions.csv   # you generate in Task 2.1
-    ├── split_summary.csv            # you generate in Task 2.2
-    ├── validation_metrics.csv       # you generate in Task 3.1
-    ├── test_metrics.csv             # you generate in Task 3.2
-    ├── test_predictions.csv         # you generate in Task 3.2
-    └── readmission_metrics.csv      # you generate in Task 3.3
-```
-
-## The data
+Fit and read an OLS model of blood pressure with `statsmodels`, audit features for leakage and split visits by target time, then compare a baseline with a pipeline on validation rows and test the frozen winner once, saving each result for the checks.
 
 All four files are synthetic; the IDs belong to no one. Keep them exactly as handed out.
 
@@ -61,23 +34,49 @@ From late April the program also enrolled patients referred from the emergency d
 
 ## Setup
 
-Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open it. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect the four files above. This clone is a new repository, so before your first commit run Lecture 02's two `git config user.name "..."` and `git config user.email "..."` lines in this terminal, with your name and GitHub noreply email.
+1. Fork the assignment repository on GitHub and clone your fork as in Lecture 01: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open the cloned folder itself, not a folder above it.
+2. In the integrated terminal, create the environment, activate it, and install the packages `pyproject.toml` and `uv.lock` list. Do not run `uv init`: the project files already exist.
 
-> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. Git Bash also works; there the environment activates with `source .venv/Scripts/activate` instead, and you type `python` wherever these instructions say `python3`. In PowerShell, activate with `.\.venv\Scripts\Activate.ps1` and type `python` as well.
+    ```bash
+    uv venv --seed
+    source .venv/bin/activate
+    uv sync
+    ```
 
-The handout already lists the notebook's packages in `pyproject.toml` and records their exact versions in `uv.lock`, and `.python-version` pins Python 3.13, so `uv sync` rebuilds the environment, as in Lecture 03's "Recreate from the Records" snippet. Create the project environment, activate it, and sync:
+    - Expect: `uv venv` prints `Using CPython 3.13.x`, and `uv sync` lists `+ pandas==3.0.5`, `+ statsmodels==0.14.6`, and `+ scikit-learn==1.9.0` among the packages it installs.
+3. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`.
+4. Run the notebook's first two code cells.
+    - Expect: `pandas: 3.0.5`, `statsmodels: 0.14.6`, `scikit-learn: 1.9.0`, and `data folder found: True` from the first; `patients: (20, 4)`, `candidates: (5, 2)`, `visits: (48, 9)`, and `flags: (20, 4)` from the second.
 
-```bash
-uv venv --seed
-source .venv/bin/activate
-uv sync
+## Files
+
+```text
+assignment/
+├── assignment.ipynb        # the notebook you complete
+├── data/
+│   ├── clinic_bp.csv             # supplied: Task 1's patients
+│   ├── feature_availability.csv  # supplied: Task 2.1's candidate features
+│   ├── followup_visits.csv       # supplied: Tasks 2.2 to 3.2's visits
+│   └── readmission_flags.csv     # supplied: Task 3.3's flags
+├── pyproject.toml          # supplied: the packages the notebook uses, and ipykernel
+├── uv.lock                 # supplied: the exact versions `uv sync` installs
+├── .python-version         # supplied: tells uv to use Python 3.13
+├── CHECKS.md               # supplied: what each check looks for
+├── check_assignment.py     # supplied: run it to check your work; keep unchanged
+├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
+├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
+└── output/
+    ├── ols_coefficients.csv         # you generate in Task 1.1
+    ├── new_patient_intervals.csv    # you generate in Task 1.2
+    ├── ols_residuals.csv            # you generate in Task 1.3
+    ├── residuals_vs_fitted.png      # you generate in Task 1.3
+    ├── availability_decisions.csv   # you generate in Task 2.1
+    ├── split_summary.csv            # you generate in Task 2.2
+    ├── validation_metrics.csv       # you generate in Task 3.1
+    ├── test_metrics.csv             # you generate in Task 3.2
+    ├── test_predictions.csv         # you generate in Task 3.2
+    └── readmission_metrics.csv      # you generate in Task 3.3
 ```
-
-`uv sync` prints a `+ package==version` line for each package it installs, including `+ pandas==3.0.5`. Do not run `uv init`: the handout's `pyproject.toml` already exists. If `.venv` already exists, for example when you run these lines a second time, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next two lines work as before. Answering `y` gives a new, empty environment, so run `uv sync` again after it.
-
-`pyproject.toml` includes **ipykernel**, the package that lets a notebook run on this environment's Python (Lecture 04), so `uv sync` is all the notebook needs. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept.
-
-Run the notebook's first two code cells. The first prints the package versions and `data folder found: True`; `False` means the notebook is not running from the assignment directory, so open the folder itself in VS Code, not a folder above it. The second reads the four files and prints `patients: (20, 4)`, `candidates: (5, 2)`, `visits: (48, 9)`, and `flags: (20, 4)`.
 
 ## Task 1: Model blood pressure with statsmodels
 
@@ -205,99 +204,8 @@ Flagging no one is right for 80% of patients and finds none of the four readmiss
 
 ## Check your work
 
-Click **Restart**, then **Run All**. The last cell prints `Fresh-run check passed`, or names the task to fix. Then run the checks from the assignment directory in the terminal:
+- Click **Restart**, then **Run All**.
+- The last cell prints your score and what to fix, using the latest checks from the course repository: the same checks GitHub runs on each push.
+- Commit `assignment.ipynb` and the `output/` files, then push.
 
-```bash
-python3 check_assignment.py
-```
-
-`check_assignment.py` runs the same checks GitHub runs. They read only the ten files in `output/` and compare them with values computed from the supplied data. They never run or read your notebook, so any way of producing correct files counts.
-
-Each check prints `PASS` or `FIX` and the points it earned, and a `FIX` says what to fix on the line beneath it. When the next checks need the same fix, such as a missing file, they say `(same fix as above)`. Before Task 1, for example, the first check reports:
-
-```text
-[FIX ]  0/2  coefficients: columns
-         output/ols_coefficients.csv is missing; run the Task 1.1 cell to write it, then commit it.
-```
-
-Below the score, `Left to fix` lists the checks still failing and the points they are worth. Fix what they name, rerun the notebook and then the checks, and repeat until every check passes. A clean run ends with:
-
-```text
-[PASS]  2/2  readmission metrics: recall values
-
-Score: 100/100
-All checks passed.
-```
-
-How the files are read:
-
-- Each check is scored on its own, so one mistake costs only that check's points.
-- A missing column costs the columns check once; values in the remaining columns are still checked. An empty table or one with no recognizable rows earns no value points.
-- Spacing, line endings, quoting, column order, and row order never cost points.
-- Numbers are compared as numbers, so `2`, `2.0`, and `2.00` are the same value. Any number may be rounded to one or two decimals, as `3.3` or `3.34` for an MAE of 3.3379. Accuracy, precision, recall, and R² may also be written as percents, as `85%` for 0.85.
-- Labels, IDs, and column names are compared in any letter case, with spaces and underscores alike.
-- Timestamps are compared as instants in UTC.
-- A leading column of row numbers, which `to_csv()` writes when `index=False` is left out, is ignored.
-- The test metrics and predictions may come from the pipeline fitted on the training rows or refitted on training plus validation rows.
-
-Every push also runs GitHub Actions, which downloads the course's current copy of the checks and reruns them on the files you committed and pushed. That run is what counts, and a check corrected after handout reaches you there on your next push.
-
-### Completion contract
-
-Grading totals 100 points and reads these files relative to the assignment root.
-
-| Artifact | Complete when | Check | Points |
-| --- | --- | --- | ---: |
-| `output/ols_coefficients.csv` | Its columns are the five in the Task 1.1 header line. | coefficients: columns | 2 |
-| `output/ols_coefficients.csv` | It holds `Intercept`, `age`, and `bmi`, once each. | coefficients: one row per term | 2 |
-| `output/ols_coefficients.csv` | Each `coef` is the fitted coefficient. | coefficients: coef values | 3 |
-| `output/ols_coefficients.csv` | Each `std_err` is the coefficient's standard error. | coefficients: std_err values | 2 |
-| `output/ols_coefficients.csv` | Each `ci_lower` and `ci_upper` bounds the 95% confidence interval. | coefficients: confidence interval values | 3 |
-| `output/new_patient_intervals.csv` | Its columns are those in the Task 1.2 header line; `mean_se` is optional. | new-patient intervals: columns | 2 |
-| `output/new_patient_intervals.csv` | It holds one row, for age 60 and BMI 31.0. | new-patient intervals: one row for the new patient | 1 |
-| `output/new_patient_intervals.csv` | `mean` is the fitted SBP for the new patient. | new-patient intervals: mean | 2 |
-| `output/new_patient_intervals.csv` | `mean_ci_lower` and `mean_ci_upper` bound the mean-response interval. | new-patient intervals: mean-response interval | 2 |
-| `output/new_patient_intervals.csv` | `obs_ci_lower` and `obs_ci_upper` bound the prediction interval. | new-patient intervals: prediction interval | 2 |
-| `output/ols_residuals.csv` | Its columns are the four in the Task 1.3 header line. | residuals: columns | 2 |
-| `output/ols_residuals.csv` | It holds `P01` to `P20`, once each. | residuals: one row per patient | 2 |
-| `output/ols_residuals.csv` | Each `observed` is the patient's `sbp`. | residuals: observed values | 1 |
-| `output/ols_residuals.csv` | Each `fitted` is the patient's fitted SBP. | residuals: fitted values | 2 |
-| `output/ols_residuals.csv` | Each `residual` is observed minus fitted. | residuals: residual values | 2 |
-| `output/residuals_vs_fitted.png` | It is a PNG image. | residual plot: PNG image | 5 |
-| `output/availability_decisions.csv` | Its columns are the four in the Task 2.1 header line. | availability: columns | 2 |
-| `output/availability_decisions.csv` | It holds each of the five candidates once. | availability: one row per candidate | 2 |
-| `output/availability_decisions.csv` | Each `hours_after_visit` matches `data/feature_availability.csv`. | availability: hours_after_visit values | 1 |
-| `output/availability_decisions.csv` | `available` is true exactly for the features known when the visit ends. | availability: available values | 3 |
-| `output/availability_decisions.csv` | Each `decision` keeps the available features and excludes the rest. | availability: decision values | 3 |
-| `output/split_summary.csv` | Its columns are the four in the Task 2.2 header line. | split summary: columns | 2 |
-| `output/split_summary.csv` | It holds `train`, `validation`, and `test`, once each. | split summary: one row per partition | 2 |
-| `output/split_summary.csv` | Each `row_count` counts the partition's visits, split on `followup_time`. | split summary: row_count values | 4 |
-| `output/split_summary.csv` | Each `first_target_time` is the partition's earliest `followup_time`. | split summary: first_target_time values | 3 |
-| `output/split_summary.csv` | Each `last_target_time` is the partition's latest `followup_time`. | split summary: last_target_time values | 3 |
-| `output/validation_metrics.csv` | Its columns are the four in the Task 3.1 header line. | validation metrics: columns | 2 |
-| `output/validation_metrics.csv` | It holds `mean_baseline` and `linear_pipeline`, once each. | validation metrics: one row per approach | 2 |
-| `output/validation_metrics.csv` | Each `mae` is the approach's validation MAE. | validation metrics: mae values | 3 |
-| `output/validation_metrics.csv` | Each `rmse` is the approach's validation RMSE. | validation metrics: rmse values | 3 |
-| `output/validation_metrics.csv` | Each `r2` is the approach's validation R². | validation metrics: r2 values | 3 |
-| `output/test_metrics.csv` | Its columns are the four in the Task 3.2 header line. | test metrics: columns | 2 |
-| `output/test_metrics.csv` | It holds one row, `linear_pipeline`. | test metrics: one row for the frozen approach | 1 |
-| `output/test_metrics.csv` | `mae` is the frozen pipeline's test MAE. | test metrics: mae value | 2 |
-| `output/test_metrics.csv` | `rmse` is the frozen pipeline's test RMSE. | test metrics: rmse value | 2 |
-| `output/test_metrics.csv` | `r2` is the frozen pipeline's test R². | test metrics: r2 value | 2 |
-| `output/test_predictions.csv` | Its columns are the four in the Task 3.2 header line. | test predictions: columns | 2 |
-| `output/test_predictions.csv` | It holds `V39` to `V48`, once each. | test predictions: one row per test visit | 2 |
-| `output/test_predictions.csv` | Each `followup_time` and `sbp_followup` matches `data/followup_visits.csv`. | test predictions: followup_time and sbp_followup values | 2 |
-| `output/test_predictions.csv` | Each `predicted_sbp` is the frozen pipeline's prediction. | test predictions: predicted_sbp values | 3 |
-| `output/readmission_metrics.csv` | Its columns are the four in the Task 3.3 header line. | readmission metrics: columns | 2 |
-| `output/readmission_metrics.csv` | It holds `model_flag` and `never_flag`, once each. | readmission metrics: one row per flag | 1 |
-| `output/readmission_metrics.csv` | Each `accuracy` is the flag's accuracy. | readmission metrics: accuracy values | 2 |
-| `output/readmission_metrics.csv` | Each `precision` is the flag's precision, 0 when it flags no one. | readmission metrics: precision values | 2 |
-| `output/readmission_metrics.csv` | Each `recall` is the flag's recall. | readmission metrics: recall values | 2 |
-
-Extra files are ignored.
-
-## Submit
-
-Before you commit a notebook, follow Lecture 04's "Before You Commit a Notebook": click **Clear All Outputs**, then save. In VS Code Source Control, stage `assignment.ipynb` and the ten files in `output/`. Commit with `Complete Assignment 10 notebook` and select **Sync Changes**. Keep `.venv/` out of the commit; `.gitignore` already lists it.
-
-Confirm the notebook and the ten output files on `main` in the repository browser. GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. If a run cannot download the course's current checks, it grades with the copy in your repository and says so in its log. If your local run and the GitHub run ever disagree, the GitHub run counts, because it uses the course's current checks. If a required VS Code control is unavailable, record its message and contact the instructor.
+What each check looks for: [CHECKS.md](CHECKS.md)

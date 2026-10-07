@@ -454,7 +454,7 @@ tail -n +2 data/raw/encounters.csv \
 
 ## Optional reference: Quick Data Visualization
 
-These tools plot a column without leaving the terminal: a quick look at a trend, a sanity check on a pipeline's output, or a small dashboard. Lecture 07 covers plotting in Python.
+These tools plot a column without leaving the terminal: a quick look at a trend, a sanity check on a pipeline's output, or a small dashboard.
 
 ### Code Snippet: Plot in the Terminal
 

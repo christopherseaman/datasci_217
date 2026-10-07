@@ -14,16 +14,21 @@ jupyter:
 
 # Demo 4: Compare, freeze, and report
 
-Compare the weekly baseline, "same hour last week" (`lag_168`), with one transparent scikit-learn pipeline on the validation rows. The lower validation MAE freezes the choice. Only then refit the pipeline on training plus validation rows and evaluate both candidates on June exactly once, then look at where the errors fall. It uses Lecture 11 up to the demo break, plus pipelines, baselines, and metrics (Lecture 10), aggregation (Lecture 08), and saved figures (Lecture 07). Assignment 11's Q7 to Q9 follow the same pattern; Q7 also runs the permutation-importance check from Lecture 10's Demo 2, which this demo leaves out. There is no performance threshold: honest evaluation and clear evidence are the goals.
+- Compare the weekly baseline, "same hour last week" (`lag_168`), with one scikit-learn pipeline on the validation rows.
+- The lower validation MAE freezes the choice.
+- Refit on training plus validation rows and evaluate both candidates on June exactly once.
+- Look at where the errors fall.
 
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
+There is no performance threshold: honest evaluation and clear evidence are the goals.
+
+Run the cells from top to bottom; an **Expect** line after each step says what you should see.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-This notebook reads the release manifest and the zone-hour panel. This cell is supplied plumbing, as in Demo 1: it keeps any file already in `data/` and downloads the rest.
+This notebook reads the release manifest and the zone-hour panel. This supplied cell keeps any file already in `data/` and downloads the rest.
 
 ```python
 import hashlib
@@ -55,7 +60,7 @@ for filename in ["demo_release_manifest.json", "yellow_taxi_2023_h1_zone_hour_co
 
 ## 1. Rebuild the model table and the split
 
-This supplied cell repeats Demo 2's hash check and `build_model_table()`, and Demo 3's split, unchanged.
+This supplied cell repeats Demo 2's hash check and `build_model_table()` and Demo 3's split unchanged.
 
 ```python
 manifest_path = data_dir / "demo_release_manifest.json"
@@ -98,20 +103,24 @@ train = table[target_time < validation_start].copy()
 validation = table[(target_time >= validation_start) & (target_time < test_start)].copy()
 test = table[target_time >= test_start].copy()
 
-print({"train": len(train), "validation": len(validation), "test": len(test)})
+display(pd.DataFrame({"rows": {"train": len(train), "validation": len(validation), "test": len(test)}}))
 ```
 
-**Expect:** `{'train': 32532, 'validation': 8928, 'test': 8640}`, the split from Demo 3.
+**Expect:** a three-row table: `train` 32532, `validation` 8928, `test` 8640, the split from Demo 3.
 
 ## 2. One pipeline and one baseline, judged on validation
 
-The features mix types, so a `ColumnTransformer` (Lecture 10) sends the zone ID through a categorical branch and the other nine features through a numeric branch:
+The features mix types, so a `ColumnTransformer` sends the zone ID through a categorical branch and the other nine features through a numeric branch:
 
 - **Zone:** `OneHotEncoder(handle_unknown="ignore")` gives each zone its own 0/1 column, so zone 239 is not treated as larger than zone 132; a zone the model never saw would get all zeros instead of an error. `sparse_output=False` returns an ordinary table, which is fine at this size.
 - **Numbers:** `StandardScaler` puts the features on one scale, which Ridge's penalty needs.
-- **Imputers:** each branch first fills missing values from the training rows. This table has none, so they change nothing here; Assignment 11's sensor data does have gaps.
+- **Imputers:** each branch first fills missing values from the training rows. This table has none, so they change nothing here.
 
-Every learned value (the zone list, the medians, and the scaling statistics) comes from the rows passed to `fit`, here the training rows, and is reused unchanged on validation and test. `Ridge(alpha=10.0)` is linear regression with a penalty that keeps coefficients small. It accepts `random_state`, which only its `sag` and `saga` solvers use, so setting it changes nothing here but records the seed, as the final exam asks. A pickup count cannot be negative, so `np.maximum(values, 0)` (Lecture 03) raises any negative prediction to 0.
+Other pieces:
+
+- Every learned value (zone list, medians, scaling statistics) comes from the rows passed to `fit`, here the training rows, and is reused unchanged on validation and test.
+- `Ridge(alpha=10.0)` is linear regression with a penalty that keeps coefficients small. `random_state` only affects its `sag` and `saga` solvers, so setting it records the seed without changing results here.
+- A pickup count cannot be negative, so `np.maximum(values, 0)` raises any negative prediction to 0.
 
 ```python
 CATEGORICAL = ["pickup_zone_id"]
@@ -159,11 +168,13 @@ validation_scores = pd.DataFrame([
 display(validation_scores.round(1))
 ```
 
-**Expect:** two rows, sorted by MAE: `ridge_pipeline` with MAE 25.0 and RMSE 36.5, then `lag_168_baseline` with MAE 29.4 and RMSE 46.4. On May's hours the pipeline misses by about 25 pickups per zone-hour on average, against about 29 for "same hour last week".
+**Expect:** two rows sorted by MAE: `ridge_pipeline` (MAE 25.0, RMSE 36.5), then `lag_168_baseline` (MAE 29.4, RMSE 46.4). On May's hours the pipeline misses by about 25 pickups per zone-hour, against about 29 for "same hour last week".
 
 ## 3. Freeze the choice, then evaluate test once
 
-The next line is the only selection step: the candidate with the lower validation MAE. After it, validation has done its job. The pipeline is refit on training plus validation rows with the same settings, and both candidates are scored on June once; nothing afterwards goes back to change the choice.
+- The `selected_candidate` line is the only selection step: the lower validation MAE.
+- The pipeline is then refit on training plus validation rows with the same settings.
+- Both candidates are scored on June once; nothing afterwards changes the choice.
 
 ```python
 selected_candidate = validation_scores.loc[0, "candidate"]
@@ -185,11 +196,17 @@ metrics_table["selected"] = metrics_table["candidate"] == selected_candidate
 display(metrics_table.round(1))
 ```
 
-**Expect:** `Frozen candidate: ridge_pipeline`, then the four rows of Lecture 11's results table: validation 25.0 and 36.5 for the pipeline and 29.4 and 46.4 for the baseline; test 32.3 and 50.2 for the baseline and 25.6 and 37.8 for the frozen pipeline, with `selected` True on the pipeline's rows. The test result supports the candidate claim for June 2023: the pipeline beat "same hour last week" by about 7 pickups per zone-hour.
+**Expect:** `Frozen candidate: ridge_pipeline`, then a four-row table (MAE, RMSE):
+
+- validation: pipeline 25.0, 36.5; baseline 29.4, 46.4.
+- test: baseline 32.3, 50.2; pipeline 25.6, 37.8.
+- `selected` is True on the pipeline's rows.
+
+The test result supports the candidate claim for June 2023: the pipeline beat "same hour last week" by about 7 pickups per zone-hour.
 
 ## 4. Save the predictions and look at error slices
 
-An overall MAE can hide where the errors are. Group the frozen candidate's test errors by zone and by local hour (Lecture 08), and save them: small summaries as CSV for people, the full prediction table as Parquet for later code.
+An overall MAE can hide where the errors are. Group the frozen candidate's test errors by zone and by local hour, and save them: small summaries as CSV for people, the full prediction table as Parquet for later code.
 
 ```python
 predictions = test[["pickup_zone_id", "target_hour_utc", "target_hour_local", "hour_of_day", TARGET]]
@@ -222,11 +239,21 @@ zone_errors.to_csv(output_dir / "04_zone_error_summary.csv", index=False)
 hour_errors.to_csv(output_dir / "04_hour_error_summary.csv", index=False)
 ```
 
-**Expect:** a 12-row zone table with 720 test hours per zone, led by the two airports, zone 132 (JFK) at MAE 36.5 and zone 138 (LaGuardia) at 35.5, and ending with zones 170 and 239 at about 17.5; and a 24-row hour table whose MAE is smallest overnight (5.2 at 04:00) and largest in the evening (40.8 at 18:00). The airports have the largest misses even though LaGuardia averages fewer pickups than several Manhattan zones, which makes them the first place to look for a missing feature.
+**Expect:**
+
+- A 12-row zone table with 720 test hours per zone: zone 132 (JFK) at MAE 36.5 and zone 138 (LaGuardia) at 35.5 lead; zones 170 and 239 end at about 17.5.
+- A 24-row hour table: MAE is smallest overnight (5.2 at 04:00) and largest in the evening (40.8 at 18:00).
+
+The airports have the largest misses even though LaGuardia averages fewer pickups than several Manhattan zones, so they are the first place to look for a missing feature.
 
 ## 5. Make two report figures
 
-Two ordinary figures (Lecture 07) answer the common report questions: do the predictions track the actual counts over time, and at which hours are the misses largest? Turning the date labels with `tick_params` keeps them from running into each other.
+Two figures answer the common report questions:
+
+- Do the predictions track the actual counts over time?
+- At which hours are the misses largest?
+
+Rotating the date labels with `tick_params` keeps them from overlapping.
 
 ```python
 hourly = predictions.groupby("target_hour_utc", as_index=False)[["actual", "prediction"]].sum()
@@ -248,7 +275,10 @@ figure.savefig(output_dir / "04_mae_by_hour.png", dpi=150)
 plt.show()
 ```
 
-**Expect:** a line chart of June's total hourly pickups, with the prediction line following the daily rises and falls of the actual line closely; and a bar chart whose bars are short overnight and tallest from late afternoon to late evening.
+**Expect:**
+
+- A line chart of June's total hourly pickups, with the prediction line closely following the actual line's daily rises and falls.
+- A bar chart with short bars overnight and tallest from late afternoon to late evening.
 
 ## Final checks
 

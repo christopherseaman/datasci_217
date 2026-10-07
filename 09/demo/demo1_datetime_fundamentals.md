@@ -17,10 +17,14 @@ jupyter:
 
 # Demo 1: Parse, Index, and Select Patient Readings
 
-A heart-failure clinic receives a home-scale log with text timestamps, out-of-order rows, and one impossible date. Parse and inspect the dates, make a sorted DatetimeIndex, format an hour key, and select a calendar interval. These steps use Lecture 09 up to the first demo break, plus Lectures 01–08. Section 1 practices the lecture's Python `datetime` module; the labeled optional sections cover frequency inference, specialized schedules, and clock-time filters from BONUS.md. All patient data are synthetic.
+A heart-failure clinic receives a home-scale log with text timestamps, out-of-order rows, and one impossible date.
 
+- Parse text into dates and find the impossible one.
+- Make a sorted `DatetimeIndex` and format an hour key.
+- Select a calendar interval.
+- All patient data are synthetic.
 
-Run the cells from top to bottom; after each step, the text says what to expect.
+Run the cells from top to bottom.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -37,8 +41,6 @@ import pandas as pd
 
 ## 1. One date at a time with `datetime`
 
-Independent practice of the lecture's Python datetime Module section.
-
 A discharge time arrives as text. `strptime()` parses it, `strftime()` formats it for a letter, and a `timedelta` moves it forward to the follow-up contacts.
 
 ```python
@@ -46,7 +48,6 @@ discharge = datetime.strptime('2024-03-01 14:30', '%Y-%m-%d %H:%M')
 print(discharge)
 print(discharge.strftime('%B %d, %Y at %I:%M %p'))
 
-# Follow-up contacts after discharge
 print('7-day phone call:', (discharge + timedelta(days=7)).strftime('%Y-%m-%d'))
 print('30-day clinic visit:', (discharge + timedelta(days=30)).strftime('%Y-%m-%d'))
 
@@ -62,18 +63,21 @@ print('Age in years:', round(age.days / 365.25, 1))
 
 ## 2. A text column becomes a DatetimeIndex
 
-The patient's home scale app exports its log as text, newest first in places, and one entry has an impossible date: February 30.
+The home scale app exports its log as text, partly out of order, and one entry has an impossible date: February 30.
 
 ```python
 raw = pd.DataFrame({
+    'patient_id': ['P001'] * 5,
     'recorded_at': ['2024-03-03 07:10', '2024-03-01 07:05', '2024-02-30 07:00',
                     '2024-03-02 07:15', '2024-03-04 06:55'],
     'weight_kg': [82.3, 81.9, 82.0, 82.1, 83.4],
+    'resting_hr': [74, 72, 73, 75, 79],
 })
+display(raw)
 display(raw.dtypes)
 ```
 
-**Expect:** `recorded_at` is `str` and `weight_kg` is `float64`. Text has no calendar arithmetic; sorting it is chronological only when every date uses a consistent sortable pattern.
+**Expect:** five rows. `patient_id` and `recorded_at` are `str`, `weight_kg` is `float64`, and `resting_hr` is `int64`. Text has no calendar arithmetic; sorting it is chronological only when every date uses a consistent sortable pattern.
 
 `format=` states the pattern the export promises, and `errors='coerce'` turns anything that does not fit into `NaT` instead of stopping.
 
@@ -105,12 +109,12 @@ display(log)
 print(log.index.day_name())
 ```
 
-**Expect:** `Sorted? False`, then `Sorted? True`, and four rows from `2024-03-01 07:05:00` (81.9 kg) to `2024-03-04 06:55:00` (83.4 kg). The day names run `Friday`, `Saturday`, `Sunday`, `Monday`.
+**Expect:** `Sorted? False`, then `Sorted? True`, and a table of four rows with columns `patient_id`, `weight_kg`, and `resting_hr`, from `2024-03-01 07:05:00` (81.9 kg) to `2024-03-04 06:55:00` (83.4 kg). The day names run `Friday`, `Saturday`, `Sunday`, `Monday`.
 
 
-## 3. Schedule and inference alternatives (optional)
+## 3. Optional extension: schedules and frequency inference
 
-Optional references: Frequency Inference and Specialized Schedules and Calendar Schedule Examples, in BONUS.md. This section uses the `log` prepared in section 2.
+Prerequisite: BONUS.md, Frequency Inference and Specialized Schedules. Uses the `log` from section 2.
 
 `pd.date_range()` builds a schedule from a frequency alias, and `pd.infer_freq()` reads the spacing back from an index.
 
@@ -118,10 +122,9 @@ Optional references: Frequency Inference and Specialized Schedules and Calendar 
 weekly_calls = pd.date_range('2024-03-04', periods=4, freq='W-MON')   # Monday phone check-ins
 monthly_labs = pd.date_range('2024-03-01', periods=3, freq='MS')      # first-of-month blood tests
 clinic_days = pd.bdate_range('2024-03-01', '2024-03-14')              # weekdays the clinic is open
-print(weekly_calls)
-print(monthly_labs)
+display(weekly_calls)
+display(monthly_labs)
 print('Clinic days:', len(clinic_days))
-
 print('Weekly calls:', pd.infer_freq(weekly_calls))
 print('Home weigh-ins:', pd.infer_freq(log.index))
 ```
@@ -139,12 +142,12 @@ display(log.loc['2024-03-01':'2024-03-02'])
 print('Hours:', log.index.hour.tolist())
 ```
 
-**Expect:** `(4, 1)` for March. The date slice has March 1 at 07:05 (81.9 kg) and March 2 at 07:15 (82.1 kg). `Hours: [7, 7, 7, 6]` extracts the clock hour without turning the dates back into text.
+**Expect:** `(4, 3)` for March. The date slice has March 1 at 07:05 (81.9 kg, 72 bpm) and March 2 at 07:15 (82.1 kg, 75 bpm). `Hours: [7, 7, 7, 6]` extracts the clock hour without turning the dates back into text.
 
 
-## 5. Hourly ICU vitals: select by clock time (optional)
+## 5. Optional extension: select by clock time
 
-Optional reference: Time-of-Day Selection Example, in BONUS.md. This section builds its own ICU data; it needs no values from the schedule examples.
+Prerequisite: BONUS.md, Time-of-Day Selection Example. Builds its own data.
 
 A second patient's monitor records heart rate and oxygen saturation (SpO2, in percent) every hour for one week. Heart rate runs about 12 beats per minute lower between midnight and 06:00, while the patient sleeps.
 

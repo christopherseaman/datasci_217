@@ -11,6 +11,7 @@ import hashlib
 import importlib.util
 import json
 import os
+os.environ["DS217_LOCAL_CHECKS"] = "1"
 from pathlib import Path
 import re
 import subprocess
@@ -663,7 +664,7 @@ def run_handout() -> None:
     """The handout carries the course's checks unchanged, so a local run gives what GitHub gives."""
     files = checks_files()
     course_owned = {path.relative_to(CHECKS).as_posix() for path in CHECKS.rglob("*")
-                    if path.is_file() and not {"__pycache__", ".pytest_cache", "_grader_selftest"} & set(path.parts)}
+                    if path.is_file() and not {"__pycache__", ".pytest_cache", "_grader_selftest", ".checks"} & set(path.parts)}
     assert sorted(files) == sorted(course_owned - {"README.md"}), (files, course_owned)
     for name in files:
         assert (ASSIGNMENT / name).read_bytes() == (CHECKS / name).read_bytes(), f"01/assignment/{name} differs"
@@ -673,7 +674,9 @@ def run_handout() -> None:
     readme = (ASSIGNMENT / "README.md").read_text(encoding="utf-8")
     for line in EXPECTED_READINESS.splitlines():
         assert f"\n{line}\n" in readme, line
-    contract = readme.partition("### Completion contract\n")[2].partition("\n## ")[0]
+    assert "(CHECKS.md)" in readme, "README.md no longer links CHECKS.md"
+    checks_md = (ASSIGNMENT / "CHECKS.md").read_text(encoding="utf-8")
+    contract = checks_md.partition("## Completion contract\n")[2].partition("\n## ")[0]
     assert f"Grading totals {sum(POINTS)} points" in contract
     rows = re.findall(r"^\| `.+ \| (\d+)(?: \((\d+) each\))? \|$", contract, re.M)
     points = dict(zip(TEST_NAMES, POINTS, strict=True))
@@ -720,13 +723,13 @@ def run_handout() -> None:
         practice(wrong_total)
         outputs(wrong_total, EXPECTED_READINESS.replace("Total: 82", "Total: 83"), ROSTER_HASH + "\n")
         shown = checker(ASSIGNMENT, wrong_total)
-        quoted = re.search(r"as in `(Left to fix [^`]*)`", readme)
+        quoted = re.search(r"as in `(Left to fix [^`]*)`", checks_md)
         assert quoted and shown.stdout.endswith(f"Score: 95/100\n{quoted.group(1)}\n"), (shown.stdout, quoted)
 
         # A clean local run ends the way the README promises.
         shown = checker(ASSIGNMENT, submissions["complete"])
         assert shown.returncode == 0, shown.stdout + shown.stderr
-        promised = re.search(r"A clean local run ends with:\n\n```text\n(.*?)```", readme, re.S)
+        promised = re.search(r"A clean local run ends with:\n\n```text\n(.*?)```", checks_md, re.S)
         assert promised and shown.stdout.endswith(promised.group(1)), (shown.stdout, promised)
 
     print(f"Assignment 01 handout: {len(files)} check files byte-identical to 01/assignment_checks/, no shape "

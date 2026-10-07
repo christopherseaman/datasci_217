@@ -1,27 +1,8 @@
 # Assignment 05: Documented Cleaning Pipeline (Midterm)
 
-## Files
+## Overview
 
-```text
-assignment/
-├── assignment.ipynb           # notebook scaffold: complete every TODO, then run it top to bottom
-├── data/people_raw.csv        # supplied raw export; never edit it
-├── data/fixture.json          # supplied description of the raw file, including its sha256 checksum
-├── pyproject.toml             # supplied: the project's packages, numpy, pandas, and ipykernel
-├── uv.lock                    # supplied: the exact versions `uv sync` installs
-├── .python-version            # supplied: Python 3.13
-├── .gitattributes, .gitignore # supplied: keep the data file byte for byte, keep .venv/ out of Git
-└── output/
-    ├── raw_preview.txt        # you make in Task 1.1, in the terminal
-    ├── pipeline_summary.txt   # you make in Task 1.2
-    ├── numpy_age_summary.csv  # you make in Task 1.3
-    ├── pandas_selection.csv   # you make in Task 1.4
-    ├── issue_audit.csv        # you make in Task 2.2
-    ├── cleaned_people.csv     # you make in Task 4.2
-    └── decision_log.csv       # you make in Task 4.2
-```
-
-## The data
+Audit a messy intake export, decide how to clean it, clean a copy, validate it, and save the cleaned table with a decision log. Each result is saved as a file in `output/`; the notebook cells and decision reasons are read by human review.
 
 `data/people_raw.csv` is a synthetic intake export of person records from three clinic sites; no real people are in it. One row is one submitted person record, and `record_id` should identify it.
 
@@ -38,28 +19,43 @@ The values arrive as someone typed them, so expect stray spaces, mixed letter ca
 
 ## Setup
 
-Fork the assignment repository on GitHub and clone your fork the way Lecture 01 did: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open it. Then open **Terminal → New Terminal** in VS Code at the assignment directory (Ctrl+Shift+backtick, also Control on Mac). If you use a native terminal or WSL Ubuntu instead, `cd` into the assignment directory first. Run `ls data` and expect `fixture.json  people_raw.csv`. This clone is a new repository, so before your first commit run Lecture 02's two `git config user.name "..."` and `git config user.email "..."` lines in this terminal, with your name and GitHub noreply email.
+1. Fork the assignment repository on GitHub and clone your fork as in Lecture 01: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open the cloned folder itself, not a folder above it.
+2. In the integrated terminal, create the environment, activate it, and install the packages `pyproject.toml` and `uv.lock` list. Do not run `uv init`: the project files already exist.
 
-> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. Task 1.1 uses `echo`, `head`, and `tail`, which native PowerShell does not have. Git Bash also provides them; there the environment activates with `source .venv/Scripts/activate` instead, and you type `python` wherever these instructions say `python3`. In PowerShell, which cannot run Task 1.1, it activates with `.\.venv\Scripts\Activate.ps1`.
+    ```bash
+    uv venv --seed
+    source .venv/bin/activate
+    uv sync
+    ```
 
-The handout already lists numpy, pandas, and ipykernel in `pyproject.toml`, records their exact versions in `uv.lock`, and names Python 3.13 in `.python-version`, so `uv sync` rebuilds the environment from those records, as in Lecture 03's "Recreate from the Records" snippet. Create the project environment, activate it, and sync:
+    - Expect: `uv sync` lists `+ numpy==2.3.3` and `+ pandas==3.0.5`.
+3. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`.
+4. Run the first code cell.
+    - Expect: the Python, NumPy, and pandas versions, then `Verified data/people_raw.csv`.
 
-```bash
-uv venv --seed
-source .venv/bin/activate
-uv sync
+The first cell supplies `DATA_PATH`, `OUTPUT_DIR`, a path for each output file, and `manifest` (the contents of `data/fixture.json`). Function names in the scaffold are suggestions: grading reads the files in `output/` and the cells named in CHECKS.md. The "Cumulative midterm checkpoint" cell, just below the first code cell, asks for an evidence map; fill it in whenever you like.
+
+## Files
+
+```text
+assignment/
+├── assignment.ipynb           # notebook scaffold: complete every TODO, then run it top to bottom
+├── data/people_raw.csv        # supplied raw export; never edit it
+├── data/fixture.json          # supplied description of the raw file, including its sha256 checksum
+├── pyproject.toml             # supplied: the project's packages, numpy, pandas, and ipykernel
+├── uv.lock                    # supplied: the exact versions `uv sync` installs
+├── .python-version            # supplied: Python 3.13
+├── CHECKS.md                  # supplied: what earns the points
+├── .gitattributes, .gitignore # supplied: keep the data file byte for byte, keep .venv/ out of Git
+└── output/
+    ├── raw_preview.txt        # you make in Task 1.1, in the terminal
+    ├── pipeline_summary.txt   # you make in Task 1.2
+    ├── numpy_age_summary.csv  # you make in Task 1.3
+    ├── pandas_selection.csv   # you make in Task 1.4
+    ├── issue_audit.csv        # you make in Task 2.2
+    ├── cleaned_people.csv     # you make in Task 4.2
+    └── decision_log.csv       # you make in Task 4.2
 ```
-
-`uv sync` lists each package it installs, including `+ numpy==2.3.3` and `+ pandas==3.0.5`. Do not run `uv init`: the handout's `pyproject.toml` already exists.
-
-If `.venv` already exists, for example when you run these lines a second time, `uv venv` asks `Do you want to replace it? [y/n]`. Answer `n` to keep the environment you have: uv then stops with `error: Failed to create virtual environment`, which is harmless, and the next two lines work as before. Answering `y` gives a new, empty environment, so run `uv sync` again after it.
-
-> **Checkpoint: the environment**
-> With it active, `python3 -c "import pandas as pd; print(pd.__version__)"` prints `3.0.5`, the version `pyproject.toml` lists.
-
-**ipykernel** is the package that lets a notebook run on this environment's Python (Lecture 04), so the notebook needs nothing more. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept. Run the first code cell. It prints the Python, NumPy, and pandas versions and `Verified data/people_raw.csv`. If it stops with `ModuleNotFoundError: No module named 'numpy'`, the kernel is not this project's `.venv`: select the kernel again (Lecture 03's "When `import numpy` Fails"). If it stops with a message about `data/people_raw.csv` instead, discard your changes to that file in Source Control and run the cell again.
-
-Work in the notebook from top to bottom. Its "Cumulative midterm checkpoint" cell, just below the first code cell, asks for an evidence map that human review reads; fill it in whenever you like. The first code cell supplies `DATA_PATH`, `OUTPUT_DIR`, a path for each output file, and `manifest`, the contents of `data/fixture.json`. The function names in the scaffold are suggestions: grading reads the files in `output/` and the notebook cells that the Completion contract names, not how your code is organized.
 
 ## Task 1: Look at the raw data
 
@@ -233,7 +229,7 @@ Keep exactly these columns, in this order, with these dtypes (Lecture 05's "Data
 
 ### 4.1 Validate before saving
 
-In the Task 4.1 cell, collect named `True`/`False` checks in a Series, as Lecture 05's "Stop before saving a bad table" does, and print it. Check at least that:
+In the Task 4.1 cell, collect named `True`/`False` checks in a Series, as Lecture 05's "Stop before saving a bad table" does, and display it. Check at least that:
 
 - every `record_id` is present and unique;
 - the row count equals the raw row count minus the exact duplicates;
@@ -270,7 +266,9 @@ Read `output/cleaned_people.csv` back with its dtypes (`dtype={...}` for the tex
 
 ## Check your work
 
-Restart the kernel and **Run All**. Every cell should finish without an error, the validation cell should print only `True`, and each read-back should print `True`. Then open each file in `output/` in VS Code and check it against this list. The line count is the number beside the last line that has text. When a file ends with a newline, VS Code also numbers the empty line after it; that one does not count.
+1. Click **Restart**, then **Run All**.
+    - Expect: no errors, the validation cell shows only `True`, and each read-back prints `True`.
+2. Open each file in `output/` and compare it with this table. The line count is the number beside the last line with text; VS Code may number one empty line after it; do not count that.
 
 | File | Made in | First line | Lines |
 | --- | --- | --- | --- |
@@ -282,44 +280,6 @@ Restart the kernel and **Run All**. Every cell should finish without an error, t
 | `output/cleaned_people.csv` | Task 4.2 | `record_id,full_name,site,status,age,visit_date,needs_review` | 12 |
 | `output/decision_log.csv` | Task 4.2 | `field,issue,action,reason,source,source_sha256,rows_before,rows_after` | 9 |
 
-- [ ] All seven files exist in `output/`, each with the first line and line count above.
-- [ ] No CSV starts with an extra column of row numbers; each was saved with `index=False`.
-- [ ] `cleaned_people.csv` shows dates as `YYYY-MM-DD`, missing values as empty fields, and `needs_review` as `True` or `False`.
-- [ ] Every row of `decision_log.csv` has a reason and the same `source`, `source_sha256`, `rows_before`, and `rows_after`.
-- [ ] `data/people_raw.csv` is unchanged: Source Control lists no change to it.
+3. Commit `assignment.ipynb` (with its outputs) and the seven `output/` files, then push. Keep `.venv/` out of the commit; `.gitignore` already does. The course grades your fork's `main` branch after the deadline.
 
-### Completion contract
-
-The midterm totals 100 points: 75 points graded from your committed files after the deadline, 25 by human review. Each file is graded on its own, so a wrong value costs only its own points.
-
-| File | What earns the points | Points |
-| --- | --- | ---: |
-| `output/raw_preview.txt` | 2 for the `head` label with the four lines it prints, 2 for the `tail` label with the two lines it prints | 4 |
-| `output/pipeline_summary.txt` | 1 for each key's count | 5 |
-| `output/numpy_age_summary.csv` | 1 for each metric's value | 5 |
-| `output/pandas_selection.csv` | 1 for each requested record with its raw `site` and `status`, less 1 for each other row; 1 for exactly the three columns | 4 |
-| `output/issue_audit.csv` | 1 for each issue's count | 15 |
-| `output/cleaned_people.csv` | 4 for each of the seven columns, in proportion to the records whose value in that column follows the cleaning rules (rounded down) | 28 |
-| `output/decision_log.csv` | 1 for each decision with its `field`, `issue`, and `action`; 2 for a reason on every row; 1 each for `source`, `source_sha256`, `rows_before`, and `rows_after` on every row | 14 |
-
-How the files are read:
-
-- Line endings, blank lines, spaces at the end of a line or around a header name, a comma, semicolon, or tab between cells, spaces that pad every separator in the header line and the rows alike, column order, a leading column of row numbers, and number format (`6`, `6.0`) do not matter. Letter case and surrounding spaces in labels and cleaned text values do not cost points: `north`, `North`, and ` north ` represent the same site. Save the normalized forms the cleaning rules describe.
-- `True`/`False`, `true`/`false`, `1`/`0`, and `yes`/`no` all read as booleans; an empty field, `NaN`, and `<NA>` all read as missing; a date may carry a `00:00:00` time after it.
-- `needs_review` is also right when it follows the rule from your own `age` and `visit_date` columns, and `rows_after` is also right when it equals the rows in your own `cleaned_people.csv`, so one mistake is not charged twice.
-
-Human review reads the notebook and the decision reasons, 5 points for each category:
-
-| Category | What it reads | Full credit (5) | Partial credit |
-| --- | --- | --- | --- |
-| Lecture 01 to 05 evidence map | The "Cumulative midterm checkpoint" cell | One entry for each of Lectures 01 to 05, each naming a concrete technique or file from that lecture and saying in one sentence where this notebook uses it | 2 to 4 for three or four lectures, or for entries that name a tool without saying where it is used here |
-| Data contract | The Task 2.1 cell | States the row meaning and the candidate identifier, says how the raw table differs from the cleaned table, and defines all six terms in your own words, each in a way that fits this file | 2 to 4 when one or two parts are missing, or a definition is wrong or does not fit this file |
-| Decision reasons | The `reason` column of `output/decision_log.csv` | Each of the eight reasons names the problem in this file, such as the values or records it affects, and why its action fits | 2 to 4 when some reasons are generic, such as "to clean the data", or do not match their decision |
-| What you will not do | The Task 3.2 cell | Explains why filling across these person records is wrong, why flagged values stay missing for review, and why clean means meeting the contract, each tied to this file | 2 to 4 when one of the three points is missing or stays general |
-| Validation, read-back, and reproducibility | The Task 1.1 commands, the Task 4.1 and 4.3 cells, and the notebook as a whole | The Task 1.1 cell shows the commands that made `raw_preview.txt`; the checks are named and stop the save; each read-back prints `True`; the notebook runs top to bottom with its outputs saved; no credentials or personal information appear | 2 to 4 when a part is missing or unclear |
-
-A category whose cell still holds its **TODO** text earns 0.
-
-## Submit
-
-Save the notebook after **Run All**, so its outputs are part of the commit. In VS Code Source Control, stage `assignment.ipynb` and the seven files in `output/`, commit with a message such as `Complete the midterm cleaning pipeline`, and sync. Keep `.venv/` out of the commit; `.gitignore` already lists it. The course grades the files on your fork's `main` branch after the deadline, so open your fork on GitHub and confirm that `output/` shows all seven files and that `assignment.ipynb` shows your outputs.
+What the points reward and how files are read: [CHECKS.md](CHECKS.md)

@@ -18,9 +18,13 @@ jupyter:
 
 # Demo 3: Stacking Monthly Hospital Extracts with `concat()` and `combine_first()`
 
-A hospital quality team receives admissions one month at a time, plus monthly unit metrics from three separate systems. This demo stacks the monthly files and records where each row came from, handles a March file whose columns changed, lines up the systems' metrics by month, patches a gappy census from a backup source, and compares this year's first quarter with last year's. Everything here comes from Lecture 06, plus Lectures 01 to 05.
+- A hospital quality team receives admissions one month at a time, plus monthly unit metrics from three separate systems.
+- Stack the monthly files and record where each row came from.
+- Handle a March file whose columns changed.
+- Line up the systems' metrics by month, and patch a gappy census from a backup source.
+- Compare this year's first quarter with last year's.
 
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
+Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -40,25 +44,28 @@ jan = pd.DataFrame({
     'admission_id': ['A101', 'A102', 'A103'],
     'unit': ['ICU', 'MED', 'SURG'],
     'age': [67, 45, 72],
+    'diagnosis': ['sepsis', 'pneumonia', 'appendicitis'],
     'los_days': [4, 2, 6],
 })
 feb = pd.DataFrame({
     'admission_id': ['A201', 'A202', 'A203'],
     'unit': ['MED', 'ICU', 'MED'],
     'age': [58, 81, 39],
+    'diagnosis': ['heart failure', 'sepsis', 'cellulitis'],
     'los_days': [5, 9, 1],
 })
+display(jan)
 print(list(jan.columns) == list(feb.columns))
 ```
 
-**Expect:** `True`: same columns, same row meaning, so these are pieces of one table.
+**Expect:** the 3 January admissions with columns `admission_id`, `unit`, `age`, `diagnosis`, `los_days`, then `True`: same columns, same row meaning, so these are pieces of one table.
 
 ### 2. Stack rows with `concat()`
 
 ```python
 stacked = pd.concat([jan, feb])
 print(list(stacked.index))
-stacked
+display(stacked)
 ```
 
 **Expect:** 6 rows, and the index `[0, 1, 2, 0, 1, 2]`: each file brought its own row labels, so they repeat.
@@ -80,7 +87,7 @@ feb['source_file'] = 'feb_admissions.csv'
 
 stacked = pd.concat([jan, feb], ignore_index=True)
 display(stacked['source_file'].value_counts())
-stacked
+display(stacked)
 ```
 
 **Expect:** `jan_admissions.csv` 3 and `feb_admissions.csv` 3, and a `source_file` column as the last column of the 6-row table.
@@ -93,6 +100,7 @@ The March extract comes from an updated report: it no longer includes `age`, and
 mar = pd.DataFrame({
     'admission_id': ['A301', 'A302', 'A303'],
     'unit': ['SURG', 'MED', 'ICU'],
+    'diagnosis': ['hernia', 'COPD', 'stroke'],
     'los_days': [3, 2, 7],
     'payer': ['Medicare', 'Private', 'Medicaid'],
 })
@@ -100,7 +108,7 @@ mar['source_file'] = 'mar_admissions.csv'
 print(list(mar.columns))
 ```
 
-**Expect:** `['admission_id', 'unit', 'los_days', 'payer', 'source_file']`: no `age`, and a new `payer`.
+**Expect:** `['admission_id', 'unit', 'diagnosis', 'los_days', 'payer', 'source_file']`: no `age`, and a new `payer`.
 
 `concat()` matches columns by **name**. With the default `join='outer'` it keeps every column from every file.
 
@@ -108,10 +116,10 @@ print(list(mar.columns))
 admissions = pd.concat([jan, feb, mar], ignore_index=True)
 print(admissions.shape)
 display(admissions.isna().sum())
-admissions
+display(admissions)
 ```
 
-**Expect:** `(9, 6)` and missing counts of `age` 3 and `payer` 6, everything else 0. The 3 March rows have no `age`, and the 6 January and February rows have no `payer`. These gaps come from the files' layouts, not from missing measurements, so note them rather than filling them.
+**Expect:** `(9, 7)` and missing counts of `age` 3 and `payer` 6, everything else 0. The 3 March rows have no `age`, and the 6 January and February rows have no `payer`. These gaps come from the files' layouts, not from missing measurements, so note them rather than filling them.
 
 ### 5. Patch gaps with `combine_first()`
 
@@ -131,7 +139,7 @@ finance = pd.DataFrame({
 }).set_index('month')
 
 filled = primary.combine_first(finance)
-filled
+display(filled)
 ```
 
 **Expect:** 6 months. January, March, and May keep the ADT values (212, 225, 231 admissions), February and April take finance's estimates (200 and 238), and June comes only from finance (219). Values print as `212.0` because the gaps made the columns `float64`.
@@ -151,7 +159,7 @@ filled['data_source'] = 'finance_estimate'
 reported = primary[primary['admissions'].notna()].index
 filled.loc[reported, 'data_source'] = 'adt_primary'
 print(list(reported))
-filled
+display(filled)
 ```
 
 **Expect:** `['2026-01', '2026-03', '2026-05']`, and `data_source` reads `adt_primary` for those three months and `finance_estimate` for February, April, and June.
@@ -193,12 +201,12 @@ Flag stays of a week or longer and list the longest.
 ```python
 enriched['long_stay'] = enriched['los_days'] >= 7
 print(enriched['long_stay'].sum())
-enriched.sort_values('los_days', ascending=False)[
-    ['admission_id', 'unit_name', 'los_days', 'long_stay', 'source_file']
-].head(3)
+display(enriched.sort_values('los_days', ascending=False)[
+    ['admission_id', 'unit_name', 'diagnosis', 'los_days', 'long_stay', 'source_file']
+].head(3))
 ```
 
-**Expect:** `2` long stays. The top three are A202 (Intensive Care, 9 days, February), A303 (Intensive Care, 7 days, March), and A103 (Surgery, 6 days, January, not flagged).
+**Expect:** `2` long stays. The top three are A202 (Intensive Care, sepsis, 9 days, February), A303 (Intensive Care, stroke, 7 days, March), and A103 (Surgery, appendicitis, 6 days, January, not flagged).
 
 `concat()` stacks pieces of one table; `merge()` joins different tables by key.
 
@@ -233,7 +241,7 @@ print(census.index.is_unique, staffing.index.is_unique, experience.index.is_uniq
 monthly = pd.concat([census, staffing, experience], axis=1)
 monthly['nurse_hours_per_bed_day'] = (monthly['nurse_hours'] / monthly['bed_days']).round(2)
 print(monthly.shape)
-monthly
+display(monthly)
 ```
 
 **Expect:** `(6, 6)`: one row per month with columns from all three systems plus the new ratio. Nurse hours per bed day range from 7.71 in April, the busiest month, to 8.27 in February.
@@ -250,7 +258,7 @@ audits = pd.DataFrame({
 
 with_audits = pd.concat([monthly, audits], axis=1)
 print(with_audits.shape)
-with_audits[['admissions', 'hand_hygiene_pct']]
+display(with_audits[['admissions', 'hand_hygiene_pct']])
 ```
 
 **Expect:** `(7, 7)`: the 6 metric columns plus `hand_hygiene_pct`. January, May, and June have `NaN` hand hygiene (no audit), and the new July row has `NaN` for every other system. The default `join='outer'` keeps every label from every input.
@@ -285,7 +293,7 @@ yoy = both_years.pivot(index='month', columns='year', values='admissions')
 print(list(yoy.index))
 yoy = yoy.loc[['Jan', 'Feb', 'Mar']]           # calendar order
 yoy['growth_pct'] = ((yoy[2026] - yoy[2025]) / yoy[2025] * 100).round(1)
-yoy
+display(yoy)
 ```
 
 **Expect:** `['Feb', 'Jan', 'Mar']` first, because `pivot()` sorts the labels alphabetically; after `.loc` the rows are in calendar order. Growth is 7.1% in January, 8.1% in February, and 8.7% in March, so admissions rose every month and March grew the most.
@@ -296,7 +304,7 @@ yoy
 
 ```python
 by_file = pd.concat([jan, feb], keys=['jan', 'feb'], names=['source', 'row'])
-by_file.loc['feb']
+display(by_file.loc['feb'])
 ```
 
 **Expect:** the 3 February admissions (A201, A202, A203), selected by the outer label `feb`, with row labels 0 to 2.
@@ -305,7 +313,7 @@ by_file.loc['feb']
 print(list(by_file.reset_index().columns))
 ```
 
-**Expect:** `['source', 'row', 'admission_id', 'unit', 'age', 'los_days', 'source_file']`: `reset_index()` turns both label levels into ordinary columns. The course uses the `source_file` column form, because it stays a plain column from the start.
+**Expect:** `['source', 'row', 'admission_id', 'unit', 'age', 'diagnosis', 'los_days', 'source_file']`: `reset_index()` turns both label levels into ordinary columns. The course uses the `source_file` column form, because it stays a plain column from the start.
 
 ### 11. Keep only shared columns
 
@@ -317,4 +325,4 @@ print(shared_only.shape)
 print(list(shared_only.columns))
 ```
 
-**Expect:** `(9, 4)` and `['admission_id', 'unit', 'los_days', 'source_file']`. `age` and `payer` are gone without any warning, which is why the outer result is the one to keep.
+**Expect:** `(9, 5)` and `['admission_id', 'unit', 'diagnosis', 'los_days', 'source_file']`. `age` and `payer` are gone without any warning, which is why the outer result is the one to keep.

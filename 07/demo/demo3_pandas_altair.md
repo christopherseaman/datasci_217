@@ -17,9 +17,17 @@ jupyter:
 
 # Demo 3: Critique, redesign, and share a clinic chart
 
-A draft dashboard chart about flu vaccination misleads its readers. You critique it with Tufte's checks, one problem and repair at a time, redesign it so it works without color, draw a line chart with redundant cues, write text alternatives, and save the chart record as JSON. Then you build an Altair chart of patient blood pressure and save its Vega-Lite specification. Everything here comes from Lecture 07 up to the last demo break, plus Lectures 01 to 06. All values are synthetic.
+A draft dashboard chart about flu vaccination misleads its readers.
 
-Run the cells from top to bottom; after each step, the text says what to expect.
+- Critique it with Tufte's checks, one problem and repair at a time.
+- Redesign it so it works without color, and write its text alternative.
+- Save the chart record as JSON.
+- Build an Altair chart of patient blood pressure and save its Vega-Lite specification.
+- Independent practice: a line chart with redundant cues, and a lie-factor calculation.
+
+All values are synthetic.
+
+Run the cells from top to bottom.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -36,16 +44,18 @@ The prepared table has one row per clinic: the percentage of adult patients vacc
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from IPython.display import Markdown
 
 uptake = pd.DataFrame({
     'clinic': ['North', 'South', 'East'],
+    'adults_enrolled': [4210, 3875, 2960],
     '2024-25': [56, 57, 61],
     '2025-26': [63, 60, 62],
 })
 display(uptake)
 ```
 
-Expect three rows. North rose from 56% to 63%, South from 57% to 60%, and East from 61% to 62%.
+Expect three rows: clinic, adults enrolled, and the vaccinated percentage in each season. North rose from 56% to 63%, South from 57% to 60%, and East from 61% to 62%.
 
 This is the draft from the dashboard. Grouped bars need one x position per clinic (`np.arange`, Lecture 03), with each season's bar shifted half a bar width to either side. Look at the chart before reading the critique.
 
@@ -72,7 +82,7 @@ Expect `['North', 'South', 'East'] [0 1 2]` and three pairs of thick-edged bars,
 
 ### 2. Critique it with Tufte's checks
 
-Write the critique down: for each problem, what is wrong and how to repair it. The truncated baseline is the lie-factor check from the lecture's Tufte card, and the decoration is the data-ink check; the claim and the color-only encoding come from the contract and the accessibility section.
+For each problem, write what is wrong and how to repair it. The truncated baseline is the lie-factor check, and the decoration is the data-ink check; the claim and the color-only encoding come from the contract and the accessibility section.
 
 ```python
 critique = [
@@ -92,16 +102,21 @@ critique = [
      'problem': 'Thick black edges, a heavy grid, and the same hatch on every bar carry no data.',
      'repair': 'Drop the edges and grid, hide the top and right spines, and keep hatches only where they mark the season.'},
 ]
-for entry in critique:
-    print(f"{entry['category']}: {entry['problem']}")
-    print(f"    repair: {entry['repair']}")
+display(Markdown('\n'.join(
+    f"- **{entry['category']}**: {entry['problem']}\n    - Repair: {entry['repair']}" for entry in critique)))
 ```
 
-Expect five problems, each followed by its repair.
+Expect a five-item list, each problem followed by its repair.
 
 ### 3. Redesign: zero baseline, redundant cues, labels on the bars
 
-The contract for the redesign: the question is how uptake changed at each clinic; the audience is clinic managers; the claim is descriptive; one bar is one clinic in one season. Each repair from the critique appears in the code below, reusing `clinics`, `x`, and `width`.
+The contract for the redesign:
+
+- **Question**: how did uptake change at each clinic?
+- **Audience and claim**: clinic managers; descriptive.
+- **Grain**: one bar is one clinic in one season.
+
+Each repair from the critique appears in the code below, reusing `clinics`, `x`, and `width`.
 
 ```python
 fig, ax = plt.subplots(figsize=(7, 4.5))
@@ -183,10 +198,10 @@ patients = pd.DataFrame({
     'systolic_bp': [116, 123, 128, 134, 139, 146, 121, 130, 136, 141, 148, 155],
     'clinic': ['North'] * 6 + ['South'] * 6,
 })
-print(patients.shape)
+display(patients)
 ```
 
-Expect `(12, 4)`.
+Expect twelve rows and four columns: six North patients (P01 to P06), then six South.
 
 Color and shape both encode the clinic, so the groups survive grayscale printing. Tooltips show the values behind a point on hover, and `.interactive()` adds pan and zoom, but the title, axes, and legend stay visible without them.
 
@@ -239,7 +254,7 @@ print(spec['hconcat'][0]['encoding']['x'])
 print(spec['hconcat'][1]['encoding']['y'])
 ```
 
-Expect three lines: the point mark, the scatter's x encoding, and the bar's y encoding. Each `:Q` became `'type': 'quantitative'`, and `mean(...)` became `'aggregate': 'mean'`.
+Expect three dictionaries: the point mark, the scatter's x encoding, and the bar's y encoding. Each `:Q` became `'type': 'quantitative'`, and `mean(...)` became `'aggregate': 'mean'`.
 
 ```text
 {'type': 'point', 'filled': True, 'size': 90}
@@ -271,6 +286,7 @@ A second prepared table: mean HbA1c (%) at four quarterly visits for patients in
 visits = [1, 2, 3, 4]
 standard = [8.4, 8.2, 8.1, 8.0]
 education = [8.5, 8.0, 7.7, 7.5]
+display(pd.DataFrame({'visit': visits, 'standard_care': standard, 'group_education': education}))
 
 fig, ax = plt.subplots(figsize=(7, 4.5))
 ax.plot(visits, standard, color='#E69F00', marker='s', linestyle='--')

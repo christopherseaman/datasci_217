@@ -66,3 +66,4 @@ scratch/
 
 # Reference books kept locally; not for redistribution
 work/tufte/
+.checks/

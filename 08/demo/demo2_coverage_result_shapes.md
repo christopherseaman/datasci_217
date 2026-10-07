@@ -18,9 +18,13 @@ jupyter:
 
 # Demo 2: Group Coverage and Result Shapes
 
-A clinic network's quarterly report groups 100,000 synthetic visits by clinic and by department. This demo checks which visits and which clinics the default report silently leaves out, then adds department context to every visit with `transform`, keeps or drops whole departments with `filter`, and runs custom per-department summaries with `apply`. The core walkthrough uses Lecture 08 up to the second demo break, plus Lectures 01 to 07. Independent practice develops the filter/apply methods taught in the lecture.
+A clinic network's quarterly report groups 100,000 synthetic visits by clinic and by department.
 
-Run the cells from top to bottom; after each step, an **Expect** line says what to expect. The patient IDs and values are synthetic.
+- **Part 1:** which visits and clinics the default report silently leaves out.
+- **Part 2:** `transform` adds department context to every visit.
+- **Part 3 (independent practice after class):** `filter` keeps or drops whole departments.
+
+Run the cells from top to bottom; each **Expect** line says what the output should show. Patient IDs and values are synthetic.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -36,6 +40,7 @@ This demo builds the same visit log Demo 1 used, so it runs on its own. Rerun th
 ```python
 import numpy as np
 import pandas as pd
+from IPython.display import Markdown
 
 rng = np.random.default_rng(42)
 n_visits = 100_000
@@ -87,14 +92,15 @@ visits.loc[rng.random(n_visits) < 0.03, "satisfaction"] = np.nan
 
 print(visits.shape)
 print(f"Visits with no satisfaction survey: {visits['satisfaction'].isna().sum():,}")
+display(visits.head())
 ```
 
-**Expect:** `(100000, 9)` and 2,984 visits with no survey, the same log as Demo 1.
+**Expect:** `(100000, 9)`, 2,984 visits with no survey, and five visits with nine columns, the same log as Demo 1.
 
 ### Two Realities the Default Summary Hides
 
 ```python
-# Work on a copy so `visits` stays unchanged for Parts 2-4
+# Work on a copy so `visits` stays unchanged for Parts 2 and 3
 reported = visits.copy()
 
 # 1. Some visits were logged without a clinic (sample, Lecture 05, picks the same 250 every run)
@@ -119,11 +125,11 @@ print(f"Clinics present in the data: {reported['clinic'].nunique()}")
 default_counts = reported.groupby("clinic")["wait_min"].count()
 kept_counts = reported.groupby("clinic", dropna=False)["wait_min"].count()
 
-print("=== Default: dropna=True ===")
+display(Markdown("**Default: dropna=True**"))
 display(default_counts)
 print(f"Visits counted: {default_counts.sum():,} of {len(reported):,}")
 
-print("\n=== dropna=False ===")
+display(Markdown("**dropna=False**"))
 display(kept_counts)
 print(f"Visits counted: {kept_counts.sum():,} of {len(reported):,}")
 ```
@@ -139,9 +145,9 @@ reported["clinic"] = pd.Categorical(reported["clinic"], categories=reporting_ord
 present_only = reported.groupby("clinic", observed=True, dropna=False)["wait_min"].agg(["count", "mean"])
 every_clinic = reported.groupby("clinic", observed=False, dropna=False)["wait_min"].agg(["count", "mean"])
 
-print("=== observed=True: only clinics with visits ===")
+display(Markdown("**observed=True: only clinics with visits**"))
 display(present_only.round(1))
-print("\n=== observed=False: every declared clinic ===")
+display(Markdown("**observed=False: every declared clinic**"))
 display(every_clinic.round(1))
 ```
 
@@ -153,35 +159,12 @@ display(every_clinic.round(1))
 # Counts: an empty clinic gives 0, which is a real value
 counts_kept = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
                              aggfunc="count", observed=False, dropna=False, fill_value=0)
-print("=== Visit counts, dropna=False ===")
+display(Markdown("**Visit counts, dropna=False**"))
 display(counts_kept)
 print("Rows:", len(counts_kept))
-
-counts_default = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
-                                aggfunc="count", observed=False, dropna=True, fill_value=0)
-print("\n=== Visit counts, dropna=True ===")
-display(counts_default)
-print("Rows:", len(counts_default))
 ```
 
-**Expect:** 7 rows with `dropna=False`: the five open clinics, Bayview with six zeros, and the `NaN` group. The `NaN` row comes first here, not last: with a categorical key, `observed=False`, and a `columns=` key, `pivot_table` puts it at the top, so find that row by its label, not by its position. With `dropna=True`, 6 rows: the `NaN` group goes, but Bayview stays, because a count of `0` is a value, not a missing one.
-
-```python
-# Means: an empty clinic gives NaN in every cell, and dropna=True removes all-NaN rows
-means_default = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
-                               aggfunc="mean", observed=False, dropna=True)
-print("=== Mean wait, dropna=True ===")
-display(means_default.round(1))
-print("Rows:", len(means_default))
-
-means_kept = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
-                            aggfunc="mean", observed=False, dropna=False)
-print("\n=== Mean wait, dropna=False ===")
-display(means_kept.round(1))
-print("Rows:", len(means_kept))
-```
-
-**Expect:** 5 rows with `dropna=True`: the `NaN` group goes because its key is missing, and Bayview goes because all six of its cells are `NaN`. With `dropna=False`, 7 rows. The `NaN` row, again at the top, is not empty: six real means, from 16.5 minutes in Pediatrics to 38.6 in Orthopedics, computed from the 250 visits the default report never mentions.
+**Expect:** 7 rows: the `NaN` group comes first here, then the five open clinics and Bayview with six zeros. A count of `0` is a real value, so `fill_value=0` is right here. Find the `NaN` row by its label, not by its position.
 
 ### Show the Difference
 
@@ -265,7 +248,7 @@ display(pd.crosstab(visits["department"], visits["wait_quartile"], margins=True)
 
 ## Part 3: Filter Keeps or Drops Whole Groups
 
-Work through this independent practice after class; Lecture 08 introduces both methods before the second demo break.
+Independent practice after class.
 
 `filter` tests each whole group and keeps every row of the groups that pass. Rows are never changed, only kept or dropped.
 
@@ -292,44 +275,34 @@ print("\nRows unchanged?", busy.equals(visits.loc[busy.index]))
 
 **Expect:** only Family Medicine and Cardiology have 15,000 or more visits (51,310 rows); Pediatrics, at 14,672, just misses. Cardiology, Endocrinology, and Orthopedics average over 25 minutes (42,724 rows). Family Medicine and Orthopedics have the most variable waits (48,659 rows). Then `True`: `filter` returns the original rows of the passing groups, not one row per group.
 
-## Part 4: Apply Runs Your Own Function per Group
+## Optional Extension: `dropna` in a Pivot Table
 
-`apply` hands each group to your function as a small DataFrame and stitches the results together. Use it when no built-in aggregation fits; it is the slowest of the four, and its output shape depends on what your function returns.
-
-### A Custom Summary per Department
+Prerequisite: BONUS.md, Group Coverage Edge Cases. Not needed for the core route.
 
 ```python
-def wait_summary(group):
-    """Summarize one department's waits (minutes) as a Series."""
-    q25 = group["wait_min"].quantile(0.25)
-    q75 = group["wait_min"].quantile(0.75)
-    return pd.Series({
-        "visits": len(group),
-        "median": group["wait_min"].median(),
-        "q25": q25,
-        "q75": q75,
-        "iqr": q75 - q25,
-        "over_60_min": (group["wait_min"] > 60).sum(),
-    })
-
-dept_summary = visits.groupby("department").apply(wait_summary, include_groups=False)
-display(dept_summary)
-
-# Checkpoint: the medians match the built-in aggregation
-builtin = visits.groupby("department")["wait_min"].median()
-print("\nSame medians as agg('median')?", dept_summary["median"].equals(builtin))
+counts_default = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
+                                aggfunc="count", observed=False, dropna=True, fill_value=0)
+display(Markdown("**Visit counts, dropna=True**"))
+display(counts_default)
+print("Rows:", len(counts_default))
 ```
 
-**Expect:** one row per department, like `agg`, with the columns your function named. Every number shows `.0` because a `Series` that holds a median stores all its values as floats. Family Medicine has the widest interquartile range (18 minutes) and Orthopedics the most waits over an hour (187). Then `True`.
-
-### The Longest Waits in Each Department
+**Expect:** 6 rows: the `NaN` group goes, but Bayview stays, because a count of `0` is a value, not a missing one.
 
 ```python
-longest = visits.groupby("department").apply(
-    lambda g: g.nlargest(2, "wait_min"), include_groups=False
-)
-display(longest[["patient_id", "clinic", "wait_min"]])
-print("\nRows:", len(longest))
+# Means: an empty clinic gives NaN in every cell, and dropna=True removes all-NaN rows
+means_default = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
+                               aggfunc="mean", observed=False, dropna=True)
+display(Markdown("**Mean wait, dropna=True**"))
+display(means_default.round(1))
+print("Rows:", len(means_default))
+
+means_kept = pd.pivot_table(reported, values="wait_min", index="clinic", columns="department",
+                            aggfunc="mean", observed=False, dropna=False)
+display(Markdown("**Mean wait, dropna=False**"))
+display(means_kept.round(1))
+print("Rows:", len(means_kept))
 ```
 
-**Expect:** 12 rows: the two longest waits in each department, with the department as the outer index level and each visit's original row number as the inner one. Family Medicine's longest wait was 80 minutes. When the function returns whole rows, `apply` returns rows; when it returns one `Series` per group, it returns one row per group. When `agg` or `transform` can do the job, prefer them: they run as compiled code instead of once per group.
+**Expect:** 5 rows with `dropna=True`: the `NaN` group goes because its key is missing, and Bayview goes because all six of its cells are `NaN`. With `dropna=False`, 7 rows, and the `NaN` row is not empty: six real means, from 16.5 minutes in Pediatrics to 38.6 in Orthopedics, computed from the 250 visits the default report never mentions.
+

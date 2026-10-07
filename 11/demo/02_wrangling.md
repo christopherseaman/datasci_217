@@ -14,16 +14,20 @@ jupyter:
 
 # Demo 2: Build a past-only model table
 
-The model table has one row per zone and target hour: the `pickup_count` to predict, plus features known before that hour starts. You rebuild the expected zone-hour grid and confirm that the release's panel fills it, then add local calendar fields and past-only lags and rolling means. It uses Lecture 11 up to the demo break, plus joins and the expected grid (Lecture 06), time zones, grouped shifts, and rolling windows (Lecture 09), and Parquet (Lecture 04). Assignment 11's Q3 and Q4 build the same kind of table from sensor data.
+The model table has one row per zone and target hour: the `pickup_count` to predict, plus features known before that hour starts.
 
-Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
+- Rebuild the expected zone-hour grid and confirm the panel fills it.
+- Add local calendar fields.
+- Add past-only lags and rolling means.
+
+Run the cells from top to bottom; an **Expect** line after each step says what you should see.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-This notebook reads two of Demo 1's release files: the manifest and the zone-hour panel. This cell is supplied plumbing, as in Demo 1: it keeps any file already in `data/` and downloads the rest.
+This notebook reads two of Demo 1's release files: the manifest and the zone-hour panel. This supplied cell keeps any file already in `data/` and downloads the rest.
 
 ```python
 import hashlib
@@ -47,7 +51,7 @@ for filename in ["demo_release_manifest.json", "yellow_taxi_2023_h1_zone_hour_co
 
 ## 1. Load the verified panel
 
-Check the panel against the hash the manifest records before trusting it, as Demo 1 did for every release file.
+Check the panel against the hash the manifest records, as Demo 1 did.
 
 ```python
 manifest_path = data_dir / "demo_release_manifest.json"
@@ -65,11 +69,17 @@ print("Shape:", panel.shape)
 print("Pickups in the selected zones:", f"{panel['pickup_count'].sum():,}")
 ```
 
-**Expect:** five rows for the first hour, `2023-01-01 05:00:00+00:00` in `target_hour_utc`, which is local midnight (`2023-01-01 00:00:00-05:00`) in `target_hour_local`; zone 132 had 258 pickups in that hour. Then `Shape: (52116, 4)` and `Pickups in the selected zones: 8,607,337`.
+**Expect:**
+
+- Five rows for the first hour: `2023-01-01 05:00:00+00:00` in `target_hour_utc`, which is local midnight (`2023-01-01 00:00:00-05:00`) in `target_hour_local`; zone 132 had 258 pickups.
+- `Shape: (52116, 4)` and `Pickups in the selected zones: 8,607,337`.
 
 ## 2. Confirm that the panel is complete
 
-A **complete panel** has a row for every zone at every hour (Lecture 11). Build the expected grid the way Lecture 06's cross-join snippet does: every elapsed UTC hour from local 2023-01-01 00:00 up to local 2023-07-01 00:00, crossed with the 12 selected zones. Then left-merge the panel onto it with `indicator=True`: a zone-hour missing from the panel would come back `left_only`.
+A **complete panel** has a row for every zone at every hour.
+
+1. Build the expected grid: every elapsed UTC hour from local 2023-01-01 00:00 up to local 2023-07-01 00:00, cross-joined with the 12 selected zones.
+2. Left-merge the panel onto it with `indicator=True`; a zone-hour missing from the panel comes back `left_only`.
 
 ```python
 start = pd.Timestamp("2023-01-01", tz="America/New_York").tz_convert("UTC")
@@ -80,21 +90,37 @@ expected = zones.merge(hours, how="cross")
 
 coverage = expected.merge(panel, on=["pickup_zone_id", "target_hour_utc"], how="left",
                           validate="one_to_one", indicator=True)
-print("Elapsed hours in the window:", len(hours))
-print("Expected zone-hours:", len(expected))
-display(coverage["_merge"].value_counts())
-print("Zone-hours with 0 pickups:", (panel["pickup_count"] == 0).sum())
+display(pd.DataFrame({
+    "count": {
+        "elapsed hours in the window": len(hours),
+        "expected zone-hours": len(expected),
+        "panel zone-hours with 0 pickups": int((panel["pickup_count"] == 0).sum()),
+    }
+}))
+display(coverage["_merge"].value_counts().to_frame())
 
 assert (coverage["_merge"] == "both").all() and len(panel) == len(expected)
 ```
 
-**Expect:** `Elapsed hours in the window: 4343`, one fewer than 181 days × 24, because the clocks sprang forward on 12 March; `Expected zone-hours: 52116`; all 52,116 rows `both`, with 0 `left_only` and 0 `right_only`; and `Zone-hours with 0 pickups: 375`.
+**Expect:**
 
-Every expected zone-hour is present, and the panel has no extra rows, so its grain is exactly one zone at one UTC hour. The release builder treated the trip feed as complete and filled its 375 empty zone-hours with zero counts; grid completeness alone cannot prove complete event capture. Assignment 11's sensor readings are measurements, so there an hour without a reading stays missing, and `source_observed` records which rows came from the source.
+- A three-row table: `elapsed hours in the window` 4343 (one fewer than 181 days × 24, because the clocks sprang forward on 12 March), `expected zone-hours` 52116, and `panel zone-hours with 0 pickups` 375.
+- A merge table with all 52,116 rows `both`, and 0 `left_only` and 0 `right_only`.
+
+Every expected zone-hour is present and the panel has no extras, so its grain is exactly one zone at one UTC hour.
+
+- The release builder filled its 375 empty zone-hours with zero counts, treating the trip feed as complete.
+- Grid completeness alone cannot prove complete event capture.
+- For sensor readings, an hour without a reading stays missing, and `source_observed` records which rows came from the source.
 
 ## 3. Add local calendar fields and past-only history
 
-At prediction time for hour _t_, the count for hour _t_ is not yet known, so every history feature starts with `shift` (Lecture 09): `lag_1` is the previous elapsed hour, `lag_24` is 24 elapsed hours ago, and `lag_168` is 168 elapsed hours ago, each shifted within its own zone. Across a daylight-saving change, those 24- and 168-hour lags can differ from the same local clock hour yesterday or last week. The rolling means shift by one hour before averaging, so the 24-hour mean covers hours _t−24_ through _t−1_. Calendar fields come from local New York time, because rush hour happens at local 08:00, whatever the UTC clock says. A zone's first 168 hours have no week-old lag, so those rows are dropped.
+At prediction time for hour _t_, the count for hour _t_ is not yet known, so every history feature starts with `shift`:
+
+- `lag_1`, `lag_24`, `lag_168`: the count 1, 24, and 168 elapsed hours earlier, shifted within each zone. Across a daylight-saving change these can differ from the same local clock hour yesterday or last week.
+- `rolling_mean_24`, `rolling_mean_168`: shift by one hour before averaging, so the 24-hour mean covers hours _t−24_ through _t−1_.
+- Calendar fields come from local New York time, because rush hour is at local 08:00 whatever the UTC clock says.
+- A zone's first 168 hours have no week-old lag, so those rows are dropped.
 
 ```python
 def build_model_table(panel):
@@ -124,11 +150,18 @@ display(model_table.head())
 print("Rows after dropping incomplete history:", f"{len(model_table):,}")
 ```
 
-**Expect:** the first rows are local midnight on Sunday 8 January (`hour_of_day` 0, `day_of_week` 6, `is_weekend` 1); zone 132's row has `pickup_count` 194, `lag_1` 297.0, `lag_168` 258.0 (the 258 pickups of the panel's first hour, one week earlier), and `rolling_mean_24` about 214.92. Then `Rows after dropping incomplete history: 50,100`, which is 52,116 minus 168 hours for each of the 12 zones.
+**Expect:**
+
+- The first rows are local midnight on Sunday 8 January (`hour_of_day` 0, `day_of_week` 6, `is_weekend` 1).
+- Zone 132's row has `pickup_count` 194, `lag_1` 297.0, `lag_168` 258.0 (the panel's first hour, one week earlier), and `rolling_mean_24` about 214.92.
+- `Rows after dropping incomplete history: 50,100`, which is 52,116 minus 168 hours for each of the 12 zones.
 
 ## 4. Check one row by hand
 
-A feature that silently read the target hour would make the model look better than it can be. Check the first row for zone 132 against the panel itself: `lag_1` must equal the count one hour earlier, and `rolling_mean_24` must average the 24 hours before the target, not including it.
+A feature that silently read the target hour would make the model look better than it can be. Check zone 132's first row against the panel:
+
+- `lag_1` must equal the count one hour earlier.
+- `rolling_mean_24` must average the 24 hours before the target, not including it.
 
 ```python
 zone_panel = panel[panel["pickup_zone_id"] == 132].set_index("target_hour_utc")
@@ -139,19 +172,20 @@ one_hour = pd.Timedelta(hours=1)
 previous_count = zone_panel.loc[target_hour - one_hour, "pickup_count"]
 past_24 = zone_panel.loc[target_hour - 24 * one_hour: target_hour - one_hour, "pickup_count"]
 print("Target hour:", target_hour)
-print("lag_1:", example["lag_1"], "| panel count one hour earlier:", previous_count)
-print("rolling_mean_24:", round(example["rolling_mean_24"], 3),
-      "| mean of the", len(past_24), "earlier hours:", round(past_24.mean(), 3))
+display(pd.DataFrame({
+    "model table": [example["lag_1"], round(example["rolling_mean_24"], 3)],
+    "recomputed from panel": [previous_count, round(past_24.mean(), 3)],
+}, index=["lag_1", "rolling_mean_24"]))
 
 assert example["lag_1"] == previous_count
 assert round(example["rolling_mean_24"], 6) == round(past_24.mean(), 6)
 ```
 
-**Expect:** `Target hour: 2023-01-08 05:00:00+00:00`, `lag_1: 297.0 | panel count one hour earlier: 297`, and `rolling_mean_24: 214.917 | mean of the 24 earlier hours: 214.917`. Label slicing with `.loc` includes both ends, so the slice holds exactly the 24 hours from _t−24_ to _t−1_.
+**Expect:** `Target hour: 2023-01-08 05:00:00+00:00` and a two-row table with matching columns: `lag_1` 297.000 in both columns, `rolling_mean_24` 214.917 in both columns. Label slicing with `.loc` includes both ends, so the slice holds exactly the 24 hours from _t−24_ to _t−1_.
 
 ## 5. Save the model table
 
-Save the table as Parquet (Lecture 04), which keeps every dtype, including the time zones, for the next step.
+Parquet keeps every dtype, including the time zones.
 
 ```python
 output_dir = Path("output")
@@ -163,5 +197,3 @@ print("Final checks passed: complete grain and strictly past-only features.")
 ```
 
 **Expect:** `Saved output/02_model_table.parquet (631,133 bytes)`; the size can differ slightly with another pyarrow version. Then `Final checks passed: complete grain and strictly past-only features.`
-
-Demo 3 rebuilds this table with the same `build_model_table()` function, so it runs on its own; in Colab, each notebook gets a fresh runtime and would not see this file.

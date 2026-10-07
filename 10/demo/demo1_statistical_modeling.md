@@ -18,9 +18,13 @@ jupyter:
 
 # Demo 1: Statistical Modeling and Framing a Prediction Problem
 
-A diabetes clinic recorded age, sex, BMI, average blood pressure, and six blood tests for 442 patients, then scored how far each patient's disease had progressed one year later. You fit linear regressions with `statsmodels`, read coefficients with their uncertainty, check residuals, compare models, and add a categorical predictor. Then you switch to a home blood-pressure program and frame a prediction problem: the target and its time, a feature audit, clock-face hour features, and a chronological split. Everything here comes from Lecture 10 up to the first demo break, plus Lectures 01 to 09. The diabetes records are real and de-identified; the blood-pressure readings are synthetic.
+A diabetes clinic recorded age, sex, BMI, average blood pressure, and six blood tests for 442 patients, then scored how far each patient's disease had progressed one year later.
 
-Run the cells from top to bottom; after each step, the text says what to expect.
+- **Parts 1 to 7:** fit linear regressions with `statsmodels`, read coefficients with their uncertainty, check residuals, compare models, and add a categorical predictor.
+- **Part 8:** switch to a home blood-pressure program and frame a prediction problem: the target and its time, a feature audit, clock-face hour features, and a chronological split.
+- **Data:** the diabetes records are real and de-identified; the blood-pressure readings are synthetic.
+
+Run the cells from top to bottom.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -57,11 +61,11 @@ diabetes = load_diabetes(scaled=False, as_frame=True).frame
 diabetes = diabetes.rename(columns={'s1': 'tc', 's2': 'ldl', 's3': 'hdl', 's4': 'tch',
                                     's5': 'ltg', 's6': 'glu', 'target': 'progression'})
 print(diabetes.shape)
-display(diabetes.head(3))
+display(diabetes.head(5))
 display(diabetes[['age', 'bmi', 'bp', 'progression']].describe().round(1))
 ```
 
-**Expect:** `(442, 11)`, and these summary rows:
+**Expect:** `(442, 11)`, the first five patients with all 11 columns, and these summary rows:
 
 ```text
          age    bmi     bp  progression
@@ -95,10 +99,10 @@ Fit progression on age, BMI, and blood pressure. Read the formula as "progressio
 
 ```python
 results_formula = smf.ols('progression ~ age + bmi + bp', data=diabetes).fit()
-print(results_formula.summary())
+display(results_formula.summary())
 ```
 
-**Expect:** a header that reports `No. Observations:` 442 and `R-squared:` 0.396 (it also shows the date and time you ran it), then this coefficient block:
+**Expect:** a summary whose header reports `No. Observations:` 442 and `R-squared:` 0.396 (it also shows the date and time you ran it), then this coefficient block:
 
 ```text
                  coef    std err          t      P>|t|      [0.025      0.975]
@@ -206,7 +210,7 @@ The residual degrees of freedom are 442 rows minus 4 estimated coefficients. The
 Coefficients only mean something if the straight-line form fits. Plot each patient's residual (observed minus fitted) against the fitted value: a shapeless cloud around zero is what we want, a curve says the form is wrong, and a funnel says the spread is not constant.
 
 ```python
-display(results_formula.resid.describe().round(1))
+display(results_formula.resid.describe().round(1).to_frame('residual'))
 
 fig, ax = plt.subplots(figsize=(6, 4))
 ax.scatter(results_formula.fittedvalues, results_formula.resid, alpha=0.5)
@@ -293,36 +297,35 @@ Whether six blood tests are worth drawing for every patient is a separate, clini
 
 ## 7. A categorical predictor
 
-Clinics often report BMI in bands. `pd.cut()` (Lecture 05) makes the bands; `C()` in the formula treats them as categories, with the first band as the reference. The top edge, 60, sits above the largest BMI (42.2), so every patient lands in a band.
+Clinics often report BMI in bands. `pd.cut()` makes the bands; `C()` in the formula treats them as categories, with the first band as the reference. The top edge, 60, sits above the largest BMI (42.2), so every patient lands in a band.
 
 ```python
 diabetes['bmi_group'] = pd.cut(diabetes['bmi'], bins=[0, 25, 30, 60],
                                labels=['25 or under', 'over 25 to 30', 'over 30'])
-display(diabetes['bmi_group'].value_counts())
+display(diabetes['bmi_group'].value_counts().to_frame())
 print(f"Patients without a band: {diabetes['bmi_group'].isna().sum()}")
 
 results_cat = smf.ols('progression ~ age + bp + C(bmi_group)', data=diabetes).fit()
-print(f"\nRows used: {results_cat.nobs:.0f}")
-display(results_cat.params.round(2))
+print(f"Rows used: {results_cat.nobs:.0f}")
+display(results_cat.params.round(2).to_frame('coef'))
 ```
 
 **Expect:**
 
 ```text
+               count
 bmi_group
 25 or under      190
 over 25 to 30    157
 over 30           95
-Name: count, dtype: int64
 Patients without a band: 0
-
 Rows used: 442
-Intercept                       -42.03
-C(bmi_group)[T.over 25 to 30]    44.37
-C(bmi_group)[T.over 30]          85.01
-age                               0.23
-bp                                1.57
-dtype: float64
+                                coef
+Intercept                     -42.03
+C(bmi_group)[T.over 25 to 30]  44.37
+C(bmi_group)[T.over 30]        85.01
+age                             0.23
+bp                              1.57
 ```
 
 `25 or under` is the reference band, so it has no row of its own. At the same age and blood pressure, patients in the `over 25 to 30` band average about 44 points higher progression than the reference band, and patients `over 30` about 85 points higher. All 442 patients were used: had the top edge been lower than the largest BMI, the patients above it would have been left without a band, and the formula would have dropped them without a warning. Printing the row count is how you would catch that.
@@ -331,7 +334,7 @@ dtype: float64
 
 Everything so far used all 442 patients at once, which is right when the question is _how_ progression relates to BMI. A prediction question, "what will this patient's next reading be?", is judged on rows the model has never seen, and these baseline records have no time order to split on.
 
-So this part switches to a home blood-pressure program: 30 patients each take one reading a week with a connected cuff, which uploads it with a timestamp. Most measure in the morning or evening; a few night-shift workers measure around midnight. The team wants to predict each patient's next weekly reading as soon as today's reading arrives. The target is the patient's **next** reading, so a grouped `shift(-1)` (Lecture 09) pulls it, and its timestamp, back onto the current row.
+So this part switches to a home blood-pressure program: 30 patients each take one reading a week with a connected cuff, which uploads it with a timestamp. Most measure in the morning or evening; a few night-shift workers measure around midnight. The team wants to predict each patient's next weekly reading as soon as today's reading arrives. The target is the patient's **next** reading, so a grouped `shift(-1)` pulls it, and its timestamp, back onto the current row.
 
 ```python
 rng = np.random.default_rng(217)
@@ -469,7 +472,7 @@ fit_rows = train[train['target_time'] <= first_valid_cutoff]
 assert fit_rows['target_time'].max() <= first_valid_cutoff
 print('Rows with labels available at first validation cutoff:', len(fit_rows))
 honest_fit = smf.ols('sbp_next ~ age + sbp_today + hour_sin + hour_cos', data=fit_rows).fit()
-display(honest_fit.params.round(3))
+display(honest_fit.params.round(3).to_frame('coef'))
 
 valid_bounds = honest_fit.get_prediction(valid).conf_int(obs=True)
 check = valid[['reading_hour', 'sbp_today', 'sbp_next']].head(3).copy()
@@ -483,12 +486,12 @@ display(check)
 
 ```text
 Rows with labels available at first validation cutoff: 91
-Intercept    85.969
-age           0.051
-sbp_today     0.376
-hour_sin      0.868
-hour_cos     -1.962
-dtype: float64
+              coef
+Intercept   85.969
+age          0.051
+sbp_today    0.376
+hour_sin     0.868
+hour_cos    -1.962
     reading_hour  sbp_today  sbp_next  predicted  pi_lower  pi_upper
 4              9      143.4     146.8      145.4     137.8     153.0
 5              7      146.8     149.3      146.1     138.4     153.7
@@ -499,4 +502,3 @@ dtype: float64
 - **hour_sin and hour_cos:** read them together. A 9:00 reading gets a prediction about 4.0 mmHg higher than a midnight reading with the same age and `sbp_today`; in this simulated program, mid-morning readers also tend to read higher the next week.
 - **The intervals** are about 15 mmHg wide, and all three validation readings fall inside theirs.
 
-Demo 2 measures how far off predictions like these are, on average, and whether they beat a simple guess.

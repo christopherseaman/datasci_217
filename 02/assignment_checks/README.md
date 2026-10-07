@@ -28,10 +28,10 @@ student's repository and says so in the log.
 
 Correct a check here and copy the changed file over its twin in
 `02/assignment/`; the self-test fails while the two differ. Every fork gets the
-correction on its next push. A student's local copy changes only when the
-handout is republished (`scripts/publish_assignment.sh 02 ...`) and the student
-syncs the fork, so until then the local run can lag the GitHub run, and the
-GitHub run counts.
+correction on its next push. The local `check_assignment.py` downloads the
+current `_value_checks.py` and `grading.py` from main, falling back to the
+bundled copy offline or with `--local-checks` / `DS217_LOCAL_CHECKS=1`, so local
+and GitHub runs agree.
 
 ## Checking the checks
 

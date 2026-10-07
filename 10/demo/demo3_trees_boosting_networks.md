@@ -18,9 +18,15 @@ jupyter:
 
 # Demo 3: Flexible Models: Trees, Boosting, and Neural Networks
 
-A breast lump is biopsied with a fine needle, and a digitized image of the cells gives 30 measurements of their nuclei: size, shape, and texture. From those measurements, is the lump malignant? You fit a baseline and logistic regression, then a random forest, gradient-boosted trees with XGBoost, and three small neural networks, all on the same training, validation, and test rows. A selection rule written before any model is fitted picks the winner, and the winner is evaluated on the test rows exactly once. Everything here comes from Lecture 10, plus Lectures 01 to 09. The 569 biopsies are real and de-identified.
+A breast lump is biopsied with a fine needle, and a digitized image of the cells gives 30 measurements of their nuclei: size, shape, and texture. From those measurements, is the lump malignant?
 
-Run the cells from top to bottom; after each step, the text says what to expect.
+- Fit a baseline and logistic regression.
+- Fit a random forest, gradient-boosted trees with XGBoost, and three small neural networks on the same training, validation, and test rows.
+- A selection rule written before any model is fitted picks the winner.
+- Evaluate the winner on the test rows exactly once.
+- **Data:** the 569 biopsies are real and de-identified.
+
+Run the cells from top to bottom.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -33,6 +39,7 @@ Run the cells from top to bottom; after each step, the text says what to expect.
 `load_breast_cancer(as_frame=True)` ships with scikit-learn and returns the table in its `.frame`, the label in its `.target`, and the 30 measurement names in its `.feature_names`. Each row is one biopsy; the 30 columns are ten nucleus measurements (radius, texture, perimeter, area, smoothness, compactness, concavity, concave points, symmetry, fractal dimension), each summarized three ways across the cells in the image: the `mean`, the standard error (`error`), and the `worst` (mean of the three largest values). Its target codes malignant as 0, so flip it to make **malignant = 1**, the class we want to catch.
 
 ```python
+from IPython.display import Markdown
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -49,13 +56,20 @@ biopsies = cancer.frame
 biopsies['malignant'] = (cancer.target == 0).astype(int)
 feature_cols = cancer.feature_names.tolist()
 
+def confusion_table(actual, predicted):
+    """Confusion matrix as a labeled table."""
+    return pd.DataFrame(confusion_matrix(actual, predicted),
+                        index=['actual benign', 'actual malignant'],
+                        columns=['predicted benign', 'predicted malignant'])
+
 print(biopsies.shape)
 print(feature_cols[:4])
-display(biopsies['malignant'].value_counts())
+display(biopsies[['mean radius', 'mean texture', 'mean area', 'worst area', 'malignant']].head(5))
+display(biopsies['malignant'].value_counts().to_frame())
 print(f"Share malignant: {biopsies['malignant'].mean():.1%}")
 ```
 
-**Expect:** `(569, 32)` (30 measurements, the original `target`, and the new `malignant` column), the first four names `['mean radius', 'mean texture', 'mean perimeter', 'mean area']`, then 357 benign (0) and 212 malignant (1) biopsies: `Share malignant: 37.3%`.
+**Expect:** `(569, 32)` (30 measurements, the original `target`, and the new `malignant` column), the first four names `['mean radius', 'mean texture', 'mean perimeter', 'mean area']`, a table of the first five biopsies (four measurements and the label), then 357 benign (0) and 212 malignant (1) biopsies: `Share malignant: 37.3%`.
 
 ## 2. Split, scale, and fix the selection rule
 
@@ -97,11 +111,11 @@ The three parts keep nearly the same share of malignant biopsies, which is what 
 - One validation row is worth 0.9 percentage points of accuracy, so candidates within one row of the best count as tied.
 - A tie goes to the _simplest_ candidate: the one with the fewest settings to tune and the fastest fit.
 
-Writing the rule down now stops the final table from being read backwards to justify a favorite. Every model's confusion matrix is printed too, because a missed malignancy (a false negative) is the costliest mistake here.
+Writing the rule down now stops the final table from being read backwards to justify a favorite. Every model's confusion matrix is shown too, because a missed malignancy (a false negative) is the costliest mistake here.
 
 ## 3. A baseline and the simplest candidate
 
-Demo 2 started with `DummyRegressor`; for a yes/no target the same idea is to predict the most common training class for every row. Then fit logistic regression, the linear model for yes/no targets, so every flexible model below has a real bar to clear.
+For a yes/no target, the baseline idea is to predict the most common training class for every row. Then fit logistic regression, the linear model for yes/no targets, so every flexible model below has a real bar to clear.
 
 ```python
 majority_class = int(pd.Series(y_train).mode()[0])
@@ -115,9 +129,12 @@ lr.fit(X_train_scaled, y_train)
 lr_pred = lr.predict(X_valid_scaled)
 lr_acc = accuracy_score(y_valid, lr_pred)
 print(f"Logistic regression validation accuracy: {lr_acc:.4f}")
-print("\nConfusion matrix [[TN, FP], [FN, TP]]:")
-print(confusion_matrix(y_valid, lr_pred))
-print("\n" + classification_report(y_valid, lr_pred))
+display(Markdown('**Confusion matrix**'))
+display(confusion_table(y_valid, lr_pred))
+display(Markdown('**Classification report**'))
+report = pd.DataFrame(classification_report(y_valid, lr_pred, output_dict=True)).T.drop('accuracy')
+report['support'] = report['support'].astype(int)
+display(report.round(2))
 ```
 
 **Expect:**
@@ -126,19 +143,14 @@ print("\n" + classification_report(y_valid, lr_pred))
 Majority class in training rows: 0
 Baseline validation accuracy: 0.6228
 Logistic regression validation accuracy: 0.9737
-
-Confusion matrix [[TN, FP], [FN, TP]]:
-[[69  2]
- [ 1 42]]
-
-              precision    recall  f1-score   support
-
-           0       0.99      0.97      0.98        71
-           1       0.95      0.98      0.97        43
-
-    accuracy                           0.97       114
-   macro avg       0.97      0.97      0.97       114
-weighted avg       0.97      0.97      0.97       114
+                     predicted benign  predicted malignant
+actual benign                      69                    2
+actual malignant                    1                   42
+              precision  recall  f1-score  support
+0                  0.99    0.97      0.98       71
+1                  0.95    0.98      0.97       43
+macro avg          0.97    0.97      0.97      114
+weighted avg       0.97    0.97      0.97      114
 ```
 
 Calling every biopsy benign is right 71 times out of 114, so 0.623 is the score to beat, not 0. Logistic regression gets 111 of 114 right: two benign biopsies flagged as malignant, and one malignant biopsy missed. In the report, class `1` (malignant) has recall 0.98: it caught 42 of the 43 malignant biopsies.
@@ -160,9 +172,9 @@ rf_model.fit(X_train, y_train)
 rf_acc = accuracy_score(y_valid, rf_model.predict(X_valid))
 print(f"Training accuracy:   {accuracy_score(y_train, rf_model.predict(X_train)):.4f}")
 print(f"Validation accuracy: {rf_acc:.4f}")
-print("Confusion matrix [[TN, FP], [FN, TP]]:")
-print(confusion_matrix(y_valid, rf_model.predict(X_valid)))
-print(f"First three predicted probabilities (benign, malignant):\n{rf_model.predict_proba(X_valid)[:3].round(3)}")
+display(confusion_table(y_valid, rf_model.predict(X_valid)))
+display(pd.DataFrame(rf_model.predict_proba(X_valid)[:3].round(3),
+                     columns=['p_benign', 'p_malignant']))
 ```
 
 **Expect:**
@@ -170,13 +182,13 @@ print(f"First three predicted probabilities (benign, malignant):\n{rf_model.pred
 ```text
 Training accuracy:   0.9941
 Validation accuracy: 0.9737
-Confusion matrix [[TN, FP], [FN, TP]]:
-[[70  1]
- [ 2 41]]
-First three predicted probabilities (benign, malignant):
-[[0.997 0.003]
- [0.066 0.934]
- [0.998 0.002]]
+                  predicted benign  predicted malignant
+actual benign                   70                    1
+actual malignant                 2                   41
+   p_benign  p_malignant
+0     0.997        0.003
+1     0.066        0.934
+2     0.998        0.002
 ```
 
 Nearly perfect on the rows it learned and 111 of 114 on rows it has never seen, the same count as logistic regression, but with a different mix of mistakes: one false alarm and two missed malignancies instead of two and one.
@@ -214,8 +226,6 @@ The two columns agree at the top: `worst concave points` and `worst area` matter
 
 ## 5. XGBoost
 
-The lecture's XGBoost reference supplies the settings.
-
 XGBoost builds its trees in sequence, each one aimed at what the ensemble so far still gets wrong. It follows the same fit/predict pattern. Colab's XGBoost version can shift the importances and early-stopping round slightly, not the accuracies.
 
 ```python
@@ -229,17 +239,16 @@ xgb_model = xgb.XGBClassifier(
 xgb_model.fit(X_train, y_train)
 xgb_acc = accuracy_score(y_valid, xgb_model.predict(X_valid))
 print(f"XGBoost validation accuracy: {xgb_acc:.4f}")
-print("Confusion matrix [[TN, FP], [FN, TP]]:")
-print(confusion_matrix(y_valid, xgb_model.predict(X_valid)))
+display(confusion_table(y_valid, xgb_model.predict(X_valid)))
 ```
 
 **Expect:**
 
 ```text
 XGBoost validation accuracy: 0.9649
-Confusion matrix [[TN, FP], [FN, TP]]:
-[[69  2]
- [ 2 41]]
+                  predicted benign  predicted malignant
+actual benign                   69                    2
+actual malignant                 2                   41
 ```
 
 XGBoost gets 110 of 114, one fewer than the forest.
@@ -312,8 +321,6 @@ On a table this small the validation loss keeps creeping down for hundreds of ro
 
 ## 7. Build and compile a neural network
 
-The lecture's Keras reference supplies the API.
-
 ```python
 import tensorflow as tf
 from tensorflow import keras
@@ -358,14 +365,13 @@ history_df['epoch'] = range(1, len(history_df) + 1)
 display(history_df.set_index('epoch').tail(3).round(4))
 
 best_row = history_df.loc[history_df['val_loss'].idxmin()]
-print(f"\nLowest validation loss: {best_row['val_loss']:.4f} at epoch {best_row['epoch']:.0f}")
+print(f"Lowest validation loss: {best_row['val_loss']:.4f} at epoch {best_row['epoch']:.0f}")
 
 valid_loss, valid_accuracy = model.evaluate(X_valid_scaled, y_valid, verbose=0)
 print(f"Validation loss after epoch 50: {valid_loss:.4f}")
 print(f"Validation accuracy: {valid_accuracy:.4f}")
 nn_pred = (model.predict(X_valid_scaled, verbose=0) > 0.5).astype(int).flatten()
-print("Confusion matrix [[TN, FP], [FN, TP]]:")
-print(confusion_matrix(y_valid, nn_pred))
+display(confusion_table(y_valid, nn_pred))
 ```
 
 **Expect:** TensorFlow may first print log lines in red, such as `WARNING: All log messages before absl::InitializeLog() is called are written to STDERR` or a line starting `E0000` that mentions `use_unbounded_threadpool`. They come from TensorFlow's internals, not from your code, and do not change the results. Then:
@@ -380,9 +386,9 @@ epoch
 Lowest validation loss: 0.0726 at epoch 20
 Validation loss after epoch 50: 0.0903
 Validation accuracy: 0.9737
-Confusion matrix [[TN, FP], [FN, TP]]:
-[[69  2]
- [ 1 42]]
+                  predicted benign  predicted malignant
+actual benign                   69                    2
+actual malignant                 1                   42
 ```
 
 The network gets every training row right and 111 of 114 validation rows, with the same confusion matrix as logistic regression.
@@ -554,20 +560,17 @@ final_model = LogisticRegression(max_iter=1000, random_state=42)
 final_model.fit(X_train_valid_scaled, y_train_valid)
 
 test_pred = final_model.predict(X_test_scaled)
-print("Final test performance, frozen logistic regression:")
-print(f"Test accuracy: {accuracy_score(y_test, test_pred):.4f}")
-print("Confusion matrix [[TN, FP], [FN, TP]]:")
-print(confusion_matrix(y_test, test_pred))
+print(f"Final test accuracy, frozen logistic regression: {accuracy_score(y_test, test_pred):.4f}")
+display(confusion_table(y_test, test_pred))
 ```
 
 **Expect:**
 
 ```text
-Final test performance, frozen logistic regression:
-Test accuracy: 0.9649
-Confusion matrix [[TN, FP], [FN, TP]]:
-[[71  1]
- [ 3 39]]
+Final test accuracy, frozen logistic regression: 0.9649
+                  predicted benign  predicted malignant
+actual benign                   71                    1
+actual malignant                 3                   39
 ```
 
 110 of 114 test biopsies are right: one false alarm and three missed malignancies out of 42. Test accuracy (0.965) is a little below validation (0.974), the normal cost of choosing on validation rows. Three missed cancers is the number to take to the clinical team. If misses cost that much more than false alarms, the next project would pick its threshold or metric for recall before looking at the test set again; going back now to try the early-stopped XGBoost on these rows would turn the test set into a second validation set.

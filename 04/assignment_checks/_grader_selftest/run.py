@@ -182,7 +182,7 @@ def run() -> None:
         assert checker_report(CHECKS, empty)["score"] == 0
 
         fresh = workspace / "handout"
-        shutil.copytree(HANDOUT, fresh, ignore=shutil.ignore_patterns("__pycache__", ".venv", ".pytest_cache"))
+        shutil.copytree(HANDOUT, fresh, ignore=shutil.ignore_patterns("__pycache__", ".venv", ".pytest_cache", ".checks"))
         assert sum(scores(fresh).values()) == 0
 
         correct = workspace / "correct"
@@ -555,7 +555,7 @@ def run_handout() -> None:
 
     # The handout's only Python files are the checks; the self-test and its answers stay here.
     handout_python = {path.relative_to(HANDOUT).as_posix() for path in HANDOUT.rglob("*.py")
-                      if ".venv" not in path.parts}
+                      if ".venv" not in path.parts and ".checks" not in path.parts}
     assert handout_python == set(files) - {".github/test/requirements.txt"}, sorted(handout_python)
     assert not (HANDOUT / "_grader_selftest").exists()
 
