@@ -265,6 +265,6 @@ Extra files are ignored.
 
 ## Submit
 
-After **Restart** and **Run All**, save the notebook with its outputs: they hold only synthetic data and show your results, as Lecture 04's "Before You Commit a Notebook" says for course assignments. In VS Code Source Control, check the notebook's diff, then stage `assignment.ipynb` and the six files in `output/`. Commit with `Complete Assignment 04 notebook` and select **Sync Changes**. Keep `.venv/` out of the commit; `.gitignore` already lists it.
+After **Restart** and **Run All**, save the notebook with its outputs: they hold only synthetic data and show your results, as Lecture 04's "Best Practices Before You Commit a Notebook" says for course assignments. In VS Code Source Control, check the notebook's diff, then stage `assignment.ipynb` and the six files in `output/`. Commit with `Complete Assignment 04 notebook` and select **Sync Changes**. Keep `.venv/` out of the commit; `.gitignore` already lists it.
 
 Confirm the notebook and the six output files on `main` in the repository browser. GitHub Actions runs the checks automatically on every push; enable Actions once if GitHub prompts you in a fork. If a run cannot download the course's current checks, it grades with the copy in your repository and says so in its log. If your local run and the GitHub run ever disagree, the GitHub run counts, because it uses the course's current checks. If a required VS Code control is unavailable, record its message and contact the instructor.

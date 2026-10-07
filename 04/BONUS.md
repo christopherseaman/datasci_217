@@ -62,19 +62,25 @@ over_40 = visits["age"] > 40
 display(visits.iloc[over_40.to_numpy()])
 ```
 
-```text
-            age  temp_c clinic
-patient_id                    
-P003         41    37.2   East
-            age  temp_c clinic
-patient_id                    
-P002         58    38.1  South
-P003         41    37.2   East
-            age  temp_c clinic
-patient_id                    
-P002         58    38.1  South
-P003         41    37.2   East
-```
+`query`
+
+| patient_id | age | temp_c | clinic |
+| --- | --- | --- | --- |
+| P003 | 41 | 37.2 | East |
+
+`between`
+
+| patient_id | age | temp_c | clinic |
+| --- | --- | --- | --- |
+| P002 | 58 | 38.1 | South |
+| P003 | 41 | 37.2 | East |
+
+`iloc`
+
+| patient_id | age | temp_c | clinic |
+| --- | --- | --- | --- |
+| P002 | 58 | 38.1 | South |
+| P003 | 41 | 37.2 | East |
 
 # Reindexing, Aligning, and Arithmetic Methods
 
@@ -97,13 +103,12 @@ roster = ["P001", "P002", "P003", "P004"]
 display(sbp.reindex(roster))
 ```
 
-```text
-P001    128.0
-P002    142.0
-P003    150.0
-P004      NaN
-dtype: float64
-```
+|  | value |
+| --- | --- |
+| P001 | 128.0 |
+| P002 | 142.0 |
+| P003 | 150.0 |
+| P004 | NaN |
 
 `P004` is on the roster without a reading, so the gap is visible instead of the patient silently missing.
 
@@ -115,11 +120,10 @@ left, right = sbp.align(week4, join="inner")
 display(right - left)
 ```
 
-```text
-P001   -4
-P002   -6
-dtype: int64
-```
+|  | value |
+| --- | --- |
+| P001 | -4 |
+| P002 | -6 |
 
 ## Code Snippet: Fill missing cells on both axes
 
@@ -130,14 +134,15 @@ display(doses + extra)
 display(doses.add(extra, fill_value=0))
 ```
 
-```text
-       am  noon  pm
-P001  NaN   NaN NaN
-P002  3.0   NaN NaN
-       am  noon   pm
-P001  1.0   NaN  1.0
-P002  3.0   1.0  1.0
-```
+|  | am | noon | pm |
+| --- | --- | --- | --- |
+| P001 | NaN | NaN | NaN |
+| P002 | 3.0 | NaN | NaN |
+
+|  | am | noon | pm |
+| --- | --- | --- | --- |
+| P001 | 1.0 | NaN | 1.0 |
+| P002 | 3.0 | 1.0 | 1.0 |
 
 `P001`'s `noon` cell exists in neither table, so it stays `NaN` even with `fill_value=0`.
 
@@ -180,23 +185,28 @@ share = (
 display(share)
 ```
 
-```text
-am_mg    15
-pm_mg     5
-dtype: int64
-P001    10
-P002    15
-P003    30
-dtype: int64
-      am_mg  pm_mg
-P001   5 mg   5 mg
-P002  10 mg   5 mg
-P003  20 mg  10 mg
-         am_mg     pm_mg  daily_mg
-P001  0.166667  0.166667  0.333333
-P002  0.333333  0.166667  0.500000
-P003  0.666667  0.333333  1.000000
-```
+|  | value |
+| --- | --- |
+| am_mg | 15 |
+| pm_mg | 5 |
+
+|  | value |
+| --- | --- |
+| P001 | 10 |
+| P002 | 15 |
+| P003 | 30 |
+
+|  | am_mg | pm_mg |
+| --- | --- | --- |
+| P001 | 5 mg | 5 mg |
+| P002 | 10 mg | 5 mg |
+| P003 | 20 mg | 10 mg |
+
+|  | am_mg | pm_mg | daily_mg |
+| --- | --- | --- | --- |
+| P001 | 0.166667 | 0.166667 | 0.333333 |
+| P002 | 0.333333 | 0.166667 | 0.500000 |
+| P003 | 0.666667 | 0.333333 | 1.000000 |
 
 ## Adding Columns with `assign()`, `insert()`, and `eval()`
 
@@ -216,17 +226,21 @@ print(patients.columns.tolist())
 display(patients.eval("height_cm = height_m * 100"))
 ```
 
+|  | patient_id | weight_kg | height_m | bmi | overweight |
+| --- | --- | --- | --- | --- | --- |
+| 0 | P001 | 70.0 | 1.75 | 22.857143 | False |
+| 1 | P002 | 82.5 | 1.80 | 25.462963 | True |
+| 2 | P003 | 64.0 | 1.62 | 24.386526 | False |
+
 ```text
-  patient_id  weight_kg  height_m        bmi  overweight
-0       P001       70.0      1.75  22.857143       False
-1       P002       82.5      1.80  25.462963        True
-2       P003       64.0      1.62  24.386526       False
 ['patient_id', 'weight_lb', 'weight_kg', 'height_m']
-  patient_id  weight_lb  weight_kg  height_m  height_cm
-0       P001   154.3220       70.0      1.75      175.0
-1       P002   181.8795       82.5      1.80      180.0
-2       P003   141.0944       64.0      1.62      162.0
 ```
+
+|  | patient_id | weight_lb | weight_kg | height_m | height_cm |
+| --- | --- | --- | --- | --- | --- |
+| 0 | P001 | 154.3220 | 70.0 | 1.75 | 175.0 |
+| 1 | P002 | 181.8795 | 82.5 | 1.80 | 180.0 |
+| 2 | P003 | 141.0944 | 64.0 | 1.62 | 162.0 |
 
 `assign()` left `patients` unchanged; `insert()` changed it in place.
 
@@ -252,13 +266,12 @@ display(pd.DataFrame({
 }))
 ```
 
-```text
-      average  first  dense    pct
-P003      1.5    1.0    1.0  0.875
-P001      4.0    4.0    3.0  0.250
-P002      1.5    2.0    1.0  0.875
-P004      3.0    3.0    2.0  0.500
-```
+|  | average | first | dense | pct |
+| --- | --- | --- | --- | --- |
+| P003 | 1.5 | 1.0 | 1.0 | 0.875 |
+| P001 | 4.0 | 4.0 | 3.0 | 0.250 |
+| P002 | 1.5 | 2.0 | 1.0 | 0.875 |
+| P004 | 3.0 | 3.0 | 2.0 | 0.500 |
 
 # Covariance
 
@@ -281,16 +294,17 @@ display(bp.cov())
 display(bp.corrwith(bp["baseline"]))
 ```
 
-```text
-          baseline     week_4  week_8
-baseline     124.0  82.000000    67.0
-week_4        82.0  57.333333    55.0
-week_8        67.0  55.000000    73.0
-baseline    1.000000
-week_4      0.972522
-week_8      0.704211
-dtype: float64
-```
+|  | baseline | week_4 | week_8 |
+| --- | --- | --- | --- |
+| baseline | 124.0 | 82.000000 | 67.0 |
+| week_4 | 82.0 | 57.333333 | 55.0 |
+| week_8 | 67.0 | 55.000000 | 73.0 |
+
+|  | value |
+| --- | --- |
+| baseline | 1.000000 |
+| week_4 | 0.972522 |
+| week_8 | 0.704211 |
 
 # Handling Duplicate Index Labels
 
@@ -319,15 +333,22 @@ display(temps[~temps.index.duplicated()])
 
 ```text
 False
-P001    36.8
-P001    37.9
-Name: temp_c, dtype: float64
-36.6
-P001    36.8
-P002    37.2
-P003    36.6
-Name: temp_c, dtype: float64
 ```
+
+|  | temp_c |
+| --- | --- |
+| P001 | 36.8 |
+| P001 | 37.9 |
+
+```text
+36.6
+```
+
+|  | temp_c |
+| --- | --- |
+| P001 | 36.8 |
+| P002 | 37.2 |
+| P003 | 36.6 |
 
 # Other File Formats and Databases
 
@@ -369,11 +390,13 @@ display(pd.read_json("visits.json"))
     "patient_id":"P001",
     "clinic":"North",
     "te
-  patient_id clinic  temp_c
-0       P001  North    36.8
-1       P002  South    38.1
-2       P003  North    37.2
 ```
+
+|  | patient_id | clinic | temp_c |
+| --- | --- | --- | --- |
+| 0 | P001 | North | 36.8 |
+| 1 | P002 | South | 38.1 |
+| 2 | P003 | North | 37.2 |
 
 Deeply nested JSON needs flattening first; see `pd.json_normalize()`.
 
@@ -395,9 +418,11 @@ display(sheets["fever"])
 
 ```text
 ['visits', 'fever']
-  patient_id clinic  temp_c
-0       P002  South    38.1
 ```
+
+|  | patient_id | clinic | temp_c |
+| --- | --- | --- | --- |
+| 0 | P002 | South | 38.1 |
 
 ## Binary Formats
 
@@ -434,10 +459,9 @@ con.close()
 display(fevers)
 ```
 
-```text
-  patient_id  temp_c
-0       P002    38.1
-```
+|  | patient_id | temp_c |
+| --- | --- | --- |
+| 0 | P002 | 38.1 |
 
 `if_exists="replace"` overwrites a table of the same name, so rerunning the cell is safe in this example and destructive in a real database.
 

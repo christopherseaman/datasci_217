@@ -23,7 +23,7 @@ source .venv/bin/activate
 uv sync
 ```
 
-Then open the `04-demo` folder in VS Code and choose its `.venv` as the notebook kernel.
+Then open the `04-demo` folder in VS Code.
 
 This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 
@@ -49,7 +49,7 @@ This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 ![A run cell in VS Code: Run All in the toolbar, run-above and run-below on the cell's own toolbar, and the output beneath the cell](media/vscode-jupyter-run-cells.png)
 
 <callout icon="⚠️" color="yellow_bg">
-	## `No module named 'pandas'`? The kernel is the wrong Python
+	## `No module named 'pandas'`? Wrong venv?
 	Click the kernel name at the top right and choose the project's `.venv`, even if the terminal's environment is active.
 </callout>
 
@@ -82,14 +82,27 @@ JupyterLab is Jupyter's own browser interface, started with `jupyter lab` in an 
 
 ![VS Code Variables view: every name the kernel holds, with its type, size, and value](media/vscode-jupyter-variables.png)
 
-Cell 1 holds `days = 12` and `doses_per_day = 2`; Cell 2 holds `total_doses = days * doses_per_day` and `total_doses`.
+### Example Notebook State Changes
 
-| Step | You do | Variables view | Under Cell 2 |
+```python
+# Cell 1
+days = 12
+doses = 2
+```
+
+```python
+# Cell 2
+doses = days * doses
+doses
+```
+
+| Step | You do | Variables view | Output |
 | --- | --- | --- | --- |
-| 1 | Run Cell 1 | `days` 12, `doses_per_day` 2 | nothing yet |
-| 2 | Run Cell 2 | adds `total_doses` 24 | `24` |
-| 3 | Edit Cell 1 to `doses_per_day = 3`, do not run it | `doses_per_day` still 2 | `24`, now stale |
-| 4 | **Restart**, then **Run All** | `doses_per_day` 3, `total_doses` 36 | `36` |
+| 1 | Run Cell 1 | `days` 12, `doses` 2 | nothing yet |
+| 2 | Run Cell 2 | `doses` to 24 | `24` |
+| 3 | Run Cell 2 (again) | `doses` to 288 | `288` |
+| 4 | Edit Cell 1 to `doses = 3`, do not run it | `doses` still 288 | `288`, now stale |
+| 5 | **Restart**, then **Run All** | `doses` 36 | `36` |
 
 ### Reference Card: Kernel actions
 
@@ -152,7 +165,7 @@ The `.ipynb` file, opened in a text editor:
               "text": ["Example Patient 120/80\n"]}]}
 ```
 
-### Before You Commit a Notebook
+### Best Practices Before You Commit a Notebook
 
 When its outputs should not be shared:
 
@@ -212,11 +225,13 @@ display(temp_c)
 print(temp_c["P002"])
 ```
 
+|  | temp_c |
+| --- | --- |
+| P001 | 36.8 |
+| P002 | 38.1 |
+| P003 | 37.2 |
+
 ```text
-P001    36.8
-P002    38.1
-P003    37.2
-Name: temp_c, dtype: float64
 38.1
 ```
 
@@ -229,13 +244,11 @@ visits.index.name = "patient_id"
 display(visits)
 ```
 
-```text
-            age  temp_c  smoker
-patient_id                     
-P001         34    36.8   False
-P002         58    38.1    True
-P003         41    37.2   False
-```
+| patient_id | age | temp_c | smoker |
+| --- | --- | --- | --- |
+| P001 | 34 | 36.8 | False |
+| P002 | 58 | 38.1 | True |
+| P003 | 41 | 37.2 | False |
 
 ### Reference Card: First look at a table
 
@@ -262,12 +275,14 @@ Data columns (total 3 columns):
  1   temp_c  3 non-null      float64
  2   smoker  3 non-null      bool   
 ...
-             age     temp_c
-count   3.000000   3.000000
-mean   44.333333  37.366667
-...
-max    58.000000  38.100000
 ```
+
+|  | age | temp_c |
+| --- | --- | --- |
+| count | 3.000000 | 3.000000 |
+| mean | 44.333333 | 37.366667 |
+| ... | ... | ... |
+| max | 58.000000 | 38.100000 |
 
 ## Selecting Columns
 
@@ -289,23 +304,23 @@ display(visits[["temp_c"]])
 display(visits[["age", "temp_c"]])
 ```
 
-```text
-patient_id
-P001    36.8
-P002    38.1
-P003    37.2
-Name: temp_c, dtype: float64
-            temp_c
-patient_id        
-P001          36.8
-P002          38.1
-P003          37.2
-            age  temp_c
-patient_id             
-P001         34    36.8
-P002         58    38.1
-P003         41    37.2
-```
+| patient_id | temp_c |
+| --- | --- |
+| P001 | 36.8 |
+| P002 | 38.1 |
+| P003 | 37.2 |
+
+| patient_id | temp_c |
+| --- | --- |
+| P001 | 36.8 |
+| P002 | 38.1 |
+| P003 | 37.2 |
+
+| patient_id | age | temp_c |
+| --- | --- | --- |
+| P001 | 34 | 36.8 |
+| P002 | 58 | 38.1 |
+| P003 | 41 | 37.2 |
 
 <callout icon="⚠️" color="yellow_bg">
 	## Several columns need two pairs of brackets
@@ -338,11 +353,12 @@ display(by_label)
 print(by_label.equals(by_position))
 ```
 
+| patient_id | age | temp_c |
+| --- | --- | --- |
+| P001 | 34 | 36.8 |
+| P002 | 58 | 38.1 |
+
 ```text
-            age  temp_c
-patient_id             
-P001         34    36.8
-P002         58    38.1
 True
 ```
 
@@ -377,16 +393,15 @@ display(has_fever)
 display(visits.loc[has_fever, ["age", "temp_c"]])
 ```
 
-```text
-patient_id
-P001    False
-P002     True
-P003    False
-Name: temp_c, dtype: bool
-            age  temp_c
-patient_id             
-P002         58    38.1
-```
+| patient_id | temp_c |
+| --- | --- |
+| P001 | False |
+| P002 | True |
+| P003 | False |
+
+| patient_id | age | temp_c |
+| --- | --- | --- |
+| P002 | 58 | 38.1 |
 
 ![xkcd 2618: Selection Bias. The rows a filter keeps decide the answer, so name each mask and count what it kept](media/xkcd_2618.png)
 
@@ -427,16 +442,19 @@ print(bp["week_8"].idxmin())
 print(bp["baseline"].corr(bp["week_8"]))
 ```
 
+|  | value |
+| --- | --- |
+| baseline | 140.000000 |
+| week_4 | 132.666667 |
+| week_8 | 130.000000 |
+
+| patient_id | value |
+| --- | --- |
+| P001 | 124.333333 |
+| P002 | 138.666667 |
+| P003 | 139.666667 |
+
 ```text
-baseline    140.000000
-week_4      132.666667
-week_8      130.000000
-dtype: float64
-patient_id
-P001    124.333333
-P002    138.666667
-P003    139.666667
-dtype: float64
 P001
 0.7042105548226619
 ```
@@ -463,20 +481,23 @@ print(clinic.nunique())
 display(clinic.isin(["South", "East"]))
 ```
 
+| clinic | count |
+| --- | --- |
+| North | 3 |
+| South | 1 |
+| East | 1 |
+
 ```text
-clinic
-North    3
-South    1
-East     1
-Name: count, dtype: int64
 3
-P001    False
-P002     True
-P003    False
-P004     True
-P005    False
-Name: clinic, dtype: bool
 ```
+
+|  | clinic |
+| --- | --- |
+| P001 | False |
+| P002 | True |
+| P003 | False |
+| P004 | True |
+| P005 | False |
 
 # LIVE DEMO!
 
@@ -513,13 +534,11 @@ visits.loc[visits["temp_c"] >= 38.0, "flag"] = "fever"
 display(visits)
 ```
 
-```text
-            age  temp_c  smoker  temp_f   flag
-patient_id                                    
-P001         34    36.8   False   98.24     ok
-P002         58    38.1    True  100.58  fever
-P003         41    37.2   False   98.96     ok
-```
+| patient_id | age | temp_c | smoker | temp_f | flag |
+| --- | --- | --- | --- | --- | --- |
+| P001 | 34 | 36.8 | False | 98.24 | ok |
+| P002 | 58 | 38.1 | True | 100.58 | fever |
+| P003 | 41 | 37.2 | False | 98.96 | ok |
 
 ### Code Snippet: Drop a row and two columns
 
@@ -527,12 +546,10 @@ P003         41    37.2   False   98.96     ok
 display(visits.drop(index="P002", columns=["smoker", "flag"]))
 ```
 
-```text
-            age  temp_c  temp_f
-patient_id                     
-P001         34    36.8   98.24
-P003         41    37.2   98.96
-```
+| patient_id | age | temp_c | temp_f |
+| --- | --- | --- | --- |
+| P001 | 34 | 36.8 | 98.24 |
+| P003 | 41 | 37.2 | 98.96 |
 
 ### Common Mistake: Chained Assignment
 
@@ -574,13 +591,12 @@ by_pressure = vitals.sort_values(
 display(by_pressure)
 ```
 
-```text
-  patient_id  systolic
-2       P002       142
-0       P003       142
-3       P004       130
-1       P001       118
-```
+|  | patient_id | systolic |
+| --- | --- | --- |
+| 2 | P002 | 142 |
+| 0 | P003 | 142 |
+| 3 | P004 | 130 |
+| 1 | P001 | 118 |
 
 ### Code Snippet: Rank with a tie
 
@@ -588,13 +604,12 @@ display(by_pressure)
 display(vitals["systolic"].rank(ascending=False, method="min"))
 ```
 
-```text
-0    1.0
-1    4.0
-2    1.0
-3    3.0
-Name: systolic, dtype: float64
-```
+|  | systolic |
+| --- | --- |
+| 0 | 1.0 |
+| 1 | 4.0 |
+| 2 | 1.0 |
+| 3 | 3.0 |
 
 # The Index: Row Labels
 
@@ -636,15 +651,19 @@ display(high.reset_index(drop=True))
 
 ```text
 142
-  patient_id  systolic
-0       P003       142
-2       P002       142
-3       P004       130
-  patient_id  systolic
-0       P003       142
-1       P002       142
-2       P004       130
 ```
+
+|  | patient_id | systolic |
+| --- | --- | --- |
+| 0 | P003 | 142 |
+| 2 | P002 | 142 |
+| 3 | P004 | 130 |
+
+|  | patient_id | systolic |
+| --- | --- | --- |
+| 0 | P003 | 142 |
+| 1 | P002 | 142 |
+| 2 | P004 | 130 |
 
 ## Arithmetic and Alignment
 
@@ -667,12 +686,11 @@ follow_up = pd.Series([132, 125, 150], index=["P002", "P001", "P003"])
 display(follow_up - baseline)
 ```
 
-```text
-P001   -15.0
-P002     4.0
-P003     NaN
-dtype: float64
-```
+|  | value |
+| --- | --- |
+| P001 | -15.0 |
+| P002 | 4.0 |
+| P003 | NaN |
 
 ### Code Snippet: Change from baseline for every visit
 
@@ -680,13 +698,11 @@ dtype: float64
 display(bp.sub(bp["baseline"], axis="index"))
 ```
 
-```text
-            baseline  week_4  week_8
-patient_id                          
-P001               0      -4      -7
-P002               0      -6      -4
-P003               0     -12     -19
-```
+| patient_id | baseline | week_4 | week_8 |
+| --- | --- | --- | --- |
+| P001 | 0 | -4 | -7 |
+| P002 | 0 | -6 | -4 |
+| P003 | 0 | -12 | -19 |
 
 # Data Loading and Storage
 
@@ -738,14 +754,13 @@ visits = pd.read_csv("visits.csv", na_values=["?"])
 display(visits)
 ```
 
-```text
-  patient_id   age  temp_c clinic
-0       P001  34.0    36.8  North
-1       P002  58.0     NaN  South
-2       P003  41.0    37.2  North
-3       P004   NaN    38.4    NaN
-4       P003  41.0    37.2  North
-```
+|  | patient_id | age | temp_c | clinic |
+| --- | --- | --- | --- | --- |
+| 0 | P001 | 34.0 | 36.8 | North |
+| 1 | P002 | 58.0 | NaN | South |
+| 2 | P003 | 41.0 | 37.2 | North |
+| 3 | P004 | NaN | 38.4 | NaN |
+| 4 | P003 | 41.0 | 37.2 | North |
 
 ## Common `read_csv` Options
 
@@ -790,12 +805,11 @@ labs = pd.read_csv(
 display(labs)
 ```
 
-```text
-  patient_id  glucose
-0       P001     98.0
-1       P002      NaN
-2       P003    110.0
-```
+|  | patient_id | glucose |
+| --- | --- | --- |
+| 0 | P001 | 98.0 |
+| 1 | P002 | NaN |
+| 2 | P003 | 110.0 |
 
 ## Preserving Types with Parquet
 
@@ -812,12 +826,14 @@ display(back.dtypes)
 print(back.equals(visits))
 ```
 
+|  | value |
+| --- | --- |
+| patient_id | str |
+| age | float64 |
+| temp_c | float64 |
+| clinic | str |
+
 ```text
-patient_id        str
-age           float64
-temp_c        float64
-clinic            str
-dtype: object
 True
 ```
 
