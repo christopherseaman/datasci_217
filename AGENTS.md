@@ -133,7 +133,7 @@ Images and comics:
 
 Callouts:
 
-- A Notion `<callout icon="..." color="...">` holds a point students must not miss; any fitting icon and color works (common ones: ⚠️ yellow for a warning, 💡 blue for a tip), such as an alias that is not a copy or `.venv/` kept out of Git. A few per lecture at most.
+- A Notion `<callout icon="..." color="...">` holds a point students must not miss, such as an alias that is not a copy or `.venv/` kept out of Git. Any fitting icon and color works; common ones are ⚠️ yellow for a warning and 💡 blue for a tip. A few per lecture at most.
 - First line: a short `##` heading on the issue, as in Lecture 03. Body: a few tab-indented sentences, or none when the heading says it all.
 
 Jupyter content (Lectures 04+, lecture snippets included) shows tables with `display()` or a bare last expression, not `print()`, except where a script is the point.
