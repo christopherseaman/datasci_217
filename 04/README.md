@@ -41,7 +41,7 @@ This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 
 <callout icon="📣" color="blue_bg">
 	## Jupyter Notebooks can be Published!
-	Python, R, and Julia notebooks can be published using [Quarto](https://quarto.org). Some data scientists go so far as to use it as a (technical) blogging platform! (see: [Demetri](https://dpananos.github.io))
+	Python, R, and Julia notebooks can be published using [Quarto](https://quarto.org). Some data scientists go so far as to use it as a technical blogging platform! (see: [Demetri](https://dpananos.github.io))
 </callout>
 
 ## Opening and Running a Notebook
