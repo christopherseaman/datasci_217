@@ -260,7 +260,7 @@ display(visits)
 - `df.head(n)`, `df.tail(n)`: First or last `n` rows (default 5); a `DataFrame`.
 - `df.shape`: `(rows, columns)` tuple.
 - `df.info()`: Index range, **non-null counts** (values present rather than missing), and dtypes; prints and returns `None`.
-- `df.describe()`: Count, mean, std, min, quartiles, and max for each numeric column.
+- `df.describe()`: Summary statistics for each column.
 - `df.mean(numeric_only=True)`: One mean per numeric column; text columns are left out.
 - `df1.equals(df2)`: `True` when two tables have the same labels, values, and dtypes.
 
@@ -455,6 +455,8 @@ mean()         140.0  132.67   130.0
 | Find where the extreme is | `s.idxmax()`, `s.idxmin()` | Label of the largest or smallest value |
 | Running total | `s.cumsum()` | Each value plus all the earlier ones |
 | Correlation | `df["a"].corr(df["b"])`, `df.corr()` | Pearson's _r_, from -1 to 1; `df.corr()` gives every pair |
+| Summary statistics, numeric columns | `df.describe()` | Count, mean, std, min, quartiles, and max per numeric column; text columns left out |
+| Summary statistics, text columns | `df.describe()` on text-only columns, or `df.describe(include="all")` | Count, unique, top (most common value), and freq |
 
 ### Code Snippet: Down the columns, across the rows
 
@@ -662,14 +664,23 @@ vitals (RangeIndex)        vitals.set_index("patient_id")
 | Order rows by label | `df.sort_index()` | New DataFrame sorted by index |
 | Look up by label | `df.loc["P003"]` | One row as a `Series`, or a `DataFrame` when the label repeats |
 
+<callout icon="⚠️" color="yellow_bg">
+	## The index is saved, but not read back!
+	`to_csv()` writes the index as the first column; read it back with `index_col="patient_id"`, or it returns as an ordinary column beside new row numbers. `index=False` drops it, IDs included.
+</callout>
+
 ### Code Snippet: Look up and renumber
 
 ```python
+# set_index: look rows up by ID (also lines up arithmetic by ID)
 by_id = vitals.set_index("patient_id")
 print(by_id.loc["P002", "systolic"])
+# a filter keeps the original row labels, leaving gaps
 high = vitals.loc[vitals["systolic"] >= 130]
 display(high)
+# reset_index(drop=True): renumber 0, 1, 2 after filtering or sorting
 display(high.reset_index(drop=True))
+# reset_index(): turn the index back into a column, such as before saving IDs as data
 ```
 
 ```text

@@ -231,6 +231,57 @@ ranked
 
 Expect ranks `1`, `2`, `2`, `4`, `5`, `6`: `P004` and `P005` share second place at 38.4 °C, so no visit is third. `ordered` itself is unchanged.
 
+### Look up a visit by patient ID
+
+`set_index("patient_id")` makes the IDs the row labels, so `.loc` finds a patient by ID instead of by row number. It returns a new table; `visits` is unchanged.
+
+```python
+by_id = visits.set_index("patient_id")
+
+print("P009 temperature:", by_id.loc["P009", "temp_c"])
+display(by_id.loc["P003"])
+```
+
+Expect `P009 temperature: 39.0`. `P003` appears twice, so `.loc["P003"]` returns a two-row table instead of one row.
+
+### Line up arithmetic by patient ID
+
+Subtracting two Series pairs values by label, whatever their order. A label on only one side gives `NaN`.
+
+```python
+first = by_id.loc[["P009", "P005", "P004"], "temp_c"]
+recheck = pd.Series([38.1, 38.6, 36.9], index=["P005", "P009", "P020"])
+
+display(recheck - first)
+```
+
+Expect `P004` and `P020` as `NaN` (each is on one side only), `P005` as `-0.3` and `P009` as `-0.4`, matched by ID although the two Series list them in different orders.
+
+### Renumber rows after a filter
+
+A filter keeps each row's original label, so the default index shows gaps. `reset_index(drop=True)` discards the old labels and renumbers from 0.
+
+```python
+warm_ids = visits.loc[warm, ["patient_id", "temp_c"]]
+display(warm_ids)
+display(warm_ids.reset_index(drop=True))
+```
+
+Expect row labels `3`, `4`, `6`, `7`, `8`, `11` in the first table, with the six visits `P004`, `P005`, `P007`, `P008`, `P009`, `P011`, and `0` to `5` in the second.
+
+### Turn the ID index back into a column
+
+`reset_index()` without `drop=True` moves the index into a column, which is what you want before saving the IDs as data.
+
+```python
+back_to_column = by_id.reset_index()
+
+print(list(back_to_column.columns))
+display(back_to_column.head(3))
+```
+
+Expect `['patient_id', 'clinic', 'age', 'temp_c', 'systolic']` and a default index `0`, `1`, `2` again.
+
 ### Write the result and read it back
 
 `index=False` leaves the row index out of the file; here the index is only the row numbers these visits had in `visits`. A **round trip**, reading the saved file back, confirms the file holds what you meant to write. `display()` shows the table formatted in a notebook even when it is not the cell's last line.
@@ -247,6 +298,32 @@ print("same patients, same order:", list(round_trip["patient_id"]) == list(order
 ```
 
 Expect `round-trip shape: (6, 6)`, the columns `patient_id`, `clinic`, `temp_c`, `systolic`, `temp_f`, and `flag`, and `same patients, same order: True`. `P007`'s missing clinic was written as an empty field and reads back as `NaN`.
+
+### The saved index and reading it back
+
+`to_csv()` writes the index as the first column unless `index=False`. This cell saves `by_id` (IDs as the index) three ways and reads each back.
+
+```python
+by_id_path = OUTPUT_DIR / "by_id.csv"
+by_id.to_csv(by_id_path)
+no_ids_path = OUTPUT_DIR / "by_id_no_ids.csv"
+by_id.to_csv(no_ids_path, index=False)
+
+plain = pd.read_csv(by_id_path)
+indexed = pd.read_csv(by_id_path, index_col="patient_id")
+dropped = pd.read_csv(no_ids_path)
+
+print("plain:", list(plain.columns), "index:", plain.index[:3].tolist())
+print("index_col:", list(indexed.columns), "index:", indexed.index[:3].tolist())
+print("index=False:", list(dropped.columns))
+display(plain.head(3))
+```
+
+Expect these lines:
+
+- `plain`: `patient_id` is an ordinary column and the index is the new row numbers `[0, 1, 2]`.
+- `index_col`: `patient_id` is the index (`['P001', 'P002', 'P003']`) and is no longer a column.
+- `index=False`: the columns are `clinic`, `age`, `temp_c`, `systolic`; the patient IDs were not saved.
 
 ### Fresh-run check
 
@@ -269,6 +346,9 @@ assert (warm_visits["flag"] == "fever").sum() == 4
 assert list(ordered["patient_id"]) == ["P009", "P004", "P005", "P008", "P007", "P011"]
 assert list(ordered_other["patient_id"]) == list(ordered["patient_id"])
 assert round_trip.shape == (6, 6)
+assert by_id.loc["P009", "temp_c"] == 39.0 and "patient_id" in back_to_column.columns
+assert list(warm_ids.reset_index(drop=True).index) == list(range(6))
+assert "patient_id" in plain.columns and indexed.index.name == "patient_id" and "patient_id" not in dropped.columns
 assert list(round_trip["patient_id"]) == list(ordered["patient_id"])
 
 print("Demo 3 fresh-run check passed")
@@ -325,20 +405,6 @@ print("first record: ", numbered_lines[1].strip())
 ```
 
 Expect the default-index file to start with an extra unnamed column (a leading comma in the header) and its first record to start with `8,`: the leftover row number, which means nothing to the nurse lead.
-
-A patient ID is a meaningful label. `index_col="patient_id"` reads that column as the row index, so `.loc` finds a patient by ID, and writing with the default index then keeps it as the first column, headed `patient_id`.
-
-```python
-by_patient = pd.read_csv(result_path, index_col="patient_id")
-display(by_patient.loc["P009"])
-
-by_patient_path = OUTPUT_DIR / "warm_visits_by_patient.csv"
-by_patient.to_csv(by_patient_path)
-with open(by_patient_path, "r", encoding="utf-8") as file:
-    print("header:", file.readlines()[0].strip())
-```
-
-Expect `P009`'s row (South, 39.0, 158.0, 102.2, fever) and `header: patient_id,clinic,temp_c,systolic,temp_f,flag`.
 
 ### Save a typed Parquet table
 
