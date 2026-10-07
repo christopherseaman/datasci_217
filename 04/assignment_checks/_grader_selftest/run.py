@@ -451,9 +451,11 @@ def run() -> None:
 
     # A fresh handout prints exactly the "Before Task 2" example README.md shows.
     readme = (HANDOUT / "README.md").read_text(encoding="utf-8")
-    shown = re.search(r"Before Task 2, for example, the loaded-table checks report:\n\n( *)```text\n(.*?)```", readme,
+    checks_md = (HANDOUT / "CHECKS.md").read_text(encoding="utf-8")
+    assert "(CHECKS.md)" in readme, "README.md no longer links CHECKS.md"
+    shown = re.search(r"Before Task 2, for example, the loaded-table checks report:\n\n( *)```text\n(.*?)```", checks_md,
                       re.DOTALL)
-    assert shown is not None, "README.md no longer shows the Before Task 2 example"
+    assert shown is not None, "CHECKS.md no longer shows the Before Task 2 example"
     example = re.sub(f"(?m)^{shown.group(1)}", "", shown.group(2))
     handout_report = subprocess.run(
         [sys.executable, "-B", "check_assignment.py"], cwd=HANDOUT, capture_output=True, text=True, check=False
@@ -465,7 +467,7 @@ def run() -> None:
     assert listed == program_order(), (listed, program_order())
     contract = {
         name: int(points)
-        for name, points in re.findall(r"^\| `output/[^|]+\| [^|]+\| ([^|]+) \| (\d+) \|$", readme, re.MULTILINE)
+        for name, points in re.findall(r"^\| `output/[^|]+\| [^|]+\| ([^|]+) \| (\d+) \|$", checks_md, re.MULTILINE)
     }
     assert contract == CHECK_POINTS, (contract, CHECK_POINTS)
 

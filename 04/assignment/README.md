@@ -18,10 +18,7 @@ P101;North;58;152;146;138;Started lisinopril at baseline
 ## Setup
 
 1. Fork the assignment repository on GitHub and clone your fork as in Lecture 01: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open the cloned folder itself, not a folder above it.
-2. Open **Terminal → New Terminal** (Ctrl+Shift+backtick, also Control on Mac). In a native terminal or WSL Ubuntu, `cd` into the assignment folder first. Run `ls data`.
-    - Expect: `bp_followup.csv  home_bp.csv`
-3. This clone is a new repository, so set your Git identity before your first commit, with Lecture 02's two lines: `git config user.name "..."` and `git config user.email "..."`, using your name and GitHub noreply email.
-4. Create the environment, activate it, and install the packages `pyproject.toml` and `uv.lock` list. Do not run `uv init`: the project files already exist.
+2. In the integrated terminal, create the environment, activate it, and install the packages `pyproject.toml` and `uv.lock` list. Do not run `uv init`: the project files already exist.
 
     ```bash
     uv venv --seed
@@ -30,17 +27,9 @@ P101;North;58;152;146;138;Started lisinopril at baseline
     ```
 
     - Expect: `uv venv` prints `Using CPython 3.13.x`, and `uv sync` lists `+ pandas==3.0.5` and `+ pyarrow==25.0.0` among the packages it installs.
-5. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. If VS Code offers to install the **Jupyter** extension, accept.
-6. Run the notebook's first code cell.
+3. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`.
+4. Run the notebook's first code cell.
     - Expect: `NumPy: 2.3.3`, `pandas: 3.0.5`, `pyarrow: 25.0.0`, and `data files found: True`.
-
-> **Windows:** work in the **WSL: Ubuntu** window from Lecture 01's setup. Git Bash also works: activate with `source .venv/Scripts/activate` and type `python` wherever these instructions say `python3`. In PowerShell, activate with `.\.venv\Scripts\Activate.ps1` and type `python` as well.
-
-If something goes wrong:
-
-- **`uv venv` asks `Do you want to replace it? [y/n]`:** `.venv` already exists. Answer `n`; the `error: Failed to create virtual environment` that follows is harmless, and the next two lines work. If you answered `y`, run `uv sync` again.
-- **`ModuleNotFoundError` in the first cell:** the kernel is not this project's `.venv`. Click the kernel name at the top right and choose it. If it already shows `.venv`, run `uv sync` in the terminal with the environment active, then rerun the cell.
-- **`data files found: False`:** the notebook cannot see `data/`. Run `%pwd` and `%ls` in new cells: `%pwd` should end in your assignment folder, and `%ls` should list `data/` beside `assignment.ipynb`. If not, open the cloned folder itself in VS Code.
 
 ## Files
 
@@ -53,6 +42,7 @@ assignment/
 ├── pyproject.toml          # supplied: the project's packages, numpy, pandas, pyarrow, and ipykernel
 ├── uv.lock                 # supplied: the exact versions `uv sync` installs
 ├── .python-version         # supplied: tells uv to use Python 3.13
+├── CHECKS.md               # supplied: what each check looks for
 ├── check_assignment.py     # supplied: run it to check your work; keep unchanged
 ├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
 ├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
@@ -210,79 +200,8 @@ A clinic reading that runs higher than the patient's home reading is the **white
 
 ## Check your work
 
-1. Click **Restart**, then **Run All**.
-    - Expect: the last cell prints `Fresh-run check passed`, or names the task to fix.
-2. With the environment active, run the checks from the assignment folder:
+- Click **Restart**, then **Run All**; the last cell prints `Fresh-run check passed` or names the task to fix.
+- Run `python3 check_assignment.py` and read the report: each `FIX` line says what to fix. Each push also runs the latest checks on GitHub.
+- Save the notebook with its outputs, commit `assignment.ipynb` and the `output/` files, and push.
 
-    ```bash
-    python3 check_assignment.py
-    ```
-
-    - Expect: one `PASS` or `FIX` line per check with its points; a `FIX` says what to fix on the line beneath it, and `(same fix as above)` marks checks that need the same fix. Before Task 2, for example, the loaded-table checks report:
-
-    ```text
-    [FIX ]  0/4  bp loaded: patient_id column
-             output/bp_loaded.csv is missing; run the Task 2.2 cell to write it with bp.to_csv(LOADED_PATH), then commit it.
-    [FIX ]  0/4  bp loaded: units row skipped  (same fix as above)
-    ```
-
-3. Fix what `Left to fix` lists under the score, rerun the notebook and the checks, and repeat until a clean run ends with:
-
-    ```text
-    [PASS] 10/10 white-coat gap: gaps matched by patient
-
-    Score: 100/100
-    All checks passed.
-    ```
-
-The checks read only the six files in `output/`, never your notebook, so any way of producing correct files counts. GitHub runs the same checks, with the course's current copy, on every push; that run is the one that counts.
-
-How the files are read:
-
-- Each check is scored on its own, so one mistake costs only the checks it gets wrong.
-- A later file is judged against your own earlier one: if `-999` stayed in `bp_loaded.csv`, only the `-999 read as missing` check loses points, and the values computed from it still count.
-- Spacing, line endings, quoting, letter case, column order, and number format (`13`, `13.0`, `13.00`) never cost points; a mean may be rounded to one decimal.
-- A leading column of row numbers, which `to_csv()` writes when the index holds only row numbers, is ignored.
-
-### Completion contract
-
-Grading totals 100 points and reads these files relative to the assignment root.
-
-| Artifact | Complete when | Check | Points |
-| --- | --- | --- | ---: |
-| `output/bp_loaded.csv` | It has a `patient_id` column holding the saved index. | bp loaded: patient_id column | 4 |
-| `output/bp_loaded.csv` | The units row is not in it. | bp loaded: units row skipped | 4 |
-| `output/bp_loaded.csv` | It has no `coordinator_note` column. | bp loaded: coordinator_note left out | 4 |
-| `output/bp_loaded.csv` | It holds each of P101 to P114 once. | bp loaded: all 14 patients once | 4 |
-| `output/bp_loaded.csv` | The three `-999` readings are blank. | bp loaded: -999 read as missing | 4 |
-| `output/bp_loaded.csv` | Every clinic, age, and reading matches the export. | bp loaded: clinic, age, and readings | 4 |
-| `output/visit_summary.csv` | It has one row for each of the three visits. | visit summary: one row per visit | 3 |
-| `output/visit_summary.csv` | Its `mean` column matches the readings. | visit summary: mean | 5 |
-| `output/visit_summary.csv` | Its `median` column matches the readings. | visit summary: median | 5 |
-| `output/visit_summary.csv` | Its `count` column counts the readings present. | visit summary: count | 5 |
-| `output/clinic_counts.csv` | It has each clinic's number of patients. | clinic counts: patients per clinic | 4 |
-| `output/clinic_counts.csv` | The most common clinic comes first. | clinic counts: most common first | 2 |
-| `output/followup_priority.csv` | It has a `patient_id` column holding the saved index. | follow-up list: patient_id column | 3 |
-| `output/followup_priority.csv` | It holds the seven program patients once each. | follow-up list: program patients | 6 |
-| `output/followup_priority.csv` | Its derived columns are named `sbp_mean`, `change_week8`, and `improvement_rank`. | follow-up list: derived column names | 2 |
-| `output/followup_priority.csv` | It has no `age` column. | follow-up list: age dropped | 2 |
-| `output/followup_priority.csv` | Each `sbp_mean` is the mean of the patient's readings. | follow-up list: sbp_mean values | 4 |
-| `output/followup_priority.csv` | Each `change_week8` is week 8 minus baseline. | follow-up list: change_week8 values | 4 |
-| `output/followup_priority.csv` | Each `improvement_rank` is the change's rank with `method="min"`. | follow-up list: improvement_rank values | 2 |
-| `output/followup_priority.csv` | Its patients run from the largest drop to the smallest. | follow-up list: largest drop first | 3 |
-| `output/followup_priority.csv` | Patients with the same change are in `patient_id` order. | follow-up list: ties in patient_id order | 2 |
-| `output/followup_priority.parquet` | It is a Parquet file. | follow-up Parquet: Parquet file | 4 |
-| `output/followup_priority.parquet` | It has the follow-up list's columns, `patient_id` included. | follow-up Parquet: same columns | 4 |
-| `output/white_coat_gap.csv` | It has one row for each of P101 to P115. | white-coat gap: one row per patient in either table | 6 |
-| `output/white_coat_gap.csv` | Each gap is that patient's clinic minus home reading, blank where one is missing. | white-coat gap: gaps matched by patient | 10 |
-
-Extra files are ignored.
-
-## Submit
-
-1. After **Restart** and **Run All**, save the notebook with its outputs: they hold only synthetic data and show your results.
-2. In VS Code Source Control, check the notebook's diff, then stage `assignment.ipynb` and the six files in `output/`. `.venv/` stays out; `.gitignore` already lists it.
-3. Commit with `Complete Assignment 04 notebook` and select **Sync Changes**.
-4. On GitHub, confirm the notebook and the six output files on `main`, and check the Actions run's score. In a new fork, enable Actions once if GitHub prompts you.
-
-If a VS Code control these steps need is unavailable, record its message and contact the instructor.
+What each check looks for: [CHECKS.md](CHECKS.md)
