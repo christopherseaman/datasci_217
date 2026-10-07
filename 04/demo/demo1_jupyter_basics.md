@@ -57,13 +57,14 @@ clinic_data = {
 }
 
 import pandas as pd
+display(pd.__version__)
 
 # pandas & dataframes are coming up next in lecture
 visits = pd.DataFrame(clinic_data)
 display(visits)
 ```
 
-Expect a formatted table of ten rows, `P001` to `P010`, with seven columns from `patient_id` to `vaccine_doses`.
+Expect `'3.0.5'` (in Colab, anything else means restart the session and rerun from the top), then a formatted table of ten rows, `P001` to `P010`, with seven columns from `patient_id` to `vaccine_doses`.
 
 ```python
 doses = clinic_data["vaccine_doses"]
