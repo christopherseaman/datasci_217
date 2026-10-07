@@ -30,15 +30,15 @@ Run the cells from top to bottom. Never put credentials, tokens, or real patient
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-## Core walkthrough
+## 1.1 Run cells
 
-### Cell types and execution
+### 1.1a Cell types and execution
 
 Markdown cells explain, predict, and interpret. Code cells send Python to the kernel. Running a code cell can change state and create stored output; editing its source does neither.
 
 Before you change anything, add a Markdown cell (**+ Text** in Colab, **+ Markdown** in VS Code) and write what you expect the next code cells to show.
 
-### Producer and dependent cells
+### 1.1b Producer and dependent cells
 
 - **Producer cell**: defines names, here a dictionary of lists (Lecture 02) holding ten synthetic clinic visits, shown as a table.
 - **Dependent cell**: uses those names to compute another value.
@@ -81,7 +81,7 @@ print("total doses in kernel:", total_doses)
 
 Expect `visits: 10` and `total doses: 25` from the dependent cell. The third cell, the **check cell**, reports what the kernel holds right now: expect `P005 doses in kernel: 1` and `total doses in kernel: 25`.
 
-### Show a result four ways
+### 1.1c Show a result four ways
 
 `display()` drew the table above; `print()` shows the same table as plain text, a cell's bare last line is shown without either, and `Markdown` renders formatted text.
 
@@ -95,7 +95,9 @@ len(visits)
 
 Expect the table in plain monospaced text, then **Total doses:** 25 rendered with a bold label, then `10` below it, shown because `len(visits)` is the cell's last line.
 
-### Repair the hidden dependency
+## 1.2 Fresh runs
+
+### 1.2a Repair the hidden dependency
 
 The check cell printed `25` because the producer cell ran first. Try these by hand, in this notebook:
 
@@ -105,7 +107,7 @@ The check cell printed `25` because the producer cell ran first. Try these by ha
 
 **Restart-and-run-all** means starting with empty kernel state and executing every cell from top to bottom. Restart, then **Run All**: the check cell must print `25` again. Stored output alone is never evidence that this happened.
 
-### Fresh-run check
+### 1.2b Fresh-run check
 
 Restart, then run every cell above in order. This cell checks the values a fresh run produces.
 
@@ -119,17 +121,17 @@ print("Demo 1 fresh-run check passed: total_doses = 25")
 
 Expect `Demo 1 fresh-run check passed: total_doses = 25`. An `AssertionError` means a value was changed without rerunning the cells after it; restart and run all again.
 
-## Independent practice
+## 1.3 Independent practice
 
-These cells reuse the core results; if the runtime closed, run the cells above again first.
+These cells reuse the results above; if the runtime closed, run the cells above again first.
 
-### Move a dependent cell
+### 1.3a Move a dependent cell
 
 1. Move the dependent cell (`total_doses = sum(doses)`) above the producer cell. In VS Code, drag it by the bar at its left, or click into it, press `Esc`, then `Alt+Up` (`Option+Up` on Mac); in Colab, click into it and press `Ctrl+M K`.
 2. Restart and run all: the run stops at the moved cell with `NameError: name 'clinic_data' is not defined`.
 3. Move it back below the producer (`Alt+Down`, or `Ctrl+M J` in Colab), then restart and run all; the check cell prints `25`.
 
-### Magic commands
+### 1.3b Magic commands
 
 - A **magic command** is a notebook-only shortcut that starts with `%`, such as the setup cell's `%pip install`.
 - `%pwd` reports the kernel's working directory and `%ls` lists the files there; check both when a notebook cannot find a file.
@@ -155,7 +157,7 @@ In Colab, expect `sample_data/`, Colab's own example folder. On your computer, i
 
 Expect a line such as `18.5 μs ± 8.55 ns per loop (mean ± std. dev. of 7 runs, 100,000 loops each)`; the numbers vary by machine.
 
-### Runtime-local files
+### 1.3c Runtime-local files
 
 A **runtime-local file** exists only where the kernel runs. In Colab it disappears when the runtime shuts down, so reliable code recreates it rather than assuming it is still there. The path below is relative, so it lands inside the working directory `%pwd` just showed.
 
@@ -179,7 +181,7 @@ print(saved_text, end="")
 
 Expect `runtime-local file: output/runtime_note.txt` and the line of text you wrote. In Colab, the file also appears under **Files** (the folder icon at the left).
 
-### Clear outputs before you commit
+### 1.3d Clear outputs before you commit
 
 A notebook saves each cell's output inside the `.ipynb` file. Run this cell, which prints a made-up identifier standing in for something private:
 

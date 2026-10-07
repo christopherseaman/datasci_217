@@ -33,33 +33,40 @@ def left_to_fix(tests: list[dict]) -> str:
     return "; ".join(parts)
 
 
+def run_checks(submission_dir=".") -> dict:
+    """Grade the submission, print the human-readable report, and return the report dict."""
+    result = grade_submission(Path(submission_dir))
+    # A fix shared by the checks right after it, such as a missing file, is printed once.
+    previous = None
+    for test in result["tests"]:
+        status = "PASS" if test["passed"] else "FIX "
+        line = f"[{status}] {test['score']:>2}/{test['max-score']:<2} {test['test-name']}"
+        if test["detail"] and test["detail"] == previous:
+            print(f"{line}  (same fix as above)")
+        else:
+            print(line)
+            if test["detail"]:
+                print(f"         {test['detail']}")
+        previous = test["detail"] or None
+    print(f"\nScore: {result['score']}/{result['max-score']}")
+    if result["score"] == result["max-score"]:
+        print("All checks passed.")
+    else:
+        lost = result["max-score"] - result["score"]
+        print(f"Left to fix ({lost} point{'' if lost == 1 else 's'}): {left_to_fix(result['tests'])}.")
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("submission_dir", nargs="?", type=Path, default=Path(__file__).resolve().parent)
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
-    result = grade_submission(args.submission_dir)
     if args.json:
+        result = grade_submission(args.submission_dir)
         print(json.dumps(result))
     else:
-        # A fix shared by the checks right after it, such as a missing file, is printed once.
-        previous = None
-        for test in result["tests"]:
-            status = "PASS" if test["passed"] else "FIX "
-            line = f"[{status}] {test['score']:>2}/{test['max-score']:<2} {test['test-name']}"
-            if test["detail"] and test["detail"] == previous:
-                print(f"{line}  (same fix as above)")
-            else:
-                print(line)
-                if test["detail"]:
-                    print(f"         {test['detail']}")
-            previous = test["detail"] or None
-        print(f"\nScore: {result['score']}/{result['max-score']}")
-        if result["score"] == result["max-score"]:
-            print("All checks passed.")
-        else:
-            lost = result["max-score"] - result["score"]
-            print(f"Left to fix ({lost} point{'' if lost == 1 else 's'}): {left_to_fix(result['tests'])}.")
+        result = run_checks(args.submission_dir)
     return 0 if all(test["passed"] for test in result["tests"]) else 1
 
 

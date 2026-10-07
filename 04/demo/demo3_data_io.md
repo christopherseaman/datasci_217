@@ -26,9 +26,9 @@ Run the cells from top to bottom.
 %pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
 ```
 
-## Core walkthrough
+## 3.1 Load the data
 
-### Get the data file
+### 3.1a Get the data file
 
 This cell downloads `data/clinic_visits.csv` if it is missing and creates the `output/` folder.
 
@@ -54,29 +54,35 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 Expect `data/clinic_visits.csv downloaded 302 bytes`, or `already here` if the file was there.
 
-### Read the file as it is
+### 3.1b Read the file as it is
 
-Read the file with no options first and look at the dtypes. A numeric column that comes back as text means some entry in it is not a number.
+Read the file with no options first, then run a few quick checks. A numeric column that comes back as text means some entry in it is not a number.
 
 ```python
 import pandas as pd
 
 raw = pd.read_csv(DATA_PATH)
 
+display(raw.head())
+display(raw.describe())
 display(raw.dtypes)
 ```
 
-- :x: Expect `temp_c` to be `str`, not `float64`, while `age` and `systolic` are `float64`. Because `temp_c` is text, `raw["temp_c"] >= 37.5` would raise a `TypeError`.
+Expect five rows with `temp_c` holding `?` for `P002`; `describe()` with only `age` and `systolic` (counts of `11`, one missing each); and dtypes `str` for `patient_id`, `clinic`, and `temp_c`, `float64` for `age` and `systolic`.
+
+- :x: `temp_c` is `str`, not `float64`, and `describe()` leaves it out, while `age` and `systolic` are `float64`. Because `temp_c` is text, `raw["temp_c"] >= 37.5` would raise a `TypeError`.
     - → Find the non-numeric entries: list the distinct values, then mask on the one that is not a number.
+
+### 3.1c Find the non-numeric entries
 
 ```python
 display(raw["temp_c"].unique())
 raw.loc[raw["temp_c"] == "?"]
 ```
 
-Expect the distinct values to include `'?'` beside the temperatures, and the mask to find `P002`, whose temperature was recorded as `?`.
+Expect the distinct values `'36.8'`, `'?'`, `'37.2'`, and six more temperatures, all text, and the mask to find one row: `P002`, whose temperature was recorded as `?`.
 
-### Read it again with the missing marker
+### 3.1d Read it again with the missing marker
 
 `na_values=["?"]` adds `?` to the markers pandas already treats as missing (blank, `NA`, `NULL`, and others).
 
@@ -84,13 +90,21 @@ Expect the distinct values to include `'?'` beside the temperatures, and the mas
 visits = pd.read_csv(DATA_PATH, na_values=["?"])
 
 print("shape:", visits.shape)
-display(visits.dtypes)
-visits
 ```
 
-Expect `shape: (12, 5)`, `temp_c` now `float64`, and `NaN` in four places: `P002`'s temperature, `P004`'s age (a blank), `P006`'s systolic pressure (a blank), and `P007`'s clinic (`NULL`).
+Expect `shape: (12, 5)`.
 
-### Several missing markers in one file
+### 3.1e Run the same quick checks again
+
+```python
+display(visits.head())
+display(visits.describe())
+display(visits.dtypes)
+```
+
+Expect `P002`'s `temp_c` as `NaN` (and `P004`'s age, a blank), `describe()` now with a `temp_c` column (count `11`, mean `37.69`, max `39.0`), and `temp_c` as `float64`. The four missing values are `P002`'s temperature, `P004`'s age, `P006`'s systolic pressure, and `P007`'s clinic (`NULL`).
+
+### 3.1f Several missing markers in one file
 
 A lab export may mark a missing value more than one way. List every marker in `na_values`; a number written as text, such as `"-999"`, matches the number too.
 
@@ -110,7 +124,7 @@ display(labs.count())
 
 Expect `glucose_mg_dl` and `ldl_mg_dl` as `float64` with `NaN` for every marker, `P003`'s `lab_site` as `NaN`, and `count()` showing 4, 2, 2, and 3 values present.
 
-### Preview a few columns
+### 3.1g Preview a few columns
 
 A large export is quicker to check with a preview: `usecols=` reads only the named columns, and `nrows=` stops after that many records. `dtype=` sets a column's type instead of letting pandas guess.
 
@@ -128,7 +142,9 @@ preview
 
 Expect two columns, `patient_id` (`str`) and `temp_c` (`float64`), and four rows, `P001` to `P004`. Without `na_values=["?"]`, `dtype=` would raise a `ValueError`, because `?` cannot be read as a number.
 
-### Take a first look
+## 3.2 Summarize
+
+### 3.2a Take a first look
 
 Before any analysis, ask what is missing, which categories the table holds, and whether any patient appears more than once.
 
@@ -147,7 +163,7 @@ visits.loc[visits["patient_id"] == "P003"]
 - Clinic counts: North 5, South 3, East 3, `NaN` 1; `distinct clinics: 3`, since `nunique()` leaves out missing.
 - `P003` is counted twice; its rows, labeled 2 and 10, match in every column: one visit entered twice, which the summaries below still count.
 
-### Summarize the temperatures
+### 3.2b Summarize the temperatures
 
 `describe()` summarizes every numeric column; one-column summaries answer a single question. Missing values are skipped.
 
@@ -165,7 +181,7 @@ visits.loc[hottest]
 
 Expect a `temp_c` count of `11` in `describe()`, a mean of `37.69` when rounded, a highest temperature of `39.0`, and row label `8`, which is `P009` from the South clinic. The repeated `P003` visit is counted twice in these numbers, one reason to find repeats before summarizing.
 
-### Compare every visit with the average
+### 3.2c Compare every visit with the average
 
 Subtracting a Series of column means from a table **broadcasts**: pandas matches the Series' labels to the columns and subtracts each mean from every row of its column.
 
@@ -179,7 +195,9 @@ from_mean.loc[[0, 8]]
 
 Expect means of about `37.69` °C and `136.27` mmHg. `P001` (row 0) is about 0.89 °C and 18.27 mmHg below them (`-0.890909`, `-18.272727`), and `P009` (row 8) about 1.31 °C and 21.73 mmHg above.
 
-### Select the rows and columns you need
+## 3.3 Select and derive
+
+### 3.3a Select the rows and columns you need
 
 Build the mask on its own line, then select the rows with `.loc`. `drop(columns=["age"])` leaves out the column the nurse lead does not need. It returns a new table, so `warm_visits` is separate from `visits`, as `.copy()` would make it, and changing it leaves `visits` as it was read.
 
@@ -194,7 +212,7 @@ warm_visits
 
 Expect `warm visits: 6`: `P004`, `P005`, `P007`, `P008`, `P009`, and `P011`. `P002` is left out because a missing temperature is not `>= 37.5`, so its mask value is `False`.
 
-### Add a derived column
+### 3.3b Add a derived column
 
 A **derived column** is computed from columns you already have. pandas converts the whole column at once and keeps each result on its own row.
 
@@ -205,7 +223,7 @@ warm_visits
 
 Expect `temp_f` beside `temp_c`, such as `102.20` for `P009`'s `39.0` and `101.12` for the two `38.4` readings. The table rounds for display; the stored values can end in binary-rounding digits, such as `101.11999999999999`, which the saved file will show.
 
-### Set the fever flag in one step
+### 3.3c Set the fever flag in one step
 
 Start every selected row as elevated, then use one `.loc` assignment to flag fever.
 
@@ -223,7 +241,9 @@ warm_visits
 
 Expect `fever 4` and `elevated 2`: `P007` (37.8) and `P011` (37.6) are warm but below 38.0 °C.
 
-### Sort so the order never changes
+## 3.4 Sort and rank
+
+### 3.4a Sort so the order never changes
 
 `P004` and `P005` both have `38.4`, a **tie**. Sorting by `temp_c` alone does not guarantee which of the two comes first. To see that, sort the same six rows twice: once as they are, and once after arranging them by systolic pressure.
 
@@ -259,7 +279,9 @@ ranked
 
 Expect ranks `1`, `2`, `2`, `4`, `5`, `6`: `P004` and `P005` share second place at 38.4 °C, so no visit is third. `ordered` itself is unchanged.
 
-### Look up a visit by patient ID
+## 3.5 The index
+
+### 3.5a Look up a visit by patient ID
 
 `set_index("patient_id")` makes the IDs the row labels, so `.loc` finds a patient by ID instead of by row number. It returns a new table; `visits` is unchanged.
 
@@ -272,7 +294,7 @@ display(by_id.loc["P003"])
 
 Expect `P009 temperature: 39.0`. `P003` appears twice, so `.loc["P003"]` returns a two-row table instead of one row.
 
-### Line up arithmetic by patient ID
+### 3.5b Line up arithmetic by patient ID
 
 Subtracting two Series pairs values by label, whatever their order. A label on only one side gives `NaN`.
 
@@ -285,7 +307,7 @@ display(recheck - first)
 
 Expect `P004` and `P020` as `NaN` (each is on one side only), `P005` as `-0.3` and `P009` as `-0.4`, matched by ID although the two Series list them in different orders.
 
-### Renumber rows after a filter
+### 3.5c Renumber rows after a filter
 
 A filter keeps each row's original label, so the default index shows gaps. `reset_index(drop=True)` discards the old labels and renumbers from 0.
 
@@ -297,7 +319,7 @@ display(warm_ids.reset_index(drop=True))
 
 Expect row labels `3`, `4`, `6`, `7`, `8`, `11` in the first table, with the six visits `P004`, `P005`, `P007`, `P008`, `P009`, `P011`, and `0` to `5` in the second.
 
-### Turn the ID index back into a column
+### 3.5d Turn the ID index back into a column
 
 `reset_index()` without `drop=True` moves the index into a column, which is what you want before saving the IDs as data.
 
@@ -310,7 +332,9 @@ display(back_to_column.head(3))
 
 Expect `['patient_id', 'clinic', 'age', 'temp_c', 'systolic']` and a default index `0`, `1`, `2` again.
 
-### Write the result and read it back
+## 3.6 Save and read back
+
+### 3.6a Write the result and read it back
 
 `index=False` leaves the row index out of the file; here the index is only the row numbers these visits had in `visits`. A **round trip**, reading the saved file back, confirms the file holds what you meant to write. `display()` shows the table formatted in a notebook even when it is not the cell's last line.
 
@@ -327,7 +351,7 @@ print("same patients, same order:", list(round_trip["patient_id"]) == list(order
 
 Expect `round-trip shape: (6, 6)`, the columns `patient_id`, `clinic`, `temp_c`, `systolic`, `temp_f`, and `flag`, and `same patients, same order: True`. `P007`'s missing clinic was written as an empty field and reads back as `NaN`.
 
-### The saved index and reading it back
+### 3.6b The saved index and reading it back
 
 `to_csv()` writes the index as the first column unless `index=False`. This cell saves `by_id` (IDs as the index) three ways and reads each back.
 
@@ -353,7 +377,7 @@ Expect these lines:
 - `index_col`: `patient_id` is the index (`['P001', 'P002', 'P003']`) and is no longer a column.
 - `index=False`: the columns are `clinic`, `age`, `temp_c`, `systolic`; the patient IDs were not saved.
 
-### Fresh-run check
+### 3.6c Fresh-run check
 
 Restart, then **Run All** up to here. This cell checks the walkthrough's checkpoints.
 
@@ -384,11 +408,11 @@ print("Demo 3 fresh-run check passed")
 
 Expect `Demo 3 fresh-run check passed`.
 
-## Independent practice
+## 3.7 Independent practice
 
-These cells reuse the core results; if the runtime closed, run the cells above again first.
+These cells reuse the results above; if the runtime closed, run the cells above again first.
 
-### Intentional mistake: chained assignment
+### 3.7a Intentional mistake: chained assignment
 
 A flag column takes two steps: give every row the common value, then overwrite only the rows a mask selects. Doing the second step with two bracket selections in a row changes a temporary copy, so pandas warns with `ChainedAssignmentError` and `warm_visits` stays unchanged.
 
@@ -414,7 +438,7 @@ warm_visits
 
 Expect `fever 4` and `elevated 2`: `P007` (37.8) and `P011` (37.6) are warm but below 38.0 °C.
 
-### Row labels: keep them or drop them
+### 3.7b Row labels: keep them or drop them
 
 The first line of a CSV shows which labels were saved. Write the same table with the default index and compare the two header lines, read with `open()` from Lecture 02.
 
@@ -434,9 +458,9 @@ print("first record: ", numbered_lines[1].strip())
 
 Expect the default-index file to start with an extra unnamed column (a leading comma in the header) and its first record to start with `8,`: the leftover row number, which means nothing to the nurse lead.
 
-### Save a typed Parquet table
+### 3.7c Save a typed Parquet table
 
-This uses `ordered`, the six warm visits from the core, and saves a separate file. Parquet preserves the dtypes and missing cells; the saved index is omitted because these old row numbers have no meaning. The install cell at the top includes `pyarrow`, the Parquet backend.
+This uses `ordered`, the six warm visits from the topics above, and saves a separate file. Parquet preserves the dtypes and missing cells; the saved index is omitted because these old row numbers have no meaning. The install cell at the top includes `pyarrow`, the Parquet backend.
 
 ```python
 parquet_path = OUTPUT_DIR / "warm_visits.parquet"

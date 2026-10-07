@@ -26,9 +26,9 @@ Run the cells from top to bottom.
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-## Core walkthrough
+## 2.1 Series and DataFrame
 
-### Build a Series
+### 2.1a Build a Series
 
 Lecture 03 stored measurements in a NumPy **ndarray**. A pandas **Series** adds an **index**: a label for each value, here the patient ID. `pd.Series()` accepts a plain list or an array, and the results match. Its `dtype` describes the stored values and its `name` identifies the Series.
 
@@ -49,7 +49,7 @@ print("P002:", temp_from_list["P002"])
 
 Expect two identical displays with rows `P001` to `P003` and the footer `Name: temp_c, dtype: float64`, then `same Series: True` and `P002: 38.1`.
 
-### Build a DataFrame
+### 2.1b Build a DataFrame
 
 A pandas **DataFrame** is a labeled table. Each row is a patient and the two columns are systolic blood pressure (mmHg) at a baseline visit and at follow-up. `index=` labels the rows and `columns=` labels the columns. Three kinds of input build the same table:
 
@@ -95,7 +95,9 @@ sbp
 
 Expect `shape: (4, 2)`, both columns `int64`, and a table with `patient_id` shown above the four row labels.
 
-### Select columns with brackets
+## 2.2 Select columns and cells
+
+### 2.2a Select columns with brackets
 
 One label in brackets returns a Series; a list of labels (double brackets) returns a DataFrame, even when the list holds one name.
 
@@ -119,7 +121,7 @@ display(baseline_table)
 
 Expect the Series as plain text with `Name: baseline_sbp, dtype: int64` and the DataFrame as a table with a `baseline_sbp` column header.
 
-### Labels with `.loc`, positions with `.iloc`
+### 2.2b Labels with `.loc`, positions with `.iloc`
 
 `.loc` selects by row and column **labels**; `.iloc` selects by zero-based integer **positions**. A label slice includes its end label; a position slice stops before its end position, as in ordinary Python. `.equals()` checks that two selections hold the same labels and values.
 
@@ -137,7 +139,7 @@ print("same block:", label_block.equals(position_block))
 
 Expect `142` twice, a block with rows `P002` and `P003`, and `same block: True`.
 
-### Square brackets look up labels
+### 2.2c Square brackets look up labels
 
 On a Series, `[]` means index labels, not positions. Here the labels are patient IDs, so asking for position `1` fails. This error is intentional; `try`/`except` prints it instead of stopping the notebook.
 
@@ -153,7 +155,9 @@ print("by position with .iloc:", baseline.iloc[1])
 
 Expect `KeyError: 1`, then `by label: 142` and `by position with .iloc: 142`.
 
-### Filter rows with a mask
+## 2.3 Filter rows
+
+### 2.3a Filter rows with a mask
 
 A **mask** is a Boolean Series with the same index as the table. Build it on its own line with a descriptive name, then pass it to `.loc` with the columns you want. This one asks which patients still had a systolic pressure of 130 mmHg or higher at follow-up.
 
@@ -167,7 +171,7 @@ sbp.loc[high_at_follow_up, ["baseline_sbp", "follow_up_sbp"]]
 
 Expect `False` for `P001` and `True` for the other three, `rows: 3`, and a table of `P002`, `P003`, and `P004`.
 
-### A filter leaves gaps in the labels
+### 2.3b A filter leaves gaps in the labels
 
 A default `0, 1, 2, ...` index hides the label/position difference until a filter drops a row. `plain` holds the same readings with the default index; the mask keeps rows labeled `1`, `2`, and `3`.
 
@@ -187,7 +191,7 @@ print("first kept row with .iloc:", kept.iloc[0])
 
 Expect `kept` to show labels `1`, `2`, `3` with `142`, `150`, `118`, then `KeyError: 0` (the filter removed label `0`) and `first kept row with .iloc: 142`.
 
-### Narrow the selection with a second condition
+### 2.3c Narrow the selection with a second condition
 
 `&` keeps rows where both masks are `True`; `|` keeps rows where either is. Written inline, each comparison needs its own parentheses. Which of those patients were below 130 mmHg at baseline, so their high reading is new?
 
@@ -206,7 +210,9 @@ sbp.loc[newly_high]
 
 Expect `1 row` twice, `same mask: True`, and one row: `P004`, which went from 118 to 131 mmHg. `P001` was below 130 at baseline too, but its follow-up reading (124) stayed below 130.
 
-### Summarize down the columns and across the rows
+## 2.4 Summarize and count
+
+### 2.4a Summarize down the columns and across the rows
 
 A reduction turns many values into one. By default it runs down each column; `axis="columns"` runs across each row, here giving each patient's average over the two visits. `idxmax()` names the row with the largest value, and `corr()` measures how closely two columns move together.
 
@@ -221,7 +227,7 @@ display(pd.DataFrame({"highest_at_follow_up": [highest_follow_up], "baseline_fol
 
 Expect column means of `134.50` and `132.25` mmHg, patient means from `124.5` (`P004`) to `144.0` (`P003`), and one row with `P003` (138 mmHg) and `0.72`: patients high at baseline tended to stay high.
 
-### Count clinics and test membership
+### 2.4b Count clinics and test membership
 
 Each patient was seen at one clinic. `value_counts()` counts each clinic, `nunique()` counts how many distinct clinics there are, and `isin()` builds a mask that is `True` for any clinic in a list, one mask instead of two joined with `|`.
 
@@ -237,11 +243,11 @@ sbp.loc[south_or_east]
 
 Expect `North 2`, `South 1`, `East 1`, `distinct clinics: 3`, and the rows for `P002` (South) and `P004` (East). The mask's index matches `sbp`'s, so `.loc` pairs each `True` with the right patient.
 
-## Independent practice
+## 2.5 Independent practice
 
-These cells reuse the core results; if the runtime closed, run the cells above again first.
+These cells reuse the results above; if the runtime closed, run the cells above again first.
 
-### First look at the table
+### 2.5a First look at the table
 
 - `head(3)` shows the first three rows.
 - `info()` prints the index, column names, **non-null counts** (values present rather than missing), and dtypes; it returns `None`, so call it on its own line.
@@ -257,7 +263,7 @@ display(sbp.describe())
 
 Expect `4 non-null` for both columns (nothing is missing), and in the summary a `mean` of `134.5` mmHg for `baseline_sbp` and `132.25` for `follow_up_sbp`, with minimums of `118` and `124`.
 
-### Intentional error: a position given to `.loc`
+### 2.5b Intentional error: a position given to `.loc`
 
 `.loc` only understands labels, and no row is _labeled_ `1`. The next cell asks for one anyway, catches the error with `try`/`except` from Lecture 02, and prints it instead of stopping the notebook.
 

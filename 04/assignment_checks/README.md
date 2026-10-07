@@ -12,7 +12,8 @@ grades with them.
 
 The handout ships a byte-identical copy of every file the workflow lists in
 `CHECKS_FILES`, so `python3 check_assignment.py` in a student's repository
-prints each check's result, what to fix, and the score, exactly as GitHub will.
+prints each check's result, what to fix, and the score, exactly as GitHub will. The notebook's last cell calls
+`run_checks()` from the same file, so it prints that report too.
 The listed files:
 
 ```text

@@ -200,8 +200,8 @@ A clinic reading that runs higher than the patient's home reading is the **white
 
 ## Check your work
 
-- Click **Restart**, then **Run All**; the last cell prints `Fresh-run check passed` or names the task to fix.
-- Run `python3 check_assignment.py` and read the report: each `FIX` line says what to fix. Each push also runs the latest checks on GitHub.
-- Save the notebook with its outputs, commit `assignment.ipynb` and the `output/` files, and push.
+- Click **Restart**, then **Run All**.
+- The last cell prints your score and what to fix: the same checks GitHub runs on each push.
+- Commit `assignment.ipynb` and the `output/` files, then push.
 
 What each check looks for: [CHECKS.md](CHECKS.md)

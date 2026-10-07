@@ -447,6 +447,16 @@ def run() -> None:
         assert report.rstrip().endswith("Score: 96/100\nLeft to fix (4 points): bp loaded: -999 read as missing."), report
         assert printed(correct).rstrip().endswith("Score: 100/100\nAll checks passed."), printed(correct)
 
+        # The notebook's last cell calls run_checks(): same report dict and same text as the command line.
+        import contextlib
+        import io
+        from check_assignment import run_checks
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            report = run_checks(correct)
+        assert report["score"] == report["max-score"] == 100, report
+        assert buffer.getvalue() == printed(correct), (buffer.getvalue(), printed(correct))
+
         single_mistakes = len(mistakes)
 
     # A fresh handout prints exactly the "Before Task 2" example README.md shows.
