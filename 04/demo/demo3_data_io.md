@@ -100,9 +100,18 @@ Expect `shape: (12, 5)`.
 display(visits.head())
 display(visits.describe())
 display(visits.dtypes)
+visits.info()
+
+display(visits["clinic"].value_counts(dropna=False))
+print("distinct clinics:", visits["clinic"].nunique())
+display(visits["patient_id"].value_counts().head(3))
+visits.loc[visits["patient_id"] == "P003"]
 ```
 
-Expect `P002`'s `temp_c` as `NaN` (and `P004`'s age, a blank), `describe()` now with a `temp_c` column (count `11`, mean `37.69`, max `39.0`), and `temp_c` as `float64`. The four missing values are `P002`'s temperature, `P004`'s age, `P006`'s systolic pressure, and `P007`'s clinic (`NULL`).
+- `P002`'s `temp_c` is `NaN` (and `P004`'s age, a blank); `describe()` now has a `temp_c` column (count `11`, mean `37.69`, max `39.0`); `temp_c` is `float64`.
+- `info()`: `11 non-null` for `clinic`, `age`, `temp_c`, and `systolic`: the four missing values are `P002`'s temperature, `P004`'s age, `P006`'s systolic pressure, and `P007`'s clinic (`NULL`).
+- Clinic counts: North 5, South 3, East 3, `NaN` 1; `distinct clinics: 3`, since `nunique()` leaves out missing.
+- `P003` is counted twice; its rows, labeled 2 and 10, match in every column: one visit entered twice, which the summaries below still count.
 
 ### 3.1f Several missing markers in one file
 
@@ -144,26 +153,7 @@ Expect two columns, `patient_id` (`str`) and `temp_c` (`float64`), and four rows
 
 ## 3.2 Summarize
 
-### 3.2a Take a first look
-
-Before any analysis, ask what is missing, which categories the table holds, and whether any patient appears more than once.
-
-```python
-visits.info()
-
-display(visits["clinic"].value_counts(dropna=False))
-print("distinct clinics:", visits["clinic"].nunique())
-
-id_counts = visits["patient_id"].value_counts()
-display(id_counts.head(3))
-visits.loc[visits["patient_id"] == "P003"]
-```
-
-- `info()`: `11 non-null` for `clinic`, `age`, `temp_c`, and `systolic`, one missing value in each.
-- Clinic counts: North 5, South 3, East 3, `NaN` 1; `distinct clinics: 3`, since `nunique()` leaves out missing.
-- `P003` is counted twice; its rows, labeled 2 and 10, match in every column: one visit entered twice, which the summaries below still count.
-
-### 3.2b Summarize the temperatures
+### 3.2a Summarize the temperatures
 
 `describe()` summarizes every numeric column; one-column summaries answer a single question. Missing values are skipped.
 
@@ -181,7 +171,7 @@ visits.loc[hottest]
 
 Expect a `temp_c` count of `11` in `describe()`, a mean of `37.69` when rounded, a highest temperature of `39.0`, and row label `8`, which is `P009` from the South clinic. The repeated `P003` visit is counted twice in these numbers, one reason to find repeats before summarizing.
 
-### 3.2c Compare every visit with the average
+### 3.2b Compare every visit with the average
 
 Subtracting a Series of column means from a table **broadcasts**: pandas matches the Series' labels to the columns and subtracts each mean from every row of its column.
 
@@ -376,37 +366,6 @@ Expect these lines:
 - `plain`: `patient_id` is an ordinary column and the index is the new row numbers `[0, 1, 2]`.
 - `index_col`: `patient_id` is the index (`['P001', 'P002', 'P003']`) and is no longer a column.
 - `index=False`: the columns are `clinic`, `age`, `temp_c`, `systolic`; the patient IDs were not saved.
-
-### 3.6c Fresh-run check
-
-Restart, then **Run All** up to here. This cell checks the walkthrough's checkpoints.
-
-```python
-assert raw["temp_c"].dtype == "str"
-assert visits["temp_c"].dtype == "float64"
-assert visits.shape == (12, 5)
-assert list(preview.columns) == ["patient_id", "temp_c"] and len(preview) == 4
-assert id_counts["P003"] == 2 and (id_counts > 1).sum() == 1
-assert round(from_mean.loc[8, "temp_c"], 2) == 1.31
-assert list(ranked["temp_rank"]) == [1, 2, 2, 4, 5, 6]
-assert visits["clinic"].nunique() == 3
-assert f"{visits['temp_c'].mean():.2f}" == "37.69"
-assert hottest == 8
-assert warm.sum() == 6
-assert list(visits.columns) == ["patient_id", "clinic", "age", "temp_c", "systolic"], "visits itself must be unchanged"
-assert (warm_visits["flag"] == "fever").sum() == 4
-assert list(ordered["patient_id"]) == ["P009", "P004", "P005", "P008", "P007", "P011"]
-assert list(ordered_other["patient_id"]) == list(ordered["patient_id"])
-assert round_trip.shape == (6, 6)
-assert by_id.loc["P009", "temp_c"] == 39.0 and "patient_id" in back_to_column.columns
-assert list(warm_ids.reset_index(drop=True).index) == list(range(6))
-assert "patient_id" in plain.columns and indexed.index.name == "patient_id" and "patient_id" not in dropped.columns
-assert list(round_trip["patient_id"]) == list(ordered["patient_id"])
-
-print("Demo 3 fresh-run check passed")
-```
-
-Expect `Demo 3 fresh-run check passed`.
 
 ## 3.7 Independent practice
 

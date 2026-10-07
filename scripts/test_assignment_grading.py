@@ -16,6 +16,7 @@ Run it with the pinned dependencies above:
 """
 
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -63,6 +64,7 @@ def main():
                     result = subprocess.run(
                         [sys.executable, "-B", str(checks / "check_assignment.py"), str(submission), "--json"],
                         cwd=target, capture_output=True, text=True, check=False,
+                        env={**os.environ, "DS217_LOCAL_CHECKS": "1"},
                     )
                     assert result.returncode == 1, (number, checks, result.stdout, result.stderr)
                     report = json.loads(result.stdout)

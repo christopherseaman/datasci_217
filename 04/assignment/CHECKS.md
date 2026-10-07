@@ -22,6 +22,7 @@ How the files are read:
 - Each check is scored on its own, so one mistake costs only the checks it gets wrong.
 - A later file is judged against your own earlier one: if `-999` stayed in `bp_loaded.csv`, only the `-999 read as missing` check loses points, and the values computed from it still count.
 - Spacing, line endings, quoting, letter case, column order, and number format (`13`, `13.0`, `13.00`) never cost points; a mean may be rounded to one decimal.
+- Only Markdown cells count for Task 1.2; code and saved outputs are never read, so save the notebook before you commit it.
 - A leading column of row numbers, which `to_csv()` writes when the index holds only row numbers, is ignored.
 
 ## Completion contract
@@ -30,6 +31,7 @@ Grading totals 100 points and reads these files relative to the assignment root.
 
 | Artifact | Complete when | Check | Points |
 | --- | --- | --- | ---: |
+| `assignment.ipynb` | One Markdown cell holds the word `periwinkle` and at least 15 other words of explanation. | notebook: Task 1.2 explanation | 4 |
 | `output/bp_loaded.csv` | It has a `patient_id` column holding the saved index. | bp loaded: patient_id column | 4 |
 | `output/bp_loaded.csv` | The units row is not in it. | bp loaded: units row skipped | 4 |
 | `output/bp_loaded.csv` | It has no `coordinator_note` column. | bp loaded: coordinator_note left out | 4 |
@@ -54,6 +56,6 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | `output/followup_priority.parquet` | It is a Parquet file. | follow-up Parquet: Parquet file | 4 |
 | `output/followup_priority.parquet` | It has the follow-up list's columns, `patient_id` included. | follow-up Parquet: same columns | 4 |
 | `output/white_coat_gap.csv` | It has one row for each of P101 to P115. | white-coat gap: one row per patient in either table | 6 |
-| `output/white_coat_gap.csv` | Each gap is that patient's clinic minus home reading, blank where one is missing. | white-coat gap: gaps matched by patient | 10 |
+| `output/white_coat_gap.csv` | Each gap is that patient's clinic minus home reading, blank where one is missing. | white-coat gap: gaps matched by patient | 6 |
 
 Extra files are ignored.

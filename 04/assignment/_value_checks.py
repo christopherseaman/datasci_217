@@ -39,6 +39,10 @@ COUNTS_FILE = "output/clinic_counts.csv"
 FOLLOWUP_FILE = "output/followup_priority.csv"
 PARQUET_FILE = "output/followup_priority.parquet"
 GAP_FILE = "output/white_coat_gap.csv"
+NOTEBOOK_FILE = "assignment.ipynb"
+# Task 1.2's explanation must contain this word and enough other words to be an explanation.
+EXPLANATION_WORD = "periwinkle"
+EXPLANATION_MIN_WORDS = 15
 # The notebook step and the call that save each artifact.
 SAVED_BY = {
     LOADED_FILE: ("Task 2.2", "bp.to_csv(LOADED_PATH)"),
@@ -1154,9 +1158,39 @@ def check_gap_values(root: Path) -> None:
     raise AssertionError(f"{GAP_FILE}: {_first(wrong, 3)}. {cause}")
 
 
+def check_explanation(root: Path) -> None:
+    """A Markdown cell of the committed notebook holds the word and an explanation; code and outputs are never read."""
+    try:
+        notebook = json.loads((root / NOTEBOOK_FILE).read_text(encoding="utf-8"))
+        cells = [cell for cell in notebook["cells"] if cell.get("cell_type") == "markdown"]
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        raise AssertionError(
+            f"{NOTEBOOK_FILE} is missing or is not a saved notebook; save the notebook with Ctrl+S "
+            "(Cmd+S on Mac) and commit it.") from None
+    best = None
+    for cell in cells:
+        source = cell.get("source", "")
+        text = source if isinstance(source, str) else "".join(source)
+        if EXPLANATION_WORD not in text.casefold():
+            continue
+        others = len(re.findall(r"[\w']+", text.casefold().replace(EXPLANATION_WORD, " ")))
+        if others >= EXPLANATION_MIN_WORDS:
+            return
+        best = max(best or 0, others)
+    if best is None:
+        raise AssertionError(
+            f"No Markdown cell in {NOTEBOOK_FILE} contains the word {EXPLANATION_WORD!r} (found {len(cells)} Markdown "
+            f"cells). In Task 1.2, replace 'Your explanation here' with your explanation, include {EXPLANATION_WORD!r}, "
+            "and save the notebook before running the checks.")
+    raise AssertionError(
+        f"The Markdown cell with {EXPLANATION_WORD!r} has {best} other words, and the check wants at least "
+        f"{EXPLANATION_MIN_WORDS}. In Task 1.2, explain the repair in a few sentences in that one cell.")
+
+
 LOADED_HINT = f"In Task 2.2, read with {LOAD_CALL}, then save with bp.to_csv(LOADED_PATH), keeping the index."
 FOLLOWUP_HINT = "Task 4.1 keeps bp's patient_id index; save with followup.to_csv(FOLLOWUP_PATH), keeping the index."
 CHECKS = (
+    Check("notebook: Task 1.2 explanation", check_explanation),
     Check("bp loaded: patient_id column", _id_check(LOADED_FILE, LOADED_HINT, _loaded)),
     Check("bp loaded: units row skipped", check_loaded_units),
     Check("bp loaded: coordinator_note left out", check_loaded_note),

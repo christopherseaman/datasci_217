@@ -18,6 +18,7 @@ from contextlib import contextmanager
 import csv
 import io
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -575,6 +576,8 @@ def main() -> None:
     assert sys.version_info[:2] == (3, 13), (
         f"The checks pin Python 3.13 and exact dependency versions; this is {sys.version.split()[0]}. "
         "Run with: uv run scripts/test_grade_submissions.py")
+    # Tracebacks are compared as text, so a terminal's FORCE_COLOR must not add color codes.
+    os.environ["PYTHON_COLORS"] = "0"
     test_fork_names_and_listing()
     (REPO / "scratch").mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=REPO / "scratch", prefix="grade-submissions-test-") as directory:

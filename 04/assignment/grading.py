@@ -11,16 +11,17 @@ from pathlib import Path
 from _value_checks import run_checks
 
 
-# One value per check in _value_checks.CHECKS, in the same order: the loaded
+# One value per check in _value_checks.CHECKS, in the same order: the Task 1.2 explanation, the loaded
 # table (Task 2), the visit summary and clinic counts (Task 3), the follow-up
 # list and its Parquet copy (Task 4), and the white-coat gap (Task 5).
 POINTS = (
+    4,
     4, 4, 4, 4, 4, 4,
     3, 5, 5, 5,
     4, 2,
     3, 6, 2, 2, 4, 4, 2, 3, 2,
     4, 4,
-    6, 10,
+    6, 6,
 )
 
 

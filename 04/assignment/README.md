@@ -72,14 +72,19 @@ The first Task 1 code cell uses `vials_on_hand`, which the second cell defines, 
 
 ### 1.2 Explain the repair
 
-Replace the TODO in the Markdown cell under 1.2 with a few sentences that explain:
+Double-click the Markdown cell below the 1.2 heading, replace `Your explanation here` with a few sentences, and run the cell. Explain:
 
 - the difference between the order the cells appear in and the order the kernel ran them;
 - why the dependent cell can print a result while it sits above the cell it needs;
 - why output saved under a cell does not prove the notebook works now; and
 - what you changed, and how Restart and Run All shows that it worked.
 
-Task 1 writes no file, but **Run All** stops at the `NameError` until 1.1 is done.
+Include the word **periwinkle** somewhere in your explanation, so the check can find it. Keep it in that one Markdown cell, with at least 15 other words.
+
+> **Checkpoint: the 1.2 Markdown cell**
+> One cell that contains `periwinkle` and your explanation. Save the notebook (`Ctrl+S`, `Cmd+S` on Mac) before the checks run, since they read the saved file.
+
+Task 1 writes no file in `output/`, but **Run All** stops at the `NameError` until 1.1 is done.
 
 ## Task 2: Load the blood pressure export
 
@@ -201,7 +206,7 @@ A clinic reading that runs higher than the patient's home reading is the **white
 ## Check your work
 
 - Click **Restart**, then **Run All**.
-- The last cell prints your score and what to fix: the same checks GitHub runs on each push.
+- The last cell prints your score and what to fix, using the latest checks from the course repository: the same checks GitHub runs on each push.
 - Commit `assignment.ipynb` and the `output/` files, then push.
 
 What each check looks for: [CHECKS.md](CHECKS.md)

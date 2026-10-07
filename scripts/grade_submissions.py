@@ -287,6 +287,10 @@ def grade(checks: Path, clone: Path) -> dict:
         result = subprocess.run(
             command, cwd=clone, capture_output=True, text=True, errors="backslashreplace",
             timeout=GRADE_TIMEOUT_SECONDS, check=False,
+            # Grade with these trusted checks (checkers that can fetch the latest skip it), and keep
+            # error text plain: -E ignores PYTHON_COLORS but not FORCE_COLOR, so set NO_COLOR.
+            env={**{k: v for k, v in os.environ.items() if k != "FORCE_COLOR"},
+                 "DS217_LOCAL_CHECKS": "1", "NO_COLOR": "1"},
         )
     except subprocess.TimeoutExpired as error:
         raise SubmissionError(f"checker did not finish within {GRADE_TIMEOUT_SECONDS} seconds") from error

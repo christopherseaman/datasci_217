@@ -10,6 +10,7 @@ course-owned checks byte for byte. Nothing here reads or runs student code.
     uv run --python 3.13 --with pandas==3.0.5 --with pyarrow==25.0.0 python 04/assignment_checks/_grader_selftest/run.py
 """
 
+import os
 from pathlib import Path
 import json
 import re
@@ -21,6 +22,9 @@ from collections.abc import Callable
 
 import pandas as pd
 
+
+# Self-tests grade with the working copy, never the copy downloaded from GitHub.
+os.environ["DS217_LOCAL_CHECKS"] = "1"
 
 CHECKS = Path(__file__).resolve().parents[1]
 HANDOUT = CHECKS.parent / "assignment"
@@ -35,6 +39,7 @@ from _value_checks import (  # noqa: E402
     FOLLOWUP_FILE,
     GAP_FILE,
     HOME_SBP,
+    NOTEBOOK_FILE,
     LOADED_FILE,
     PARQUET_FILE,
     SUMMARY_FILE,
@@ -50,6 +55,7 @@ def group(prefix: str) -> set[str]:
     return {name for name in CHECK_POINTS if name.startswith(prefix)}
 
 
+NOTEBOOK = group("notebook")
 LOADED, SUMMARY, COUNTS = group("bp loaded"), group("visit summary"), group("clinic counts")
 FOLLOWUP, PARQUET, GAP = group("follow-up list"), group("follow-up Parquet"), group("white-coat gap")
 READINGS = ["sbp_baseline", "sbp_week4", "sbp_week8"]
@@ -94,6 +100,7 @@ def solve(root: Path, bp: pd.DataFrame | None = None) -> None:
     """Write every artifact with the lecture's pandas methods, as the README asks."""
     output = root / "output"
     output.mkdir(parents=True, exist_ok=True)
+    write_notebook(root, [("markdown", "### 1.2 Explain the repair"), ("markdown", EXPLANATION)])
     bp = load() if bp is None else bp
     bp.to_csv(output / "bp_loaded.csv")
     summarize(bp).to_csv(output / "visit_summary.csv")
@@ -103,6 +110,20 @@ def solve(root: Path, bp: pd.DataFrame | None = None) -> None:
     followup.to_parquet(output / "followup_priority.parquet")
     assert pd.read_parquet(output / "followup_priority.parquet").equals(followup)
     gap(bp, pd.read_csv(HOME, index_col="patient_id")).to_csv(output / "white_coat_gap.csv")
+
+
+def write_notebook(root: Path, cells: list[tuple[str, str]]) -> None:
+    """Save a notebook holding (cell type, source) cells, as a student's committed file."""
+    notebook = {"cells": [{"cell_type": kind, "metadata": {}, "source": source.splitlines(True),
+                           **({"outputs": [], "execution_count": None} if kind == "code" else {})}
+                          for kind, source in cells], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    (root / NOTEBOOK_FILE).write_text(json.dumps(notebook), encoding="utf-8")
+
+
+EXPLANATION = ("The cells appear in one order but the kernel ran them in another, so a cell can print a result "
+               "while it sits above the cell it needs. Saved output proves nothing, so I moved the producer up "
+               "and used Restart and Run All, a periwinkle sky of green checks.")
+PLACEHOLDER = "Your explanation here. Include the word periwinkle."
 
 
 def scores(root: Path) -> dict[str, int]:
@@ -243,6 +264,20 @@ def run() -> None:
                     label, {name: detail(root, name) for name in expected})
             assert checker_report(HANDOUT, root) == checker_report(CHECKS, root), label
             return root
+
+        # Task 1.2: the word anywhere in a Markdown cell, in any case, beside enough explanation.
+        full_marks("explanation-any-case", lambda root: write_notebook(
+            root, [("markdown", PLACEHOLDER), ("markdown", EXPLANATION.upper())]))
+        too_short = "The word periwinkle alone is not an explanation."
+        for label, cells, hint in (
+            ("explanation-word-missing", [("markdown", EXPLANATION.replace("periwinkle", "blue"))], "contains the word 'periwinkle'"),
+            ("explanation-word-only", [("markdown", too_short)], "has 7 other words"),
+            ("explanation-placeholder", [("markdown", PLACEHOLDER)], "has 6 other words"),
+            ("explanation-in-code-cell", [("code", f"# {EXPLANATION}"), ("markdown", PLACEHOLDER)], "has 6 other words"),
+        ):
+            mistake(label, lambda root, cells=cells: write_notebook(root, cells), NOTEBOOK, hint)
+        mistake("explanation-no-notebook", lambda root: (root / NOTEBOOK_FILE).unlink(), NOTEBOOK, "is missing or is not")
+        mistake("explanation-bad-notebook", lambda root: (root / NOTEBOOK_FILE).write_text("{"), NOTEBOOK, "is missing or is not")
 
         # -999 kept is one mistake: every later file is judged against the student's own table.
         kept = load(na_values=None)
@@ -440,7 +475,7 @@ def run() -> None:
         report = printed(empty)
         assert report.count("is missing; run the Task") == 6, report
         assert report.rstrip().endswith(
-            "Left to fix (100 points): bp loaded (all 6 checks); visit summary (all 4 checks); clinic counts "
+            "Left to fix (100 points): notebook: Task 1.2 explanation; bp loaded (all 6 checks); visit summary (all 4 checks); clinic counts "
             "(all 2 checks); follow-up list (all 9 checks); follow-up Parquet (all 2 checks); white-coat gap "
             "(all 2 checks)."), report
         report = printed(workspace / "sentinel-kept")
@@ -477,7 +512,7 @@ def run() -> None:
     assert listed == program_order(), (listed, program_order())
     contract = {
         name: int(points)
-        for name, points in re.findall(r"^\| `output/[^|]+\| [^|]+\| ([^|]+) \| (\d+) \|$", checks_md, re.MULTILINE)
+        for name, points in re.findall(r"^\| `(?:output/|assignment\.ipynb)[^|]*\| [^|]+\| ([^|]+) \| (\d+) \|$", checks_md, re.MULTILINE)
     }
     assert contract == CHECK_POINTS, (contract, CHECK_POINTS)
 
