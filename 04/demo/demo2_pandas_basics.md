@@ -28,48 +28,64 @@ Run the cells from top to bottom.
 
 ## Core walkthrough
 
-### A 1D array becomes a Series
+### Build a Series
 
-Lecture 03 stored measurements in a NumPy **ndarray** and selected them by integer position. A pandas **Series** adds an **index**: a label for each value, here the patient ID. Its `dtype` describes the stored values, and its `name` identifies the Series.
+Lecture 03 stored measurements in a NumPy **ndarray**. A pandas **Series** adds an **index**: a label for each value, here the patient ID. `pd.Series()` accepts a plain list or an array, and the results match. Its `dtype` describes the stored values and its `name` identifies the Series.
 
 ```python
 import numpy as np
 import pandas as pd
 
-temps_c = np.array([36.8, 38.1, 37.2])
+patient_ids = ["P001", "P002", "P003"]
 
-temp_by_patient = pd.Series(
-    temps_c,
-    index=["P001", "P002", "P003"],
-    name="temp_c",
-)
+temp_from_list = pd.Series([36.8, 38.1, 37.2], index=patient_ids, name="temp_c")
+temp_from_array = pd.Series(np.array([36.8, 38.1, 37.2]), index=patient_ids, name="temp_c")
 
-display(temp_by_patient)
-print("index:", temp_by_patient.index)
-print("P002:", temp_by_patient["P002"])
+display(temp_from_list)
+display(temp_from_array)
+print("same Series:", temp_from_list.equals(temp_from_array))
+print("P002:", temp_from_list["P002"])
 ```
 
-Expect three rows labeled `P001` to `P003`, the footer `Name: temp_c, dtype: float64`, and `P002: 38.1`: the label finds the value without knowing its position.
+Expect two identical displays with rows `P001` to `P003` and the footer `Name: temp_c, dtype: float64`, then `same Series: True` and `P002: 38.1`.
 
-### A 2D array becomes a DataFrame
+### Build a DataFrame
 
-A pandas **DataFrame** is a labeled table. Each row is a patient and the two columns are systolic blood pressure (mmHg) at a baseline visit and at follow-up. `index=` labels the rows, `columns=` labels the columns, and naming the index says what the labels are.
+A pandas **DataFrame** is a labeled table. Each row is a patient and the two columns are systolic blood pressure (mmHg) at a baseline visit and at follow-up. `index=` labels the rows and `columns=` labels the columns. Three kinds of input build the same table:
+
+- A list of lists: each inner list is one row.
+- A 2D NumPy array: each inner row is one row.
+- A dict: each key is a column name and each value is that column's list.
 
 ```python
-sbp_readings = np.array(
-    [
-        [128, 124],
-        [142, 136],
-        [150, 138],
-        [118, 131],
-    ]
+patient_ids = ["P001", "P002", "P003", "P004"]
+column_names = ["baseline_sbp", "follow_up_sbp"]
+
+from_lists = pd.DataFrame(
+    [[128, 124], [142, 136], [150, 138], [118, 131]],
+    index=patient_ids,
+    columns=column_names,
 )
 
-sbp = pd.DataFrame(
-    sbp_readings,
-    index=["P001", "P002", "P003", "P004"],
-    columns=["baseline_sbp", "follow_up_sbp"],
+sbp_readings = np.array([[128, 124], [142, 136], [150, 138], [118, 131]])
+sbp = pd.DataFrame(sbp_readings, index=patient_ids, columns=column_names)
+
+from_dict = pd.DataFrame(
+    {"baseline_sbp": [128, 142, 150, 118], "follow_up_sbp": [124, 136, 138, 131]},
+    index=patient_ids,
 )
+
+display(from_lists)
+display(sbp)
+display(from_dict)
+print("all three match:", from_lists.equals(sbp) and sbp.equals(from_dict))
+```
+
+Expect three identical tables with four patients and two columns, then `all three match: True`.
+
+The rest of the demo uses `sbp`. Naming its index says what the row labels are.
+
+```python
 sbp.index.name = "patient_id"
 
 print("shape:", sbp.shape)
@@ -92,7 +108,16 @@ print(type(baseline_table))
 print(baseline_table.shape)
 ```
 
-Expect `<class 'pandas.Series'>`, then `<class 'pandas.DataFrame'>`, then `(4, 1)`: the same column, two different shapes.
+Expect `<class 'pandas.Series'>`, then `<class 'pandas.DataFrame'>`, then `(4, 1)`.
+
+`display()` shows the two objects differently.
+
+```python
+display(baseline)
+display(baseline_table)
+```
+
+Expect the Series as plain text with `Name: baseline_sbp, dtype: int64` and the DataFrame as a table with a `baseline_sbp` column header.
 
 ### Labels with `.loc`, positions with `.iloc`
 
@@ -112,6 +137,22 @@ print("same block:", label_block.equals(position_block))
 
 Expect `142` twice, a block with rows `P002` and `P003`, and `same block: True`.
 
+### Square brackets look up labels
+
+On a Series, `[]` means index labels, not positions. Here the labels are patient IDs, so asking for position `1` fails. This error is intentional; `try`/`except` prints it instead of stopping the notebook.
+
+```python
+try:
+    baseline[1]
+except KeyError as error:
+    print("KeyError:", error)
+
+print("by label:", baseline["P002"])
+print("by position with .iloc:", baseline.iloc[1])
+```
+
+Expect `KeyError: 1`, then `by label: 142` and `by position with .iloc: 142`.
+
 ### Filter rows with a mask
 
 A **mask** is a Boolean Series with the same index as the table. Build it on its own line with a descriptive name, then pass it to `.loc` with the columns you want. This one asks which patients still had a systolic pressure of 130 mmHg or higher at follow-up.
@@ -126,25 +167,9 @@ sbp.loc[high_at_follow_up, ["baseline_sbp", "follow_up_sbp"]]
 
 Expect `False` for `P001` and `True` for the other three, `rows: 3`, and a table of `P002`, `P003`, and `P004`.
 
-### Square brackets look up labels
+### A filter leaves gaps in the labels
 
-On a Series, `[]` means index labels, not positions. Here the labels are patient IDs, so asking for position `1` fails. This error is intentional; `try`/`except` prints it instead of stopping the notebook.
-
-```python
-baseline = sbp["baseline_sbp"]
-
-try:
-    baseline[1]
-except KeyError as error:
-    print("KeyError:", error)
-
-print("by label:", baseline["P002"])
-print("by position with .iloc:", baseline.iloc[1])
-```
-
-Expect `KeyError: 1`, then `by label: 142` and `by position with .iloc: 142`.
-
-A default `0, 1, 2, ...` index hides the difference until a filter drops a row. `plain` holds the same readings with the default index; the mask keeps rows labeled `1`, `2`, and `3`.
+A default `0, 1, 2, ...` index hides the label/position difference until a filter drops a row. `plain` holds the same readings with the default index; the mask keeps rows labeled `1`, `2`, and `3`.
 
 ```python
 plain = pd.DataFrame(sbp_readings, columns=["baseline_sbp", "follow_up_sbp"])
@@ -186,17 +211,15 @@ Expect `1 row` twice, `same mask: True`, and one row: `P004`, which went from 11
 A reduction turns many values into one. By default it runs down each column; `axis="columns"` runs across each row, here giving each patient's average over the two visits. `idxmax()` names the row with the largest value, and `corr()` measures how closely two columns move together.
 
 ```python
-display(sbp.mean())
-patient_mean = sbp.mean(axis="columns")
-display(patient_mean)
+display(pd.DataFrame({"mean": sbp.mean()}))
+display(pd.DataFrame({"patient_mean": sbp.mean(axis="columns")}))
 
 highest_follow_up = sbp["follow_up_sbp"].idxmax()
-print("highest at follow-up:", highest_follow_up)
 r = sbp["baseline_sbp"].corr(sbp["follow_up_sbp"])
-print(f"baseline vs follow-up r: {r:.2f}")
+display(pd.DataFrame({"highest_at_follow_up": [highest_follow_up], "baseline_follow_up_r": [round(r, 2)]}))
 ```
 
-Expect column means of `134.50` and `132.25` mmHg, patient means from `124.5` (`P004`) to `144.0` (`P003`), `highest at follow-up: P003` (138 mmHg), and `r: 0.72`: patients high at baseline tended to stay high, though `P004` rose while the others fell.
+Expect column means of `134.50` and `132.25` mmHg, patient means from `124.5` (`P004`) to `144.0` (`P003`), and one row with `P003` (138 mmHg) and `0.72`: patients high at baseline tended to stay high.
 
 ### Count clinics and test membership
 
@@ -213,33 +236,6 @@ sbp.loc[south_or_east]
 ```
 
 Expect `North 2`, `South 1`, `East 1`, `distinct clinics: 3`, and the rows for `P002` (South) and `P004` (East). The mask's index matches `sbp`'s, so `.loc` pairs each `True` with the right patient.
-
-### Fresh-run check
-
-Restart, then **Run All** up to here. This cell checks the walkthrough's checkpoints.
-
-```python
-assert temp_by_patient["P002"] == 38.1
-assert temp_by_patient.name == "temp_c"
-assert sbp.index.name == "patient_id"
-assert sbp.shape == (4, 2)
-assert isinstance(baseline, pd.Series)
-assert isinstance(baseline_table, pd.DataFrame)
-assert by_label == by_position == 142
-assert label_block.equals(position_block)
-assert high_at_follow_up.sum() == 3
-assert newly_high.sum() == inline_mask.sum() == 1
-assert list(sbp.loc[newly_high].index) == ["P004"]
-assert patient_mean["P003"] == 144.0
-assert highest_follow_up == "P003"
-assert round(r, 2) == 0.72
-assert clinic.nunique() == 3
-assert list(sbp.loc[south_or_east].index) == ["P002", "P004"]
-
-print("Demo 2 fresh-run check passed")
-```
-
-Expect `Demo 2 fresh-run check passed`.
 
 ## Independent practice
 

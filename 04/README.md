@@ -220,7 +220,7 @@ P003   37.2           P003    41    37.2   False
 | Item | Purpose / arguments | Output |
 | --- | --- | --- |
 | `pd.Series(data, index=None, name=None)` | `data` may be a list, a NumPy array, or a dict (its keys become the index) | New `Series` |
-| `pd.DataFrame(data, index=None, columns=None)` | `data` may be a dict of lists or a 2D NumPy array, with optional row and column labels | New `DataFrame` |
+| `pd.DataFrame(data, index=None, columns=None)` | `data` may be a dict of lists, a list of row lists, or a 2D NumPy array, with optional row and column labels | New `DataFrame` |
 | `pd.DataFrame({"mean": s1, "median": s2})` | A dict of Series: each becomes a column, rows matched by index label | New `DataFrame` |
 | `df.index.name = "patient_id"` | Name the row index | Shown above the index; its header in a saved CSV |
 | `obj.index`, `df.columns` | Row labels, column labels | `Index([...])` |
