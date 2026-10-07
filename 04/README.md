@@ -39,6 +39,11 @@ This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 - **Markdown cell**: notes and headings that explain the analysis.
 - **Kernel**: the Python process that runs the cells and keeps their values between runs, so data loads once and every later cell can use it.
 
+<callout icon="📣" color="blue_bg">
+	## Jupyter Notebooks can be Published!
+	Python, R, and Julia notebooks can be published using [Quarto](https://quarto.org). Some data scientists go so far as to use it as a (technical) blogging platform! (see: [Demetri](https://dpananos.github.io))
+</callout>
+
 ## Opening and Running a Notebook
 
 - **VS Code** (assignments): open the `.ipynb` file (install the **Jupyter** extension if VS Code offers it), click **Select Kernel** at the top right, and choose the project's `.venv`.
@@ -373,7 +378,7 @@ True
 - `visits.iloc["P002", 0]` raises `ValueError`: `.iloc` accepts positions only.
 
 <callout icon="⚠️" color="yellow_bg">
-	## `df[i][j]` is not array indexing!
+	## `df[i][j]` is not selection with `pandas`!
 	`[]` means labels in pandas: columns on a DataFrame, index labels on a Series. Use `.iloc[i, j]` for positions.
 </callout>
 
@@ -392,7 +397,9 @@ On a default `0, 1, 2, ...` index, labels and positions coincide, so `[]` seems 
 
 ## Filtering Rows with a Boolean Mask
 
-A **mask** is a Boolean Series from a comparison, such as `visits["temp_c"] >= 38.0`. It carries the table's index, so each `True` stays attached to its patient.
+> _I warned you these would come back…_
+
+Review: A **mask** is a Boolean Series from a comparison, such as `visits["temp_c"] >= 38.0`. It carries the table's index, so each `True` stays attached to its patient.
 
 ```text
 temp_c >= 38.0     has_fever      visits.loc[has_fever, ["age", "temp_c"]]
@@ -485,6 +492,8 @@ P001
 ```
 
 ## Counting Values
+
+> _But wait! My data is categorical!_
 
 `clinic` is a Series of five patients' clinics, `P001` to `P005`: North, South, North, East, North.
 
