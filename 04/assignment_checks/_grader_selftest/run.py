@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections.abc import Callable
 
 import pandas as pd
 
@@ -382,8 +383,56 @@ def run() -> None:
                 root / GAP_FILE)
 
         mistake("gap-fill-value", fill_value, {"white-coat gap: gaps matched by patient"}, "fill_value=0")
-        mistake("gap-ids-lost", lambda root: gap(bp, home).to_csv(root / GAP_FILE, index=False), GAP,
-                "has no patient IDs")
+        # A lost index is charged once, by the check that names it; the values are still graded by row order.
+        mistake("gap-ids-lost", lambda root: gap(bp, home).to_csv(root / GAP_FILE, index=False),
+                {"white-coat gap: one row per patient in either table"}, "has no patient IDs")
+        mistake("gap-ids-lost-sign-flipped", lambda root: (-gap(bp, home)).to_csv(root / GAP_FILE, index=False), GAP,
+                "wrong sign")
+        mistake("summary-ids-lost", lambda root: summarize(bp).to_csv(root / SUMMARY_FILE, index=False),
+                {"visit summary: one row per visit"}, "index=False leaves them out")
+        mistake("summary-ids-lost-mean-is-max",
+                lambda root: summarize(bp).assign(mean=bp[READINGS].max()).to_csv(root / SUMMARY_FILE, index=False),
+                {"visit summary: one row per visit", "visit summary: mean"}, "sbp_baseline has 171.0")
+        mistake("counts-ids-lost", lambda root: bp["clinic"].value_counts().to_csv(root / COUNTS_FILE, index=False),
+                {"clinic counts: patients per clinic"}, "index=False leaves them out")
+        mistake("counts-ids-lost-sorted-by-name",
+                lambda root: bp["clinic"].value_counts().sort_index().to_csv(root / COUNTS_FILE, index=False), COUNTS,
+                "lists a count of 4 before 5")
+
+        # One mistake in bp_loaded.csv carries into every later file, so only the loaded-table check is lost.
+        mistake("cascade-nrows", lambda root: solve(root, load(nrows=10)), {"bp loaded: all 14 patients once"},
+                "missing P111, P112, P113 and P114")
+        mistake("cascade-no-index-col", lambda root: solve(root, load(index_col=None)),
+                {"white-coat gap: one row per patient in either table"}, "bp or home was read")
+        mistake("parquet-id-misnamed",
+                lambda root: followup.reset_index().rename(columns={"patient_id": "pid"})
+                .to_parquet(root / PARQUET_FILE, index=False),
+                {"follow-up Parquet: same columns"}, "rename it to patient_id")
+        mistake("gap-missing-text",
+                lambda root: gap(bp, home).to_csv(root / GAP_FILE, na_rep="missing"),
+                {"white-coat gap: gaps matched by patient"}, "remove the replacement text such as missing")
+
+        # Placeholders for a missing value, headers with spaces or CamelCase, and decimal commas cost nothing.
+        for marker in ("-", ".", "N/A"):
+            def placeholder(root: Path, marker: str = marker) -> None:
+                bp.to_csv(root / LOADED_FILE, na_rep=marker)
+                gap(bp, home).to_csv(root / GAP_FILE, na_rep=marker)
+                followup.to_csv(root / FOLLOWUP_FILE, na_rep=marker)
+
+            full_marks(f"missing-as-{marker}", placeholder)
+
+        def reheader(style) -> Callable:
+            def change(root: Path) -> None:
+                for name in (LOADED_FILE, SUMMARY_FILE, COUNTS_FILE, FOLLOWUP_FILE, GAP_FILE):
+                    edit(root, name, lambda text: ",".join(style(c) for c in text.split("\n", 1)[0].split(","))
+                         + "\n" + text.split("\n", 1)[1])
+            return change
+
+        full_marks("headers-title-case", reheader(lambda c: c.replace("_", " ").title()))
+        full_marks("headers-camel-case", reheader(lambda c: c.title().replace("_", "")))
+        full_marks("headers-hyphens", reheader(lambda c: c.replace("_", "-")))
+        full_marks("tab-decimal-comma", lambda root: followup.to_csv(root / FOLLOWUP_FILE, sep="\t", decimal=","))
+        full_marks("quoted-decimal-comma", lambda root: followup.to_csv(root / FOLLOWUP_FILE, decimal=",", quoting=1))
         mistake("gap-written-twice", lambda root: written_twice(gap(bp, home), root / GAP_FILE),
                 {"white-coat gap: one row per patient in either table"}, "holds the same table 2 times")
 
@@ -402,13 +451,14 @@ def run() -> None:
 
     # A fresh handout prints exactly the "Before Task 2" example README.md shows.
     readme = (HANDOUT / "README.md").read_text(encoding="utf-8")
-    shown = re.search(r"Before Task 2, for example, the loaded-table checks report:\n\n```text\n(.*?)```", readme,
+    shown = re.search(r"Before Task 2, for example, the loaded-table checks report:\n\n( *)```text\n(.*?)```", readme,
                       re.DOTALL)
     assert shown is not None, "README.md no longer shows the Before Task 2 example"
+    example = re.sub(f"(?m)^{shown.group(1)}", "", shown.group(2))
     handout_report = subprocess.run(
         [sys.executable, "-B", "check_assignment.py"], cwd=HANDOUT, capture_output=True, text=True, check=False
     ).stdout
-    assert shown.group(1) in handout_report, (shown.group(1), handout_report)
+    assert example in handout_report, (example, handout_report)
 
     # README's checkpoint order and completion contract agree with the checks.
     listed = re.search(r"seven patients in this order of `patient_id`: ([A-Z0-9, ]+)\.", readme).group(1).split(", ")

@@ -11,8 +11,11 @@ Each check scores one thing, so one mistake costs only the checks it gets
 wrong, and a later file is judged against the student's own earlier one where
 an earlier mistake carries into it. Values are compared after parsing:
 spacing, line endings, quoting, column order, a leading row-number column,
-number formatting (2 == 2.0 == 2.00), and the letter case of labels never cost
-points, and cells may be separated by commas, semicolons, or tabs.
+number formatting (2 == 2.0 == 2.00, 12,5 == 12.5), the letter case of labels,
+spaces or hyphens in a header (Patient ID is patient_id), and a placeholder for
+a missing value (-, ., NA) never cost points, and cells may be separated by
+commas, semicolons, or tabs. A later file that follows from a mistake in the
+student's own output/bp_loaded.csv is judged against that table too.
 
 Nothing here imports, runs, or inspects student code.
 """
@@ -105,40 +108,44 @@ class Table:
 # Expected values, recomputed from the supplied data.
 
 
-def reading(patient: str, column: str, sentinel_kept: bool = False) -> float | None:
-    """A patient's value in the loaded table; with sentinel_kept, -999 read as a number."""
-    value = BP_EXPORT[patient][LOADED_COLUMNS.index(column) - 1]
-    if value is None and sentinel_kept:
-        return float(SENTINEL)
+# Each function below takes the table it computes from: the supplied BP_EXPORT, or the student's own
+# bp_loaded.csv (see _worlds), so a later file is judged by the table the student actually saved.
+Export = dict[str, tuple]
+
+
+def reading(patient: str, column: str, export: Export | None = None) -> float | None:
+    """A patient's value in the loaded table."""
+    value = (export or BP_EXPORT)[patient][LOADED_COLUMNS.index(column) - 1]
     return None if value is None else float(value)
 
 
-def visit_stats(sentinel_kept: bool = False) -> dict[str, dict[str, float]]:
+def visit_stats(export: Export | None = None) -> dict[str, dict[str, float]]:
     """{stat: {visit: value}} as pandas computes them, skipping missing readings."""
     stats: dict[str, dict[str, float]] = {stat: {} for stat in STATS}
     for visit in READINGS:
-        values = [reading(p, visit, sentinel_kept) for p in BP_EXPORT]
+        values = [reading(p, visit, export) for p in (export or BP_EXPORT)]
         present = [value for value in values if value is not None]
-        stats["mean"][visit] = statistics.mean(present)
-        stats["median"][visit] = statistics.median(present)
+        stats["mean"][visit] = statistics.mean(present) if present else float("nan")
+        stats["median"][visit] = statistics.median(present) if present else float("nan")
         stats["count"][visit] = float(len(present))
     return stats
 
 
-def clinic_counts() -> dict[str, int]:
+def clinic_counts(export: Export | None = None) -> dict[str, int]:
     counts: dict[str, int] = {}
-    for clinic, *_ in BP_EXPORT.values():
+    for clinic, *_ in (export or BP_EXPORT).values():
         counts[clinic] = counts.get(clinic, 0) + 1
     return counts
 
 
-def in_program(patient: str) -> bool:
-    baseline = reading(patient, "sbp_baseline")
-    return BP_EXPORT[patient][0] in PROGRAM_CLINICS and baseline is not None and baseline >= PROGRAM_MIN_BASELINE
+def in_program(patient: str, export: Export | None = None) -> bool:
+    baseline = reading(patient, "sbp_baseline", export)
+    clinic = (export or BP_EXPORT)[patient][0]
+    return clinic in PROGRAM_CLINICS and baseline is not None and baseline >= PROGRAM_MIN_BASELINE
 
 
-def change(patient: str, sentinel_kept: bool = False) -> float | None:
-    week8, baseline = reading(patient, "sbp_week8", sentinel_kept), reading(patient, "sbp_baseline", sentinel_kept)
+def change(patient: str, export: Export | None = None) -> float | None:
+    week8, baseline = reading(patient, "sbp_week8", export), reading(patient, "sbp_baseline", export)
     return None if week8 is None or baseline is None else week8 - baseline
 
 
@@ -171,18 +178,18 @@ def average_rank(values: dict[str, float | None]) -> dict[str, float | None]:
     return ranks
 
 
-def program_order() -> list[str]:
+def program_order(export: Export | None = None) -> list[str]:
     """The follow-up patients as Task 4.3 sorts them: largest drop first, ties by patient_id."""
-    patients = [p for p in BP_EXPORT if in_program(p)]
-    return sorted(patients, key=lambda p: (change(p), p))
+    patients = [p for p in (export or BP_EXPORT) if in_program(p, export)]
+    return sorted(patients, key=lambda p: (change(p, export), p))
 
 
-def gap_expected(sentinel_kept: bool = False) -> dict[str, float | None]:
+def gap_expected(export: Export | None = None) -> dict[str, float | None]:
     """Clinic week-8 minus home reading for every patient in either table; None where one side is missing."""
-    patients = sorted(set(BP_EXPORT) | set(HOME_SBP))
+    patients = sorted(set(export or BP_EXPORT) | set(HOME_SBP))
     expected = {}
     for patient in patients:
-        clinic = reading(patient, "sbp_week8", sentinel_kept) if patient in BP_EXPORT else None
+        clinic = reading(patient, "sbp_week8", export) if patient in (export or BP_EXPORT) else None
         home = HOME_SBP.get(patient)
         expected[patient] = None if clinic is None or home is None else clinic - home
     return expected
@@ -216,18 +223,19 @@ def _csv_rows(text: str) -> list[list[str]]:
     """The rows of a saved CSV, blank lines left out, split on the separator its header line uses.
 
     Whichever of commas, semicolons, and tabs splits the header line into the
-    most cells is used, and a tie keeps commas. A file separated by semicolons
-    may write decimal commas, so there 12,5 reads as 12.5.
+    most cells is used, and a tie keeps commas. A cell holding a decimal comma
+    (a semicolon- or tab-separated file from a European locale, or a quoted cell)
+    reads 12,5 as 12.5. In a one-column file a missing value is the row "", kept.
     """
     if "\x00" in text:
         raise csv.Error("embedded NUL bytes; save the table again as CSV text")
     lines = text.splitlines()
     header = next((line for line in lines if line.strip()), "")
     delimiter = max(DELIMITERS, key=lambda mark: len(next(csv.reader([header], delimiter=mark), [])))
-    rows = [row for row in csv.reader(lines, delimiter=delimiter) if any(cell.strip() for cell in row)]
-    if delimiter == ";":
-        rows = [[DECIMAL_COMMA.sub(r"\1.\2", cell) for cell in row] for row in rows]
-    return rows
+    one_column = len(next(csv.reader([header], delimiter=delimiter), [])) == 1
+    rows = [row for row in csv.reader(lines, delimiter=delimiter)
+            if any(cell.strip() for cell in row) or (one_column and row == [""])]
+    return [[DECIMAL_COMMA.sub(r"\1.\2", cell) for cell in row] for row in rows]
 
 
 def _artifact(root: Path, name: str) -> Path | None:
@@ -280,6 +288,12 @@ def _clean(cell: str) -> str:
     return " ".join(cell.split())
 
 
+def _header(cell: str) -> str:
+    """A column name as snake_case: Patient ID, patient-id, PatientId, and patient_id are one name."""
+    name = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", _clean(cell))
+    return re.sub(r"[\s\-]+", "_", name).casefold()
+
+
 def _number(cell: str) -> float | None:
     text = cell.strip().replace(",", "")
     try:
@@ -296,7 +310,7 @@ def _same(given: str, expected: float) -> bool:
 
 def _blank(cell: str) -> bool:
     """A missing value as pandas or a spreadsheet writes it."""
-    return cell.strip().casefold() in ("", "nan", "na", "<na>", "none", "null")
+    return cell.strip().casefold() in ("", "nan", "na", "n/a", "<na>", "none", "null", "-", ".")
 
 
 def _matches(cell: str, expected: float | None) -> bool:
@@ -342,9 +356,9 @@ def read_table(root: Path, name: str) -> Table:
             f"{name} cannot be read as a CSV table ({error}); run the {step} cell again so to_csv() writes it."
         ) from None
     _assert(bool(lines), f"{name} is empty, with no header line and no rows; run the {step} cell again, then commit it.")
-    header = [_clean(cell).casefold() for cell in lines[0]]
+    header = [_header(cell) for cell in lines[0]]
     # A table written again with to_csv(mode="a") repeats its header line; the last copy is the latest write.
-    starts = [i for i, row in enumerate(lines) if [_clean(cell).casefold() for cell in row] == header]
+    starts = [i for i, row in enumerate(lines) if [_header(cell) for cell in row] == header]
     copies = len(starts)
     body = [[_clean(cell) for cell in row] for row in lines[starts[-1] + 1:]]
     # mode="a" with header=False repeats only the rows: a body that is one block of rows over and over.
@@ -462,7 +476,7 @@ UNITS_HEADER = (
 def _loaded(root: Path) -> Table:
     """The saved table, for the checks that need its column names: a header of units has none."""
     table = read_table(root, LOADED_FILE)
-    _assert("mmhg" not in table.columns or "patient_id" in table.columns, UNITS_HEADER)
+    _assert("mm_hg" not in table.columns or "patient_id" in table.columns, UNITS_HEADER)
     return table
 
 
@@ -550,23 +564,46 @@ def check_loaded_values(root: Path) -> None:
     )
 
 
-def _kept_sentinel(root: Path) -> bool:
-    """Whether the student's own bp_loaded.csv kept -999 as a reading, so later values are judged by it too."""
+def _own_export(root: Path) -> Export | None:
+    """The student's own bp_loaded.csv as an export, or None when it cannot be read as one."""
     try:
         table = read_table(root, LOADED_FILE)
     except (AssertionError, OSError, csv.Error):
-        return False
-    found = _rows_by_patient(table, set(BP_EXPORT), by_readings=True)
-    return any(
-        _same(row.get(column, ""), SENTINEL)
-        for patient, row in found.items() for column in READINGS if reading(patient, column) is None
-    )
+        return None
+    if not {"clinic", *READINGS} <= set(table.columns):
+        return None
+    own: Export = {}
+    for patient, row in _rows_by_patient(table, set(BP_EXPORT), by_readings=True).items():
+        clinic = BP_EXPORT[patient][0]
+        if row["clinic"].casefold() != clinic.casefold():
+            clinic = row["clinic"]
+        age = _number(row.get("age", ""))
+        own[patient] = (clinic, age, *(_number(row[column]) for column in READINGS))
+    return own or None
+
+
+def _worlds(root: Path) -> list[Export]:
+    """The tables a later file may be right for: the supplied data, then the student's own bp_loaded.csv.
+
+    A mistake in bp_loaded.csv (keeping -999, nrows=10) carries into every later
+    file, so those are judged against it too and the mistake is charged once.
+    """
+    own = _own_export(root)
+    return [BP_EXPORT] + ([own] if own is not None and own != BP_EXPORT else [])
 
 
 # Task 3.1: output/visit_summary.csv
 
 
 STAT_NAMES = {"mean": "mean", "median": "median", "50%": "median", "count": "count"}
+
+
+def _unlabeled_summary(table: Table) -> bool:
+    """Three rows of mean, median, or count with no visit names: the summary saved with index=False."""
+    visits = set(READINGS)
+    named = any(row[c].casefold() in visits for c in table.columns for row in table.rows)
+    return (not named and len(table.rows) == len(READINGS)
+            and any(c in STAT_NAMES for c in table.columns) and not any(c in visits for c in table.columns))
 
 
 def _summary_grid(table: Table) -> tuple[dict[str, dict[str, str]], list[str]]:
@@ -583,6 +620,11 @@ def _summary_grid(table: Table) -> tuple[dict[str, dict[str, str]], list[str]]:
             if column != label and column in STAT_NAMES:
                 grid[STAT_NAMES[column]] = {row[label].casefold(): row[column] for row in table.rows}
         return grid, [row[label].casefold() for row in table.rows]
+    if _unlabeled_summary(table):
+        for column in table.columns:
+            if column in STAT_NAMES:
+                grid[STAT_NAMES[column]] = {visit: row[column] for visit, row in zip(READINGS, table.rows)}
+        return grid, list(READINGS)
     columns = [c for c in table.columns if c in visits]
     if columns:
         first = table.columns[0]
@@ -609,6 +651,11 @@ def _no_visits(table: Table) -> str:
 
 def check_summary_visits(root: Path) -> None:
     table = read_table(root, SUMMARY_FILE)
+    _assert(
+        not _unlabeled_summary(table),
+        f"{SUMMARY_FILE} has no visit names (its columns are {_columns(table)}): they are the index, and "
+        "index=False leaves them out. In Task 3.1, save with visit_summary.to_csv(SUMMARY_PATH), keeping the index.",
+    )
     _, labels = _summary_grid(table)
     _assert(bool(labels), _no_visits(table))
     missing = [visit for visit in READINGS if visit not in labels]
@@ -639,7 +686,7 @@ def _summary_stat(stat: str) -> Callable[[Path], None]:
             f'build visit_summary with "{stat}": {call}.',
         )
         saved = grid[stat]
-        for expected in (visit_stats(), visit_stats(sentinel_kept=_kept_sentinel(root))):
+        for expected in (visit_stats(world) for world in _worlds(root)):
             if all(visit not in saved or _same(saved[visit], expected[stat][visit]) for visit in READINGS):
                 return
         truth = visit_stats()[stat]
@@ -672,30 +719,60 @@ def check_counts_values(root: Path) -> None:
     table = read_table(root, COUNTS_FILE)
     saved = _counts(table)
     _assert(
+        bool(saved) or _count_column(table) is None,
+        f"{COUNTS_FILE} has counts but no clinic names (its columns are {_columns(table)}): the clinics are the "
+        "index, and index=False leaves them out. In Task 3.2, save with clinic_counts.to_csv(COUNTS_PATH), keeping "
+        "the index.",
+    )
+    _assert(
         bool(saved),
         f"{COUNTS_FILE} names no clinic (its columns are {_columns(table)}); in Task 3.2, save "
         'clinic_counts = bp["clinic"].value_counts().',
     )
-    expected = clinic_counts()
-    by_name = {clinic.casefold(): clinic for clinic in expected}
-    named = [by_name[clinic.casefold()] for clinic, _ in saved]
-    problems = [f"{clinic} has {count or 'blank'}, expected {expected[by_name[clinic.casefold()]]}"
-                for clinic, count in saved if not _same(count, expected[by_name[clinic.casefold()]])]
-    problems += [f"it has no row for {clinic}" for clinic in expected if clinic not in named]
-    problems += [f"it lists {clinic} {named.count(clinic)} times" for clinic in expected if named.count(clinic) > 1]
-    if not problems and (table.copies > 1 or len(table.rows) > len(saved)):
+
+    def problems_for(expected: dict[str, int]) -> list[str]:
+        by_name = {clinic.casefold(): clinic for clinic in expected}
+        named = [by_name.get(clinic.casefold()) for clinic, _ in saved]
+        found = [f"{clinic} has {count or 'blank'}, expected {expected[by_name[clinic.casefold()]]}"
+                 for clinic, count in saved
+                 if clinic.casefold() in by_name and not _same(count, expected[by_name[clinic.casefold()]])]
+        found += [f"{clinic} is not a clinic in bp" for clinic, _ in saved if clinic.casefold() not in by_name]
+        found += [f"it has no row for {clinic}" for clinic in expected if clinic not in named]
+        found += [f"it lists {clinic} {named.count(clinic)} times" for clinic in expected if named.count(clinic) > 1]
+        return found
+
+    options = [problems_for(clinic_counts(world)) for world in _worlds(root)]
+    if not any(not found for found in options):
+        problems = options[0]
+        raise AssertionError(
+            f"{COUNTS_FILE}: {'; '.join(problems)}. value_counts() counts each clinic's patients in bp; "
+            "a fraction instead of a count means normalize=True was added."
+        )
+    if table.copies > 1 or len(table.rows) > len(saved):
         raise AssertionError(_written_again(table) if table.copies > 1 else
                              f"{COUNTS_FILE} has rows that name no clinic; save only the value_counts() result.")
-    _assert(
-        not problems,
-        f"{COUNTS_FILE}: {'; '.join(problems)}. value_counts() counts each clinic's patients in bp; "
-        "a fraction instead of a count means normalize=True was added.",
-    )
+
+
+def _count_column(table: Table) -> str | None:
+    """The first column whose cells are all numbers, for a counts file that lost its clinic names."""
+    return next((c for c in table.columns if table.rows and all(_number(row[c]) is not None for row in table.rows)),
+                None)
 
 
 def check_counts_order(root: Path) -> None:
     table = read_table(root, COUNTS_FILE)
     saved = [(clinic, _number(count)) for clinic, count in _counts(table)]
+    column = _count_column(table)
+    if not saved and column is not None:
+        # The clinic names are charged once, by the patients-per-clinic check; the counts still have an order.
+        numbers = [_number(row[column]) for row in table.rows]
+        rise = next(((a, b) for a, b in zip(numbers, numbers[1:]) if a < b), None)
+        _assert(
+            rise is None,
+            f"{COUNTS_FILE} lists a count of {_show(rise[0] if rise else 0)} before {_show(rise[1] if rise else 0)}; "
+            "value_counts() puts the most common clinic first, so save its result as it is.",
+        )
+        return
     _assert(len(saved) >= 2, f"{COUNTS_FILE} has fewer than two clinic counts, so their order cannot be checked.")
     rise = next(((a, b) for a, b in zip(saved, saved[1:])
                  if a[1] is not None and b[1] is not None and a[1] < b[1]), None)
@@ -736,11 +813,16 @@ def _own_change(row: dict[str, str]) -> float | None:
 def check_followup_rows(root: Path) -> None:
     table = read_table(root, FOLLOWUP_FILE)
     named = [patient for patient, _ in _followup_rows(table)]
-    expected = program_order()
-    missing = [p for p in expected if p not in named]
-    extra = [p for p in dict.fromkeys(named) if p not in expected]
     repeated = [p for p in dict.fromkeys(named) if named.count(p) > 1]
     unknown = len(table.rows) - len(named)
+
+    def differs(expected: list[str]) -> tuple[list[str], list[str]]:
+        return [p for p in expected if p not in named], [p for p in dict.fromkeys(named) if p not in expected]
+
+    expected = program_order()
+    missing, extra = differs(expected)
+    if any(not (repeated or unknown or any(differs(program_order(world)))) for world in _worlds(root)):
+        missing = extra = []
     if not (missing or extra or repeated or unknown):
         if table.copies > 1:
             raise AssertionError(_written_again(table))
@@ -943,7 +1025,9 @@ def check_parquet_columns(root: Path) -> None:
     columns = _parquet_columns(_parquet(root))
     _assert(columns is not None,
             f"{PARQUET_FILE} records no pandas column list; save it from pandas with {SAVED_BY[PARQUET_FILE][1]}.")
-    saved = {column.casefold() for column in columns}
+    # A row-number index pandas saved for a table without index_col is not a column of followup.
+    columns = [column for column in columns if not re.fullmatch(r"__index_level_\d+__", column)]
+    saved = {_header(column) for column in columns}
     accepted = [set(FOLLOWUP_COLUMNS)]
     try:
         own = read_table(root, FOLLOWUP_FILE)
@@ -960,6 +1044,11 @@ def check_parquet_columns(root: Path) -> None:
     expected = accepted[-1]
     missing = sorted(expected - saved)
     extra = sorted(saved - expected)
+    if len(missing) == 1 and len(extra) == 1:
+        raise AssertionError(
+            f"{PARQUET_FILE} has a column named {extra[0]} where {FOLLOWUP_FILE} has {missing[0]}; rename it to "
+            f"{missing[0]} (followup.rename(columns=...)), then save again with {SAVED_BY[PARQUET_FILE][1]}."
+        )
     raise AssertionError(
         f"{PARQUET_FILE} has the columns {_join(columns) or 'none'}"
         + (f"; it is missing {_join(missing)}" if missing else "") + (f"; it also has {_join(extra)}" if extra else "")
@@ -994,14 +1083,16 @@ def check_gap_rows(root: Path) -> None:
     unknown = [label for label, p in zip(labels, named) if p is None]
     missing = [p for p in expected if p not in named]
     repeated = [p for p in expected if named.count(p) > 1]
+    if not unknown and not repeated and any(set(named) == set(gap_expected(world)) for world in _worlds(root)):
+        missing = []
     if not (unknown or missing or repeated):
         if table.copies > 1:
             raise AssertionError(_written_again(table))
         return
     if unknown and all(_number(label) is not None for label in unknown):
         raise AssertionError(
-            f"{GAP_FILE} has the row labels {_first(unknown)} beside the patient IDs: home_bp.csv was read with "
-            'row numbers as its index, so no label matched. Read it with index_col="patient_id".'
+            f"{GAP_FILE} has the row labels {_first(unknown)} beside the patient IDs: bp or home was read with "
+            'row numbers as its index, so no label matched. Read both with index_col="patient_id" (Task 2.2 and Task 5).'
         )
     problems = ([f"it is missing {_first(missing)}"] if missing else []) + (
         [f"it also has {_first(unknown)}"] if unknown else []) + (
@@ -1016,30 +1107,50 @@ def check_gap_rows(root: Path) -> None:
 def check_gap_values(root: Path) -> None:
     table = read_table(root, GAP_FILE)
     key, value = _gap(table)
-    _assert(key is not None and value is not None,
-            f"{GAP_FILE} needs a patient_id column and one column of gaps (its columns are {_columns(table)}); "
-            "save the white_coat_gap Series with its index.")
-    known = {p.casefold(): p for p in gap_expected()}
-    if any(row[key].casefold() not in known and _number(row[key]) is not None for row in table.rows):
-        return  # Row numbers beside the patient IDs are charged once, by the one-row-per-patient check.
-    rows = [(known[row[key].casefold()], row[value]) for row in table.rows if row[key].casefold() in known]
-    _assert(bool(rows), f"{GAP_FILE} names no patient, so its gaps cannot be compared.")
-    for expected in (gap_expected(), gap_expected(sentinel_kept=_kept_sentinel(root))):
-        if all(_matches(cell, expected[p]) for p, cell in rows):
+    worlds = [gap_expected(world) for world in _worlds(root)]
+    if key is None and value is not None:
+        # index=False loses the patient IDs, which the one-row-per-patient check charges. The rows are still the
+        # gaps in the order Series alignment writes them, sorted by patient, so the values can be graded.
+        candidates = [[(p, row[value]) for p, row in zip(sorted(expected), table.rows)]
+                      for expected in worlds if len(table.rows) == len(expected)]
+        _assert(
+            bool(candidates),
+            f"{GAP_FILE} has {len(table.rows)} rows and no patient IDs, so its gaps cannot be matched to patients; "
+            f"save the whole white_coat_gap Series, one row for each of the {len(worlds[0])} patients, with its index.",
+        )
+        worlds = [expected for expected in worlds if len(table.rows) == len(expected)]
+    else:
+        _assert(key is not None and value is not None,
+                f"{GAP_FILE} needs a patient_id column and one column of gaps (its columns are {_columns(table)}); "
+                "save the white_coat_gap Series with its index.")
+        known = {p.casefold(): p for p in gap_expected()}
+        if any(row[key].casefold() not in known and _number(row[key]) is not None for row in table.rows):
+            return  # Row numbers beside the patient IDs are charged once, by the one-row-per-patient check.
+        rows = [(known[row[key].casefold()], row[value]) for row in table.rows if row[key].casefold() in known]
+        _assert(bool(rows), f"{GAP_FILE} names no patient, so its gaps cannot be compared.")
+        candidates = [rows] * len(worlds)
+    for expected, rows in zip(worlds, candidates):
+        if all(_matches(cell, expected[p]) if p in expected else _blank(cell) for p, cell in rows):
             return
-    truth = gap_expected()
-    matched = [(p, cell) for p, cell in rows if truth[p] is not None]
-    unmatched = [(p, cell) for p, cell in rows if truth[p] is None and not _blank(cell)]
+    truth = worlds[0]
+    rows = candidates[0]
+    matched = [(p, cell) for p, cell in rows if truth.get(p) is not None]
+    unmatched = [(p, cell) for p, cell in rows if truth.get(p) is None and not _blank(cell)]
     if matched and all(_same(cell, -truth[p]) for p, cell in matched):
         cause = ("Every gap has the wrong sign: Task 5 subtracts the home reading from the clinic one, "
                  'bp["sbp_week8"] - home["home_sbp_week8"].')
     elif unmatched and all(_matches(cell, truth[p]) for p, cell in matched):
-        cause = ("A patient with a reading on only one side has a number instead of a blank: fill_value=0 "
-                 "subtracts 0 for the missing side. Use the plain - so those gaps stay NaN.")
+        if all(_number(cell) is not None for _, cell in unmatched):
+            cause = ("A patient with a reading on only one side has a number instead of a blank: fill_value=0 "
+                     "subtracts 0 for the missing side. Use the plain - so those gaps stay NaN.")
+        else:
+            cause = ("A patient with a reading on only one side must have a blank gap, which to_csv() writes for "
+                     f"NaN; remove the replacement text such as {unmatched[0][1]}.")
     else:
         cause = ('Task 5 computes bp["sbp_week8"] - home["home_sbp_week8"], which pairs readings by patient_id; '
                  "both tables need patient_id as their index.")
-    wrong = [f"{p} has {cell or 'blank'}, expected {_show(truth[p])}" for p, cell in rows if not _matches(cell, truth[p])]
+    wrong = [f"{p} has {cell or 'blank'}, expected {_show(truth[p])}" for p, cell in rows
+             if p in truth and not _matches(cell, truth[p])]
     raise AssertionError(f"{GAP_FILE}: {_first(wrong, 3)}. {cause}")
 
 
