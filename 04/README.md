@@ -23,7 +23,7 @@ source .venv/bin/activate
 uv sync
 ```
 
-Then open the `04-demo` folder in VS Code.
+→ Then open the `04-demo` folder in VS Code.
 
 This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 
