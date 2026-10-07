@@ -673,11 +673,6 @@ vitals (RangeIndex)        vitals.set_index("patient_id")
 | Order rows by label | `df.sort_index()` | New DataFrame sorted by index |
 | Look up by label | `df.loc["P003"]` | One row as a `Series`, or a `DataFrame` when the label repeats |
 
-<callout icon="⚠️" color="yellow_bg">
-	## The index is saved, but not read back!
-	`to_csv()` writes the index as the first column; read it back with `index_col="patient_id"`, or it returns as an ordinary column beside new row numbers. `index=False` drops it, IDs included.
-</callout>
-
 ### Code Snippet: Look up and renumber
 
 ```python
@@ -778,6 +773,14 @@ P003,41,37.2,North
 | Write Parquet | `df.to_parquet(path, index=False)` | `index=False` as with `to_csv` | Parquet file |
 
 _CSV stands for "Comma-Separated Values," unless someone used semicolons, or tabs, or pipes, or any other delimiter they felt like using that day._
+
+<callout icon="⚠️" color="yellow_bg">
+	## The index is saved, but not read back!
+	- `to_csv(filename)` writes the index as the first column
+	- `read_csv(filename, index_col="patient_id")` to read it back
+	- Without `index_col=` the index returns as an ordinary column
+	- `index=False` drops it, IDs included
+</callout>
 
 ## Missing-Value Markers
 
