@@ -66,9 +66,12 @@ This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 | Move a cell | Drag the bar at the cell's left, or `Alt+Up` / `Alt+Down` (`Option` on Mac) | Arrows on the cell's toolbar | Cell moves with its output |
 | Choose Python | **Select Kernel** | Managed by the runtime | Which interpreter runs the cells |
 | See the kernel's state | **Variables** in the toolbar | **{x}** in the left sidebar | Every name with its type and value |
-| Commit changes | `Ctrl+S` (`Cmd+S` on macOS), then **Source Control**: message, **Commit**, **Sync Changes** (signed in to GitHub) | **File → Save a copy in GitHub** (authorize GitHub the first time) | Notebook saved and committed |
+| Save changes | `Ctrl+S` (`Cmd+S` on macOS) | `Ctrl+S`, or **File → Save** (to Drive; opened from GitHub, see the next row) | Notebook file updated |
+| Commit changes | **Source Control**: message, **Commit**, **Sync Changes** (signed in to GitHub; clear outputs if desired and save first) | Opened from GitHub: **File → Save**, then authorize GitHub and fill in the save dialog below; otherwise **File → Save a copy in GitHub** | Notebook committed to GitHub |
 
 - Letter shortcuts such as `A` (add above), `B` (below), and `DD` (delete) work in **command mode**: press `Esc` first. In Colab, press `Ctrl+M`, then the letter.
+
+![Colab's Save in GitHub dialog: repository, branch, file path, and commit message](media/colab-save-in-github.png)
 
 ### Alternative: JupyterLab
 
