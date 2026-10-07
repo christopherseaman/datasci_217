@@ -39,6 +39,7 @@ from urllib.request import urlretrieve
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/04/demo"
 DATA_PATH = Path("data") / "clinic_visits.csv"
 
+# You can probably guess what this is doing, note the import at the top of the cell
 if DATA_PATH.exists():
     status = "already here"
 else:
@@ -63,10 +64,17 @@ import pandas as pd
 raw = pd.read_csv(DATA_PATH)
 
 display(raw.dtypes)
+```
+
+- :x: Expect `temp_c` to be `str`, not `float64`, while `age` and `systolic` are `float64`. Because `temp_c` is text, `raw["temp_c"] >= 37.5` would raise a `TypeError`.
+    - → Find the non-numeric entries: list the distinct values, then mask on the one that is not a number.
+
+```python
+display(raw["temp_c"].unique())
 raw.loc[raw["temp_c"] == "?"]
 ```
 
-Expect `temp_c` to be `str`, not `float64`, while `age` and `systolic` are `float64`. The mask finds the reason: `P002`'s temperature was recorded as `?`. Because `temp_c` is text, `raw["temp_c"] >= 37.5` would raise a `TypeError`.
+Expect the distinct values to include `'?'` beside the temperatures, and the mask to find `P002`, whose temperature was recorded as `?`.
 
 ### Read it again with the missing marker
 
