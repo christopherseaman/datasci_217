@@ -58,6 +58,7 @@ This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 | Task | VS Code | Colab | Result |
 | --- | --- | --- | --- |
 | Create a notebook | Command Palette → **Create: New Jupyter Notebook** | **File → New notebook in Drive** | New `.ipynb` file |
+| Open a notebook | **File → Open File…**; from GitHub, Command Palette → **Git: Clone**, then open the `.ipynb` (sign in to GitHub if asked) | **File → Open notebook → GitHub**: paste the repository URL; private repositories need **Include private repos** and a GitHub sign-in | Notebook open, ready to run |
 | Run a cell | ▷ beside the cell, `Shift+Enter` (run, move on), or `Ctrl+Enter` (run, stay) | Same | Output appears below the cell |
 | Run every cell | **Run All** | **Runtime → Run all** | Cells run top to bottom |
 | Add a cell | **+ Code** / **+ Markdown** | **+ Code** / **+ Text** | New cell |
@@ -65,7 +66,7 @@ This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 | Move a cell | Drag the bar at the cell's left, or `Alt+Up` / `Alt+Down` (`Option` on Mac) | Arrows on the cell's toolbar | Cell moves with its output |
 | Choose Python | **Select Kernel** | Managed by the runtime | Which interpreter runs the cells |
 | See the kernel's state | **Variables** in the toolbar | **{x}** in the left sidebar | Every name with its type and value |
-| Commit changes | `Ctrl+S` (`Cmd+S` on macOS), then **Source Control**: message, **Commit** | **File → Save a copy in GitHub** | Notebook saved and committed |
+| Commit changes | `Ctrl+S` (`Cmd+S` on macOS), then **Source Control**: message, **Commit**, **Sync Changes** (signed in to GitHub) | **File → Save a copy in GitHub** (authorize GitHub the first time) | Notebook saved and committed |
 
 - Letter shortcuts such as `A` (add above), `B` (below), and `DD` (delete) work in **command mode**: press `Esc` first. In Colab, press `Ctrl+M`, then the letter.
 
