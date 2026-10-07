@@ -82,6 +82,26 @@ visits
 
 Expect `shape: (12, 5)`, `temp_c` now `float64`, and `NaN` in four places: `P002`'s temperature, `P004`'s age (a blank), `P006`'s systolic pressure (a blank), and `P007`'s clinic (`NULL`).
 
+### Several missing markers in one file
+
+A lab export may mark a missing value more than one way. List every marker in `na_values`; a number written as text, such as `"-999"`, matches the number too.
+
+```python
+labs_path = OUTPUT_DIR / "labs_markers.csv"
+with open(labs_path, "w", encoding="utf-8") as file:
+    file.write("patient_id,glucose_mg_dl,ldl_mg_dl,lab_site\n")
+    file.write("P001,98,131,North\n")
+    file.write("P002,?,-999,South\n")
+    file.write("P003,110,unknown,unknown\n")
+    file.write("P004,-999,142,North\n")
+
+labs = pd.read_csv(labs_path, na_values=["?", "-999", "unknown"])
+display(labs)
+display(labs.count())
+```
+
+Expect `glucose_mg_dl` and `ldl_mg_dl` as `float64` with `NaN` for every marker, `P003`'s `lab_site` as `NaN`, and `count()` showing 4, 2, 2, and 3 values present.
+
 ### Preview a few columns
 
 A large export is quicker to check with a preview: `usecols=` reads only the named columns, and `nrows=` stops after that many records. `dtype=` sets a column's type instead of letting pandas guess.
