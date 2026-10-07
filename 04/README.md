@@ -371,6 +371,24 @@ True
 - `visits.loc[1, "age"]` raises `KeyError: 1`: no row is _labeled_ 1.
 - `visits.iloc["P002", 0]` raises `ValueError`: `.iloc` accepts positions only.
 
+<callout icon="⚠️" color="yellow_bg">
+	## `df[i][j]` is not array indexing!
+	`[]` means labels in pandas: columns on a DataFrame, index labels on a Series. Use `.iloc[i, j]` for positions.
+</callout>
+
+### Square Brackets Look Up Labels
+
+On a default `0, 1, 2, ...` index, labels and positions coincide, so `[]` seems to work like a NumPy array until filtering or sorting changes the labels. `plain` holds the same patients with the default index (row labels `0`, `1`, `2`):
+
+| Code | Result | Why |
+| --- | --- | --- |
+| `visits[0]` | `KeyError: 0` | No column is named `0` |
+| `visits["temp_c"][1]` | `KeyError: 1` | No row is labeled `1` |
+| `visits["temp_c"]["P002"]` | `38.1` | `P002` is a label |
+| `plain["age"][1]` | `58` | Label `1` is also position `1` |
+| `plain[plain["temp_c"] > 37]["age"][0]` | `KeyError: 0` | The filter kept labels `1` and `2` |
+| `plain[plain["temp_c"] > 37]["age"].iloc[0]` | `58` | `.iloc` counts positions |
+
 ## Filtering Rows with a Boolean Mask
 
 A **mask** is a Boolean Series from a comparison, such as `visits["temp_c"] >= 38.0`. It carries the table's index, so each `True` stays attached to its patient.
