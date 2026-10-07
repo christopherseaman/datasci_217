@@ -11,18 +11,16 @@ from pathlib import Path
 from _value_checks import run_checks
 
 
-# One value per check in _value_checks.CHECKS, in the same order: the fridge-block
-# checks (Task 2): the fridge_id index, the rows, the two reading columns' names,
-# and their values; then the selected-supplies checks (Task 3): one per column,
-# no extra columns, one per selected line, the line totals, no other lines, and
-# the two sort rules.
+# One value per check in _value_checks.CHECKS, in the same order: the loaded
+# table (Task 2), the visit summary and clinic counts (Task 3), the follow-up
+# list and its Parquet copy (Task 4), and the white-coat gap (Task 5).
 POINTS = (
-    10, 10, 2, 2, 8, 8,
-    2, 2, 2, 2, 2, 2,
-    3, 3, 3, 3, 3, 3, 3, 3, 3,
-    9,
-    4,
+    4, 4, 4, 4, 4, 4,
+    3, 5, 5, 5,
+    4, 2,
+    3, 6, 2, 2, 4, 4, 2, 3, 2,
     4, 4,
+    6, 10,
 )
 
 

@@ -619,7 +619,7 @@ print(pd.get_dummies(colors, prefix='color', drop_first=True, dtype='int64'))  #
 | Outliers | `df.describe()`<br>IQR fences<br>domain rules | Verify against source and domain knowledge; keep, flag, correct, cap, or filter with a documented rationale |
 | Inconsistent Categories | `df['col'].unique()` | Normalize only differences known to share a meaning; map documented aliases explicitly |
 
-Run the Lecture 04 inspection checks (`isna().sum()`, `duplicated().sum()`, `value_counts()`, `nunique()`, `dtypes`, `describe()`) before and after cleaning and compare the outputs: counts should change only where you meant them to.
+Run the inspection checks (`isna().sum()`, `duplicated().sum()`, `value_counts()`, `nunique()`, `dtypes`, `describe()`) before and after cleaning and compare the outputs: counts should change only where you meant them to.
 
 ![xkcd 2239: Data Error. A clean-looking analysis cannot rescue corrupted source data](media/xkcd_2239.png)
 

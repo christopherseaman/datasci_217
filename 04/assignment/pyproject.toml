@@ -6,4 +6,5 @@ dependencies = [
     "numpy==2.3.3",
     "pandas==3.0.5",
     "ipykernel==6.29.5",
+    "pyarrow==25.0.0",
 ]

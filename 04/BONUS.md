@@ -9,19 +9,18 @@ notion:
 
 # DLC: Jupyter Workflows and Advanced Pandas Operations
 
-_This material builds on the lecture essentials in README.md. Revisit the lecture for Series/DataFrame basics, selection and Boolean masks, column creation, and the core CSV workflow before tackling these extensions._
-
-
 # Running Notebooks Non-Interactively
 
-Notebooks are interactive by default, but you can also run one from the command line, as a reproducibility check or as one step in a batch workflow. The `jupyter nbconvert` command comes with JupyterLab; in a project without it, add it once with `uv add nbconvert`. This command executes every cell in order and writes a separate output notebook:
+- `jupyter nbconvert --execute` runs every cell in order from the command line, as a reproducibility check or one step in a batch workflow.
+- It comes with JupyterLab; in a project without it, add it once with `uv add nbconvert`.
+- It writes a separate output notebook, so the source stays unchanged.
 
 ```bash
 jupyter nbconvert --execute --to notebook \
     --output executed_analysis.ipynb analysis.ipynb
 ```
 
-By default, a cell error makes the command fail with a nonzero exit status. In a script, `set -euo pipefail` stops at that failure instead of running the next notebook. Save this as `run_notebooks.sh` and run it with `bash run_notebooks.sh`:
+A cell error makes the command fail with a nonzero exit status, so `set -euo pipefail` stops a script there instead of running the next notebook. Save this as `run_notebooks.sh` and run it with `bash run_notebooks.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -33,18 +32,19 @@ jupyter nbconvert --execute --to notebook \
     --output executed_analyze.ipynb analyze.ipynb
 ```
 
-Keep the source notebook unchanged by writing a distinct output file. Avoid `--inplace` unless overwriting the source is deliberate and recoverable. Avoid `--allow-errors` in validation or production workflows because it can produce an output notebook containing failed cells. The working directory, selected kernel, and installed packages all affect the result.
-
+- Avoid `--inplace` unless overwriting the source is deliberate and recoverable.
+- Avoid `--allow-errors` in validation: its output notebook can contain failed cells.
+- The working directory, kernel, and installed packages all affect the result.
 
 # More Ways to Filter Rows
 
-The lecture filters rows with a named Boolean mask and `.loc`. These alternatives build the same kind of mask with less typing, or select by position instead of label.
+These build the same kind of mask with less typing, or select by position instead of label.
 
 ## Reference Card: Filter shortcuts
 
 - `df.query("temp_c >= 37 and age < 50")`: Filter with an expression string that names columns directly; `and`/`or` replace `&`/`|`. Returns a filtered `DataFrame`.
 - `df["col"].between(left, right)`: Test an inclusive range; returns a Boolean `Series`.
-- `df["col"].isin(["North", "East"])`: Test membership in a list; returns a Boolean `Series`. `df.isin([...])` tests every cell and returns a Boolean `DataFrame`.
+- `df.isin([...])`: Test every cell against a list; returns a Boolean `DataFrame`.
 - `df.iloc[mask.to_numpy()]`: `.iloc` accepts positions only, so convert a Boolean Series to a plain array first.
 
 ## Code Snippet: Filter shortcuts
@@ -54,285 +54,413 @@ visits = pd.DataFrame(
     {"age": [34, 58, 41], "temp_c": [36.8, 38.1, 37.2], "clinic": ["North", "South", "East"]},
     index=pd.Index(["P001", "P002", "P003"], name="patient_id"),
 )
-print(visits.query("temp_c >= 37 and age < 50"))           # P003
-print(visits.loc[visits["age"].between(40, 60)])            # P002, P003
-print(visits.loc[visits["clinic"].isin(["North", "East"])])  # P001, P003
+display(visits.query("temp_c >= 37 and age < 50"))
+display(visits.loc[visits["age"].between(40, 60)])
 
 over_40 = visits["age"] > 40
 # visits.iloc[over_40] raises ValueError: iLocation based boolean indexing cannot use an indexable as a mask
-print(visits.iloc[over_40.to_numpy()])                      # P002, P003
-```
-
-
-# Data Alignment and Broadcasting
-
-The lecture's derived columns line up by index label. This section shows what happens when labels do not match, how to reindex explicitly, and how DataFrame↔Series broadcasting works, so multi-source arithmetic remains predictable.
-
-## Reference Card: Alignment and broadcasting
-
-- Automatic index alignment during arithmetic operations
-- Series align on their index; DataFrames align on both axes when mixed
-- `df.add(series, axis='columns')` / `df.sub(series, axis='index')` / `df.mul(...)` / `df.div(...)`: combine after choosing the broadcast axis
-- `.reindex()` and `.align(join='inner' | 'outer')`: enforce explicit label sets before combining
-
-When you mix a DataFrame and a Series, pandas broadcasts along matching labels and introduces `NaN` wherever labels do not overlap, so make the intended axis explicit when you call arithmetic methods.
-
-## Code Snippet: Align, broadcast, and reindex
-
-```python
-s1 = pd.Series([1, 2, 3], index=['a', 'b', 'c'])
-s2 = pd.Series([4, 5, 6], index=['b', 'c', 'd'])
-print(s1 + s2)                      # a: NaN, b: 6, c: 8, d: NaN
-print(s1.add(s2, fill_value=0))     # a: 1, b: 6, c: 8, d: 6
-
-df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
-row = pd.Series([10, 20], index=['A', 'B'])
-print(df.sub(row, axis='columns'))  # Broadcast Series across DataFrame columns
-
-left, right = df.align(df.iloc[:2], join='outer', axis=0)
-print(left)
-print(right)
-
-metrics = pd.DataFrame({
-    'Salary': [120000, 95000, 88000],
-    'Bonus': [6000, 4750, 4400]
-}, index=['Avery', 'Bianca', 'Cheng'])
-
-averages = metrics.mean()
-targets = pd.Series({'Salary': 110000, 'Bonus': 5000, 'Equity': 2000})
-
-print(metrics.sub(averages, axis='columns'))  # Broadcast Series down rows
-# Reindex explicitly before arithmetic: this makes both the labels and the
-# treatment of labels absent from the Series visible (and works in pandas 3).
-targets_for_metrics = targets.reindex(metrics.columns, fill_value=0)
-print(metrics.add(targets_for_metrics, axis='columns'))
-```
-
-## Reindex Before Combining
-
-Adding a Series to a column matches rows by label, not by position. A label missing from either side produces `NaN`:
-
-```python
-scores = pd.DataFrame(
-    {'score': [80, 90, 70]},
-    index=['student_a', 'student_b', 'student_c']
-)
-bonus = pd.Series({'student_c': 5, 'student_a': 2})
-print(scores['score'] + bonus)
+display(visits.iloc[over_40.to_numpy()])
 ```
 
 ```text
-student_a    82.0
-student_b     NaN
-student_c    75.0
+            age  temp_c clinic
+patient_id                    
+P003         41    37.2   East
+            age  temp_c clinic
+patient_id                    
+P002         58    38.1  South
+P003         41    37.2   East
+            age  temp_c clinic
+patient_id                    
+P002         58    38.1  South
+P003         41    37.2   East
+```
+
+# Reindexing, Aligning, and Arithmetic Methods
+
+Arithmetic lines up labels automatically; these tools make the label set explicit before you combine tables.
+
+## Reference Card: Reindexing and arithmetic methods
+
+- `s.reindex(labels)`: Conform to a list of labels, in that order; a new label gets `NaN` (or `fill_value=`), and a label left out is dropped.
+- `df.reindex(columns=[...])`: The same for columns.
+- `a.align(b, join="inner")`: Return both objects conformed to a shared label set; `join="outer"` keeps every label.
+- `df.add(other, fill_value=0)`: On DataFrames, a cell missing from one side counts as `0`; a cell missing from both stays `NaN`.
+- `df.radd()`, `.rsub()`, `.rmul()`, `.rdiv()`, `.rpow()`: Reversed arguments, so `df.rdiv(1)` is `1 / df`.
+- `df.floordiv()`, `df.pow()`: Method forms of `//` and `**`, each with `fill_value=` and `axis=`.
+
+## Code Snippet: Reindex to a roster
+
+```python
+sbp = pd.Series([128, 142, 150], index=["P001", "P002", "P003"])
+roster = ["P001", "P002", "P003", "P004"]
+display(sbp.reindex(roster))
+```
+
+```text
+P001    128.0
+P002    142.0
+P003    150.0
+P004      NaN
 dtype: float64
 ```
 
-`student_b` has no bonus, so its total is missing, and the whole column becomes floating point. `reindex()` makes the target labels, their order, and the missing-label policy explicit:
+`P004` is on the roster without a reading, so the gap is visible instead of the patient silently missing.
+
+## Code Snippet: Keep only shared labels
 
 ```python
-scores['bonus'] = bonus.reindex(scores.index, fill_value=0)
-scores['adjusted_score'] = scores['score'] + scores['bonus']
-print(scores)
+week4 = pd.Series([124, 136, 131], index=["P001", "P002", "P004"])
+left, right = sbp.align(week4, join="inner")
+display(right - left)
 ```
 
 ```text
-           score  bonus  adjusted_score
-student_a     80      2              82
-student_b     90      0              90
-student_c     70      5              75
+P001   -4
+P002   -6
+dtype: int64
 ```
+
+## Code Snippet: Fill missing cells on both axes
+
+```python
+doses = pd.DataFrame({"am": [1, 2], "pm": [1, 1]}, index=["P001", "P002"])
+extra = pd.DataFrame({"am": [1], "noon": [1]}, index=["P002"])
+display(doses + extra)
+display(doses.add(extra, fill_value=0))
+```
+
+```text
+       am  noon  pm
+P001  NaN   NaN NaN
+P002  3.0   NaN NaN
+       am  noon   pm
+P001  1.0   NaN  1.0
+P002  3.0   1.0  1.0
+```
+
+`P001`'s `noon` cell exists in neither table, so it stays `NaN` even with `fill_value=0`.
 
 ## Assignment Under Copy-on-Write
 
-With Copy-on-Write, a subset behaves independently: changing it never changes the DataFrame it came from, so chained assignment such as `scores[scores['score'] < 75]['status'] = 'review'` never updates `scores`. Update the owner in one statement with `.loc[row_mask, column] = value`, or `.iloc[row_positions, column_positions] = value` for positional assignment. For a separate result, transform the subset and assign the returned object to a name.
+- With Copy-on-Write, changing a subset never changes the DataFrame it came from.
+- So chained assignment such as `visits[visits["temp_c"] >= 38]["flag"] = "fever"` never updates `visits`.
+- Update the owner in one statement: `.loc[row_mask, column] = value`, or `.iloc[row_positions, column_positions] = value`.
+- For a separate result, transform the subset and assign the returned object to a name.
 
-For the version-specific details behind these examples, see the official [pandas 3.0 release notes](https://pandas.pydata.org/pandas-docs/version/3.0/whatsnew/v3.0.0.html), [string-dtype migration guide](https://pandas.pydata.org/docs/user_guide/migration-3-strings.html), and [Copy-on-Write guide](https://pandas.pydata.org/docs/user_guide/copy_on_write.html).
-
+Details: the [pandas 3.0 release notes](https://pandas.pydata.org/pandas-docs/version/3.0/whatsnew/v3.0.0.html), [string-dtype migration guide](https://pandas.pydata.org/docs/user_guide/migration-3-strings.html), and [Copy-on-Write guide](https://pandas.pydata.org/docs/user_guide/copy_on_write.html).
 
 # Function Application and Method Chaining
 
-The lecture adds columns with bracket assignment and vectorized arithmetic; reach for the tools below when you need custom logic or a readable chain of steps. A `lambda` is a one-line function without a name: `lambda d: d['salary'] * 0.05` takes `d` and returns the expression. Lecture 05 teaches `apply()` and `map()` in the core path: Applying Custom Functions.
+- Reach for these when vectorized arithmetic cannot express the logic, or to write a readable chain of steps.
+- A `lambda` is a one-line function without a name: `lambda d: d["weight_kg"] / d["height_m"] ** 2` takes `d` and returns the expression.
 
 ## Reference Card: Apply, map, and column helpers
 
-- `df.apply(func)`: column-wise by default; add `axis='columns'` for row-wise logic
-- `series.map(func)`: element-level transformations with optional dict/Series mapping
-- `df.map(func)`: element-wise DataFrame transform (use sparingly for performance)
-- `df.assign(name=lambda d: ...)`: return a new DataFrame with added columns; each `lambda` receives the DataFrame built so far, so later columns can use earlier ones, and the original is unchanged
-- `df.insert(loc, column, value)`: insert a column at integer position `loc`; changes `df` itself and returns `None`
-- `df.eval("new = expression")`: compute a column from an expression string that names columns directly; returns a new DataFrame
-- Chain helpers: `.assign()`, `.pipe()`, `.rename()` to build fluent pipelines
+- `df.apply(func)`: Column-wise by default; add `axis="columns"` for row-wise logic.
+- `series.map(func)`: Element-level transform; also accepts a dict or Series as a lookup.
+- `df.map(func)`: Element-wise DataFrame transform; slow on large tables.
+- `df.assign(name=lambda d: ...)`: A new DataFrame with added columns; each `lambda` sees the columns built so far, and the original is unchanged.
+- `df.insert(loc, column, value)`: Insert a column at integer position `loc`; changes `df` itself and returns `None`.
+- `df.eval("new = expression")`: Compute a column from an expression string that names columns directly; returns a new DataFrame.
+- `.assign()`, `.pipe()`, `.rename()`: Chain helpers for step-by-step pipelines.
 
 ## Code Snippet: Apply, map, and chain
 
 ```python
-df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
-print(df.apply(lambda col: col.max() - col.min()))
-print(df.apply(lambda row: row.sum(), axis='columns'))
-print(df.map(lambda x: f"${x:.2f}"))
+doses = pd.DataFrame({"am_mg": [5, 10, 20], "pm_mg": [5, 5, 10]}, index=["P001", "P002", "P003"])
+display(doses.apply(lambda col: col.max() - col.min()))
+display(doses.apply(lambda row: row.sum(), axis="columns"))
+display(doses.map(lambda x: f"{x} mg"))
 
-summary = (
-    df.assign(total=lambda d: d.sum(axis=1))
-      .pipe(lambda d: d / d['total'].max())
+share = (
+    doses.assign(daily_mg=lambda d: d["am_mg"] + d["pm_mg"])
+         .pipe(lambda d: d / d["daily_mg"].max())
 )
-print(summary)
+display(share)
+```
+
+```text
+am_mg    15
+pm_mg     5
+dtype: int64
+P001    10
+P002    15
+P003    30
+dtype: int64
+      am_mg  pm_mg
+P001   5 mg   5 mg
+P002  10 mg   5 mg
+P003  20 mg  10 mg
+         am_mg     pm_mg  daily_mg
+P001  0.166667  0.166667  0.333333
+P002  0.333333  0.166667  0.500000
+P003  0.666667  0.333333  1.000000
 ```
 
 ## Adding Columns with `assign()`, `insert()`, and `eval()`
 
-These three alternatives to bracket assignment differ in what they return and whether they change the original DataFrame.
-
 ```python
-salaries = pd.DataFrame({
-    'name': ['Avery', 'Bianca', 'Cheng'],
-    'salary': [120000, 95000, 88000],
+patients = pd.DataFrame({
+    "patient_id": ["P001", "P002", "P003"],
+    "weight_kg": [70.0, 82.5, 64.0],
+    "height_m": [1.75, 1.80, 1.62],
 })
-augmented = salaries.assign(
-    bonus=lambda d: d['salary'] * 0.05,
-    total_comp=lambda d: d['salary'] + d['bonus'],
+augmented = patients.assign(
+    bmi=lambda d: d["weight_kg"] / d["height_m"] ** 2,
+    overweight=lambda d: d["bmi"] >= 25,
 )
-print(augmented)                     # adds bonus and total_comp; salaries is unchanged
-salaries.insert(1, 'hourly', salaries['salary'] / 2080)
-print(salaries.columns.tolist())     # ['name', 'hourly', 'salary']
-print(salaries.eval('monthly = salary / 12'))
+display(augmented)
+patients.insert(1, "weight_lb", patients["weight_kg"] * 2.2046)
+print(patients.columns.tolist())
+display(patients.eval("height_cm = height_m * 100"))
 ```
 
+```text
+  patient_id  weight_kg  height_m        bmi  overweight
+0       P001       70.0      1.75  22.857143       False
+1       P002       82.5      1.80  25.462963        True
+2       P003       64.0      1.62  24.386526       False
+['patient_id', 'weight_lb', 'weight_kg', 'height_m']
+  patient_id  weight_lb  weight_kg  height_m  height_cm
+0       P001   154.3220       70.0      1.75      175.0
+1       P002   181.8795       82.5      1.80      180.0
+2       P003   141.0944       64.0      1.62      162.0
+```
 
-# Ranking Strategies
+`assign()` left `patients` unchanged; `insert()` changed it in place.
 
-Go beyond the lecture's sorting by assigning ranks, controlling tie behavior, and ranking across rows or columns.
+# More Ranking Options
 
 ## Reference Card: Ranking
 
-- `series.rank()`: mean rank for ties (default)
-- `method='first' | 'min' | 'max' | 'dense'`: tie handling strategies
-- `ascending=False`: reverse ranking
-- `df.rank(axis='columns')`: rank across columns within each row
+- `method="average"` (default), `"min"`, `"max"`: Ties share the mean, best, or worst place.
+- `method="first"`: Ties broken by order of appearance; every rank is distinct.
+- `method="dense"`: Like `"min"`, but the next value takes the next whole number (1, 1, 2), with no gap.
+- `pct=True`: Rank as a fraction of the count, a percentile.
+- `df.rank(axis="columns")`: Rank across each row instead of down each column.
 
-## Code Snippet: Rank with ties
+## Code Snippet: Tie rules side by side
 
 ```python
-s = pd.Series([7, -5, 7, 4, 2, 0, 4])
-print(s.rank())                 # Mean rank for ties
-print(s.rank(method='first'))   # First occurrence gets the better rank
-print(s.rank(ascending=False))  # Reverse order ranking
+s = pd.Series([142, 118, 142, 130], index=["P003", "P001", "P002", "P004"])
+display(pd.DataFrame({
+    "average": s.rank(ascending=False),
+    "first": s.rank(ascending=False, method="first"),
+    "dense": s.rank(ascending=False, method="dense"),
+    "pct": s.rank(pct=True),
+}))
 ```
 
+```text
+      average  first  dense    pct
+P003      1.5    1.0    1.0  0.875
+P001      4.0    4.0    3.0  0.250
+P002      1.5    2.0    1.0  0.875
+P004      3.0    3.0    2.0  0.500
+```
+
+# Covariance
+
+**Covariance** is the unscaled version of Pearson's _r_, in the product of the two columns' units (here mmHg²), so its size depends on the units.
+
+## Reference Card: Covariance
+
+- `df["a"].cov(df["b"])`: Covariance of two columns.
+- `df.cov()`: Covariance of every pair of numeric columns; the diagonal holds each column's variance.
+- `df.corrwith(series)`: Correlation of every column with one Series.
+
+## Code Snippet: Covariance of blood-pressure visits
+
+```python
+bp = pd.DataFrame(
+    {"baseline": [128, 142, 150], "week_4": [124, 136, 138], "week_8": [121, 138, 131]},
+    index=["P001", "P002", "P003"],
+)
+display(bp.cov())
+display(bp.corrwith(bp["baseline"]))
+```
+
+```text
+          baseline     week_4  week_8
+baseline     124.0  82.000000    67.0
+week_4        82.0  57.333333    55.0
+week_8        67.0  55.000000    73.0
+baseline    1.000000
+week_4      0.972522
+week_8      0.704211
+dtype: float64
+```
 
 # Handling Duplicate Index Labels
 
-The lecture counts repeated rows with `df.duplicated()`. This section covers repeated index labels: what selection returns when a label appears more than once, and how to check for or collapse the repeats.
+A patient seen twice can have two rows with one label. Selecting that label returns several values, and summaries count both.
 
 ## Reference Card: Duplicate index labels
 
-- `index.is_unique`: quick sanity check
-- Label-based selection returns Series/DataFrame when duplicates exist
-- `duplicated()` and `drop_duplicates()` also operate on indexes
-- `groupby(level=0)` or `.reset_index()` can normalize duplicates
+- `df.index.is_unique`: `False` when any label repeats.
+- `s["P001"]`: A `Series` when the label repeats, a single value when it does not.
+- `df.index.duplicated()`: Boolean mask, `True` for each repeat after the first.
+- `df.reset_index()`: Turns the labels into a column with a fresh, unique RangeIndex.
 
 ## Code Snippet: Select repeated labels
 
 ```python
-import numpy as np
-s = pd.Series([1, 2, 3, 4, 5], index=['a', 'a', 'b', 'b', 'c'])
-print(s.index.is_unique)  # False
-print(s['a'])             # Series with two values
-print(s['c'])             # Scalar
-
-rng = np.random.default_rng(42)
-df = pd.DataFrame(rng.standard_normal((5, 3)), index=['a', 'a', 'b', 'b', 'c'])
-print(df.loc['b'])        # DataFrame with the duplicate rows
+temps = pd.Series(
+    [36.8, 37.9, 37.2, 38.4, 36.6],
+    index=["P001", "P001", "P002", "P002", "P003"],
+    name="temp_c",
+)
+print(temps.index.is_unique)
+display(temps["P001"])
+print(temps["P003"])
+display(temps[~temps.index.duplicated()])
 ```
 
+```text
+False
+P001    36.8
+P001    37.9
+Name: temp_c, dtype: float64
+36.6
+P001    36.8
+P002    37.2
+P003    36.6
+Name: temp_c, dtype: float64
+```
 
-# Extended I/O and Performance
+# Other File Formats and Databases
 
-The lecture covers core CSV reading and writing. Use this section when you need other formats, files too large for memory, or messier CSV input.
-
-## Excel Integration
-
-Ideal for business spreadsheets or multi-sheet workbooks. Excel files need the `openpyxl` package in the kernel's environment (`uv add openpyxl` in a local project); without it pandas raises `ModuleNotFoundError: No module named 'openpyxl'`.
+pandas reads and writes many formats with one pattern: `pd.read_FORMAT()` returns a DataFrame, and `df.to_FORMAT()` writes one. The snippets below use this table:
 
 ```python
-# Read entire workbook
-df = pd.read_excel('data.xlsx')
-print(df.head())
-
-# Target a specific sheet
-df_sales = pd.read_excel('data.xlsx', sheet_name='Sales')
-print(df_sales.head())
-
-# Write results back out
-df_sales.to_excel('sales_summary.xlsx', sheet_name='Summary', index=False)
+visits = pd.DataFrame({
+    "patient_id": ["P001", "P002", "P003"],
+    "clinic": ["North", "South", "North"],
+    "temp_c": [36.8, 38.1, 37.2],
+})
 ```
 
-`sheet_name=None` reads every sheet into a dictionary of DataFrames keyed by sheet name. Use Excel output when you need Excel-native formatting or your stakeholders expect `.xlsx` files.
+## Reference Card: Readers and writers
 
-## JSON and Semi-Structured Data
+| Format | Read | Write | Needs |
+| --- | --- | --- | --- |
+| JSON | `pd.read_json(path)` | `df.to_json(path, orient="records")` | Nothing extra |
+| Excel | `pd.read_excel(path, sheet_name=...)` | `df.to_excel(path, sheet_name=..., index=False)` | `uv add openpyxl` |
+| Pickle | `pd.read_pickle(path)` | `df.to_pickle(path)` | Nothing extra; Python only, and only from sources you trust |
+| Feather | `pd.read_feather(path)` | `df.to_feather(path)` | `pyarrow`, as for Parquet |
+| HDF5 | `pd.read_hdf(path, key)` | `df.to_hdf(path, key=...)` | `uv add tables` |
+| SQL database | `pd.read_sql(query, con)` | `df.to_sql(table, con, index=False)` | `sqlite3` comes with Python; other databases need a driver |
 
-Designed for API payloads or nested records.
+## JSON
+
+- **JSON** (JavaScript Object Notation) is the text format most web APIs return: lists in `[...]` and key-value objects in `{...}`, like Python lists and dicts.
+- `orient="records"` writes one object per row, the most common shape from an API.
 
 ```python
-df = pd.read_json('data.json')
-df.to_json('output.json', orient='records', indent=2)
+visits.to_json("visits.json", orient="records", indent=2)
+print(open("visits.json").read()[:60])
+display(pd.read_json("visits.json"))
 ```
 
-Switch the `orient` parameter (`'records'`, `'columns'`, `'table'`, etc.) based on the consumer.
+```text
+[
+  {
+    "patient_id":"P001",
+    "clinic":"North",
+    "te
+  patient_id clinic  temp_c
+0       P001  North    36.8
+1       P002  South    38.1
+2       P003  North    37.2
+```
+
+Deeply nested JSON needs flattening first; see `pd.json_normalize()`.
+
+## Excel
+
+- Excel needs the `openpyxl` package in the kernel's environment (`uv add openpyxl` locally, `%pip install openpyxl` in Colab); without it pandas raises `ModuleNotFoundError`.
+- `pd.ExcelWriter` writes several sheets to one workbook.
+- `sheet_name=None` reads every sheet into a dictionary of DataFrames keyed by sheet name.
+
+```python
+with pd.ExcelWriter("clinic.xlsx") as writer:
+    visits.to_excel(writer, sheet_name="visits", index=False)
+    visits.loc[visits["temp_c"] >= 38.0].to_excel(writer, sheet_name="fever", index=False)
+
+sheets = pd.read_excel("clinic.xlsx", sheet_name=None)
+print(list(sheets))
+display(sheets["fever"])
+```
+
+```text
+['visits', 'fever']
+  patient_id clinic  temp_c
+0       P002  South    38.1
+```
+
+## Binary Formats
+
+- **Parquet** is the usual choice.
+- **Feather**: a fast format from the same Arrow project, for short-term files.
+- **Pickle**: saves any Python object exactly, but only Python reads it, a newer pandas may not, and loading one can run code, so never load one from an untrusted source.
+- **HDF5**: many tables in one file; needs the `tables` package.
+
+```python
+visits.to_feather("visits.feather")
+visits.to_pickle("visits.pkl")
+print(pd.read_feather("visits.feather").equals(visits))
+print(pd.read_pickle("visits.pkl").equals(visits))
+```
+
+```text
+True
+True
+```
 
 ## SQL Databases
 
-Ideal when data already resides in transactional stores. Requires a SQLAlchemy engine or DB-API connection.
+- Hospital records usually live in a **relational database**, queried with SQL.
+- `pd.read_sql(query, con)` runs a query and returns the result as a DataFrame.
+- Python's built-in `sqlite3` opens a SQLite database, a single file; a server database such as PostgreSQL needs its own driver or SQLAlchemy (`uv add sqlalchemy`).
 
 ```python
-# import sqlalchemy as sqla
-# engine = sqla.create_engine('sqlite:///mydb.sqlite')
-# query = "SELECT name, total, date FROM sales WHERE date >= '2024-01-01'"
-# df = pd.read_sql(query, engine)
+import sqlite3
+
+con = sqlite3.connect("clinic.db")
+visits.to_sql("visits", con, index=False, if_exists="replace")
+fevers = pd.read_sql("SELECT patient_id, temp_c FROM visits WHERE temp_c >= 38.0", con)
+con.close()
+display(fevers)
 ```
 
-Once records are in a DataFrame, downstream cleaning and analysis mirrors the lecture workflow.
+```text
+  patient_id  temp_c
+0       P002    38.1
+```
+
+`if_exists="replace"` overwrites a table of the same name, so rerunning the cell is safe in this example and destructive in a real database.
+
+# Large and Messy CSV Files
 
 ## Reading Large Files in Chunks
 
-Break massive files into bite-sized pieces without exhausting RAM.
+`chunksize=` makes `read_csv()` return one DataFrame of that many rows at a time, so a file larger than memory is processed piece by piece.
 
 ```python
-chunk_iter = pd.read_csv('huge_file.csv', chunksize=10000)
+chunk_iter = pd.read_csv("all_visits.csv", chunksize=10000)
 results = []
 
 for chunk in chunk_iter:
-    processed = chunk[chunk['value'] > 0].groupby('category').sum()
-    results.append(processed)
+    fevers = chunk[chunk["temp_c"] >= 38.0].groupby("clinic").size()
+    results.append(fevers)
 
-final = pd.concat(results, axis=0).groupby(level=0).sum()
+fevers_by_clinic = pd.concat(results).groupby(level=0).sum()
 ```
 
-Use chunking when files exceed memory or when you only need aggregated results. The loop uses `groupby()` (Lecture 08) and `pd.concat()` (Lecture 06); Lecture 08's bonus covers chunked summaries in more depth, including why chunk means cannot simply be averaged: Scaling Past Memory.
+- Use chunking when a file exceeds memory or you only need totals.
+- Sums and counts add up across chunks; chunk means cannot be averaged.
 
-## Advanced CSV Options
-
-Tame messy inputs with other delimiters, extra rows, source-specific missing codes, or a quick preview. Suppose `survey.csv` uses semicolons and has a units row under its header:
-
-```text
-name;role;bonus
-text;text;USD
-Avery;analyst;500
-Bianca;nurse;missing
-Cheng;analyst;-999
-```
-
-```python
-survey = pd.read_csv(
-    'survey.csv',
-    sep=';',                           # semicolon-delimited; use '\t' for tabs
-    skiprows=[1],                      # skip line 1 (the units row); the header is line 0
-    usecols=['name', 'bonus'],         # keep only these columns
-    na_values=['missing', '-999'],     # codes beyond the defaults (blank, NA, NULL, ...)
-)
-print(survey)                          # bonus: 500.0, NaN, NaN (float64)
-
-preview = pd.read_csv('large_file.csv', nrows=100)  # first 100 records only
-```
+## Turning Off the Default Missing Markers
 
 The defaults sometimes misfire: a country column with `NA` for Namibia reads as missing. `keep_default_na=False` turns every default marker off, blanks included, so only your `na_values` count as missing.

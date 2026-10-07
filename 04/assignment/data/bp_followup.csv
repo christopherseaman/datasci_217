@@ -1,0 +1,16 @@
+patient_id;clinic;age;sbp_baseline;sbp_week4;sbp_week8;coordinator_note
+id;text;years;mmHg;mmHg;mmHg;text
+P101;North;58;152;146;138;Started lisinopril at baseline
+P102;South;64;146;140;135;
+P103;West;47;138;134;131;Diet counseling only
+P104;North;71;164;-999;150;Missed week 4 visit
+P105;West;55;158;150;147;
+P106;East;62;149;141;136;Dose increased at week 4
+P107;North;49;140;137;133;
+P108;South;68;171;160;152;Referred to cardiology
+P109;West;60;155;149;-999;Moved before week 8
+P110;East;53;160;152;145;
+P111;East;66;-999;145;139;Baseline cuff too small
+P112;North;45;132;130;128;
+P113;East;70;168;158;155;Home monitor issued
+P114;North;57;145;143;137;

@@ -17,9 +17,9 @@ jupyter:
 
 # Demo 3: From a clinic CSV to a saved result
 
-A clinic exported a small file of visits, and the nurse lead wants every visit with a temperature of 37.5 °C or higher, hottest first, with the temperature in Fahrenheit and a fever flag. This demo reads the file, takes a first look, derives the new columns, sorts the rows so the order never changes between runs, saves the result, and reads it back. The patient IDs and values are synthetic.
+A clinic exported a small file of visits. The nurse lead wants every visit at 37.5 °C or higher, hottest first, with the temperature in Fahrenheit and a fever flag. This demo reads, checks, derives, sorts, saves, and reads back. The patient IDs and values are synthetic.
 
-Run the cells from top to bottom; after each step, the text says what to expect.
+Run the cells from top to bottom.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -62,7 +62,7 @@ import pandas as pd
 
 raw = pd.read_csv(DATA_PATH)
 
-print(raw.dtypes)
+display(raw.dtypes)
 raw.loc[raw["temp_c"] == "?"]
 ```
 
@@ -76,27 +76,48 @@ Expect `temp_c` to be `str`, not `float64`, while `age` and `systolic` are `floa
 visits = pd.read_csv(DATA_PATH, na_values=["?"])
 
 print("shape:", visits.shape)
-print(visits.dtypes)
+display(visits.dtypes)
 visits
 ```
 
 Expect `shape: (12, 5)`, `temp_c` now `float64`, and `NaN` in four places: `P002`'s temperature, `P004`'s age (a blank), `P006`'s systolic pressure (a blank), and `P007`'s clinic (`NULL`).
 
+### Preview a few columns
+
+A large export is quicker to check with a preview: `usecols=` reads only the named columns, and `nrows=` stops after that many records. `dtype=` sets a column's type instead of letting pandas guess.
+
+```python
+preview = pd.read_csv(
+    DATA_PATH,
+    usecols=["patient_id", "temp_c"],
+    nrows=4,
+    na_values=["?"],
+    dtype={"temp_c": "float64"},
+)
+display(preview.dtypes)
+preview
+```
+
+Expect two columns, `patient_id` (`str`) and `temp_c` (`float64`), and four rows, `P001` to `P004`. Without `na_values=["?"]`, `dtype=` would raise a `ValueError`, because `?` cannot be read as a number.
+
 ### Take a first look
 
-Before any analysis, ask what is missing, which categories the table holds, and whether any visit was entered twice.
+Before any analysis, ask what is missing, which categories the table holds, and whether any patient appears more than once.
 
 ```python
 visits.info()
 
-display(visits.isna().sum())
 display(visits["clinic"].value_counts(dropna=False))
 print("distinct clinics:", visits["clinic"].nunique())
-print("repeated rows:", visits.duplicated().sum())
-visits.loc[visits.duplicated()]
+
+id_counts = visits["patient_id"].value_counts()
+display(id_counts.head(3))
+visits.loc[visits["patient_id"] == "P003"]
 ```
 
-Expect `11 non-null` for `clinic`, `age`, `temp_c`, and `systolic` in `info()`, and one missing value in each of those columns. Clinic counts are North 5, South 3, East 3, and `NaN` 1, with `distinct clinics: 3` because `nunique()` leaves out missing. `repeated rows: 1`: the row labeled 10 repeats `P003`'s visit exactly. Lecture 05 removes repeats; here you only find them.
+- `info()`: `11 non-null` for `clinic`, `age`, `temp_c`, and `systolic`, one missing value in each.
+- Clinic counts: North 5, South 3, East 3, `NaN` 1; `distinct clinics: 3`, since `nunique()` leaves out missing.
+- `P003` is counted twice; its rows, labeled 2 and 10, match in every column: one visit entered twice, which the summaries below still count.
 
 ### Summarize the temperatures
 
@@ -116,14 +137,28 @@ visits.loc[hottest]
 
 Expect a `temp_c` count of `11` in `describe()`, a mean of `37.69` when rounded, a highest temperature of `39.0`, and row label `8`, which is `P009` from the South clinic. The repeated `P003` visit is counted twice in these numbers, one reason to find repeats before summarizing.
 
-### Copy the rows you will change
+### Compare every visit with the average
 
-Build the mask on its own line, then select with `.loc`. `.copy()` makes `warm_visits` a separate table you intend to change, leaving `visits` as it was read.
+Subtracting a Series of column means from a table **broadcasts**: pandas matches the Series' labels to the columns and subtracts each mean from every row of its column.
+
+```python
+vitals = visits[["temp_c", "systolic"]]
+display(vitals.mean())
+
+from_mean = vitals - vitals.mean()
+from_mean.loc[[0, 8]]
+```
+
+Expect means of about `37.69` °C and `136.27` mmHg. `P001` (row 0) is about 0.89 °C and 18.27 mmHg below them (`-0.890909`, `-18.272727`), and `P009` (row 8) about 1.31 °C and 21.73 mmHg above.
+
+### Select the rows and columns you need
+
+Build the mask on its own line, then select the rows with `.loc`. `drop(columns=["age"])` leaves out the column the nurse lead does not need. It returns a new table, so `warm_visits` is separate from `visits`, as `.copy()` would make it, and changing it leaves `visits` as it was read.
 
 ```python
 warm = visits["temp_c"] >= 37.5
 
-warm_visits = visits.loc[warm, ["patient_id", "clinic", "temp_c", "systolic"]].copy()
+warm_visits = visits.loc[warm].drop(columns=["age"])
 
 print("warm visits:", warm.sum())
 warm_visits
@@ -186,6 +221,16 @@ print("same order both ways:", list(ordered["patient_id"]) == list(ordered_other
 
 Expect `P009`, `P004`, `P005`, `P008`, `P007`, `P011`, and `same order both ways: True`.
 
+A rank numbers each visit by its place without moving rows. `method="min"` gives tied values the same, best place:
+
+```python
+ranked = ordered[["patient_id", "temp_c"]].copy()
+ranked["temp_rank"] = ranked["temp_c"].rank(ascending=False, method="min")
+ranked
+```
+
+Expect ranks `1`, `2`, `2`, `4`, `5`, `6`: `P004` and `P005` share second place at 38.4 °C, so no visit is third. `ordered` itself is unchanged.
+
 ### Write the result and read it back
 
 `index=False` leaves the row index out of the file; here the index is only the row numbers these visits had in `visits`. A **round trip**, reading the saved file back, confirms the file holds what you meant to write. `display()` shows the table formatted in a notebook even when it is not the cell's last line.
@@ -211,7 +256,10 @@ Restart, then **Run All** up to here. This cell checks the walkthrough's checkpo
 assert raw["temp_c"].dtype == "str"
 assert visits["temp_c"].dtype == "float64"
 assert visits.shape == (12, 5)
-assert visits.duplicated().sum() == 1
+assert list(preview.columns) == ["patient_id", "temp_c"] and len(preview) == 4
+assert id_counts["P003"] == 2 and (id_counts > 1).sum() == 1
+assert round(from_mean.loc[8, "temp_c"], 2) == 1.31
+assert list(ranked["temp_rank"]) == [1, 2, 2, 4, 5, 6]
 assert visits["clinic"].nunique() == 3
 assert f"{visits['temp_c'].mean():.2f}" == "37.69"
 assert hottest == 8
@@ -227,9 +275,10 @@ print("Demo 3 fresh-run check passed")
 ```
 
 Expect `Demo 3 fresh-run check passed`.
+
 ## Independent practice
 
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
+These cells reuse the core results; if the runtime closed, run the cells above again first.
 
 ### Intentional mistake: chained assignment
 
@@ -301,20 +350,20 @@ ordered.to_parquet(parquet_path, index=False)
 parquet_back = pd.read_parquet(parquet_path)
 
 print("Parquet shape:", parquet_back.shape)
-print(parquet_back.dtypes)
-print("missing clinic:", parquet_back["clinic"].isna().sum())
+display(parquet_back.dtypes)
+print("clinics recorded:", parquet_back["clinic"].count(), "of", len(parquet_back))
 print("same patients, same order:", list(parquet_back["patient_id"]) == list(ordered["patient_id"]))
 display(parquet_back)
 ```
 
-Expect `Parquet shape: (6, 6)`, three text (`str`) columns (`patient_id`, `clinic`, `flag`) and three `float64` columns (`temp_c`, `systolic`, `temp_f`). P007 still has a missing clinic, so `missing clinic: 1` prints. `same patients, same order: True` confirms the sorted IDs survived. Reading back uses row labels 0 to 5 because the old row labels were omitted.
+Expect `Parquet shape: (6, 6)`, three text (`str`) columns (`patient_id`, `clinic`, `flag`) and three `float64` columns (`temp_c`, `systolic`, `temp_f`). P007 still has a missing clinic, so `clinics recorded: 5 of 6` prints, then `same patients, same order: True`. The rows read back as 0 to 5 because the old row labels were omitted.
 
 ```python
 for column in ["patient_id", "temp_c", "systolic", "temp_f", "flag"]:
     assert list(parquet_back[column]) == list(ordered[column])
 assert parquet_back.dtypes.equals(ordered.dtypes)
-assert parquet_back["clinic"].isna().sum() == 1
-assert list(parquet_back.loc[~parquet_back["clinic"].isna(), "clinic"]) == ["South", "East", "South", "North", "North"]
+assert parquet_back["clinic"].count() == 5
+assert parquet_back["clinic"].equals(ordered["clinic"].reset_index(drop=True))
 print("Parquet round-trip check passed")
 ```
 

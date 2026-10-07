@@ -17,9 +17,9 @@ jupyter:
 
 # Demo 2: From NumPy arrays to labeled pandas
 
-This demo turns NumPy arrays of patient measurements into a labeled Series and DataFrame, then selects columns, cells, blocks, and rows the way the lecture did. The patient IDs and values are synthetic.
+This demo turns NumPy arrays of patient measurements into a labeled Series and DataFrame, then selects columns, cells, blocks, and rows. The patient IDs and values are synthetic.
 
-Run the cells from top to bottom; after each step, the text says what to expect.
+Run the cells from top to bottom.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -53,7 +53,7 @@ Expect three rows labeled `P001` to `P003`, the footer `Name: temp_c, dtype: flo
 
 ### A 2D array becomes a DataFrame
 
-A pandas **DataFrame** is a labeled table. Here each row is a patient and the two columns are systolic blood pressure (mmHg) at a baseline visit and at follow-up. `index=` labels the rows, `columns=` labels the columns, and naming the index says what the labels are.
+A pandas **DataFrame** is a labeled table. Each row is a patient and the two columns are systolic blood pressure (mmHg) at a baseline visit and at follow-up. `index=` labels the rows, `columns=` labels the columns, and naming the index says what the labels are.
 
 ```python
 sbp_readings = np.array(
@@ -73,8 +73,7 @@ sbp = pd.DataFrame(
 sbp.index.name = "patient_id"
 
 print("shape:", sbp.shape)
-print("dtypes:")
-print(sbp.dtypes)
+display(sbp.dtypes)
 sbp
 ```
 
@@ -111,11 +110,11 @@ display(label_block)
 print("same block:", label_block.equals(position_block))
 ```
 
-Expect `142` twice, a block with rows `P002` and `P003`, and `same block: True`. The label slice ends at `"P003"` and includes it; the position slice `1:3` stops before position 3, which is the same row.
+Expect `142` twice, a block with rows `P002` and `P003`, and `same block: True`.
 
 ### Filter rows with a mask
 
-A **mask** is a Boolean Series with the same index as the table. Build it on its own line with a descriptive name, then pass it to `.loc` with the columns you want. Here the question is which patients still had a systolic pressure of 130 mmHg or higher at follow-up.
+A **mask** is a Boolean Series with the same index as the table. Build it on its own line with a descriptive name, then pass it to `.loc` with the columns you want. This one asks which patients still had a systolic pressure of 130 mmHg or higher at follow-up.
 
 ```python
 high_at_follow_up = sbp["follow_up_sbp"] >= 130
@@ -146,6 +145,39 @@ sbp.loc[newly_high]
 
 Expect `1 row` twice, `same mask: True`, and one row: `P004`, which went from 118 to 131 mmHg. `P001` was below 130 at baseline too, but its follow-up reading (124) stayed below 130.
 
+### Summarize down the columns and across the rows
+
+A reduction turns many values into one. By default it runs down each column; `axis="columns"` runs across each row, here giving each patient's average over the two visits. `idxmax()` names the row with the largest value, and `corr()` measures how closely two columns move together.
+
+```python
+display(sbp.mean())
+patient_mean = sbp.mean(axis="columns")
+display(patient_mean)
+
+highest_follow_up = sbp["follow_up_sbp"].idxmax()
+print("highest at follow-up:", highest_follow_up)
+r = sbp["baseline_sbp"].corr(sbp["follow_up_sbp"])
+print(f"baseline vs follow-up r: {r:.2f}")
+```
+
+Expect column means of `134.50` and `132.25` mmHg, patient means from `124.5` (`P004`) to `144.0` (`P003`), `highest at follow-up: P003` (138 mmHg), and `r: 0.72`: patients high at baseline tended to stay high, though `P004` rose while the others fell.
+
+### Count clinics and test membership
+
+Each patient was seen at one clinic. `value_counts()` counts each clinic, `nunique()` counts how many distinct clinics there are, and `isin()` builds a mask that is `True` for any clinic in a list, one mask instead of two joined with `|`.
+
+```python
+clinic = pd.Series(["North", "South", "North", "East"], index=sbp.index, name="clinic")
+
+display(clinic.value_counts())
+print("distinct clinics:", clinic.nunique())
+
+south_or_east = clinic.isin(["South", "East"])
+sbp.loc[south_or_east]
+```
+
+Expect `North 2`, `South 1`, `East 1`, `distinct clinics: 3`, and the rows for `P002` (South) and `P004` (East). The mask's index matches `sbp`'s, so `.loc` pairs each `True` with the right patient.
+
 ### Fresh-run check
 
 Restart, then **Run All** up to here. This cell checks the walkthrough's checkpoints.
@@ -162,26 +194,33 @@ assert label_block.equals(position_block)
 assert high_at_follow_up.sum() == 3
 assert newly_high.sum() == inline_mask.sum() == 1
 assert list(sbp.loc[newly_high].index) == ["P004"]
+assert patient_mean["P003"] == 144.0
+assert highest_follow_up == "P003"
+assert round(r, 2) == 0.72
+assert clinic.nunique() == 3
+assert list(sbp.loc[south_or_east].index) == ["P002", "P004"]
 
 print("Demo 2 fresh-run check passed")
 ```
 
 Expect `Demo 2 fresh-run check passed`.
+
 ## Independent practice
 
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
+These cells reuse the core results; if the runtime closed, run the cells above again first.
 
 ### First look at the table
 
-`head(3)` shows the first three rows. `info()` prints the index, column names, **non-null counts** (values present rather than missing), dtypes, and memory; it prints its report and returns `None`, so call it on its own line. `describe()` summarizes each numeric column.
+- `head(3)` shows the first three rows.
+- `info()` prints the index, column names, **non-null counts** (values present rather than missing), and dtypes; it returns `None`, so call it on its own line.
+- `describe()` summarizes each numeric column.
 
 ```python
 display(sbp.head(3))
 
 sbp.info()
 
-sbp_summary = sbp.describe()
-display(sbp_summary)
+display(sbp.describe())
 ```
 
 Expect `4 non-null` for both columns (nothing is missing), and in the summary a `mean` of `134.5` mmHg for `baseline_sbp` and `132.25` for `follow_up_sbp`, with minimums of `118` and `124`.

@@ -1,8 +1,10 @@
 # Assignment 04 checks (course-owned)
 
-These are the checks that decide the Assignment 04 grade. They read the two
-CSV files a submission saves in `output/` and compare them with values
-recomputed from the supplied fridge readings and supply order.
+These are the checks that decide the Assignment 04 grade. They read the five
+CSV files and one Parquet file a submission saves in `output/` and compare
+them with values recomputed from the supplied blood pressure export and home
+readings. The Parquet file is read with the standard library alone: its
+`PAR1` markers and the column list pandas writes into its footer.
 `04/assignment/.github/workflows/tests.yml` downloads them on every student
 push from `christopherseaman/datasci_217@main:04/assignment_checks/` (its
 `CHECKS_REPO`, `CHECKS_REF`, and `CHECKS_PATH`), checks that they run, and
@@ -37,9 +39,9 @@ handout is republished (`scripts/publish_assignment.sh 04 ...`) and the student
 syncs the fork, so until then the local run can lag the GitHub run, and the
 GitHub run counts.
 
-`_value_checks.py` holds its own copy of the supplied data (`FRIDGE_READINGS`
-and `SUPPLY_ORDER`); change it together with `data/supply_order.csv` or the
-notebook's `fridge_readings` array. A change to the check list or to `POINTS`
+`_value_checks.py` holds its own copy of the supplied data (`BP_EXPORT`,
+`UNITS_ROW`, and `HOME_SBP`); change it together with `data/bp_followup.csv`
+and `data/home_bp.csv`. A change to the check list or to `POINTS`
 belongs in `_value_checks.py` and `grading.py` at once, in the same order:
 `grading.py` pairs the checks with `POINTS` and raises when their counts
 differ. It compares the counts itself rather than using `zip(strict=True)`, so
@@ -49,7 +51,7 @@ contract in agreement with `POINTS`.
 ## Checking the checks
 
 ```bash
-uv run --python 3.13 --with pandas==3.0.5 python 04/assignment_checks/_grader_selftest/run.py
+uv run --python 3.13 --with pandas==3.0.5 --with pyarrow==25.0.0 python 04/assignment_checks/_grader_selftest/run.py
 ```
 
 It grades every kind of submission and confirms the handout's copy matches this

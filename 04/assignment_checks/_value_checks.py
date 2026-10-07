@@ -2,14 +2,14 @@
 
 The course keeps these checks in 04/assignment_checks/, which the assignment
 workflow downloads on every push, and the handout ships a byte-identical copy
-so a local run reports exactly what GitHub will. They read the two CSV files a
+so a local run reports exactly what GitHub will. They read the files a
 submission saves in output/ and compare them with values recomputed from the
-supplied fridge readings and supply order below. The self-test confirms those
-copies match assignment.ipynb and data/supply_order.csv.
+supplied data below. The self-test confirms those copies match
+data/bp_followup.csv and data/home_bp.csv.
 
 Each check scores one thing, so one mistake costs only the checks it gets
-wrong. A column saved under another name costs only its name check: its values
-are still graded under the name it has. Values are compared after parsing:
+wrong, and a later file is judged against the student's own earlier one where
+an earlier mistake carries into it. Values are compared after parsing:
 spacing, line endings, quoting, column order, a leading row-number column,
 number formatting (2 == 2.0 == 2.00), and the letter case of labels never cost
 points, and cells may be separated by commas, semicolons, or tabs.
@@ -22,57 +22,67 @@ from __future__ import annotations
 import codecs
 import csv
 import difflib
+import json
 import re
+import statistics
 from collections.abc import Callable
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from pathlib import Path
 
 
-FRIDGE_FILE = "output/fridge_block.csv"
-SUPPLIES_FILE = "output/selected_supplies.csv"
+LOADED_FILE = "output/bp_loaded.csv"
+SUMMARY_FILE = "output/visit_summary.csv"
+COUNTS_FILE = "output/clinic_counts.csv"
+FOLLOWUP_FILE = "output/followup_priority.csv"
+PARQUET_FILE = "output/followup_priority.parquet"
+GAP_FILE = "output/white_coat_gap.csv"
 # The notebook step and the call that save each artifact.
 SAVED_BY = {
-    FRIDGE_FILE: ("Task 2.2", "label_block.to_csv(FRIDGE_OUTPUT_PATH)"),
-    SUPPLIES_FILE: ("Task 3.2", "selected_supplies.to_csv(SUPPLIES_OUTPUT_PATH, index=False)"),
+    LOADED_FILE: ("Task 2.2", "bp.to_csv(LOADED_PATH)"),
+    SUMMARY_FILE: ("Task 3.1", "visit_summary.to_csv(SUMMARY_PATH)"),
+    COUNTS_FILE: ("Task 3.2", "clinic_counts.to_csv(COUNTS_PATH)"),
+    FOLLOWUP_FILE: ("Task 4.3", "followup.to_csv(FOLLOWUP_PATH)"),
+    PARQUET_FILE: ("Task 4.3", "followup.to_parquet(PARQUET_PATH)"),
+    GAP_FILE: ("Task 5", "white_coat_gap.to_csv(GAP_PATH)"),
 }
-# The fix when one task's save call writes to the other task's path.
-SAVE_BOTH = (
-    f"{SAVED_BY[SUPPLIES_FILE][0]} saves with {SAVED_BY[SUPPLIES_FILE][1]}, and {SAVED_BY[FRIDGE_FILE][0]} with "
-    f"{SAVED_BY[FRIDGE_FILE][1]}; correct the path in the call that differs, then Restart and Run All."
-)
 
-# The supplied fridge_readings array in assignment.ipynb, with its row labels, in °C.
-FRIDGE_READINGS = {
-    "FRG-101": {"am_temp_c": 4.1, "pm_temp_c": 5.6},
-    "FRG-102": {"am_temp_c": 3.8, "pm_temp_c": 6.2},
-    "FRG-103": {"am_temp_c": 5.0, "pm_temp_c": 7.4},
-    "FRG-104": {"am_temp_c": 2.9, "pm_temp_c": 4.4},
+# data/bp_followup.csv without its units row and coordinator_note column:
+# patient_id -> (clinic, age, sbp_baseline, sbp_week4, sbp_week8). None marks the
+# export's -999 code for a reading that was not taken.
+BP_EXPORT = {
+    "P101": ("North", 58, 152, 146, 138),
+    "P102": ("South", 64, 146, 140, 135),
+    "P103": ("West", 47, 138, 134, 131),
+    "P104": ("North", 71, 164, None, 150),
+    "P105": ("West", 55, 158, 150, 147),
+    "P106": ("East", 62, 149, 141, 136),
+    "P107": ("North", 49, 140, 137, 133),
+    "P108": ("South", 68, 171, 160, 152),
+    "P109": ("West", 60, 155, 149, None),
+    "P110": ("East", 53, 160, 152, 145),
+    "P111": ("East", 66, None, 145, 139),
+    "P112": ("North", 45, 132, 130, 128),
+    "P113": ("East", 70, 168, 158, 155),
+    "P114": ("North", 57, 145, 143, 137),
 }
-FRIDGE_ID = "fridge_id"
-TEMP_COLUMNS = ("am_temp_c", "pm_temp_c")
-BLOCK_IDS = ("FRG-102", "FRG-103")
+SENTINEL = -999
+LOADED_COLUMNS = ("patient_id", "clinic", "age", "sbp_baseline", "sbp_week4", "sbp_week8")
+READINGS = LOADED_COLUMNS[3:]
+NOTE_COLUMN = "coordinator_note"
+UNITS_ROW = ("id", "text", "years", "mmHg", "mmHg", "mmHg", "text")
+# data/home_bp.csv: patient_id -> home_sbp_week8, in the file's order.
+HOME_SBP = {"P113": 148, "P101": 131, "P110": 140, "P104": 146, "P115": 139, "P106": 133, "P109": 150}
 
-# data/supply_order.csv: item_id -> (item, quantity, unit_price_usd).
-SUPPLY_ORDER = {
-    "C3150": ("Nitrile exam gloves (box of 100)", 6, 9.50),
-    "C1022": ("Blood pressure cuff (adult)", 1, 24.00),
-    "C2210": ("Gauze pads 4x4 in (pack of 25)", 4, 6.00),
-    "C4105": ("Syringes 3 mL (box of 100)", 2, 18.00),
-    "C1407": ("Digital thermometer", 1, 35.00),
-    "C2318": ("Alcohol prep pads (box of 200)", 3, 4.25),
-    "C2904": ("Adhesive bandages (box of 100)", 4, 3.25),
-    "C3012": ("Surgical masks (box of 50)", 8, 4.50),
-    "C2877": ("Exam table paper (roll)", 3, 8.00),
-    "C1560": ("Pulse oximeter", 1, 42.00),
-    "C2655": ("Tongue depressors (box of 500)", 2, 6.50),
-    "C1833": ("Specimen cups (case of 100)", 2, 28.50),
-}
-SUPPLY_COLUMNS = ("item_id", "item", "quantity", "unit_price_usd", "line_total_usd")
-MIN_QUANTITY = 2
+PROGRAM_CLINICS = ("North", "East")
+PROGRAM_MIN_BASELINE = 140
+STATS = ("mean", "median", "count")
+DERIVED = ("sbp_mean", "change_week8", "improvement_rank")
+# A derived column saved under another name is recognized by a word in it.
+DERIVED_WORDS = {"sbp_mean": "mean", "change_week8": "change", "improvement_rank": "rank"}
+FOLLOWUP_COLUMNS = ("patient_id", "clinic", *READINGS, *DERIVED)
 
-# Temperatures have one decimal and prices whole cents, so anything within half
-# of the last digit is the same value.
-TOLERANCE = 0.005
+# Readings are whole mmHg; means may be saved unrounded or rounded to one decimal.
+TOLERANCE = 0.051
 
 
 @dataclass(frozen=True)
@@ -88,22 +98,97 @@ class Table:
     name: str
     columns: tuple[str, ...]
     rows: tuple[dict[str, str], ...]
-    conflicting_columns: tuple[str, ...] = ()
     # How many times the table is in the file: to_csv(mode="a") writes it again below the first copy.
     copies: int = 1
-    # The fridge block saved sideways, with .T: rows are reading columns and columns are fridge IDs.
-    transposed: bool = False
 
 
-def line_total(item_id: str) -> float:
-    _, quantity, unit_price = SUPPLY_ORDER[item_id]
-    return quantity * unit_price
+# Expected values, recomputed from the supplied data.
 
 
-def expected_selection() -> list[str]:
-    """The item_ids Task 3 selects, in the order it sorts them."""
-    selected = [item_id for item_id, (_, quantity, _) in SUPPLY_ORDER.items() if quantity >= MIN_QUANTITY]
-    return sorted(selected, key=lambda item_id: (-line_total(item_id), item_id))
+def reading(patient: str, column: str, sentinel_kept: bool = False) -> float | None:
+    """A patient's value in the loaded table; with sentinel_kept, -999 read as a number."""
+    value = BP_EXPORT[patient][LOADED_COLUMNS.index(column) - 1]
+    if value is None and sentinel_kept:
+        return float(SENTINEL)
+    return None if value is None else float(value)
+
+
+def visit_stats(sentinel_kept: bool = False) -> dict[str, dict[str, float]]:
+    """{stat: {visit: value}} as pandas computes them, skipping missing readings."""
+    stats: dict[str, dict[str, float]] = {stat: {} for stat in STATS}
+    for visit in READINGS:
+        values = [reading(p, visit, sentinel_kept) for p in BP_EXPORT]
+        present = [value for value in values if value is not None]
+        stats["mean"][visit] = statistics.mean(present)
+        stats["median"][visit] = statistics.median(present)
+        stats["count"][visit] = float(len(present))
+    return stats
+
+
+def clinic_counts() -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for clinic, *_ in BP_EXPORT.values():
+        counts[clinic] = counts.get(clinic, 0) + 1
+    return counts
+
+
+def in_program(patient: str) -> bool:
+    baseline = reading(patient, "sbp_baseline")
+    return BP_EXPORT[patient][0] in PROGRAM_CLINICS and baseline is not None and baseline >= PROGRAM_MIN_BASELINE
+
+
+def change(patient: str, sentinel_kept: bool = False) -> float | None:
+    week8, baseline = reading(patient, "sbp_week8", sentinel_kept), reading(patient, "sbp_baseline", sentinel_kept)
+    return None if week8 is None or baseline is None else week8 - baseline
+
+
+def sbp_mean(patient: str) -> float:
+    present = [reading(patient, visit) for visit in READINGS]
+    return statistics.mean(value for value in present if value is not None)
+
+
+def min_rank(values: dict[str, float | None], descending: bool = False) -> dict[str, float | None]:
+    """rank(method="min"): ties share the best place; a missing value has no rank."""
+    present = [value for value in values.values() if value is not None]
+    sign = -1 if descending else 1
+    return {
+        key: None if value is None else 1.0 + sum(1 for other in present if sign * other < sign * value - 1e-9)
+        for key, value in values.items()
+    }
+
+
+def average_rank(values: dict[str, float | None]) -> dict[str, float | None]:
+    """rank() with its default method: ties share the mean of their places."""
+    present = [value for value in values.values() if value is not None]
+    ranks: dict[str, float | None] = {}
+    for key, value in values.items():
+        if value is None:
+            ranks[key] = None
+            continue
+        below = sum(1 for other in present if other < value - 1e-9)
+        tied = sum(1 for other in present if abs(other - value) <= 1e-9)
+        ranks[key] = below + (tied + 1) / 2
+    return ranks
+
+
+def program_order() -> list[str]:
+    """The follow-up patients as Task 4.3 sorts them: largest drop first, ties by patient_id."""
+    patients = [p for p in BP_EXPORT if in_program(p)]
+    return sorted(patients, key=lambda p: (change(p), p))
+
+
+def gap_expected(sentinel_kept: bool = False) -> dict[str, float | None]:
+    """Clinic week-8 minus home reading for every patient in either table; None where one side is missing."""
+    patients = sorted(set(BP_EXPORT) | set(HOME_SBP))
+    expected = {}
+    for patient in patients:
+        clinic = reading(patient, "sbp_week8", sentinel_kept) if patient in BP_EXPORT else None
+        home = HOME_SBP.get(patient)
+        expected[patient] = None if clinic is None or home is None else clinic - home
+    return expected
+
+
+# Reading saved CSV files.
 
 
 def _assert(condition: bool, message: str) -> None:
@@ -118,7 +203,7 @@ def _decode(raw: bytes) -> str:
             return raw.decode("utf-16")
         except UnicodeDecodeError:
             pass
-    return raw.decode("utf-8", errors="replace").lstrip("\ufeff")
+    return raw.decode("utf-8", errors="replace").lstrip("﻿")
 
 
 # A CSV may separate its cells with commas, semicolons, or tabs.
@@ -130,9 +215,9 @@ DECIMAL_COMMA = re.compile(r"^(\s*[+-]?\d*),(\d+\s*)$")
 def _csv_rows(text: str) -> list[list[str]]:
     """The rows of a saved CSV, blank lines left out, split on the separator its header line uses.
 
-    Commas, semicolons, and tabs are all accepted: whichever splits the header
-    line into the most cells is used, and a tie keeps commas. A file separated
-    by semicolons may write decimal commas, so there 12,5 reads as 12.5.
+    Whichever of commas, semicolons, and tabs splits the header line into the
+    most cells is used, and a tie keeps commas. A file separated by semicolons
+    may write decimal commas, so there 12,5 reads as 12.5.
     """
     if "\x00" in text:
         raise csv.Error("embedded NUL bytes; save the table again as CSV text")
@@ -171,67 +256,92 @@ def _look_alikes(root: Path, folder: Path, name: str) -> list[str]:
     return sorted(
         path.relative_to(root).as_posix()
         for path in folder.iterdir()
-        if path.is_file() and difflib.SequenceMatcher(None, name.casefold(), path.name.casefold()).ratio() >= 0.75
+        if path.is_file() and difflib.SequenceMatcher(None, name.casefold(), path.name.casefold()).ratio() >= 0.8
     )
 
 
-def _missing(root: Path, name: str, task: str) -> str:
-    """Say the artifact is missing and why it may be: a file of a similar name, or the other artifact's path."""
+def _missing(root: Path, name: str) -> str:
+    """Say the artifact is missing and why it may be: a file of a similar name, or one saved outside output/."""
     wanted = root / name
     step, call = SAVED_BY[name]
-    beside = _look_alikes(root, wanted.parent, wanted.name)
+    beside = [other for other in _look_alikes(root, wanted.parent, wanted.name) if other != name]
     if beside:
-        return (
-            f"{name} is missing; run the {task} cells to write it, then commit it. "
-            f"Found {', '.join(beside)}; save it as {name} instead."
-        )
-    misplaced = _look_alikes(root, root, wanted.name) if wanted.parent != root else []
+        return f"{name} is missing; found {_join(beside)}. In {step}, save with {call}, which writes {name}, then commit it."
+    misplaced = _look_alikes(root, root, wanted.name)
     if misplaced:
         return (
             f"{name} is missing, but the assignment folder itself has {_join(misplaced)}; "
             f"in {step}, save with {call}, which writes {name}, then commit it."
         )
-    if name == SUPPLIES_FILE and _artifact(root, FRIDGE_FILE) is not None:
-        try:
-            fridge = read_table(root, FRIDGE_FILE, "Task 2")
-        except (AssertionError, OSError, csv.Error):
-            fridge = None
-        if fridge is not None and _holds_supply_lines(fridge):
-            return f"{name} is missing, and {FRIDGE_FILE} holds the supply order lines instead. {SAVE_BOTH}"
-    return f"{name} is missing; run the {task} cells to write it, then commit it. {step} saves it with {call}."
+    return f"{name} is missing; run the {step} cell to write it with {call}, then commit it."
 
 
 def _clean(cell: str) -> str:
     return " ".join(cell.split())
 
 
-def _is_whole_number(cell: str) -> bool:
-    number = _number(cell)
-    return number is not None and number.is_integer()
+def _number(cell: str) -> float | None:
+    text = cell.strip().replace(",", "")
+    try:
+        number = float(text)
+    except ValueError:
+        return None
+    return None if number != number else number  # NaN is a missing value, not a number
 
 
-def read_table(root: Path, name: str, task: str) -> Table:
+def _same(given: str, expected: float) -> bool:
+    number = _number(given)
+    return number is not None and abs(number - expected) <= TOLERANCE
+
+
+def _blank(cell: str) -> bool:
+    """A missing value as pandas or a spreadsheet writes it."""
+    return cell.strip().casefold() in ("", "nan", "na", "<na>", "none", "null")
+
+
+def _matches(cell: str, expected: float | None) -> bool:
+    return _blank(cell) if expected is None else _same(cell, expected)
+
+
+def _show(value: float | None) -> str:
+    if value is None:
+        return "blank (missing)"
+    return f"{value:g}" if float(value).is_integer() else f"{value:.2f}"
+
+
+def _join(items) -> str:
+    items = list(items)
+    if len(items) <= 1:
+        return "".join(items)
+    return ", ".join(items[:-1]) + " and " + items[-1]
+
+
+def _first(items: list[str], limit: int = 4) -> str:
+    return _join(items[:limit] + ([f"{len(items) - limit} more"] if len(items) > limit else []))
+
+
+def _columns(table: Table) -> str:
+    """The file's column names for a message, naming a blank header rather than printing nothing."""
+    return _join(column or "a column with no header" for column in table.columns) or "none"
+
+
+def read_table(root: Path, name: str) -> Table:
     """Parse a saved CSV, however it is separated, spaced, quoted, or ended.
 
     A leading column headed by nothing, `Unnamed: 0`, or `index` that holds only
     whole numbers is the row numbers pandas writes when `index=False` is left
-    out, so it is set aside rather than counted as a column. `reset_index()`
-    followed by `to_csv()` writes two such columns, so each one is set aside.
+    out, so it is set aside rather than counted as a column.
     """
+    step, _ = SAVED_BY[name]
     path = _artifact(root, name)
-    _assert(path is not None, _missing(root, name, task))
+    _assert(path is not None, _missing(root, name))
     try:
         lines = _csv_rows(_decode(path.read_bytes()))
     except csv.Error as error:
         raise AssertionError(
-            f"{name} cannot be read as a CSV table ({error}); run the {task} cells again so to_csv() "
-            "writes it, then compare it with the checkpoint in README.md."
+            f"{name} cannot be read as a CSV table ({error}); run the {step} cell again so to_csv() writes it."
         ) from None
-    _assert(
-        bool(lines),
-        f"{name} is empty, with no header line and no rows; run the {task} cells again so to_csv() writes it, "
-        "then commit it.",
-    )
+    _assert(bool(lines), f"{name} is empty, with no header line and no rows; run the {step} cell again, then commit it.")
     header = [_clean(cell).casefold() for cell in lines[0]]
     # A table written again with to_csv(mode="a") repeats its header line; the last copy is the latest write.
     starts = [i for i, row in enumerate(lines) if [_clean(cell).casefold() for cell in row] == header]
@@ -243,742 +353,722 @@ def read_table(root: Path, name: str, task: str) -> Table:
             copies *= len(body) // size
             body = body[:size]
             break
-
     while (
         len(header) > 1
         and (header[0] in ("", "index") or header[0].startswith("unnamed"))
         and body
-        and all(row and _is_whole_number(row[0]) for row in body)
+        and all(row and _number(row[0]) is not None and _number(row[0]).is_integer() for row in body)
     ):
         header = header[1:]
         body = [row[1:] for row in body]
-
-    rows = []
-    conflicting = set()
-    for row in body:
-        values = {}
-        for i, column in enumerate(header):
-            cell = row[i] if i < len(row) else ""
-            if values.get(column) and cell:
-                first_number, next_number = _number(values[column]), _number(cell)
-                equal = (
-                    abs(first_number - next_number) <= TOLERANCE
-                    if first_number is not None and next_number is not None
-                    else values[column].casefold() == cell.casefold()
-                )
-                if not equal:
-                    conflicting.add(column)
-            if not values.get(column):
-                values[column] = cell
-        rows.append(values)
-    rows = tuple(rows)
-    header = list(dict.fromkeys(header))
-    return Table(name=name, columns=tuple(header), rows=rows, conflicting_columns=tuple(sorted(conflicting)),
-                 copies=copies)
+    rows = tuple({column: (row[i] if i < len(row) else "") for i, column in enumerate(header)} for row in body)
+    return Table(name=name, columns=tuple(dict.fromkeys(header)), rows=rows, copies=copies)
 
 
 def _written_again(table: Table) -> str:
     """The fix when the file holds its table more than once, as to_csv(mode="a") leaves it."""
     step, call = SAVED_BY[table.name]
     return (
-        f"{table.name} holds the same table {table.copies} times, so it was written into the file "
-        f'{table.copies} times: to_csv() with mode="a" adds to the end of the file instead of replacing it. '
-        f"The checks graded the last copy; in {step}, save once with {call}, which replaces the file."
+        f"{table.name} holds the same table {table.copies} times: to_csv() with mode=\"a\" adds to the end of the "
+        f"file instead of replacing it. The checks graded the last copy; in {step}, save once with {call}."
     )
 
 
-def _number(cell: str) -> float | None:
-    text = cell.strip().removeprefix("$").replace(",", "").strip()
-    try:
-        return float(text)
-    except ValueError:
-        return None
-
-
-def _same(given: str, expected: float) -> bool:
-    number = _number(given)
-    return number is not None and abs(number - expected) <= TOLERANCE
-
-
-def _join(items) -> str:
-    items = list(items)
-    if len(items) <= 1:
-        return "".join(items)
-    return ", ".join(items[:-1]) + " and " + items[-1]
-
-
-def _columns(table: Table) -> str:
-    """The file's column names for a message, naming a blank header rather than printing nothing."""
-    return _join(column or "a column with no header" for column in table.columns) or "none"
-
-
-# Task 2: output/fridge_block.csv
-
-
-def _text_columns(table: Table) -> list[str]:
-    """The columns whose every cell is text rather than a number, such as a saved index of labels."""
-    return [
-        column
-        for column in table.columns
-        if table.rows and all(row[column] and _number(row[column]) is None for row in table.rows)
-    ]
-
-
-def _fridge_label_column(table: Table) -> str | None:
-    """The column holding fridge IDs: fridge_id, or else a column of text that names a supplied fridge."""
-    if FRIDGE_ID in table.columns:
-        return FRIDGE_ID
-    known = {fridge.casefold() for fridge in FRIDGE_READINGS}
-    for column in _text_columns(table):
+def _key_column(table: Table, known: set[str]) -> str | None:
+    """The column holding patient IDs: patient_id, or else the first column naming a known patient."""
+    if "patient_id" in table.columns:
+        return "patient_id"
+    for column in table.columns:
         if any(row[column].casefold() in known for row in table.rows):
             return column
     return None
 
 
-def _holds_supply_lines(table: Table) -> bool:
-    """The file has Task 3's columns and nothing of the fridge block: the supply lines saved to the wrong path."""
-    fridge_columns = (FRIDGE_ID, *TEMP_COLUMNS)
-    return (
-        any(column in table.columns for column in SUPPLY_COLUMNS)
-        and not any(column in table.columns for column in fridge_columns)
-        and _fridge_label_column(table) is None
-    )
+def _patients(table: Table, known: set[str], by_readings: bool = False) -> list[str | None]:
+    """The patient each row is, in file order, or None for a row that names no known patient.
 
-
-def _other_table(table: Table) -> str | None:
-    """The one fix when the fridge block's file holds another table, or None when it may be the block.
-
-    A file with no fridge IDs and no reading columns, under their own names or
-    standing in for them, holds another table: the supply lines saved to the
-    fridge block's path, or another object, such as latest_by_area, saved in
-    Task 2.2. It replaces the message of each fridge check that fails, never
-    whether a check passes.
+    Rows are named by their patient IDs. With by_readings and no ID column, a
+    row is the one patient whose age and readings match at least two of its
+    cells, so leaving the IDs out costs only the patient_id check.
     """
-    if _holds_supply_lines(table):
-        return f"{FRIDGE_FILE} holds the supply order lines ({_columns(table)}), not the fridge block. {SAVE_BOTH}"
-    if _fridge_label_column(table) is None and all(saved is None for saved in _temperature_columns(table).values()):
-        step, call = SAVED_BY[FRIDGE_FILE]
-        return (
-            f"{FRIDGE_FILE} holds another table: its columns are {_columns(table)}, with no fridge IDs and no "
-            f"{' or '.join(TEMP_COLUMNS)} readings. In {step}, save the fridge block with {call}."
-        )
-    return None
+    known_cf = {patient.casefold(): patient for patient in known}
+    key = _key_column(table, set(known_cf))
+    if key is not None:
+        return [known_cf.get(row[key].casefold()) for row in table.rows]
+    if not by_readings:
+        return [None for _ in table.rows]
+    named = []
+    for row in table.rows:
+        matches = [
+            patient for patient in BP_EXPORT
+            if sum(
+                1 for column in ("age", *READINGS)
+                if column in row and reading(patient, column) is not None
+                and _same(row[column], reading(patient, column))
+            ) >= 2
+        ]
+        named.append(matches[0] if len(matches) == 1 else None)
+    return named
 
 
-def _fridge_fix(table: Table, message: str) -> str:
-    """The check's own message, unless the file holds another table than the fridge block."""
-    return _other_table(table) or message
-
-
-def _column_label(column: str) -> str:
-    return f"a column named {column}" if column else "a column with no header"
-
-
-def _temperature_columns(table: Table) -> dict[str, str | None]:
-    """Where each reading is saved: {expected column: its column in the file, or None}.
-
-    A reading column saved under another name, such as am_temp for am_temp_c,
-    stands in for its expected name when the missing names and the unexpected
-    columns of numbers pair up one to one, in the order Task 2.1 gives. The
-    rename then costs only that column's name check, and its values are still
-    graded.
-    """
-    saved: dict[str, str | None] = {column: column for column in TEMP_COLUMNS if column in table.columns}
-    missing = [column for column in TEMP_COLUMNS if column not in saved]
-    label = _fridge_label_column(table)
-    numbers = [
-        column
-        for column in table.columns
-        if column not in TEMP_COLUMNS
-        and column not in (FRIDGE_ID, label)
-        and all(_number(row[column]) is not None for row in table.rows)
-    ]
-    if missing and len(numbers) == len(missing):
-        saved.update(zip(missing, numbers))
-    return {column: saved.get(column) for column in TEMP_COLUMNS}
-
-
-def _fridge_rows(table: Table) -> dict[str, dict[str, str]]:
-    """{fridge id: row} for every row that names or, without fridge IDs, matches a supplied fridge.
-
-    Without a column of fridge IDs, a row is identified by its readings. No two
-    supplied readings are the same, so a row that matches exactly one fridge on
-    either reading is that fridge. When the file has exactly two rows, the
-    block's size, and no column of text labels, a row that matches no fridge is
-    the block's fridge at its position, FRG-102 first. Leaving the index out
-    then costs only the fridge_id check, and wrong readings cost only their
-    columns' value checks. Rows labeled with something else, such as another
-    Series' labels, are never taken by position.
-    """
-    label = _fridge_label_column(table)
-    if label is not None:
-        known = {fridge.casefold(): fridge for fridge in FRIDGE_READINGS}
-        identified = [known.get(row[label].casefold()) for row in table.rows]
-    else:
-        saved = _temperature_columns(table)
-        identified = []
-        for row in table.rows:
-            matches = [
-                fridge
-                for fridge, readings in FRIDGE_READINGS.items()
-                if any(saved[column] is not None and _same(row[saved[column]], readings[column]) for column in TEMP_COLUMNS)
-            ]
-            identified.append(matches[0] if len(matches) == 1 else None)
-        if len(identified) == len(BLOCK_IDS) and not _text_columns(table):
-            identified = [
-                fridge if fridge is not None or BLOCK_IDS[position] in identified else BLOCK_IDS[position]
-                for position, fridge in enumerate(identified)
-            ]
+def _rows_by_patient(table: Table, known: set[str], by_readings: bool = False) -> dict[str, dict[str, str]]:
     found: dict[str, dict[str, str]] = {}
-    for fridge, row in zip(identified, table.rows):
-        if fridge is not None:
-            found.setdefault(fridge, row)
+    for patient, row in zip(_patients(table, known, by_readings), table.rows):
+        if patient is not None:
+            found.setdefault(patient, row)
     return found
 
 
-def read_fridge(root: Path) -> Table:
-    """The saved fridge block, turned back the right way when it was saved sideways with .T.
+def _id_check(name: str, step_hint: str, read: Callable[[Path], Table]) -> Callable[[Path], None]:
+    """The saved table keeps the patient IDs in a patient_id column."""
 
-    The transposed block holds the right readings, so only the fridge_id check
-    charges it, and the other checks grade the readings as if it were upright.
-    """
-    table = read_table(root, FRIDGE_FILE, "Task 2")
-    if not table.columns or not table.rows:
-        return table
-    label, fridges = table.columns[0], table.columns[1:]
-    known = {fridge.casefold() for fridge in FRIDGE_READINGS}
-    if not (all(row[label].casefold() in TEMP_COLUMNS for row in table.rows) and any(f in known for f in fridges)):
-        return table
-    readings = [row[label].casefold() for row in table.rows]
-    rows = tuple(
-        {FRIDGE_ID: fridge, **{column: row[fridge] for column, row in zip(readings, table.rows)}} for fridge in fridges
-    )
-    return replace(table, columns=(FRIDGE_ID, *dict.fromkeys(readings)), rows=rows, conflicting_columns=(),
-                   transposed=True)
-
-
-def check_fridge_id_column(root: Path) -> None:
-    """The saved block keeps its named index as a fridge_id column."""
-    table = read_fridge(root)
-    if table.transposed:
-        step, call = SAVED_BY[FRIDGE_FILE]
+    def check(root: Path) -> None:
+        table = read(root)
+        if "patient_id" in table.columns:
+            return
+        key = _key_column(table, {patient.casefold() for patient in BP_EXPORT})
+        if key is not None:
+            where = f"a column headed {key}" if key else "a first column with no header"
+            raise AssertionError(
+                f"{name} has the patient IDs in {where}, not patient_id. {step_hint}"
+            )
         raise AssertionError(
-            f"{FRIDGE_FILE} is saved sideways: its rows are {_join(TEMP_COLUMNS)} and its columns are the fridge "
-            f"IDs, as .T leaves the block. Expected one row per fridge under the header fridge_id,"
-            f"{','.join(TEMP_COLUMNS)}; in {step}, save the block itself with {call}, without .T."
+            f"{name} has no patient_id column (its columns are {_columns(table)}), so the patient IDs were lost. "
+            f"{step_hint}"
         )
-    if FRIDGE_ID in table.columns:
-        return
-    label = _fridge_label_column(table)
-    text = _text_columns(table)
-    if label is not None:
-        where = f"a column headed {label}" if label else "a first column with no header"
-        message = (
-            f"{FRIDGE_FILE} saves the fridge IDs in {where}, not fridge_id; "
-            'name the index with fridge_log.index.name = "fridge_id" in Task 2.1, then save again.'
-        )
-    elif text and text[0] == table.columns[0]:
-        shown = list(dict.fromkeys(row[text[0]] for row in table.rows))
-        message = (
-            f"{FRIDGE_FILE} has no fridge_id column, and its row labels ({_join(shown[:4])}) are not fridge IDs; "
-            "in Task 2.1, build fridge_log with the index FRG-101, FRG-102, FRG-103, FRG-104 and name it with "
-            'fridge_log.index.name = "fridge_id", then save the Task 2.2 block again.'
-        )
-    else:
-        message = (
-            f"{FRIDGE_FILE} has no fridge_id column (its columns are {_columns(table)}); "
-            "in Task 2.2, save label_block with its index, so leave out index=False."
-        )
-    raise AssertionError(_fridge_fix(table, message))
+
+    return check
 
 
-def check_fridge_rows(root: Path) -> None:
-    """The block holds exactly FRG-102 and FRG-103."""
-    table = read_fridge(root)
-    found = _fridge_rows(table)
-    missing = [fridge for fridge in BLOCK_IDS if fridge not in found]
-    extra = [fridge for fridge in found if fridge not in BLOCK_IDS]
+# Task 2: output/bp_loaded.csv
+
+
+LOAD_CALL = (
+    'bp = pd.read_csv(DATA_PATH, sep=";", skiprows=[1], usecols=[...], na_values=["-999"], index_col="patient_id")'
+)
+
+
+def _is_units_row(row: dict[str, str]) -> bool:
+    cells = [cell.casefold() for cell in row.values()]
+    return "mmhg" in cells or (bool(cells) and cells[0] == "id")
+
+
+UNITS_HEADER = (
+    f"{LOADED_FILE} uses the units row (id, text, years, mmHg, ...) as its header, so the column names were "
+    "skipped instead: skiprows counts the header line as 0, so skiprows=[1] skips the units row below it."
+)
+
+
+def _loaded(root: Path) -> Table:
+    """The saved table, for the checks that need its column names: a header of units has none."""
+    table = read_table(root, LOADED_FILE)
+    _assert("mmhg" not in table.columns or "patient_id" in table.columns, UNITS_HEADER)
+    return table
+
+
+def check_loaded_units(root: Path) -> None:
+    table = _loaded(root)
+    units = [number for number, row in enumerate(table.rows, start=1) if _is_units_row(row)]
+    _assert(
+        not units,
+        f"{LOADED_FILE} still has the units row ({', '.join(UNITS_ROW[:4])}, ...) as record {_join(map(str, units))}, "
+        "which also makes every reading column text. In Task 2.2, skip it with skiprows=[1]: line 1, counting the "
+        "header line as 0.",
+    )
+
+
+def check_loaded_note(root: Path) -> None:
+    table = read_table(root, LOADED_FILE)
+    _assert(
+        NOTE_COLUMN not in table.columns,
+        f"{LOADED_FILE} also has {NOTE_COLUMN}, the coordinator's free text, which the analysis does not use. "
+        f"In Task 2.2, read only the six columns {_join(LOADED_COLUMNS)} with usecols=[...].",
+    )
+
+
+def check_loaded_patients(root: Path) -> None:
+    table = read_table(root, LOADED_FILE)
+    rows = [row for row in table.rows if not _is_units_row(row)]
+    named = _patients(Table(table.name, table.columns, tuple(rows)), set(BP_EXPORT), by_readings=True)
+    missing = [patient for patient in BP_EXPORT if patient not in named]
+    repeated = [patient for patient in dict.fromkeys(named) if patient is not None and named.count(patient) > 1]
+    unknown = named.count(None)
     problems = []
     if missing:
-        problems.append(f"it is missing {_join(missing)}")
-    if extra:
-        problems.append(f"it also holds {_join(sorted(extra))}")
-    # Too few rows already show as missing fridges; only extra or repeated rows need the count.
-    if len(table.rows) > len(BLOCK_IDS) and not extra:
-        problems.append(f"it holds {len(table.rows)} rows, expected exactly {len(BLOCK_IDS)}; remove the extra or repeated rows")
-    if not found:
-        problems = [f"none of its {len(table.rows)} rows is one of the fridges FRG-101 to FRG-104"]
-    if table.copies > 1 and not problems:
-        raise AssertionError(_fridge_fix(table, _written_again(table)))
-    if not missing and {"FRG-101", "FRG-104"} <= set(extra):
-        # Extras on both sides of the block are not a slice endpoint: the whole table was saved.
-        raise AssertionError(_fridge_fix(
-            table,
-            f"{FRIDGE_FILE} should hold the rows FRG-102 and FRG-103, but it holds all four fridges, "
-            f"so it looks like fridge_log was saved; {SAVED_BY[FRIDGE_FILE][0]} saves the selected block with "
-            f"{SAVED_BY[FRIDGE_FILE][1]}.",
-        ))
-    if problems:
-        raise AssertionError(_fridge_fix(
-            table,
-            f"{FRIDGE_FILE} should hold the rows FRG-102 and FRG-103, but " + "; ".join(problems) + ". "
-            'In Task 2.2, .loc["FRG-102":"FRG-103"] includes its end label, while .iloc[1:3] stops before position 3.',
-        ))
-
-
-def _missing_temperature(table: Table, column: str) -> str:
-    return (
-        f"{FRIDGE_FILE} has no {column} column (its columns are {_columns(table)}); "
-        f"keep both {_join(TEMP_COLUMNS)} in the Task 2.2 selection."
-    )
-
-
-def _temperature_name_check(column: str) -> Callable[[Path], None]:
-    """The saved block has this reading column, under its own name."""
-
-    def check(root: Path) -> None:
-        table = read_fridge(root)
-        if column in table.columns:
-            return
-        stand_in = _temperature_columns(table)[column]
-        if stand_in is not None:
-            names = ", ".join(f'"{name}"' for name in TEMP_COLUMNS)
-            raise AssertionError(_fridge_fix(
-                table,
-                f"{FRIDGE_FILE} has {_column_label(stand_in)} where Task 2.1 names it {column}; build fridge_log "
-                f"with columns=[{names}], then run Task 2.2 again to save it.",
-            ))
-        raise AssertionError(_fridge_fix(table, _missing_temperature(table, column)))
-
-    return check
-
-
-def _swapped_readings(table: Table) -> bool:
-    """The two reading columns hold each other's block values, one mistake charged on am_temp_c values alone."""
-    saved = _temperature_columns(table)
-    if None in saved.values():
-        return False
-    found = _fridge_rows(table)
-    if found:
-        rows = [found.get(fridge) for fridge in BLOCK_IDS]
-    elif _fridge_label_column(table) is None:
-        rows = list(table.rows)
-    else:
-        return False
-    if len(rows) != len(BLOCK_IDS) or None in rows:
-        return False
-    am, pm = TEMP_COLUMNS
-    return all(
-        _same(row[saved[am]], FRIDGE_READINGS[fridge][pm]) and _same(row[saved[pm]], FRIDGE_READINGS[fridge][am])
-        for fridge, row in zip(BLOCK_IDS, rows)
-    )
-
-
-def _check_temperature(root: Path, column: str) -> None:
-    table = read_fridge(root)
-    if _swapped_readings(table):
-        if column != TEMP_COLUMNS[0]:
-            return  # Charged once, on the am_temp_c values check.
-        am, pm = TEMP_COLUMNS
-        names = ", ".join(f'"{name}"' for name in TEMP_COLUMNS)
-        raise AssertionError(_fridge_fix(
-            table,
-            f"{FRIDGE_FILE} has the column labels swapped: its {am} column holds "
-            f"{_join(f'{FRIDGE_READINGS[f][pm]:.1f}' for f in BLOCK_IDS)}, the {pm} readings, and its {pm} column "
-            f"holds {_join(f'{FRIDGE_READINGS[f][am]:.1f}' for f in BLOCK_IDS)}, the {am} readings. The supplied "
-            f"array's first column is the morning reading, so build fridge_log with columns=[{names}] in that order, "
-            "then run Task 2.2 again to save it.",
-        ))
-    saved = _temperature_columns(table)[column]
-    if column in table.conflicting_columns:
-        raise AssertionError(
-            f"{FRIDGE_FILE} has repeated {column} headers with conflicting readings; expected one reading "
-            "column with one value per fridge. Remove the extra column and save the selected block again."
-        )
-    if saved is None:
-        if _other_table(table) is None and any(fridge in _fridge_rows(table) for fridge in BLOCK_IDS):
-            return  # The column-name check charges an omission in recognizable data.
-        raise AssertionError(_fridge_fix(table, _missing_temperature(table, column)))
-    where = column if saved == column else f"{saved or '(no header)'} (saved for {column})"
-    found = {fridge: row for fridge, row in _fridge_rows(table).items() if fridge in BLOCK_IDS}
-    if not found and _fridge_label_column(table) is None:
-        # No labels and no row matches a fridge on either reading: compare this column alone, in order.
-        given = [row[saved] for row in table.rows]
-        expected = [FRIDGE_READINGS[fridge][column] for fridge in BLOCK_IDS]
-        _assert(
-            len(given) == len(expected) and all(_same(value, want) for value, want in zip(given, expected)),
-            _fridge_fix(
-                table,
-                f"{FRIDGE_FILE} lists {where} as {_join(given) or 'nothing'}; "
-                f"FRG-102 and FRG-103 read {_join(f'{value:.1f}' for value in expected)} °C in the supplied array. "
-                "Build fridge_log from the supplied fridge_readings array with the columns in the order Task 2.1 "
-                "gives, keep the array unchanged, and save the Task 2.2 block with its index.",
-            ),
-        )
-        return
-    if not found:
-        raise AssertionError(_fridge_fix(
-            table,
-            f"{FRIDGE_FILE} has no row for FRG-102 or FRG-103, so its {column} values cannot be compared; "
-            'in Task 2.2, select the block with fridge_log.loc["FRG-102":"FRG-103", ...] and save it again.',
-        ))
-    wrong = [
-        f"{fridge} has {row[saved] or 'nothing'} where the supplied array has {FRIDGE_READINGS[fridge][column]:.1f} °C"
-        for fridge, row in found.items()
-        if not _same(row[saved], FRIDGE_READINGS[fridge][column])
-    ]
-    if wrong:
-        raise AssertionError(_fridge_fix(
-            table,
-            f"{FRIDGE_FILE}, column {where}: {'; '.join(wrong)}. Build fridge_log from the supplied fridge_readings "
-            "array with the columns in the order Task 2.1 gives, and keep the array unchanged.",
-        ))
-
-
-# Task 3: output/selected_supplies.csv
-
-
-def _total_column(table: Table) -> str | None:
-    """The line-total column: line_total_usd, or else the one extra column standing in for it.
-
-    A stand-in is the one unexpected column named like a total or, when
-    line_total_usd is the only name missing, the one unexpected column, as the
-    column checks read it. A misnamed total then costs only the line_total_usd
-    column check, and its values are still graded by the line totals check.
-    """
-    if "line_total_usd" in table.columns:
-        return "line_total_usd"
-    extra = [column for column in table.columns if column not in SUPPLY_COLUMNS]
-    totals = [column for column in extra if "total" in column]
-    if len(totals) == 1:
-        return totals[0]
-    missing = [column for column in SUPPLY_COLUMNS if column not in table.columns]
-    return extra[0] if missing == ["line_total_usd"] and len(extra) == 1 else None
-
-
-def _extra_columns(table: Table) -> list[str]:
-    return [column or "a column with no header" for column in table.columns if column not in SUPPLY_COLUMNS]
-
-
-def _supply_rows(table: Table) -> list[tuple[str, dict[str, str]]]:
-    """(item_id, row) for every row naming a supplied item, in file order.
-
-    Rows are named by item_id, or by the item's description when the file has
-    no item_id column.
-    """
-    by_id = {item_id.casefold(): item_id for item_id in SUPPLY_ORDER}
-    by_item = {_clean(item).casefold(): item_id for item_id, (item, _, _) in SUPPLY_ORDER.items()}
-    if "item_id" in table.columns:
-        column, lookup = "item_id", by_id
-    elif "item" in table.columns:
-        column, lookup = "item", by_item
-    else:
-        return []
-    return [(lookup[row[column].casefold()], row) for row in table.rows if row[column].casefold() in lookup]
-
-
-def _require_line_key(table: Table) -> None:
-    _assert(
-        "item_id" in table.columns or "item" in table.columns,
-        f"{SUPPLIES_FILE} has no item_id column (its columns are {_columns(table)}), so its lines "
-        "cannot be matched to data/supply_order.csv; keep item_id in the Task 3.1 .loc selection.",
-    )
-
-
-def _column_check(column: str, hint: str) -> Callable[[Path], None]:
-    """The saved selection has this one Task 3 column, under its own name."""
-
-    def check(root: Path) -> None:
-        table = read_table(root, SUPPLIES_FILE, "Task 3")
-        if column in table.columns:
-            return
-        stand_in = _total_column(table) if column == "line_total_usd" else None
-        missing = [name for name in SUPPLY_COLUMNS if name not in table.columns]
-        extra = [name for name in table.columns if name not in SUPPLY_COLUMNS]
-        if stand_in is None and len(missing) == 1 and len(extra) == 1:
-            stand_in = extra[0]
-        if stand_in is not None:
-            raise AssertionError(
-                f"{SUPPLIES_FILE} has {_column_label(stand_in)} where Task 3.1 names it {column}; "
-                f"rename it to {column}. {hint}"
-            )
-        raise AssertionError(
-            f"{SUPPLIES_FILE} has no {column} column (its columns are {_columns(table)}). {hint}"
-        )
-
-    return check
-
-
-def check_supply_extra_columns(root: Path) -> None:
-    """No column beyond the five, other than one standing in for a missing, misnamed column."""
-    table = read_table(root, SUPPLIES_FILE, "Task 3")
-    missing = [column for column in SUPPLY_COLUMNS if column not in table.columns]
-    extra = _extra_columns(table)
-    _assert(
-        len(extra) <= len(missing),
-        f"{SUPPLIES_FILE} also has {_join(extra)}; Task 3.1 saves only the five columns "
-        f"{_join(SUPPLY_COLUMNS)}, so leave {'it' if len(extra) == 1 else 'them'} out of the selection.",
-    )
-
-
-def _no_lines(table: Table) -> str | None:
-    """The shared fix when the file names no supplied order line at all, or None when it names some."""
-    if _supply_rows(table):
-        return None
-    key = "item_id" if "item_id" in table.columns else "item"
-    found = "a header but no order lines" if not table.rows else (
-        f"{len(table.rows)} rows, but none has an {key} from data/supply_order.csv"
-    )
-    kept = len(expected_selection())
-    return (
-        f"{SUPPLIES_FILE} has {found}; Task 3.1 keeps the {kept} lines with quantity {MIN_QUANTITY} or more. "
-        f'Check the mask quantity_at_least_two = supplies["quantity"] >= {MIN_QUANTITY} (the cell prints '
-        f"selected lines: {kept}), select with supplies.loc[quantity_at_least_two, [...]], and keep "
-        "data/supply_order.csv unchanged."
-    )
-
-
-def _inverted(lines: list[tuple[str, dict[str, str]]]) -> bool:
-    """The file holds exactly the lines Task 3.1 drops, as a mask written < 2 for >= 2 selects."""
-    named = {item_id for item_id, _ in lines}
-    return bool(named) and named == set(SUPPLY_ORDER) - set(expected_selection())
-
-
-def _line_check(item_id: str) -> Callable[[Path], None]:
-    """This selected order line is in the file with its supplied item, quantity, and unit price.
-
-    Its line total is graded by the line totals check, so a missing or wrong
-    total never costs a line check.
-    """
-    item, quantity, unit_price = SUPPLY_ORDER[item_id]
-
-    def check(root: Path) -> None:
-        table = read_table(root, SUPPLIES_FILE, "Task 3")
-        _require_line_key(table)
-        nothing = _no_lines(table)
-        if nothing:
-            raise AssertionError(nothing)
-        lines = _supply_rows(table)
-        if _inverted(lines):
-            return  # One mistake, charged once by the no-other-lines check.
-        rows = [row for found, row in lines if found == item_id]
-        if not rows:
-            # Only a mask written with > keeps exactly the larger lines and drops every quantity-2 line;
-            # a truncated table also lacks larger lines, so each of its missing lines is charged.
-            above = {found for found in expected_selection() if SUPPLY_ORDER[found][1] > MIN_QUANTITY}
-            greater_than = quantity == MIN_QUANTITY and {found for found, _ in lines} == above
-            # That one mistake drops every quantity-2 line, so it is charged once, to the first of them.
-            at_minimum = [found for found in expected_selection() if SUPPLY_ORDER[found][1] == MIN_QUANTITY]
-            if greater_than and item_id != at_minimum[0]:
-                return
-            why = (
-                f'supplies["quantity"] >= {MIN_QUANTITY} keeps it, while > {MIN_QUANTITY} drops it, '
-                f"along with {_join(at_minimum[1:])}"
-                if greater_than
-                else f'build the mask quantity_at_least_two = supplies["quantity"] >= {MIN_QUANTITY} and select with it'
-            )
-            raise AssertionError(
-                f"{SUPPLIES_FILE} has no line for {item_id} ({item}, quantity {quantity}); "
-                f"Task 3.1 keeps every line with quantity {MIN_QUANTITY} or more: {why}."
-            )
-        wrong = []
-        for row in rows:
-            if "item" in row and row["item"].casefold() != _clean(item).casefold():
-                wrong.append(f"item is {row['item'] or 'blank'}, expected {item}")
-            if "quantity" in row and not _same(row["quantity"], quantity):
-                wrong.append(f"quantity is {row['quantity'] or 'blank'}, expected {quantity}")
-            if "unit_price_usd" in row and not _same(row["unit_price_usd"], unit_price):
-                wrong.append(f"unit_price_usd is {row['unit_price_usd'] or 'blank'}, expected {unit_price:.2f}")
-        _assert(
-            not wrong,
-            f"{SUPPLIES_FILE}: {item_id}'s " + "; its ".join(dict.fromkeys(wrong)) + ", as in "
-            "data/supply_order.csv. Keep the data file unchanged and copy the selected rows as they are in Task 3.1.",
-        )
-
-    return check
-
-
-def check_supply_line_totals(root: Path) -> None:
-    """Every saved order line's total is its quantity times its unit price.
-
-    A total is right when it matches the supplied quantity and price or the
-    line's own saved ones, so a wrong quantity costs only its line check.
-    """
-    table = read_table(root, SUPPLIES_FILE, "Task 3")
-    _require_line_key(table)
-    nothing = _no_lines(table)
-    if nothing:
-        raise AssertionError(nothing)
-    total = _total_column(table)
-    if total is None:
-        return  # The column check already charges the absent total column.
-    wrong = []
-    for item_id, row in _supply_rows(table):
-        _, quantity, unit_price = SUPPLY_ORDER[item_id]
-        expected = quantity * unit_price
-        saved_quantity, saved_price = _number(row.get("quantity", "")), _number(row.get("unit_price_usd", ""))
-        own = saved_quantity * saved_price if saved_quantity is not None and saved_price is not None else expected
-        if not (_same(row[total], expected) or _same(row[total], own)):
-            wrong.append(
-                f"{item_id}'s {total} is {row[total] or 'blank'}, expected {quantity} * {unit_price:.2f} = {expected:.2f}"
-            )
-    wrong = list(dict.fromkeys(wrong))
-    shown = "; ".join(wrong[:3]) + (f"; and {len(wrong) - 3} more lines" if len(wrong) > 3 else "")
-    _assert(
-        not wrong,
-        f"{SUPPLIES_FILE}: {shown}. In Task 3.1, line_total_usd = quantity * unit_price_usd for each line.",
-    )
-
-
-def check_supply_other_lines(root: Path) -> None:
-    """No line with quantity 1, no line twice, and no row naming an item outside the supply order."""
-    table = read_table(root, SUPPLIES_FILE, "Task 3")
-    _require_line_key(table)
-    rows = _supply_rows(table)
-    named = [item_id for item_id, _ in rows]
-    expected = expected_selection()
-    extra = [item_id for item_id in SUPPLY_ORDER if item_id in named and item_id not in expected]
-    repeated = [item_id for item_id in dict.fromkeys(named) if named.count(item_id) > 1]
-    key = "item_id" if "item_id" in table.columns else "item"
-    matched = {id(row) for _, row in rows}
-    unknown = [row[key] or "blank" for row in table.rows if id(row) not in matched]
-    if _inverted(rows):
-        kept = expected_selection()
-        raise AssertionError(
-            f"{SUPPLIES_FILE} holds only {_join(extra)}, the lines with quantity 1, and none of the {len(kept)} "
-            f"lines with quantity {MIN_QUANTITY} or more, so the mask is inverted: a comparison such as "
-            f'supplies["quantity"] < {MIN_QUANTITY} keeps exactly the lines Task 3.1 drops. Build it as '
-            f'quantity_at_least_two = supplies["quantity"] >= {MIN_QUANTITY} (the cell prints selected lines: '
-            f"{len(kept)}), then save again."
-        )
-    problems = []
-    if extra:
-        verb = "has" if len(extra) == 1 else "have"
-        problems.append(f"also holds {_join(extra)}, which {verb} quantity 1")
+        problems.append(f"it is missing {_first(missing)}")
     if repeated:
-        problems.append("lists " + _join(f"{item_id} {named.count(item_id)} times" for item_id in repeated))
+        problems.append("it lists " + _join(f"{p} {named.count(p)} times" for p in repeated))
     if unknown:
-        shown = _join(unknown[:4]) + (f" and {len(unknown) - 4} more" if len(unknown) > 4 else "")
-        problems.append(f"has {key} {shown}, which {'is' if len(unknown) == 1 else 'are'} not in data/supply_order.csv")
-    again = _written_again(table) if table.copies > 1 else ""
-    if again and not problems:
-        raise AssertionError(again)
+        problems.append(f"{unknown} of its rows match{'es' if unknown == 1 else ''} no patient in data/bp_followup.csv")
+    if table.copies > 1 and not problems:
+        raise AssertionError(_written_again(table))
     _assert(
         not problems,
-        (again + " In that copy, the file " if again else f"{SUPPLIES_FILE} ") + "; ".join(problems)
-        + f". Task 3.1 keeps only the lines with quantity {MIN_QUANTITY} or more, once each: select them with the "
-        f'mask quantity_at_least_two = supplies["quantity"] >= {MIN_QUANTITY}.',
+        f"{LOADED_FILE} should hold each of the {len(BP_EXPORT)} patients P101 to P114 once, but "
+        + "; ".join(problems) + f". In Task 2.2, read the whole file (leave out nrows) and save bp itself.",
     )
+
+
+def check_loaded_sentinel(root: Path) -> None:
+    table = read_table(root, LOADED_FILE)
+    found = _rows_by_patient(table, set(BP_EXPORT), by_readings=True)
+    kept = []
+    for patient, row in found.items():
+        for column in READINGS:
+            if reading(patient, column) is None and column in row and not _blank(row[column]):
+                kept.append(f"{patient}'s {column} is {row[column]}")
+    _assert(
+        not kept,
+        f"{LOADED_FILE}: {_join(kept)}, where the export's -999 means the reading was not taken; expected a blank "
+        '(missing) cell. In Task 2.2, add na_values=["-999"] so pandas reads the code as NaN and every mean skips it.',
+    )
+
+
+def check_loaded_values(root: Path) -> None:
+    table = _loaded(root)
+    absent = [column for column in LOADED_COLUMNS[1:] if column not in table.columns]
+    _assert(
+        not absent,
+        f"{LOADED_FILE} has no {_join(absent)} column (its columns are {_columns(table)}); "
+        f"keep all of {_join(LOADED_COLUMNS)} in usecols.",
+    )
+    found = _rows_by_patient(table, set(BP_EXPORT), by_readings=True)
+    _assert(bool(found), f"{LOADED_FILE} names no patient from data/bp_followup.csv, so its values cannot be compared.")
+    wrong = []
+    for patient, row in found.items():
+        clinic = BP_EXPORT[patient][0]
+        if row["clinic"].casefold() != clinic.casefold():
+            wrong.append(f"{patient}'s clinic is {row['clinic'] or 'blank'}, expected {clinic}")
+        for column in ("age", *READINGS):
+            expected = reading(patient, column)
+            if expected is not None and not _same(row[column], expected):
+                wrong.append(f"{patient}'s {column} is {row[column] or 'blank'}, expected {_show(expected)}")
+    _assert(
+        not wrong,
+        f"{LOADED_FILE}: {_first(wrong, 3)}, as in data/bp_followup.csv. Keep the data file unchanged and save the "
+        "table as read.",
+    )
+
+
+def _kept_sentinel(root: Path) -> bool:
+    """Whether the student's own bp_loaded.csv kept -999 as a reading, so later values are judged by it too."""
+    try:
+        table = read_table(root, LOADED_FILE)
+    except (AssertionError, OSError, csv.Error):
+        return False
+    found = _rows_by_patient(table, set(BP_EXPORT), by_readings=True)
+    return any(
+        _same(row.get(column, ""), SENTINEL)
+        for patient, row in found.items() for column in READINGS if reading(patient, column) is None
+    )
+
+
+# Task 3.1: output/visit_summary.csv
+
+
+STAT_NAMES = {"mean": "mean", "median": "median", "50%": "median", "count": "count"}
+
+
+def _summary_grid(table: Table) -> tuple[dict[str, dict[str, str]], list[str]]:
+    """({stat: {visit: cell}}, the visit labels in file order), whichever way round the table was saved.
+
+    Visits as rows is the Task 3.1 layout; visits as columns is the same summary
+    saved with .T, or describe(), whose 50% row is the median.
+    """
+    visits = set(READINGS)
+    label = next((c for c in table.columns if any(row[c].casefold() in visits for row in table.rows)), None)
+    grid: dict[str, dict[str, str]] = {}
+    if label is not None:
+        for column in table.columns:
+            if column != label and column in STAT_NAMES:
+                grid[STAT_NAMES[column]] = {row[label].casefold(): row[column] for row in table.rows}
+        return grid, [row[label].casefold() for row in table.rows]
+    columns = [c for c in table.columns if c in visits]
+    if columns:
+        first = table.columns[0]
+        for row in table.rows:
+            stat = STAT_NAMES.get(row[first].casefold())
+            if stat is not None:
+                grid[stat] = {c: row[c] for c in columns}
+        return grid, columns
+    return grid, []
+
+
+def _no_visits(table: Table) -> str:
+    """The one fix when the summary names no visit, shared by every summary check it fails."""
+    if any(_patients(table, set(BP_EXPORT))):
+        return (
+            f"{SUMMARY_FILE} has one row per patient, so its reductions ran across each row, as "
+            'axis="columns" does. Leave axis out in Task 3.1: the default runs down each column, one value per visit.'
+        )
+    return (
+        f"{SUMMARY_FILE} names none of {_join(READINGS)} (its columns are {_columns(table)}); in Task 3.1, "
+        "summarize readings = bp[[" + ", ".join(f'"{v}"' for v in READINGS) + "]], one row per visit."
+    )
+
+
+def check_summary_visits(root: Path) -> None:
+    table = read_table(root, SUMMARY_FILE)
+    _, labels = _summary_grid(table)
+    _assert(bool(labels), _no_visits(table))
+    missing = [visit for visit in READINGS if visit not in labels]
+    repeated = [visit for visit in READINGS if labels.count(visit) > 1]
+    problems = ([f"it has no {_join(missing)}"] if missing else []) + (
+        [f"it lists {_join(repeated)} more than once"] if repeated else [])
+    if table.copies > 1 and not problems:
+        raise AssertionError(_written_again(table))
+    _assert(
+        not problems,
+        f"{SUMMARY_FILE} should have one row for each of {_join(READINGS)}, but " + "; ".join(problems)
+        + ". In Task 3.1, summarize readings = bp[[" + ", ".join(f'"{v}"' for v in READINGS) + "]].",
+    )
+
+
+def _summary_stat(stat: str) -> Callable[[Path], None]:
+    call = {"mean": "readings.mean()", "median": "readings.median()", "count": "readings.count()"}[stat]
+
+    def check(root: Path) -> None:
+        table = read_table(root, SUMMARY_FILE)
+        grid, labels = _summary_grid(table)
+        if not labels and any(_patients(table, set(BP_EXPORT))):
+            return  # Reductions run across rows are charged once, by the one-row-per-visit check.
+        _assert(bool(labels), _no_visits(table))
+        _assert(
+            stat in grid,
+            f"{SUMMARY_FILE} has no {stat} column (its columns are {_columns(table)}); in Task 3.1, "
+            f'build visit_summary with "{stat}": {call}.',
+        )
+        saved = grid[stat]
+        for expected in (visit_stats(), visit_stats(sentinel_kept=_kept_sentinel(root))):
+            if all(visit not in saved or _same(saved[visit], expected[stat][visit]) for visit in READINGS):
+                return
+        truth = visit_stats()[stat]
+        wrong = [
+            f"{visit} has {saved[visit] or 'blank'}, expected {_show(truth[visit])}"
+            for visit in READINGS if visit in saved and not _same(saved[visit], truth[visit])
+        ]
+        hint = (" count() counts readings present, so each visit's one missing reading is left out."
+                if stat == "count" else f" {call} skips the missing readings and runs down each column, one value per visit.")
+        raise AssertionError(f"{SUMMARY_FILE}, {stat}: {'; '.join(wrong)}.{hint}")
+
+    return check
+
+
+# Task 3.2: output/clinic_counts.csv
+
+
+def _counts(table: Table) -> list[tuple[str, str]]:
+    """(clinic, count cell) for each row naming a clinic, in file order."""
+    clinics = {clinic.casefold() for clinic in clinic_counts()}
+    label = next((c for c in table.columns if any(row[c].casefold() in clinics for row in table.rows)), None)
+    others = [c for c in table.columns if c != label]
+    value = "count" if "count" in others else (others[0] if others else None)
+    if label is None or value is None:
+        return []
+    return [(row[label], row[value]) for row in table.rows if row[label].casefold() in clinics]
+
+
+def check_counts_values(root: Path) -> None:
+    table = read_table(root, COUNTS_FILE)
+    saved = _counts(table)
+    _assert(
+        bool(saved),
+        f"{COUNTS_FILE} names no clinic (its columns are {_columns(table)}); in Task 3.2, save "
+        'clinic_counts = bp["clinic"].value_counts().',
+    )
+    expected = clinic_counts()
+    by_name = {clinic.casefold(): clinic for clinic in expected}
+    named = [by_name[clinic.casefold()] for clinic, _ in saved]
+    problems = [f"{clinic} has {count or 'blank'}, expected {expected[by_name[clinic.casefold()]]}"
+                for clinic, count in saved if not _same(count, expected[by_name[clinic.casefold()]])]
+    problems += [f"it has no row for {clinic}" for clinic in expected if clinic not in named]
+    problems += [f"it lists {clinic} {named.count(clinic)} times" for clinic in expected if named.count(clinic) > 1]
+    if not problems and (table.copies > 1 or len(table.rows) > len(saved)):
+        raise AssertionError(_written_again(table) if table.copies > 1 else
+                             f"{COUNTS_FILE} has rows that name no clinic; save only the value_counts() result.")
+    _assert(
+        not problems,
+        f"{COUNTS_FILE}: {'; '.join(problems)}. value_counts() counts each clinic's patients in bp; "
+        "a fraction instead of a count means normalize=True was added.",
+    )
+
+
+def check_counts_order(root: Path) -> None:
+    table = read_table(root, COUNTS_FILE)
+    saved = [(clinic, _number(count)) for clinic, count in _counts(table)]
+    _assert(len(saved) >= 2, f"{COUNTS_FILE} has fewer than two clinic counts, so their order cannot be checked.")
+    rise = next(((a, b) for a, b in zip(saved, saved[1:])
+                 if a[1] is not None and b[1] is not None and a[1] < b[1]), None)
+    if rise is not None:
+        raise AssertionError(
+            f"{COUNTS_FILE} lists {rise[0][0]} ({_show(rise[0][1])} patients) before {rise[1][0]} "
+            f"({_show(rise[1][1])}); value_counts() puts the most common clinic first, so save its result as it is."
+        )
+
+
+# Task 4: output/followup_priority.csv and output/followup_priority.parquet
+
+
+def _followup_column(table: Table, column: str) -> str | None:
+    """The derived column under its own name, or else the one extra column whose name says what it holds."""
+    if column in table.columns:
+        return column
+    stand_ins = [c for c in table.columns if c not in FOLLOWUP_COLUMNS and DERIVED_WORDS[column] in c]
+    return stand_ins[0] if len(stand_ins) == 1 else None
+
+
+def _followup_rows(table: Table) -> list[tuple[str, dict[str, str]]]:
+    named = _patients(table, set(BP_EXPORT), by_readings=True)
+    return [(patient, row) for patient, row in zip(named, table.rows) if patient is not None]
+
+
+def _own_mean(row: dict[str, str]) -> float | None:
+    values = [_number(row[c]) for c in READINGS if c in row]
+    values = [value for value in values if value is not None]
+    return statistics.mean(values) if values else None
+
+
+def _own_change(row: dict[str, str]) -> float | None:
+    week8, baseline = _number(row.get("sbp_week8", "")), _number(row.get("sbp_baseline", ""))
+    return None if week8 is None or baseline is None else week8 - baseline
+
+
+def check_followup_rows(root: Path) -> None:
+    table = read_table(root, FOLLOWUP_FILE)
+    named = [patient for patient, _ in _followup_rows(table)]
+    expected = program_order()
+    missing = [p for p in expected if p not in named]
+    extra = [p for p in dict.fromkeys(named) if p not in expected]
+    repeated = [p for p in dict.fromkeys(named) if named.count(p) > 1]
+    unknown = len(table.rows) - len(named)
+    if not (missing or extra or repeated or unknown):
+        if table.copies > 1:
+            raise AssertionError(_written_again(table))
+        return
+    if missing == ["P107"] and not (extra or repeated or unknown):
+        raise AssertionError(
+            f"{FOLLOWUP_FILE} is missing P107, whose baseline is exactly {PROGRAM_MIN_BASELINE} mmHg: "
+            f'bp["sbp_baseline"] >= {PROGRAM_MIN_BASELINE} keeps it, while > {PROGRAM_MIN_BASELINE} drops it.'
+        )
+    causes = []
+    other_clinic = [p for p in extra if BP_EXPORT[p][0] not in PROGRAM_CLINICS]
+    low = [p for p in extra if BP_EXPORT[p][0] in PROGRAM_CLINICS]
+    if other_clinic:
+        causes.append(f"{_first(other_clinic)} {'is' if len(other_clinic) == 1 else 'are'} not at North or East, "
+                      'which bp["clinic"].isin(["North", "East"]) keeps')
+    if low:
+        causes.append(f"{_first(low)} {'has' if len(low) == 1 else 'have'} a baseline below "
+                      f"{PROGRAM_MIN_BASELINE} mmHg or none at all")
+    if missing:
+        causes.append(f"it is missing {_first(missing)}")
+    if repeated:
+        causes.append("it lists " + _join(f"{p} {named.count(p)} times" for p in repeated))
+    if unknown:
+        causes.append(f"{unknown} of its rows name no patient in data/bp_followup.csv")
+    raise AssertionError(
+        f"{FOLLOWUP_FILE} should hold the {len(expected)} program patients ({_join(sorted(expected))}), but "
+        + "; ".join(causes) + ". In Task 4.1, keep the rows where both conditions hold: "
+        f'bp["clinic"].isin(["North", "East"]) & (bp["sbp_baseline"] >= {PROGRAM_MIN_BASELINE}).'
+    )
+
+
+def check_followup_names(root: Path) -> None:
+    table = read_table(root, FOLLOWUP_FILE)
+    renamed = [(column, _followup_column(table, column)) for column in DERIVED
+               if column not in table.columns and _followup_column(table, column) is not None]
+    _assert(
+        not renamed,
+        f"{FOLLOWUP_FILE} has " + _join(f"{saved} where Task 4.2 names it {column}" for column, saved in renamed)
+        + "; rename it to match, so later work can find it by name.",
+    )
+
+
+def check_followup_age(root: Path) -> None:
+    table = read_table(root, FOLLOWUP_FILE)
+    _assert(
+        "age" not in table.columns,
+        f'{FOLLOWUP_FILE} still has the age column; in Task 4.1, follow the selection with .drop(columns=["age"]).',
+    )
+
+
+def _derived_values(column: str) -> Callable[[Path], None]:
+    """The derived column's values: right by the supplied readings or by the row's own saved ones."""
+    truth = {"sbp_mean": sbp_mean, "change_week8": change}[column]
+    own = {"sbp_mean": _own_mean, "change_week8": _own_change}[column]
+    how = {
+        "sbp_mean": 'followup[["sbp_baseline", "sbp_week4", "sbp_week8"]].mean(axis="columns"), which skips '
+                    "a missing reading",
+        "change_week8": 'followup["sbp_week8"] - followup["sbp_baseline"], negative when pressure fell',
+    }[column]
+
+    def check(root: Path) -> None:
+        table = read_table(root, FOLLOWUP_FILE)
+        saved = _followup_column(table, column)
+        _assert(saved is not None,
+                f"{FOLLOWUP_FILE} has no {column} column (its columns are {_columns(table)}); Task 4.2 adds "
+                f"{column} = {how}.")
+        rows = [(p, row) for p, row in _followup_rows(table) if in_program(p)]
+        _assert(bool(rows), f"{FOLLOWUP_FILE} has none of the program patients, so its {column} values cannot "
+                            "be compared; the program patients check says what to fix.")
+        wrong = []
+        for patient, row in rows:
+            expected, recomputed = truth(patient), own(row)
+            if not (_same(row[saved], expected) or (recomputed is not None and _same(row[saved], recomputed))):
+                wrong.append(f"{patient} has {row[saved] or 'blank'}, expected {_show(expected)}")
+        _assert(not wrong, f"{FOLLOWUP_FILE}, {column}: {_first(wrong, 3)}. Task 4.2 computes it as {how}.")
+
+    return check
+
+
+def check_followup_rank(root: Path) -> None:
+    table = read_table(root, FOLLOWUP_FILE)
+    saved = _followup_column(table, "improvement_rank")
+    _assert(saved is not None,
+            f"{FOLLOWUP_FILE} has no improvement_rank column; Task 4.3 adds "
+            'improvement_rank = followup["change_week8"].rank(method="min").')
+    rows = [(p, row) for p, row in _followup_rows(table) if in_program(p)]
+    _assert(bool(rows), f"{FOLLOWUP_FILE} has none of the program patients, so its ranks cannot be compared.")
+    program = {p: change(p) for p in program_order()}
+    everyone = {p: change(p) for p in BP_EXPORT}
+    own_change = _followup_column(table, "change_week8")
+    accepted = [min_rank(program), min_rank(everyone)]
+    if own_change is not None:
+        accepted.append(min_rank({p: _number(row[own_change]) for p, row in rows}))
+        every_row = {p: _number(row[own_change]) for p, row in _followup_rows(table)}
+        accepted.append(min_rank(every_row))
+    if any(all(_matches(row[saved], ranks.get(p)) for p, row in rows) for ranks in accepted):
+        return
+    truth = min_rank(program)
+    wrong = [f"{p} has {row[saved] or 'blank'}, expected {_show(truth[p])}" for p, row in rows
+             if not _matches(row[saved], truth[p])]
+    if all(_matches(row[saved], average_rank(program)[p]) for p, row in rows):
+        cause = 'Tied patients share the mean of their places, as rank() does by default; add method="min".'
+    elif all(_matches(row[saved], min_rank(program, descending=True)[p]) for p, row in rows):
+        cause = "The smallest drop is ranked 1; leave out ascending=False, so the most negative change ranks first."
+    else:
+        cause = 'Task 4.3 ranks with followup["change_week8"].rank(method="min"): the largest drop is 1.'
+    raise AssertionError(f"{FOLLOWUP_FILE}, improvement_rank: {_first(wrong, 3)}. {cause}")
 
 
 def _order_bases(table: Table, rows: list[tuple[str, dict[str, str]]]) -> list[dict[str, float]]:
-    """The totals the order is judged by: the true line totals, and the file's own when every one is a number.
-
-    Judging by the file's own totals too means a wrong total costs only the line totals check.
-    """
-    bases = [{item_id: line_total(item_id) for item_id, _ in rows}]
-    total = _total_column(table)
-    if total is not None:
-        saved = {item_id: _number(row[total]) for item_id, row in rows}
-        if all(value is not None for value in saved.values()):
-            bases.append(saved)
+    """The changes the order is judged by: the true ones, and the file's own when every one is a number."""
+    bases = [{p: change(p) for p, _ in rows}]
+    saved = _followup_column(table, "change_week8")
+    if saved is not None:
+        own = {p: _number(row[saved]) for p, row in rows}
+        if all(value is not None for value in own.values()):
+            bases.append(own)
     return bases
 
 
-def _unsorted(ids: list[str]) -> str | None:
-    """The fix when the lines are still in data/supply_order.csv order, which sort_values() not assigned back leaves."""
-    if ids != [item_id for item_id in SUPPLY_ORDER if item_id in ids]:
-        return None
-    first = ", ".join(ids[:3]) + (", ..." if len(ids) > 3 else "")
-    return (
-        f"{SUPPLIES_FILE} lists its lines in the order data/supply_order.csv has them ({first}), so "
-        "they were saved unsorted. In Task 3.2, sort_values() returns a new, sorted table and leaves "
-        "selected_supplies as it was, so assign the result back: selected_supplies = selected_supplies.sort_values("
-        'by=["line_total_usd", "item_id"], ascending=[False, True]), then save again.'
+def _sorted_rows(root: Path) -> tuple[list[str], list[dict[str, float]]]:
+    table = read_table(root, FOLLOWUP_FILE)
+    rows = [(p, row) for p, row in _followup_rows(table) if in_program(p)]
+    _assert(len(rows) >= 2, f"{FOLLOWUP_FILE} names fewer than two program patients, so its order cannot be "
+                            "checked; the program patients check says what to fix.")
+    return [p for p, _ in rows], _order_bases(table, rows)
+
+
+def _first_rise(ids: list[str], changes: dict[str, float]) -> tuple[str, str] | None:
+    return next(((a, b) for a, b in zip(ids, ids[1:]) if changes[a] > changes[b] + TOLERANCE), None)
+
+
+def check_followup_sorted(root: Path) -> None:
+    ids, bases = _sorted_rows(root)
+    if any(_first_rise(ids, changes) is None for changes in bases):
+        return
+    if ids == [p for p in BP_EXPORT if p in ids]:
+        raise AssertionError(
+            f"{FOLLOWUP_FILE} lists its patients in data order ({', '.join(ids[:3])}, ...), so they were saved "
+            "unsorted. sort_values() returns a new table, so assign it back: followup = followup.sort_values("
+            'by=["change_week8", "patient_id"]), then save again.'
+        )
+    first, second = _first_rise(ids, bases[0])
+    raise AssertionError(
+        f"{FOLLOWUP_FILE} is not sorted from the largest drop to the smallest: {first} (change "
+        f"{_show(change(first))}) comes before {second} ({_show(change(second))}). The largest drop is the most "
+        'negative change, so in Task 4.3 sort ascending: by=["change_week8", "patient_id"].'
     )
 
 
-def _ordered_rows(root: Path) -> tuple[list[str], list[dict[str, float]]]:
-    table = read_table(root, SUPPLIES_FILE, "Task 3")
-    _require_line_key(table)
-    rows = _supply_rows(table)
+def check_followup_ties(root: Path) -> None:
+    ids, bases = _sorted_rows(root)
+    if not any(_first_rise(ids, changes) is None for changes in bases):
+        return  # A file not sorted by change is charged once, by the largest-drop-first check.
+    for changes in bases:
+        tie = next(((a, b) for i, a in enumerate(ids) for b in ids[i + 1:]
+                    if abs(changes[a] - changes[b]) <= TOLERANCE and a > b), None)
+        if tie is None:
+            return
+    first, second = next((a, b) for i, a in enumerate(ids) for b in ids[i + 1:]
+                         if abs(change(a) - change(b)) <= TOLERANCE and a > b)
+    raise AssertionError(
+        f"{FOLLOWUP_FILE} lists {first} before {second}, but both changed by {_show(change(first))} mmHg, so the "
+        f"tie goes to the smaller patient_id, {second}. In Task 4.3, sort with by=[\"change_week8\", \"patient_id\"]."
+    )
+
+
+def _parquet(root: Path) -> bytes:
+    path = _artifact(root, PARQUET_FILE)
+    _assert(path is not None, _missing(root, PARQUET_FILE))
+    data = path.read_bytes()
+    if len(data) >= 12 and data[:4] == b"PAR1" and data[-4:] == b"PAR1":
+        return data
+    kind = "CSV text, as to_csv() writes" if b"," in data[:200] else "not Parquet"
+    raise AssertionError(
+        f"{PARQUET_FILE} is {kind}: a Parquet file starts and ends with the bytes PAR1. "
+        f"In {SAVED_BY[PARQUET_FILE][0]}, save with {SAVED_BY[PARQUET_FILE][1]}."
+    )
+
+
+def check_parquet_file(root: Path) -> None:
+    _parquet(root)
+
+
+def _parquet_columns(data: bytes) -> list[str] | None:
+    """The column names pandas recorded in the file's footer, index included, or None without them."""
+    size = int.from_bytes(data[-8:-4], "little")
+    footer = data[-8 - size:-8] if 0 < size <= len(data) - 12 else data
+    start = footer.find(b'{"index_columns"')
+    if start < 0:
+        return None
+    try:
+        metadata, _ = json.JSONDecoder().raw_decode(footer[start:].decode("utf-8", errors="replace"))
+    except ValueError:
+        return None
+    return [str(column.get("name") or column.get("field_name") or "") for column in metadata.get("columns", [])]
+
+
+def check_parquet_columns(root: Path) -> None:
+    columns = _parquet_columns(_parquet(root))
+    _assert(columns is not None,
+            f"{PARQUET_FILE} records no pandas column list; save it from pandas with {SAVED_BY[PARQUET_FILE][1]}.")
+    saved = {column.casefold() for column in columns}
+    accepted = [set(FOLLOWUP_COLUMNS)]
+    try:
+        own = read_table(root, FOLLOWUP_FILE)
+        accepted.append(set(own.columns))
+    except (AssertionError, OSError, csv.Error):
+        pass
+    if saved in accepted:
+        return
+    if "patient_id" not in saved and saved | {"patient_id"} in accepted:
+        raise AssertionError(
+            f"{PARQUET_FILE} has no patient IDs: the index holds them, and index=False leaves it out. "
+            f"Save with {SAVED_BY[PARQUET_FILE][1]}, keeping the index."
+        )
+    expected = accepted[-1]
+    missing = sorted(expected - saved)
+    extra = sorted(saved - expected)
+    raise AssertionError(
+        f"{PARQUET_FILE} has the columns {_join(columns) or 'none'}"
+        + (f"; it is missing {_join(missing)}" if missing else "") + (f"; it also has {_join(extra)}" if extra else "")
+        + f". Save the same followup table as {FOLLOWUP_FILE}, after Task 4.3 adds improvement_rank."
+    )
+
+
+# Task 5: output/white_coat_gap.csv
+
+
+def _gap(table: Table) -> tuple[str | None, str | None]:
+    """(the patient ID column, the gap column)."""
+    key = _key_column(table, {p.casefold() for p in gap_expected()})
+    others = [c for c in table.columns if c != key]
+    gaps = [c for c in others if "gap" in c]
+    value = gaps[0] if len(gaps) == 1 else (others[0] if len(others) == 1 else None)
+    return key, value
+
+
+def check_gap_rows(root: Path) -> None:
+    table = read_table(root, GAP_FILE)
+    key, _ = _gap(table)
+    expected = list(gap_expected())
     _assert(
-        len(rows) >= 2,
-        f"{SUPPLIES_FILE} names {len(rows)} line{'' if len(rows) == 1 else 's'} from data/supply_order.csv, so "
-        f"its order cannot be checked; Task 3.1 keeps {len(expected_selection())} lines, and the line checks say "
-        "what to fix.",
+        key is not None,
+        f"{GAP_FILE} has no patient IDs (its columns are {_columns(table)}); in Task 5, read home_bp.csv with "
+        'index_col="patient_id" and save the result with its index, so leave out index=False.',
     )
-    return [item_id for item_id, _ in rows], _order_bases(table, rows)
-
-
-def _first_rise(ids: list[str], totals: dict[str, float]) -> tuple[str, str] | None:
-    return next(((a, b) for a, b in zip(ids, ids[1:]) if totals[a] < totals[b] - TOLERANCE), None)
-
-
-def _descending(ids: list[str], bases: list[dict[str, float]]) -> bool:
-    """True when the lines run from the highest line total down, by recomputed or saved totals."""
-    return any(_first_rise(ids, totals) is None for totals in bases)
-
-
-def check_supply_descending(root: Path) -> None:
-    """Each line's total is at least the next line's: the highest line total comes first."""
-    ids, bases = _ordered_rows(root)
-    if _descending(ids, bases):
+    labels = [row[key] for row in table.rows]
+    known = {p.casefold(): p for p in expected}
+    named = [known.get(label.casefold()) for label in labels]
+    unknown = [label for label, p in zip(labels, named) if p is None]
+    missing = [p for p in expected if p not in named]
+    repeated = [p for p in expected if named.count(p) > 1]
+    if not (unknown or missing or repeated):
+        if table.copies > 1:
+            raise AssertionError(_written_again(table))
         return
-    rises = [_first_rise(ids, totals) for totals in bases]
-    unsorted = _unsorted(ids)
-    if unsorted:
-        raise AssertionError(unsorted)
-    first, second = rises[0]
+    if unknown and all(_number(label) is not None for label in unknown):
+        raise AssertionError(
+            f"{GAP_FILE} has the row labels {_first(unknown)} beside the patient IDs: home_bp.csv was read with "
+            'row numbers as its index, so no label matched. Read it with index_col="patient_id".'
+        )
+    problems = ([f"it is missing {_first(missing)}"] if missing else []) + (
+        [f"it also has {_first(unknown)}"] if unknown else []) + (
+        ["it lists " + _join(f"{p} {named.count(p)} times" for p in repeated)] if repeated else [])
     raise AssertionError(
-        f"{SUPPLIES_FILE} is not sorted from the highest line_total_usd to the lowest: {first} "
-        f"(line total {line_total(first):.2f}) comes before {second} (line total {line_total(second):.2f}). "
-        'In Task 3.2, sort with by=["line_total_usd", "item_id"] and ascending=[False, True].'
+        f"{GAP_FILE} should have one row for each of the {len(expected)} patients in either table, P101 to P115, "
+        f"but {'; '.join(problems)}. Subtracting two Series keeps every label from both, with NaN where one side "
+        "has no reading; save that whole result."
     )
 
 
-def check_supply_ties(root: Path) -> None:
-    """Lines with the same total appear in item_id order, A to Z."""
-    ids, bases = _ordered_rows(root)
+def check_gap_values(root: Path) -> None:
+    table = read_table(root, GAP_FILE)
+    key, value = _gap(table)
+    _assert(key is not None and value is not None,
+            f"{GAP_FILE} needs a patient_id column and one column of gaps (its columns are {_columns(table)}); "
+            "save the white_coat_gap Series with its index.")
+    known = {p.casefold(): p for p in gap_expected()}
+    if any(row[key].casefold() not in known and _number(row[key]) is not None for row in table.rows):
+        return  # Row numbers beside the patient IDs are charged once, by the one-row-per-patient check.
+    rows = [(known[row[key].casefold()], row[value]) for row in table.rows if row[key].casefold() in known]
+    _assert(bool(rows), f"{GAP_FILE} names no patient, so its gaps cannot be compared.")
+    for expected in (gap_expected(), gap_expected(sentinel_kept=_kept_sentinel(root))):
+        if all(_matches(cell, expected[p]) for p, cell in rows):
+            return
+    truth = gap_expected()
+    matched = [(p, cell) for p, cell in rows if truth[p] is not None]
+    unmatched = [(p, cell) for p, cell in rows if truth[p] is None and not _blank(cell)]
+    if matched and all(_same(cell, -truth[p]) for p, cell in matched):
+        cause = ("Every gap has the wrong sign: Task 5 subtracts the home reading from the clinic one, "
+                 'bp["sbp_week8"] - home["home_sbp_week8"].')
+    elif unmatched and all(_matches(cell, truth[p]) for p, cell in matched):
+        cause = ("A patient with a reading on only one side has a number instead of a blank: fill_value=0 "
+                 "subtracts 0 for the missing side. Use the plain - so those gaps stay NaN.")
+    else:
+        cause = ('Task 5 computes bp["sbp_week8"] - home["home_sbp_week8"], which pairs readings by patient_id; '
+                 "both tables need patient_id as their index.")
+    wrong = [f"{p} has {cell or 'blank'}, expected {_show(truth[p])}" for p, cell in rows if not _matches(cell, truth[p])]
+    raise AssertionError(f"{GAP_FILE}: {_first(wrong, 3)}. {cause}")
 
-    def first_tie_out_of_order(totals: dict[str, float]) -> tuple[str, str] | None:
-        for i, first in enumerate(ids):
-            for second in ids[i + 1:]:
-                if abs(totals[first] - totals[second]) <= TOLERANCE and first > second:
-                    return first, second
-        return None
 
-    found = [first_tie_out_of_order(totals) for totals in bases]
-    if None in found:
-        return
-    if not _descending(ids, bases):
-        return  # A file not sorted by line total is charged once, by the descending check.
-    first, second = found[0]
-    raise AssertionError(
-        f"{SUPPLIES_FILE} lists {first} before {second}, but both have the line total {line_total(first):.2f}, "
-        f"so the tie goes to the smaller item_id, {second}. In Task 3.2, break ties with "
-        'by=["line_total_usd", "item_id"] and ascending=[False, True].'
-    )
-
-
-SELECT_HINT = "Task 3.1 selects item_id, item, quantity, and unit_price_usd with one .loc."
+LOADED_HINT = f"In Task 2.2, read with {LOAD_CALL}, then save with bp.to_csv(LOADED_PATH), keeping the index."
+FOLLOWUP_HINT = "Task 4.1 keeps bp's patient_id index; save with followup.to_csv(FOLLOWUP_PATH), keeping the index."
 CHECKS = (
-    Check("fridge block: fridge_id index column", check_fridge_id_column),
-    Check("fridge block: rows FRG-102 and FRG-103", check_fridge_rows),
-    *(Check(f"fridge block: {column} column", _temperature_name_check(column)) for column in TEMP_COLUMNS),
-    Check("fridge block: am_temp_c values", lambda root: _check_temperature(root, "am_temp_c")),
-    Check("fridge block: pm_temp_c values", lambda root: _check_temperature(root, "pm_temp_c")),
-    *(Check(f"selected supplies: {column} column", _column_check(column, SELECT_HINT)) for column in SUPPLY_COLUMNS[:4]),
-    Check(
-        "selected supplies: line_total_usd column",
-        _column_check("line_total_usd", "Task 3.1 adds line_total_usd = quantity * unit_price_usd."),
-    ),
-    Check("selected supplies: no extra columns", check_supply_extra_columns),
-    *(Check(f"selected supplies: line {item_id}", _line_check(item_id)) for item_id in expected_selection()),
-    Check("selected supplies: line totals", check_supply_line_totals),
-    Check("selected supplies: no other lines", check_supply_other_lines),
-    Check("selected supplies: highest line total first", check_supply_descending),
-    Check("selected supplies: ties in item_id order", check_supply_ties),
+    Check("bp loaded: patient_id column", _id_check(LOADED_FILE, LOADED_HINT, _loaded)),
+    Check("bp loaded: units row skipped", check_loaded_units),
+    Check("bp loaded: coordinator_note left out", check_loaded_note),
+    Check("bp loaded: all 14 patients once", check_loaded_patients),
+    Check("bp loaded: -999 read as missing", check_loaded_sentinel),
+    Check("bp loaded: clinic, age, and readings", check_loaded_values),
+    Check("visit summary: one row per visit", check_summary_visits),
+    *(Check(f"visit summary: {stat}", _summary_stat(stat)) for stat in STATS),
+    Check("clinic counts: patients per clinic", check_counts_values),
+    Check("clinic counts: most common first", check_counts_order),
+    Check("follow-up list: patient_id column", _id_check(FOLLOWUP_FILE, FOLLOWUP_HINT, lambda root: read_table(root, FOLLOWUP_FILE))),
+    Check("follow-up list: program patients", check_followup_rows),
+    Check("follow-up list: derived column names", check_followup_names),
+    Check("follow-up list: age dropped", check_followup_age),
+    Check("follow-up list: sbp_mean values", _derived_values("sbp_mean")),
+    Check("follow-up list: change_week8 values", _derived_values("change_week8")),
+    Check("follow-up list: improvement_rank values", check_followup_rank),
+    Check("follow-up list: largest drop first", check_followup_sorted),
+    Check("follow-up list: ties in patient_id order", check_followup_ties),
+    Check("follow-up Parquet: Parquet file", check_parquet_file),
+    Check("follow-up Parquet: same columns", check_parquet_columns),
+    Check("white-coat gap: one row per patient in either table", check_gap_rows),
+    Check("white-coat gap: gaps matched by patient", check_gap_values),
 )
 
 

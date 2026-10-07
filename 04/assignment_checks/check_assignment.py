@@ -12,8 +12,8 @@ from grading import grade_submission
 def left_to_fix(tests: list[dict]) -> str:
     """The failing checks, grouped by the part of their name before the colon.
 
-    A group whose checks all fail reads "fridge block (all 6 checks)"; otherwise its
-    failing checks are named, as in "selected supplies: line C1833 and line C4105".
+    A group whose checks all fail reads "bp loaded (all 6 checks)"; otherwise its
+    failing checks are named, as in "follow-up list: age dropped and sbp_mean values".
     """
     groups: dict[str, list[dict]] = {}
     for test in tests:

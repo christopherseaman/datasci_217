@@ -1,51 +1,53 @@
 # Assignment 04 grading development self-test
 
 Course-side QA for the checks, not a second grading mode. It answers the
-assignment with pandas from the handout's `data/supply_order.csv` and the
-notebook's supplied `fridge_readings` array, builds submissions in ignored
-`scratch/`, and confirms that:
+assignment with pandas from the handout's `data/bp_followup.csv` and
+`data/home_bp.csv`, builds submissions in ignored `scratch/`, and confirms
+that:
 
 - an empty directory and the untouched handout score 0, and a correct
   submission scores 100 through both the course-owned and the handout's
   `check_assignment.py`;
-- formatting that changes no value costs nothing: CRLF, trailing spaces, a
-  missing final newline, quoting every cell, column order, label and item
-  case, `2.00`-style numbers, a leading row-number column, UTF-16 or a BOM, a
-  file name in another letter case, an index moved into a column with
-  `reset_index()`, whether or not `index=False` is left out, and cells
-  separated by semicolons (with decimal commas) or tabs;
-- each single mistake (index left out or unnamed, a slice one row short or
-  long, the whole `fridge_log` saved, swapped reading column labels, a missing column, a renamed reading column, a wrong value, no mask,
-  `>` for `>=`, a `< 2` mask that keeps only the dropped lines, a block saved
-  sideways with `.T`, a table written into its file twice with `mode="a"`
-  (with or without `header=False`),
-  a mask that keeps nothing, no tie-break, the wrong sort
-  direction or both keys descending, `sort_values()` not assigned back (charged only by the descending check), one
-  wrong line total or quantity, every total computed wrongly, a missing or
-  misnamed total, a misnamed column, an extra column, a missing file, a file
-  saved in the assignment folder instead of `output/`) costs exactly the
-  checks it gets wrong, with a message that names the fix, and so do wrong
-  readings or swapped columns in a two-row block saved without its index, and
-  a wrong value in a semicolon- or tab-separated file. Column names, order
-  lines, line totals, and sort rules are separate checks, so a renamed column
-  costs only its 2-point name check. A missing `line_total_usd` in recognizable data costs only its column check, while wrong present totals lose their totals points; header-only/unknown-key omissions earn no inferred reading or total credit;
+- formatting and equivalent approaches cost nothing: CRLF, spaces, upper-case
+  labels and headers, every cell quoted, two-decimal numbers, cells separated
+  by semicolons (with decimal commas) or tabs, column order, UTF-16 or a BOM,
+  a file name in another letter case, IDs moved into a column with
+  `reset_index()` (with or without the row numbers `to_csv()` then writes),
+  means rounded to one decimal, the visit summary saved sideways or as
+  `describe()`, and a rank computed over every patient instead of the program
+  patients;
+- `-999` kept as a reading is one mistake: every later file is judged against
+  the student's own `bp_loaded.csv`, so it costs only its own check;
+- each other single mistake costs exactly the checks it gets wrong, with a
+  message that names the fix: the IDs lost with `index=False`, the units row
+  kept or used as the header, the note column kept, `nrows` cutting the file
+  short, a column or value wrong, a table written twice with `mode="a"`, a
+  file missing or saved outside `output/`, reductions run across rows, `len()`
+  for `count()`, a missing statistic, `normalize=True`, counts re-sorted by
+  name, `>` for `>=`, a missing `isin()` or baseline condition, `age` kept, a
+  derived column renamed, missing, or computed wrongly, the change's sign
+  flipped, `sort_values()` not assigned back, a descending sort, ties in the
+  wrong order, the default or a descending rank, a Parquet file that is
+  missing, is CSV text, lost its index, or was saved before the rank, the home
+  readings read without `index_col`, the gap's sign flipped, `fill_value=0`,
+  and the gap saved without its IDs;
 - the printed report gives a fix shared by consecutive checks once, marking
   the rest `(same fix as above)`, and ends with a `Left to fix` line naming
   the failing checks by file and the points they are worth;
 - a fresh handout prints the README's "Before Task 2" example, and the
   README's checkpoint order and completion contract agree with the checks;
-- the values the checks hold match `data/supply_order.csv`, in its order, and
-  the notebook,
-  every file the workflow lists in `CHECKS_FILES` is byte-identical in
-  `04/assignment/` and here, the list names every checker file here, the
-  handout ships no other Python and no self-test, and its notebook has no
-  saved outputs;
+- the values the checks hold match `data/bp_followup.csv` (units row
+  included) and `data/home_bp.csv`, every file the workflow lists in
+  `CHECKS_FILES` is byte-identical in `04/assignment/` and here, the list
+  names every checker file here, the handout ships no other Python and no
+  self-test, and its notebook has no saved outputs;
 - the handout sets up as Lecture 03 does: `pyproject.toml` pins numpy 2.3.3,
-  pandas 3.0.5, and ipykernel 6.29.5, `uv.lock` locks those versions,
-  `.python-version` names 3.13, and no `requirements.txt` ships beside them.
+  pandas 3.0.5, ipykernel 6.29.5, and pyarrow 25.0.0, `uv.lock` locks those
+  versions, `.python-version` names 3.13, and no `requirements.txt` ships
+  beside them.
 
 ```bash
-uv run --python 3.13 --with pandas==3.0.5 python 04/assignment_checks/_grader_selftest/run.py
+uv run --python 3.13 --with pandas==3.0.5 --with pyarrow==25.0.0 python 04/assignment_checks/_grader_selftest/run.py
 ```
 
 Run it before committing a change to the checks.
