@@ -205,8 +205,9 @@ A clinic reading that runs higher than the patient's home reading is the **white
 
 ## Check your work
 
-- Click **Restart**, then **Run All**.
-- The last cell prints your score and what to fix, using the latest checks from the course repository: the same checks GitHub runs on each push.
-- Commit `assignment.ipynb` and the `output/` files, then push.
+- Run the checks any time, even partway through: `python3 check_assignment.py` in the terminal (with the environment active) prints your score and what to fix.
+- When **Restart** and **Run All** finish without errors, the notebook's last cell runs the same checks.
+- Both use the latest checks from the course repository, the same checks GitHub runs on each push. Commit `assignment.ipynb` and the `output/` files, then push.
+- Expect: a passing run ends with `Score: 100/100`.
 
 What each check looks for: [CHECKS.md](CHECKS.md)

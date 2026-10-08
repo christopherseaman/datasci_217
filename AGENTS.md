@@ -205,7 +205,7 @@ Organization first, styling last. Fix substance (add the missing explanation, vi
 - README order: Overview (a brief task summary, then the dataset), Setup, Files, the tasks, Check your work.
 - Task-first: annotated scaffold tree, numbered subtasks, each step paired with what to expect, prominent artifact checkpoints. No preambles, forbidden-code lists, instructor notes, or repeated explanations.
 - Setup follows Lecture 03 (`uv venv --seed`, activate, `uv sync` on the supplied `pyproject.toml` and `uv.lock`). Terminal and git-identity setup appear only in Assignment 01, git identity as a fallback for when a commit or push asks for it. No Windows or troubleshooting paragraphs.
-- Check your work is very brief. Homework: run the checker or push (GitHub runs the latest checks), commit the outputs. Exams: list the expected files, then commit and push; no separate Submit section. The positive, artifact-based completion contract lives in a linked `CHECKS.md`. Say "checks," not "public checks."
+- Check your work is very brief. Homework notebooks list both the manual `python3 check_assignment.py` run and the notebook's final `run_checks()` cell (GitHub runs the latest checks on push), then commit the outputs. Exams: list the expected files, then commit and push; no separate Submit section. The positive, artifact-based completion contract lives in a linked `CHECKS.md`. Say "checks," not "public checks."
 - Checks run on every push; a new fork may need Actions enabled once.
 
 ### Checks and grading
