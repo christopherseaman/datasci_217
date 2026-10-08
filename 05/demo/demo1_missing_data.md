@@ -111,7 +111,7 @@ import numpy as np
 print('Mean SBP with the bad values:', clean['sbp'].mean())
 
 clean['sbp'] = clean['sbp'].replace(-999, np.nan)   # a fixed code: replace it
-clean['sbp'] = clean['sbp'].mask(clean['sbp'] > 250)  # a rule: blank anything above 250
+clean['sbp'] = clean['sbp'].mask((clean['sbp'] < 60) | (clean['sbp'] > 250))  # a rule: blank anything outside the 60-250 contract range
 print('Mean SBP after:', clean['sbp'].mean())
 display(clean[['patient_id', 'sbp']])
 ```

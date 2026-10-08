@@ -57,7 +57,7 @@ This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 | `visit_date` | visit day | `datetime64` | a real calendar date |
 | `sbp` | systolic blood pressure (mmHg) | `Int64` | 60-250 when present |
 
-Two dtypes are new: `datetime64` stores calendar dates rather than text, and `Int64` (capital I) stores whole numbers that may be blank.
+Two dtypes are new: `datetime64` stores calendar dates rather than text, and `Int64` (capital I) stores whole numbers that may be blank. For text, `str` is the pandas 3 default and marks gaps as `NaN`; `string` is the nullable text type and marks them `<NA>`.
 
 ![xkcd 2494: Flawed Data. Convincing-looking values do not repair flawed data](media/xkcd_2494.png)
 
@@ -82,7 +82,7 @@ Why a value is missing matters more than how many, and only knowing how the data
 - **MAR** (missing at random): explained by something you recorded, like younger patients skipping an optional survey.
 - **MNAR** (missing not at random): related to the missing value itself, like the heaviest drinkers skipping the alcohol question.
 
-![MCAR, MAR, and MNAR: gray cells are missing, and the gaps fall at random, where an observed column is low (light), or where an unobserved value is high (dark)](media/data_cleaning_workflow.png)
+![MCAR, MAR, and MNAR: gray cells are missing; shading shows what the gaps depend on](media/data_cleaning_workflow.png)
 
 ## Find and Count Missing Values
 
@@ -174,13 +174,13 @@ analysis = labs.dropna(subset=['glucose', 'hba1c'], how='all')
 print(analysis['patient_id'].tolist())  # ['P001', 'P002', 'P003']
 ```
 
-### Code Snippet: Fill One Lab with Its Median
+### Code Snippet: Fill one lab with its median
 
 ```python
 print(labs['glucose'].fillna(labs['glucose'].median()).tolist())  # [98.0, 104.0, 110.0, 104.0]
 ```
 
-### Code Snippet: Carry One Reading Forward
+### Code Snippet: Carry one reading forward
 
 `readings` contains `[10.0, NaN, NaN, 15.0]` from one sensor, in time order:
 
@@ -269,7 +269,7 @@ display(visits.drop_duplicates())                                  # P003's two 
 print(sbp.replace([-999, -1000], np.nan).tolist())  # [140.0, nan, 160.0, nan]
 ```
 
-### Code Snippet: Blank Values that Break a Rule
+### Code Snippet: Blank values that break a rule
 
 `ages` contains `[34, 150, 52]`:
 
@@ -289,9 +289,9 @@ print(ages.mask(ages > 120).tolist())  # [34.0, nan, 52.0]; check 150 against th
 | --- | --- | --- |
 | Text to number, invalid to missing | `pd.to_numeric(s, errors='coerce')` | Numbers (`float64` once any value becomes `NaN`); `'forty'` becomes `NaN` |
 | Change a clean column's type | `s.astype('float64')` / `s.astype('int64')` | Raises an error if any value cannot convert; `int64` cannot hold missing values |
-| Keep only whole numbers | `s.where(s.mod(1).eq(0))` | `s.mod(1).eq(0)` is `True` where the value has no fractional part, so `40.5` becomes missing |
-| Whole numbers with gaps | `s.astype('Int64')` | Nullable integers. From `float64`, `40.5` raises `TypeError`; from the nullable `Float64` that `pd.to_numeric` returns for `string` text, it silently becomes `40`, so keep only whole numbers first |
-| Text with gaps | `s.astype('string')` | Nullable text; missing shows as `<NA>` |
+| Keep only whole numbers | `s.where(s % 1 == 0)` | `s % 1 == 0` is `True` where the value has no fractional part, so `40.5` becomes missing |
+| Whole numbers with gaps | `s.astype('Int64')` | Nullable integers. `40.5` raises `TypeError` from `float64` but silently becomes `40` from the nullable `Float64` that `to_numeric` returns for `string` text, so drop fractions first |
+| Nullable text (`<NA>` for gaps) | `s.astype('string')` | Nullable text; missing shows as `<NA>` |
 | Dates in a known format | `pd.to_datetime(s, format='%Y-%m-%d', errors='coerce')` | `%Y` year, `%m` month, `%d` day; `datetime64[us]`; impossible dates such as `2026-02-30` become `NaT`, but single-digit parts such as `2026-7-01` are still accepted (exact check: Data Validation Rules) |
 | True/false with unknowns | `s.astype('boolean')` | Nullable `True` / `False` / `<NA>` |
 
@@ -343,7 +343,7 @@ display(form)
 | `df.apply(func, axis=0)` | Call `func` on each column, passed as a `Series` | `Series` indexed by column |
 | `df.map(func)` | Call `func` on every cell | `DataFrame` with the same shape |
 
-### Code Snippet: Apply a String Rule
+### Code Snippet: Apply a string rule
 
 `vitals` holds four rows of a nursing export, with pressures in mmHg:
 
@@ -359,13 +359,13 @@ display(form)
 print(vitals['pain'].apply(lambda text: int(text.split('/')[0])).tolist())  # [2, 7, 0, 5]
 ```
 
-### Code Snippet: Map Labels to Codes
+### Code Snippet: Map labels to codes
 
 ```python
 print(vitals['smoking'].map({'never': 0, 'former': 1, 'current': 2}).tolist())  # [0, 2, 1, 0]
 ```
 
-### Code Snippet: Apply a Rule to Each Row
+### Code Snippet: Apply a rule to each row
 
 ```python
 def bp_stage(row):
@@ -458,6 +458,8 @@ Categories (3, str): ['Young' < 'Middle' < 'Senior']
 
 - **String manipulation**: cleaning and testing text values, such as trimming spaces, fixing letter case, or matching a pattern.
 - **`.str` accessor**: applies Lecture 01's string methods to every value in a column at once, leaving missing values missing.
+- **Regular expression** (regex): a text pattern in which plain letters and digits match themselves, `[0-9]` matches any one digit, `{3}` repeats the previous item three times, and `+` means one or more. Write patterns as raw strings, `r'...'`, so Python leaves backslashes alone.
+- `r'P[0-9]{3}'` matches `P003` but not `P0003` (four digits).
 - Hand-typed text hides inconsistent categories: `value_counts()` counts `'North'`, `' north'`, and `'NORTH'` as three sites until you normalize them:
 
 | Raw value | Count before | After `.str.strip().str.lower()` | Count after |
@@ -478,11 +480,11 @@ Categories (3, str): ['Young' < 'Middle' < 'Senior']
 | `series.str.strip()` | Remove leading/trailing whitespace | String `Series` |
 | `series.str.lower()` / `series.str.upper()` | Convert to lowercase / uppercase | String `Series` |
 | `series.str.title()` | Capitalize each word (Lecture 01's `str.title()` for a whole column) | String `Series` |
-| `series.str.contains(pattern, na=False)` | Test whether each value contains `pattern`, read as a **regular expression** (regex): a text pattern in which plain letters and digits match themselves; `regex=False` searches for literal text. Write patterns as raw strings, `r'...'`: the `r` prefix stops Python from treating backslashes as escapes | Boolean `Series`; missing becomes `False` |
+| `series.str.contains(pattern, na=False)` | Test whether each value contains `pattern`, read as a regex; `regex=False` searches for literal text | Boolean `Series`; missing becomes `False` |
 | `series.str.replace(old, new, regex=False)` | Replace literal substrings | String `Series` |
 | `df.columns.str.replace(' ', '_')` | The same `.str` methods work on column labels | New `Index` of labels; assign it back to `df.columns` |
-| `series.str.replace(r' +', '_', regex=True)` | Replace each run of spaces with one underscore; as a regex, `+` means one or more of the preceding character (here a space) | String `Series`; `'north  clinic'` becomes `'north_clinic'` |
-| `series.str.split(sep)` | Split each value at a literal separator; `.str[0]` takes the first part and `expand=True` returns one column per part. `vitals['pain'].str.split('/').str[0].astype(int)` is the column-method form of the `apply` snippet above | `Series` of lists; `[2, 7, 0, 5]` after `.str[0].astype(int)`; `DataFrame` with `expand=True` |
+| `series.str.replace(r' +', '_', regex=True)` | Replace each run of spaces with one underscore; as a regex, `+` means one or more of the preceding character | String `Series`; `'north  clinic'` becomes `'north_clinic'` |
+| `series.str.split(sep)` | Split each value at a literal separator; `.str[0]` takes the first part, `expand=True` gives one column per part | `Series` of lists; `DataFrame` with `expand=True` |
 | `series.str.startswith(prefix, na=False)` | Test a literal prefix | Boolean `Series` |
 | `series.str.endswith(suffix, na=False)` | Test a literal suffix | Boolean `Series` |
 
@@ -512,7 +514,7 @@ display(tests.str.contains('fasting'))
 # Categorical Data Encoding
 
 - **Categorical variable**: a column whose values come from a short, fixed list of labels, such as smoking status (`never`, `former`, `current`), blood type, or study site.
-- **Categorical dtype**: stores the labels compactly.
+- **Categorical dtype** (`category`): stores each label once and gives every row a small integer **code** that points to it.
 - **Indicator variables**: one 0/1 column per label, for a regression or machine-learning model, which computes only with numbers.
 
 | Smoking label | Category code | `smoking_current` | `smoking_former` | `smoking_never` |
@@ -525,7 +527,7 @@ Category codes point to labels; they do not mean that one smoking status is twic
 
 ## Categorical Data Type
 
-A `category` column stores each distinct label once and gives every row a small integer **code** that points to its label, which can shrink a column with few distinct labels; the `pd.cut()` output above already printed `dtype: category` with its ordered labels.
+- `pd.cut()` above already printed `dtype: category` with its ordered labels.
 
 ### Reference Card: Categorical dtype
 
@@ -608,12 +610,12 @@ display(pd.get_dummies(colors, prefix='color', drop_first=True, dtype='int64')) 
 - List failing rows for review rather than deleting them: an age of 150 is almost certainly a typo, while a systolic pressure of 220 may be a real emergency.
 
 | Issue | Detection | Possible response after investigation |
-|-------|-----------|---------------------------------------|
-| Missing Values | `df.isna().sum()` plus sentinel checks | Retain, flag, impute, or drop according to variable meaning and analysis purpose |
-| Duplicate Candidates | exact-row and candidate-identifier checks | Confirm row meaning and source history; consolidate or remove only records shown to be redundant |
-| Wrong Data Type | `df.dtypes` plus conversion probes | Parse with an explicit failure policy, then validate the intended dtype |
-| Outliers | `df.describe()`<br>IQR fences<br>domain rules | Verify against source and domain knowledge; keep, flag, correct, cap, or filter with a documented rationale |
-| Inconsistent Categories | `df['col'].unique()` | Normalize only differences known to share a meaning; map documented aliases explicitly |
+| --- | --- | --- |
+| Missing Values | `df.isna().sum()` plus sentinel checks | Retain, flag, impute, or drop by meaning and purpose |
+| Duplicate Candidates | exact-row and candidate-identifier checks | Confirm row meaning; remove only proven redundancy |
+| Wrong Data Type | `df.dtypes` plus `pd.to_numeric(..., errors='coerce')` | Parse with a failure policy, then check dtype |
+| Outliers | `df.describe()`, IQR rule (below), domain rules | Verify at source; keep, flag, correct, cap, or filter, and document |
+| Inconsistent Categories | `df['col'].unique()` | Map documented aliases explicitly |
 
 - Run the inspection checks (`isna().sum()`, `duplicated().sum()`, `value_counts()`, `nunique()`, `dtypes`, `describe()`) before and after cleaning; counts should change only where you meant them to.
 
@@ -680,7 +682,7 @@ display(parsed)
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
 | `df[df['col'] > threshold]` | Filter by threshold | Filtered DataFrame |
-| `df.quantile([0.25, 0.75], numeric_only=True)` | Find numeric quartiles for the IQR method | `DataFrame` indexed by quantile |
+| `s.quantile(0.25)` / `s.quantile(0.75)` | Quartiles `q1` and `q3` for the IQR method; `iqr = q3 - q1` | A single number each |
 | `(s < q1 - 1.5 * iqr) \| (s > q3 + 1.5 * iqr)` | Flag values beyond 1.5 IQRs from the quartiles | Boolean `Series` |
 | `df[df['col'].between(lower, upper)]` | Keep rows whose selected value is within inclusive bounds | Filtered `DataFrame` |
 | `df.clip(lower, upper)` | Cap comparable values at bounds; `df['value'].clip(lower=0, upper=10)` turns 100 into 10 | Values changed to the bounds rather than rows dropped; record why each bound fits |
@@ -713,7 +715,7 @@ Exclude it with `df.loc[~iqr_flag]` only after evidence supports that decision.
 - `df.sample(n=5, random_state=42)`: Five random rows without replacement; errors if `df` has fewer than five rows.
 - `df.sample(frac=0.1, random_state=42)`: Ten percent of the rows.
 
-### Code Snippet: Draw Three Rows to Inspect
+### Code Snippet: Draw three rows to inspect
 
 ```python
 print(visits.sample(n=3, random_state=42).index.tolist())  # [1, 4, 2]
@@ -835,7 +837,7 @@ clean.to_csv('clean_patients.csv', index=False)
 | sites allowed | True |
 | ages 0-120 when present | True |
 
-Change `'south'` to `'South'` and rerun. `sites allowed` becomes `False`, `assert` raises `AssertionError: sites allowed    False`, and no file is written.
+Change `'south'` to `'South'` and rerun. `sites allowed` becomes `False`, `assert` raises `AssertionError` listing the failed check (`sites allowed    False`), and no file is written.
 
 ### Code Snippet: Read the saved file back
 

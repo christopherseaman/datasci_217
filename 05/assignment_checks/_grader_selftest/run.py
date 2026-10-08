@@ -402,7 +402,7 @@ def run() -> None:
             "R007's 40.5 rounded to 40 and flagged from it": (
                 {"cleaned_people.csv": cleaned(lambda t: at(at(t, "R007", "age", "40"), "R007", "needs_review",
                                                             "False"))},
-                {"cleaned_people.csv: age": 1}, ("R007", ".mod(1).eq(0)")),
+                {"cleaned_people.csv: age": 1}, ("R007", "% 1 == 0")),
             "R009's 2026-7-01 accepted as a date": (
                 {"cleaned_people.csv": cleaned(lambda t: at(at(t, "R009", "visit_date", "2026-07-01"), "R009",
                                                             "needs_review", "False"))},
@@ -440,6 +440,9 @@ def run() -> None:
             "a wrong mean": (
                 {"numpy_age_summary.csv": files["numpy_age_summary.csv"].replace("mean,33.0", "mean,39.6")},
                 {"numpy_age_summary.csv": 1}, ("mean",)),
+            "R007's 40.5 rounded to 40 in the array": (
+                {"numpy_age_summary.csv": "metric,value\ncount,7\nmin,0\nmax,52\nsum,238\nmean,34.0\n"},
+                {"numpy_age_summary.csv": 1}, ("includes 40",)),
             "the blanked ages kept as NaN, written with f-strings": (
                 {"numpy_age_summary.csv": "metric,value\n" + "".join(
                     f"{metric},{value}\n" for metric, value in nan_age_summary().items())},

@@ -212,7 +212,7 @@ display(enriched.sort_values('los_days', ascending=False)[
 
 ### 7. Side by side: monthly metrics from three systems
 
-Each system reports one row per month. Put `month` in the index of each so that `concat(axis=1)` lines rows up by label. The month labels are plain text such as `'2026-01'`.
+The `census` table below is ADT's later, complete re-export, so every month has a count. Each system reports one row per month. Put `month` in the index of each so that `concat(axis=1)` lines rows up by label. The month labels are plain text such as `'2026-01'`.
 
 ```python
 census = pd.DataFrame({
@@ -261,7 +261,7 @@ print(with_audits.shape)
 display(with_audits[['admissions', 'hand_hygiene_pct']])
 ```
 
-**Expect:** `(7, 7)`: the 6 metric columns plus `hand_hygiene_pct`. January, May, and June have `NaN` hand hygiene (no audit), and the new July row has `NaN` for every other system. The default `join='outer'` keeps every label from every input.
+**Expect:** `(7, 7)`: the 6 metric columns plus `hand_hygiene_pct`. January, May, and June have `NaN` hand hygiene (no audit), and the new July row has `NaN` `admissions` here (and in the other columns too). The default `join='outer'` keeps every label from every input.
 
 ```python
 audited_months = pd.concat([monthly, audits], axis=1, join='inner')

@@ -92,7 +92,7 @@ METRIC_ALIASES = {
 # Every numeric age_text value in the source, one per row, and the valid ages among them. A summary that
 # misses these ages is compared with every other choice of ages, so the metrics computed from the
 # student's own array still earn their points and the wrong choice costs one.
-AGE_CANDIDATES = (34, -9, 45, 52, 40.5, 121, 39, 28, 0)
+AGE_CANDIDATES = (34, -9, 45, 52, 40.5, 40, 121, 39, 28, 0)
 VALID_AGES = (34, 45, 52, 39, 28, 0)
 VALID_AGE_HINT = ("a valid age is a whole number from 0 through 120, so leave out the sentinels, words, "
                   "fractions such as 40.5, and ages above 120, and keep an age of 0")
@@ -125,13 +125,13 @@ ISSUE_AUDIT = (
 )
 # The likely cause of a wrong count for each issue, added to the shared hint below.
 ISSUE_HINTS = {
-    "schema mismatch": "compare raw's columns with the six in \"The data\"; a file read correctly has all six and no more",
+    "schema mismatch": "compare raw's columns with the six listed in the README's Overview; a file read correctly has all six and no more",
     "empty full-name tokens": "compare with '' in raw as the Task 1 cell loads it (keep_default_na=False keeps an empty cell as '')",
     "empty date tokens": "compare with '' in raw as the Task 1 cell loads it (keep_default_na=False keeps an empty cell as '')",
     "age sentinel tokens": "count both 'unknown' and '-9'",
     "status sentinel tokens": "count the text 'NA' in raw as the Task 1 cell loads it; without keep_default_na=False, pandas turns NA into a missing value",
     "age parse failures": "leave out empty values and the 'unknown' and '-9' sentinels before pd.to_numeric(..., errors='coerce')",
-    "numeric but noninteger age values": "count numbers whose .mod(1) is not 0",
+    "numeric but noninteger age values": "count numbers where `% 1 == 0` is False",
     "age values outside 0 through 120": "count only whole numbers, leave out the -9 sentinel, and keep 0 and 120 inside the range",
     "date parse failures": "check the text with .str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}') first, because "
                            "format='%Y-%m-%d' alone accepts 2026-7-01, then let to_datetime(..., errors='coerce') "
@@ -157,7 +157,7 @@ CLEANED_RULES = {
     "status": "strip and lowercase every status; the NA sentinel becomes missing",
     "age": "keep whole numbers from 0 through 120; sentinels, words, fractions, and ages above 120 become "
            "missing, never rounded (pd.to_numeric on string text gives Float64, whose astype('Int64') silently "
-           "turns 40.5 into 40, so blank the values where .mod(1).eq(0) is False before casting)",
+           "turns 40.5 into 40, so blank the values where `% 1 == 0` is False before casting)",
     "visit_date": "keep only exact YYYY-MM-DD text for a date on the calendar; anything else becomes missing",
     "needs_review": "True exactly where age or visit_date is missing, otherwise False",
 }

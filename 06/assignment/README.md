@@ -80,14 +80,14 @@ In the Task 1.1 cells:
 2. Select every `clinics_history` row whose `clinic_id` appears more than once, with `duplicated(subset=["clinic_id"], keep=False)` as the mask, and name the result `repeated_clinic_rows`. It shows K01's two rows: `Bayview Annex` (retired) and `Bayview Clinic` (current).
 3. In the next cell, try the merge with the contract written down, and catch the error it raises with `try`/`except` (Lecture 02). The lecture's "Catch a Broken Merge Contract" snippet shows the merge that raises it:
 
-```python
-try:
-    pd.merge(specimens, clinics_history, on="clinic_id", how="left", validate="many_to_one")
-except pd.errors.MergeError as error:
-    print("MergeError:", error)
-```
+    ```python
+    try:
+        pd.merge(specimens, clinics_history, on="clinic_id", how="left", validate="many_to_one")
+    except pd.errors.MergeError as error:
+        print("MergeError:", error)
+    ```
 
-It prints `MergeError: Merge keys are not unique in right dataset; not a many-to-one merge`, followed by the repeated key.
+    - Expect: `MergeError: Merge keys are not unique in right dataset; not a many-to-one merge`, followed by the repeated key.
 
 ### 1.2 Keep the current records, merge, and save
 
@@ -166,8 +166,9 @@ This step saves nothing. P202's follow-up blood pressure was rechecked, so the s
 
 ## Check your work
 
-- Click **Restart**, then **Run All**.
-- The last cell prints your score and what to fix, using the latest checks from the course repository: the same checks GitHub runs on each push.
-- Commit `assignment.ipynb` and the `output/` files, then push.
+- Run the checks any time, even partway through: `python3 check_assignment.py` in the terminal (with the environment active) prints your score and what to fix.
+- When **Restart** and **Run All** finish without errors, the notebook's last cell runs the same checks.
+- Both use the latest checks from the course repository, the same checks GitHub runs on each push. Commit `assignment.ipynb` and the `output/` files, then push.
+- Expect: a passing run ends with `Score: 100/100`.
 
 What each check looks for: [CHECKS.md](CHECKS.md)

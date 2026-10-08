@@ -70,7 +70,20 @@ Before merging, note three things the join types will reveal:
 - P004 and P005 have **no** lab results yet.
 - P006 has a lab result but **no registry record**, for example a referral that was never registered.
 
-### 2. Check the cardinality before you trust a merge
+### 2. Outer join with `indicator=True`: see what matches
+
+**Question:** "Which patients and labs match, and which are left over?" An outer join keeps every row from both tables; `indicator=True` adds a `_merge` column saying where each row came from.
+
+```python
+audit = pd.merge(patients, labs, on='patient_id', how='outer', indicator=True)
+print(len(audit))
+display(audit['_merge'].value_counts())
+display(audit[audit['_merge'] != 'both'][['patient_id', 'clinic', 'lab_id', '_merge']])
+```
+
+**Expect:** 9 rows. `_merge` counts: `both` 6, `left_only` 2, `right_only` 1. The leftover table has 3 rows: P004 and P005 as `left_only` (registered, no labs) and P006 as `right_only` (a lab with no registry record, so `clinic` is `NaN`). Use `indicator=True` whenever a merge's row count surprises you.
+
+### 3. Check the cardinality before you trust a merge
 
 Next month's registry export arrives. Looking up each lab's patient is a **many-to-one** merge (many lab rows, one registry row per patient). Watch the row count.
 
@@ -127,7 +140,7 @@ display(labs_with_clinic[['lab_id', 'patient_id', 'clinic', '_merge']])
 
 Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
-### 3. Inner join: only matching keys
+### 4. Inner join: only matching keys
 
 **Question:** "Which lab results can I attach to a registered patient?"
 
@@ -141,7 +154,7 @@ display(inner_merge)
 
 Always check row counts: if you expected every patient, the inner join silently dropped two of them.
 
-### 4. Left join: every patient
+### 5. Left join: every patient
 
 **Question:** "Show every registered patient, with labs where they exist."
 
@@ -162,7 +175,7 @@ display(no_labs[['patient_id', 'clinic', 'bmi']])
 
 **Expect:** 2 rows: P004 (South) and P005 (North).
 
-### 5. Right join: every lab result
+### 6. Right join: every lab result
 
 **Question:** "Show every lab result, even when the patient is not registered."
 
@@ -174,26 +187,6 @@ display(orphans[['lab_id', 'patient_id', 'test', 'value', 'units']])
 ```
 
 **Expect:** 7 rows in the right join, one per lab. The orphan table has 1 row: `L05`, `P006`, `A1c`, `6.4`, `%`. An orphaned lab is a data-quality issue to send back to registration.
-
-### 6. Outer join with `indicator=True`: the full audit
-
-**Question:** "Show everything, and say where each row came from."
-
-```python
-audit = pd.merge(patients, labs, on='patient_id', how='outer', indicator=True)
-print(len(audit))
-display(audit['_merge'].value_counts())
-```
-
-**Expect:** 9 rows, with `both` 6, `left_only` 2, and `right_only` 1: the 6 matched labs, the 2 patients without labs, and the 1 orphaned lab.
-
-```python
-display(audit[audit['_merge'] != 'both'][['patient_id', 'clinic', 'lab_id', '_merge']])
-```
-
-**Expect:** 3 rows: P004 and P005 as `left_only`, and P006 as `right_only` with `NaN` clinic.
-
-`indicator=True` is the quickest way to see what matched and what didn't. Use it whenever a merge's row count surprises you.
 
 ### 7. Merging on several keys: visits against targets
 
@@ -263,12 +256,12 @@ The central lab and a point-of-care (POC) device both report A1c in a column nam
 
 ```python
 central = pd.DataFrame({
-    'patient_id': ['P001', 'P002', 'P003', 'P004'],
+    'patient_id': ['P001', 'P002', 'P003', 'P007'],
     'a1c': [7.2, 5.6, 8.1, 6.3],
     'collected': ['2026-01-12', '2026-01-20', '2026-02-03', '2026-02-10'],
 })
 poc = pd.DataFrame({
-    'patient_id': ['P001', 'P002', 'P003', 'P004'],
+    'patient_id': ['P001', 'P002', 'P003', 'P007'],
     'a1c': [7.0, 5.8, 7.4, 6.4],
     'device': ['DCA-1', 'DCA-1', 'DCA-2', 'DCA-2'],
 })

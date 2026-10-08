@@ -52,7 +52,7 @@ P109,52,130,80,former,north,6/10
 output_dir = Path('output')
 output_dir.mkdir(exist_ok=True)
 raw_path = output_dir / 'intake_raw.csv'
-with raw_path.open('w', encoding='utf-8') as file:
+with raw_path.open('w', encoding='utf-8', newline='') as file:
     file.write(export_text)
 
 intake = pd.read_csv(raw_path)

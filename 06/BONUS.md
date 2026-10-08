@@ -9,11 +9,7 @@ notion:
 
 # DLC: Advanced Data Wrangling
 
-_These are more advanced or specialized operations from McKinney Chapter 8. They're incredibly powerful but you won't need them daily as a beginner. Come back to these when you encounter specific use cases that require hierarchical data management or specialized joining techniques._
-
-See README.md for the core data wrangling operations; master those first!
-
-# 1. Advanced MultiIndex Operations
+# Advanced MultiIndex Operations
 
 A **MultiIndex** identifies rows or columns with several label levels. Changing which level comes first lets the same clinic-by-quarter table support selection by clinic or by quarter without changing its values.
 
@@ -84,7 +80,7 @@ result = data.swaplevel(0, 1).sort_index(level=0)
 Sorting the levels prepares a MultiIndex for label-range slices with `.loc`; an unsorted index can reject those slices. Selecting one complete label does not require sorting first.
 
 
-# 2. Merging on Index
+# Merging on Index
 
 _Sometimes your "key" isn't a column; it's the index itself. This is common with time series or when you've already structured data with meaningful indexes._
 
@@ -158,7 +154,10 @@ print(both_index)
 - After set_index() operations
 - Joining dimension tables to fact tables (data warehouse style)
 
-**Gotcha:** An index used as a merge key is not automatically preserved as the result's index in every merge. Column-key merges generally create a new result index; index-key merges use the participating index labels as keys, but the resulting index structure depends on the join and key choices. Inspect `result.index` or call `reset_index()` when you need a predictable column form.
+<callout icon="⚠️" color="yellow_bg">
+	## A merge does not always keep the index
+	Column-key merges create a new result index. Inspect `result.index` or call `reset_index()` when you need the labels back as a column.
+</callout>
 
 ## DataFrame.join(): Shorthand for Index Merges
 
@@ -191,7 +190,7 @@ print(combined)
 ```
 
 
-# 3. Validating concat with verify_integrity
+# Validating concat with verify_integrity
 
 _Vertical concat keeps each piece's index, so labels can repeat. `verify_integrity=True` turns that into an error._
 
@@ -219,7 +218,7 @@ print(pd.concat([df1, df2], ignore_index=True)['A'].tolist())
 # [1, 2, 3, 4, 5, 6]
 ```
 
-# 4. MultiIndex Creation Methods
+# MultiIndex Creation Methods
 
 _Sometimes you need to build a MultiIndex programmatically rather than getting it from groupby or pivot. These methods give you precise control._
 
@@ -309,7 +308,7 @@ print(sales)
 - Programmatically generating report structures
 
 
-# 5. Hierarchical Columns from Pivot
+# Hierarchical Columns from Pivot
 
 _pivot() can create MultiIndex not just in rows, but in columns too. This happens when you don't specify the values parameter or when pivoting multiple value columns._
 
@@ -436,13 +435,13 @@ print(swapped)
 - Cross-tabulations showing multiple statistics
 - Financial reports (multiple quarters, multiple metrics)
 
-**Gotcha:** Hierarchical columns can be confusing. Often it's cleaner to either:
-1. Flatten them to single-level columns with descriptive names
-2. Use .xs() to extract just the metric/dimension you need
-3. Restructure the data to long format and avoid hierarchical columns
+<callout icon="💡" color="blue_bg">
+	## Hierarchical columns are easy to misread
+	Flatten them to single-level names, extract one metric with `.xs()`, or keep the data in long format.
+</callout>
 
 
-# 6. Repeated Pairs and pivot_table()
+# Repeated Pairs and pivot_table()
 
 `pivot()` stops with `ValueError: Index contains duplicate entries, cannot reshape` when an index/column pair holds more than one value. `pivot_table(values=..., index=..., columns=..., aggfunc='mean')` aggregates the repeats into one cell; choosing `mean` or `sum` is an analysis decision, and Lecture 08 teaches it.
 

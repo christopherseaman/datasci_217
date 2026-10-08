@@ -72,7 +72,7 @@ V012,P012,2026-02-17,south,48,126,79
 output_dir = Path('output')
 output_dir.mkdir(exist_ok=True)
 raw_path = output_dir / 'clinic_visits_raw.csv'
-with raw_path.open('w', encoding='utf-8') as file:
+with raw_path.open('w', encoding='utf-8', newline='') as file:
     file.write(export_text)
 
 raw = pd.read_csv(raw_path, dtype='string', keep_default_na=False)
@@ -110,9 +110,9 @@ rules = pd.DataFrame({
     'patient_id P+3 digits': raw['patient_id'].str.fullmatch(r'P[0-9]{3}'),
     'date text YYYY-MM-DD': raw['visit_date'].str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}'),
     'site allowed': raw['site'].isin(allowed_sites),
-    'age whole 0-120 or missing': raw['age'].isin(missing_codes) | (age_number.between(0, 120) & age_number.mod(1).eq(0)),
-    'sbp whole 60-250 or missing': raw['sbp'].isin(missing_codes) | (sbp_number.between(60, 250) & sbp_number.mod(1).eq(0)),
-    'heart rate whole 30-220 or missing': raw['heart_rate'].isin(missing_codes) | (hr_number.between(30, 220) & hr_number.mod(1).eq(0)),
+    'age whole 0-120 or missing': raw['age'].isin(missing_codes) | (age_number.between(0, 120) & (age_number % 1 == 0)),
+    'sbp whole 60-250 or missing': raw['sbp'].isin(missing_codes) | (sbp_number.between(60, 250) & (sbp_number % 1 == 0)),
+    'heart rate whole 30-220 or missing': raw['heart_rate'].isin(missing_codes) | (hr_number.between(30, 220) & (hr_number % 1 == 0)),
 })
 display((~rules).sum())               # rows failing each rule
 display(raw[~rules.all(axis=1)])      # rows to review
@@ -172,7 +172,7 @@ display(decisions)
 
 ### 6. Transform a working copy
 
-`age_number` came from `string` text, so it is the nullable `Float64`, and `astype('Int64')` would silently cut an age such as 40.5 to 40. `age_number.mod(1).eq(0)` keeps only whole ages first. This export has no fractional age, but the rule belongs in the pipeline for the next file.
+`age_number` came from `string` text, so it is the nullable `Float64`, and `astype('Int64')` would silently cut an age such as 40.5 to 40. `age_number % 1 == 0` keeps only whole ages first. This export has no fractional age, but the rule belongs in the pipeline for the next file.
 
 ```python
 working = raw.copy(deep=True)
@@ -180,15 +180,15 @@ working['patient_id'] = working['patient_id'].replace({'P0003': 'P003'})
 working['site'] = working['site'].str.strip().str.lower()
 working['site'] = working['site'].where(working['site'].isin(allowed_sites))
 working['visit_date'] = parsed
-working['age'] = age_number.where(age_number.between(0, 120) & age_number.mod(1).eq(0)).astype('Int64')
-working['sbp'] = sbp_number.where(sbp_number.between(60, 250) & sbp_number.mod(1).eq(0)).astype('Int64')
-working['heart_rate'] = hr_number.where(hr_number.between(30, 220) & hr_number.mod(1).eq(0)).astype('Int64')
+working['age'] = age_number.where(age_number.between(0, 120) & (age_number % 1 == 0)).astype('Int64')
+working['sbp'] = sbp_number.where(sbp_number.between(60, 250) & (sbp_number % 1 == 0)).astype('Int64')
+working['heart_rate'] = hr_number.where(hr_number.between(30, 220) & (hr_number % 1 == 0)).astype('Int64')
 working['needs_review'] = working[['visit_date', 'site', 'age', 'sbp', 'heart_rate']].isna().any(axis=1).astype('boolean')
 display(working)
 display(working.dtypes)
 ```
 
-**Expect:** 13 rows still (the repeated V007 is still there), with `<NA>` or `NaT` in place of every bad value, a new whole-number `heart_rate` column (`Int64`), and `needs_review` `True` for V004, V005, V006, both V007 rows, and V008.
+**Expect:** 13 rows still (the repeated V007 is still there), with `<NA>` or `NaT` in place of every bad value, `heart_rate` converted from text to whole numbers (`Int64`), and `needs_review` `True` for V004, V005, V006, both V007 rows, and V008.
 
 ### 7. Check the contract before saving
 

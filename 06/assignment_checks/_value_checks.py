@@ -1124,7 +1124,6 @@ CHECKS = (
             "Each sbp is the reading in that patient's baseline or followup column of sbp_wide.csv.",
         ),
     ),
-    # Task 3.2: output/sbp_round_trip.csv
     # Task 3.2: output/sbp_round_trip.csv, which may also match the pivot of the student's own sbp_long.csv.
     Check(
         "SBP round trip: columns",

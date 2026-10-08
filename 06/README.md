@@ -25,8 +25,6 @@ uv sync
 
 → Then open the `06-demo` folder in VS Code.
 
-_“Wrangle” comes from the Low German “wrangeln,” to dispute or wrestle, which is about how getting data to cooperate feels._
-
 This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 
 - 8.1 (hierarchical indexing, and indexing with a DataFrame's columns)
@@ -61,7 +59,7 @@ patients                    labs (A1c in %, LDL in mg/dL)
 
 _Join keys are the table's name tags: if two rows share a tag, pandas brings their columns together. A good key makes matching boring; a bad key turns the merge into an enthusiastic photocopier._
 
-![xkcd 2801: Contact Merge. Two contact names turn out to belong to one person. A shared key connects records; verify what that key identifies](media/xkcd_2801.png)
+![xkcd 2801: Contact Merge. A shared key connects records, so verify what it identifies](media/xkcd_2801.png)
 
 ## The Basics of pd.merge()
 
@@ -188,7 +186,7 @@ display(pd.merge(lab, poc, on='patient_id', suffixes=('_lab', '_poc')))
 | 0 | P001 | 7.4 | 7.1 |
 | 1 | P002 | 5.6 | 5.9 |
 
-![xkcd 1459: Documents. Columns named a1c_x and a1c_y say as little as Untitled 138 copy 2.docx, so name them with suffixes=](media/xkcd_1459.png)
+![xkcd 1459: Documents. Name overlapping columns with suffixes=, not a1c_x and a1c_y](media/xkcd_1459.png)
 
 ## Merging on Multiple Columns
 
@@ -299,29 +297,14 @@ pd.merge(visits, clinics, on='clinic_id', how='left', validate='many_to_one')
 
 # Working with DataFrame Indexes
 
-Lecture 04 introduced the index (row labels) and `set_index()`/`reset_index()`. Merging, concatenating, and two-part identifiers build on them.
+- The **index** holds the row labels that `loc` and `concat(axis=1)` use to find and line up rows.
+- Sometimes one column cannot name a row: a clinic has one visit count per quarter, so the row needs a clinic _and_ a quarter.
 
-![xkcd 1762: Moving Boxes. A label helps only when it says what is inside: a RangeIndex numbers the rows, while patient IDs name who each row is](media/xkcd_1762.png)
-
-## More set_index() Options
-
-### Reference Card: `set_index()` options
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `drop=False` | Keep the column in the DataFrame as well as in the index (default is True, which removes it) | DataFrame retains the source column |
-| `df.index.is_unique` | Test that all row labels are unique; an index can repeat a label | `True` when no labels repeat; otherwise `False` |
-
-### Code Snippet: Check that an identifier index is unique
-
-```python
-indexed = patients.set_index('patient_id', drop=False)
-print(indexed.index.is_unique)   # True: each patient appears once
-```
+![xkcd 1762: Moving Boxes. A good row label says what is inside, like a patient ID](media/xkcd_1762.png)
 
 ## Two-Level Row Labels
 
-- **MultiIndex** (hierarchical index): row labels with more than one level, such as a `(clinic, quarter)` pair.
+- **MultiIndex** (hierarchical index): row labels with more than one level, such as a `(clinic, quarter)` pair. The outer label prints once, with the inner labels under it.
 - Build one by passing `set_index()` a list of columns when one column cannot name a row, such as a quarterly visit count identified by clinic _and_ quarter.
 
 ### Reference Card: Two-level row labels
@@ -331,16 +314,27 @@ print(indexed.index.is_unique)   # True: each patient appears once
 | `df.set_index(['col1', 'col2'])` | Build two-level row labels from two columns | DataFrame with a `MultiIndex` |
 | `df.loc[('key1', 'key2'), :]` | Select a row by both parts of its label; `df.loc['key1']` selects every row under one outer label | Selected row or rows |
 | `df.reset_index()` | Turn both levels back into columns | New `DataFrame` with a default `RangeIndex` |
+| `df.index.is_unique` | Test that all row labels are unique; an index can repeat a label | `True` when no labels repeat; otherwise `False` |
 
 ### Code Snippet: Select a two-part row label
 
 `quarterly` has one `visits` count per clinic (North, South) and quarter (Q1, Q2):
 
 ```python
-summary = quarterly.set_index(['clinic', 'quarter']).sort_index()
+summary = quarterly.set_index(['clinic', 'quarter'])
+display(summary)
 print(summary.loc[('South', 'Q2'), 'visits'])  # 362
 display(summary.loc['South'])
 ```
+
+| clinic | quarter | visits |
+| --- | --- | --- |
+| North | Q1 | 410 |
+|  | Q2 | 395 |
+| South | Q1 | 380 |
+|  | Q2 | 362 |
+
+The `loc` line prints `362`; `loc['South']` shows the two South rows:
 
 | quarter | visits |
 | --- | --- |
@@ -446,7 +440,7 @@ print(back.equals(wide))   # True: the round trip rebuilt the wide table exactly
 | 1 | P002 | 138 | 132 |
 | 2 | P003 | 145 | 129 |
 
-![xkcd 2313: Wrong Times Table. A grid of numbers can look right and still be wrong, which is why the round trip above ends by checking equals()](media/xkcd_2313.png)
+![xkcd 2313: Wrong Times Table. A grid can look right and still be wrong, so check the round trip](media/xkcd_2313.png)
 
 ## When pivot() Finds a Repeated Pair
 
@@ -460,10 +454,10 @@ If an `index`/`columns` pair identifies more than one value, `pivot()` cannot ch
 display(rechecked[rechecked.duplicated(subset=['patient_id', 'visit'], keep=False)])
 ```
 
-|  | patient_id | visit | sbp |
-| --- | --- | --- | --- |
-| 3 | P002 | followup | 148 |
-| 4 | P002 | followup | 136 |
+|  | patient_id | visit | sbp | reading_time |
+| --- | --- | --- | --- | --- |
+| 3 | P002 | followup | 148 | 10:15 |
+| 4 | P002 | followup | 136 | 10:22 |
 
 - A recheck is a real repeated observation, so the fix is a documented rule, not a guess: to keep the later recheck, `sort_values('reading_time')`, then `drop_duplicates(subset=['patient_id', 'visit'], keep='last')`.
 - If both readings should count, `pivot_table()` aggregates them into one cell instead, and the choice of `sum`, `mean`, or another function changes the question being answered.
@@ -479,31 +473,33 @@ display(rechecked[rechecked.duplicated(subset=['patient_id', 'visit'], keep=Fals
 - It matches no key values the way `merge()` does: stacking lines columns up by name, and placing side by side lines rows up by index label.
 
 ```
-VERTICAL CONCATENATION (axis=0)     HORIZONTAL CONCATENATION (axis=1)
-DataFrame A:                       DataFrame A:    DataFrame B:
-┌─────────┐                        ┌─────────┐    ┌─────────┐
-│ A │ B   │                        │ A │ B   │    │ C │ D   │
-├─────────┤                        ├─────────┤    ├─────────┤
-│ 1 │ 2   │                        │ 1 │ 2   │    │ 5 │ 6   │
-│ 3 │ 4   │                        │ 3 │ 4   │    │ 7 │ 8   │
-└─────────┘                        └─────────┘    └─────────┘
-         +
-DataFrame B:                               =
-┌─────────┐                        ┌─────────────────┐
-│ A │ B   │                        │ A │ B │ C │ D   │
-├─────────┤                        ├─────────────────┤
-│ 5 │ 6   │                        │ 1 │ 2 │ 5 │ 6   │
-│ 7 │ 8   │                        │ 3 │ 4 │ 7 │ 8   │
-└─────────┘                        └─────────────────┘
-         =
-┌─────────┐
-│ A │ B   │
-├─────────┤
-│ 1 │ 2   │
-│ 3 │ 4   │  ← Stacked vertically
-│ 5 │ 6   │
-│ 7 │ 8   │
-└─────────┘
+VERTICAL CONCATENATION (axis=0)
+DataFrame A:      DataFrame B:      Result:
+┌─────────┐       ┌─────────┐       ┌─────────┐
+│ A │ B   │   +   │ A │ B   │   =   │ A │ B   │
+├─────────┤       ├─────────┤       ├─────────┤
+│ 1 │ 2   │       │ 5 │ 6   │       │ 1 │ 2   │
+│ 3 │ 4   │       │ 7 │ 8   │       │ 3 │ 4   │
+└─────────┘       └─────────┘       │ 5 │ 6   │
+                                    │ 7 │ 8   │
+                                    └─────────┘
+
+HORIZONTAL CONCATENATION (axis=1): rows line up by index label
+DataFrame A:      DataFrame B:
+┌───────────┐     ┌───────────┐
+│   │ A │ B │     │   │ C │ D │
+├───────────┤     ├───────────┤
+│ 0 │ 1 │ 2 │  +  │ 1 │ 5 │ 6 │
+│ 1 │ 3 │ 4 │     │ 2 │ 7 │ 8 │
+└───────────┘     └───────────┘
+Result (outer join keeps every label):
+┌───────────────────┐
+│   │ A │ B │ C │ D │
+├───────────────────┤
+│ 0 │ 1 │ 2 │NaN│NaN│
+│ 1 │ 3 │ 4 │ 5 │ 6 │
+│ 2 │NaN│NaN│ 7 │ 8 │
+└───────────────────┘
 ```
 
 ## Vertical Concatenation: Adding More Rows
@@ -539,7 +535,7 @@ print(list(combined.index))   # [0, 1, 2, 3, 4]: a clean sequential index
 | 0 | A201 | Med | 5 | feb_admissions.csv |
 | 1 | A202 | ICU | 1 | feb_admissions.csv |
 
-![xkcd 2502: Every Data Table. Some pieces of a stack need a note on where they came from, and a source column is a footnote that survives the stack](media/xkcd_2502.png)
+![xkcd 2502: Every Data Table. A source column records where each stacked row came from](media/xkcd_2502.png)
 
 ## Horizontal Concatenation: Adding More Columns
 
