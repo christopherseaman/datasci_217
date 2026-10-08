@@ -269,6 +269,8 @@ display(visits.drop_duplicates())                                  # P003's two 
 print(sbp.replace([-999, -1000], np.nan).tolist())  # [140.0, nan, 160.0, nan]
 ```
 
+_Sentinels cut both ways: in 2019 a California driver registered the vanity plate `NULL` and received about $12,000 in tickets written for cars whose plate was never recorded._
+
 ### Code Snippet: Blank values that break a rule
 
 `ages` contains `[34, 150, 52]`:
@@ -311,6 +313,8 @@ display(form)
 | 0 | 34 | 2026-01-15 | 34 | False |
 | 1 | unknown | NaT | <NA> | True |
 | 2 | 52 | 2026-03-01 | 52 | False |
+
+![xkcd 1179: ISO 8601. Pass format='%Y-%m-%d' and every date has one spelling](media/xkcd_1179.png)
 
 # LIVE DEMO!
 
