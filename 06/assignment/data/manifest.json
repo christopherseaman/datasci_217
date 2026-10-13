@@ -1,0 +1,58 @@
+{
+  "fixture_id": "a06-clinic-midterm-v1",
+  "provenance": "course-authored synthetic teaching data; no real patients",
+  "files": {
+    "patients.csv": {
+      "rows": 25,
+      "columns": [
+        "patient_id",
+        "sex",
+        "birth_year",
+        "site_code"
+      ],
+      "sha256": "aea4c9db076db22d7742fd12c9f59768522cf759d02356b72c20f213b8a0bcbb"
+    },
+    "sites.csv": {
+      "rows": 4,
+      "columns": [
+        "site_code",
+        "site_name",
+        "record_status"
+      ],
+      "sha256": "8d67e420e4c962bcd0aa8a11d631773878906cda0de47842a9d155bea5f1bc77"
+    },
+    "visits_north.csv": {
+      "rows": 22,
+      "columns": [
+        "patient_id",
+        "visit",
+        "visit_date",
+        "visit_time",
+        "sbp_mmhg",
+        "weight_kg"
+      ],
+      "sha256": "4e3c2dff9b36e04684704361b95ba43e5b45315103c8dfcb05f5db67ab7be8f3"
+    },
+    "visits_south.csv": {
+      "rows": 26,
+      "columns": [
+        "patient_id",
+        "visit",
+        "visit_date",
+        "visit_time",
+        "sbp_mmhg",
+        "wt_kg"
+      ],
+      "sha256": "e5619bdb48b312fb95fee3698274dc79bedc66f7b7b558892220568c1d19cd5f"
+    },
+    "a1c_wide.csv": {
+      "rows": 24,
+      "columns": [
+        "patient_id",
+        "a1c_baseline",
+        "a1c_week12"
+      ],
+      "sha256": "26fba1dd905d50c68011e543c82f9805632a6c066c303de289c673451c08a40f"
+    }
+  }
+}

@@ -8,7 +8,7 @@ Runs each assignment's handout checker and, where it exists, its course-owned
 NN/assignment_checks/ checker, against an empty submission and the scaffold.
 Where the handout ships a byte-identical copy of every file the workflow
 downloads from NN/assignment_checks/, as homework handouts do so students can
-test locally, both copies must print the same report. Exam handouts (05 and 11)
+test locally, both copies must print the same report. Exam handouts (06 and 11)
 ship no checker and no workflow, so only their course-owned checks run.
 
 Run it with the pinned dependencies above:
@@ -25,7 +25,7 @@ import tempfile
 
 
 # Exams and their automated points; human review makes up the rest of 100.
-EXAMS = {5: 75, 11: 75}
+EXAMS = {6: 75, 11: 75}
 
 
 def ships_course_checks(assignment: Path, course_owned: Path) -> bool:

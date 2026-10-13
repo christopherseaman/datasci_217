@@ -187,13 +187,13 @@ The core lecture finds exact repeats and repeated identifiers with `duplicated()
 
 ### Reference Card: Fuzzy matching
 
-- Fuzzy matching for near-duplicates (requires `fuzzywuzzy` or similar; `uv add fuzzywuzzy` installs it)
+- Fuzzy matching for near-duplicates (requires `thefuzz`, the maintained successor to `fuzzywuzzy`; `uv add thefuzz` installs it)
 
 ### Code Snippet: Find near-duplicate names
 
 ```python
 # Fuzzy string matching for near-duplicates
-from fuzzywuzzy import fuzz
+from thefuzz import fuzz
 names = pd.Series(['John Smith', 'Jon Smith', 'Jane Doe'])
 
 def find_similar(s, threshold=80):
@@ -204,6 +204,10 @@ def find_similar(s, threshold=80):
                 print(f"Similar: '{name1}' and '{name2}' ({ratio}% match)")
 
 find_similar(names)
+```
+
+```text
+Similar: 'John Smith' and 'Jon Smith' (95% match)
 ```
 
 # Data Type Optimization

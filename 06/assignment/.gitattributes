@@ -1,0 +1,2 @@
+# Keep the supplied data byte for byte on every OS, so each sha256 matches data/manifest.json.
+data/*.csv -text

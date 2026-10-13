@@ -216,10 +216,10 @@ Organization first, styling last. Fix substance (add the missing explanation, vi
 - A failure message states what was found beside what was expected, and the likely cause and fix (an empty timestamp, `>` overwriting a file, the wrong axis, positions used for labels).
 - Checker code runs on any Python 3, including macOS's system 3.9: no `zip(strict=True)`, `match`, or other 3.10+ features.
 - Homework is pass/fail and self-tested: the handout ships a byte-identical copy of its course-owned checks (`NN/assignment/` and `NN/assignment_checks/`); correct both.
-- `check_assignment.py` downloads the latest course checks from `main` (falling back to the bundled copy offline or on failure). Assignments 02–04 and 06–10 also expose `run_checks()` for a notebook's last cell; 01, 05, and 11 do not. `DS217_LOCAL_CHECKS` (or `--local-checks`) skips the download; CI sets it.
+- `check_assignment.py` downloads the latest course checks from `main` (falling back to the bundled copy offline or on failure). Assignments 02–05 and 07–10 also expose `run_checks()` for a notebook's last cell; 01, 06, and 11 do not. `DS217_LOCAL_CHECKS` (or `--local-checks`) skips the download; CI sets it.
 - The CI workflow (`NN/assignment/.github/workflows/tests.yml`: `CHECKS_REPO: christopherseaman/datasci_217`, `CHECKS_REF`, `CHECKS_PATH: NN/assignment_checks`, `CHECKS_FILES`) downloads the current checks each run, so fixes reach forks on their next push. Fetch the set named by `CHECKS_FILES` whole (`grading.py` pairs checks with `POINTS` and raises on a mismatch), validate and smoke-test it, and fall back to the vendored copy; a run that can use neither fails. Never fetch or overwrite student work.
 - Judge a checker by its JSON, never its exit status (it exits non-zero on any incomplete submission).
-- Exams (Assignments 05 and 11) ship no checker or `.github/` workflow, so their instructions name every path, header, and row count; the course grades them with `NN/assignment_checks/` after the deadline.
+- Exams (Assignment 06, the midterm, and Assignment 11, the final) ship no checker or `.github/` workflow, so their instructions name every path, header, and row count; the course grades them with `NN/assignment_checks/` after the deadline.
 
 ## Verification
 
