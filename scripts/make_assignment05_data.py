@@ -23,11 +23,11 @@ from pathlib import Path
 
 OUTPUT = Path(__file__).resolve().parents[1] / "05" / "assignment" / "data" / "lab_visits.csv"
 
-COLUMNS = ("patient_id", "visit_date", "clinic", "sex", "age", "weight_kg", "hba1c_pct", "glucose_mg_dl")
+COLUMNS = ("patient_id", "visit_date", "clinic", "gender", "age", "weight_kg", "hba1c_pct", "glucose_mg_dl")
 ROWS = (
     ("D2001", "2026-03-02", "Mission", "F", "54", "82.5", "7.8", "162"),
     ("D2002", "2026-03-02", "mission ", "f", "61", "95.1", "6.1", "118"),       # clinic case and space
-    ("D2003", "2026-03-03", "Sunset", "M", "47", "-999", "8.9", "201"),         # weight sentinel
+    ("D2003", "2026-03-03", "Sunset", "NB", "47", "-999", "8.9", "201"),        # weight sentinel; nonbinary spelled NB
     ("D2004", "2026-03-03", "SUNSET", "male", "66", "77.0", "", "135"),         # HbA1c blank
     ("D2005", "2026-03-04", "Excelsior", "F", "unknown", "68.4", "5.4", "96"),  # age as text
     ("D2006", "2026-03-04", "excelsior", "M", "58", "101.3", "9.6", "244"),
@@ -38,7 +38,7 @@ ROWS = (
     ("D2010", "2026-03-06", "Mission", "M", "63", "950", "7.2", "-999"),        # weight 950, glucose sentinel
     ("D2011", "2026-03-06", "Excelsior", "F", "45", "59.7", "", ""),            # no labs: a no-show
     ("D2001", "2026-04-06", "Mission", "F", "54", "81.9", "7.4", "151"),        # repeat visit, kept
-    ("D2012", "2026-04-07", "Sunset", "U", "57", "70.5", "6.3", "122"),         # sex code outside F/M
+    ("D2012", "2026-04-07", "Sunset", "U", "57", "70.5", "6.3", "122"),         # gender code outside F/M/X
     ("D204", "2026-04-07", "Excelsior", "M", "68", "84.2", "8.1", "188"),       # ID missing a digit
     ("D2013", "", "Mission", "F", "49", "66.1", "5.6", "99"),                   # visit date blank
     ("d2014 ", "2026-04-08", "mission", "F", "70", "79.4", "10.8", "412"),      # ID case and space; glucose outlier
@@ -46,7 +46,7 @@ ROWS = (
     ("D2016", "2026-04-09", "Excelsior", "F", "44", "61.0", "5.2", "90"),
     ("D2016", "2026-04-09", "Excelsior", "F", "44", "61.0", "5.2", "90"),       # exact repeat
     ("D2017", "2026-04-09", "MISSION", "M", "59", "-999", "7.0", ""),           # weight sentinel, glucose blank
-    ("D2018", "2026-04-10", "Sunset", "F", "65", "71.8", "6.9", "145"),
+    ("D2018", "2026-04-10", "Sunset", "nonbinary", "65", "71.8", "6.9", "145"),  # nonbinary spelled out
 )
 
 

@@ -1,7 +1,7 @@
-patient_id,visit_date,clinic,sex,age,weight_kg,hba1c_pct,glucose_mg_dl
+patient_id,visit_date,clinic,gender,age,weight_kg,hba1c_pct,glucose_mg_dl
 D2001,2026-03-02,Mission,F,54,82.5,7.8,162
 D2002,2026-03-02,mission ,f,61,95.1,6.1,118
-D2003,2026-03-03,Sunset,M,47,-999,8.9,201
+D2003,2026-03-03,Sunset,NB,47,-999,8.9,201
 D2004,2026-03-03,SUNSET,male,66,77.0,,135
 D2005,2026-03-04,Excelsior,F,unknown,68.4,5.4,96
 D2006,2026-03-04,excelsior,M,58,101.3,9.6,244
@@ -20,4 +20,4 @@ D2015,2026-04-08,Sunset,m,52,92.7,6.5,131
 D2016,2026-04-09,Excelsior,F,44,61.0,5.2,90
 D2016,2026-04-09,Excelsior,F,44,61.0,5.2,90
 D2017,2026-04-09,MISSION,M,59,-999,7.0,
-D2018,2026-04-10,Sunset,F,65,71.8,6.9,145
+D2018,2026-04-10,Sunset,nonbinary,65,71.8,6.9,145

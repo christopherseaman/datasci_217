@@ -20,7 +20,7 @@ curl -fsSL "$base_url/pyproject.toml" -o pyproject.toml
 curl -fsSL "$base_url/uv.lock" -o uv.lock
 curl -fsSL "$base_url/demo1_merge_operations.ipynb" -o demo1_merge_operations.ipynb
 curl -fsSL "$base_url/demo2_pivot_melt.ipynb" -o demo2_pivot_melt.ipynb
-curl -fsSL "$base_url/demo3_concat_timeseries.ipynb" -o demo3_concat_timeseries.ipynb
+curl -fsSL "$base_url/demo3_concat_combine.ipynb" -o demo3_concat_combine.ipynb
 
 echo "Made ~/06-demo with the Lecture 06 demo notebooks and their environment files."
 echo "Next: cd ~/06-demo"

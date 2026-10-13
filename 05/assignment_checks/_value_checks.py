@@ -51,11 +51,11 @@ SAVED_BY = {
 }
 
 # data/lab_visits.csv, cell for cell, spaces included.
-RAW_COLUMNS = ("patient_id", "visit_date", "clinic", "sex", "age", "weight_kg", "hba1c_pct", "glucose_mg_dl")
+RAW_COLUMNS = ("patient_id", "visit_date", "clinic", "gender", "age", "weight_kg", "hba1c_pct", "glucose_mg_dl")
 RAW_ROWS = (
     ("D2001", "2026-03-02", "Mission", "F", "54", "82.5", "7.8", "162"),
     ("D2002", "2026-03-02", "mission ", "f", "61", "95.1", "6.1", "118"),
-    ("D2003", "2026-03-03", "Sunset", "M", "47", "-999", "8.9", "201"),
+    ("D2003", "2026-03-03", "Sunset", "NB", "47", "-999", "8.9", "201"),
     ("D2004", "2026-03-03", "SUNSET", "male", "66", "77.0", "", "135"),
     ("D2005", "2026-03-04", "Excelsior", "F", "unknown", "68.4", "5.4", "96"),
     ("D2006", "2026-03-04", "excelsior", "M", "58", "101.3", "9.6", "244"),
@@ -74,13 +74,13 @@ RAW_ROWS = (
     ("D2016", "2026-04-09", "Excelsior", "F", "44", "61.0", "5.2", "90"),
     ("D2016", "2026-04-09", "Excelsior", "F", "44", "61.0", "5.2", "90"),
     ("D2017", "2026-04-09", "MISSION", "M", "59", "-999", "7.0", ""),
-    ("D2018", "2026-04-10", "Sunset", "F", "65", "71.8", "6.9", "145"),
+    ("D2018", "2026-04-10", "Sunset", "nonbinary", "65", "71.8", "6.9", "145"),
 )
 SENTINEL = -999.0
 SENTINEL_COLUMNS = ("weight_kg", "glucose_mg_dl")
 LAB_COLUMNS = ("hba1c_pct", "glucose_mg_dl")
 NUMBER_COLUMNS = ("age", "weight_kg", "hba1c_pct", "glucose_mg_dl")
-SEX_CODES = {"f": "F", "female": "F", "m": "M", "male": "M"}
+GENDER_CODES = {"f": "F", "female": "F", "m": "M", "male": "M", "x": "X", "nb": "X", "nonbinary": "X"}
 UNKNOWN_CLINIC = "Unknown"
 # pd.cut(bins=[0, 5.6, 6.4, 20]): each bin is (left, right], and a value outside every bin has no category.
 A1C_BINS = (0.0, 5.6, 6.4, 20.0)
@@ -88,9 +88,9 @@ A1C_LABELS = ("normal", "prediabetes", "diabetes")
 ID_PATTERN = re.compile(r"D[0-9]{4}")
 HBA1C_RANGE = (4.0, 20.0)
 WEIGHT_RANGE = (30.0, 250.0)
-RULES = ("patient_id_format", "visit_date_present", "sex_valid", "hba1c_in_range", "weight_in_range")
+RULES = ("patient_id_format", "visit_date_present", "gender_valid", "hba1c_in_range", "weight_in_range")
 # A rule saved under another name is recognized by a word in it.
-RULE_WORDS = {"patient_id_format": ("patient", "id"), "visit_date_present": ("date",), "sex_valid": ("sex",),
+RULE_WORDS = {"patient_id_format": ("patient", "id"), "visit_date_present": ("date",), "gender_valid": ("gender",),
               "hba1c_in_range": ("hba1c", "a1c"), "weight_in_range": ("weight",)}
 
 # Supplied values have at most one decimal; a percent may be saved rounded to one decimal.
@@ -123,7 +123,7 @@ class Visit:
     date: str | None  # ISO date, or None when blank or not a real date
     raw_id: str
     raw_clinic: str
-    raw_sex: str
+    raw_gender: str
     age: float | None
     weight_kg: float | None
     hba1c_pct: float | None
@@ -138,8 +138,8 @@ class Visit:
         return self.raw_clinic.strip().title() or UNKNOWN_CLINIC
 
     @property
-    def sex(self) -> str | None:
-        return SEX_CODES.get(self.raw_sex.strip().lower())
+    def gender(self) -> str | None:
+        return GENDER_CODES.get(self.raw_gender.strip().lower())
 
     def value(self, column: str) -> float | None:
         return getattr(self, column)
@@ -181,7 +181,7 @@ def _raw_visits() -> list[Visit]:
         cells = dict(zip(RAW_COLUMNS, row))
         visits.append(Visit(
             patient_id=cells["patient_id"].strip().upper(), date=_iso(cells["visit_date"]),
-            raw_id=cells["patient_id"], raw_clinic=cells["clinic"], raw_sex=cells["sex"],
+            raw_id=cells["patient_id"], raw_clinic=cells["clinic"], raw_gender=cells["gender"],
             **{column: _float(cells[column]) if cells[column] else None for column in NUMBER_COLUMNS},
         ))
     return visits
@@ -233,7 +233,7 @@ def rule_passes(visit: Visit) -> dict[str, bool]:
     return {
         "patient_id_format": ID_PATTERN.fullmatch(visit.patient_id) is not None,
         "visit_date_present": visit.date is not None,
-        "sex_valid": visit.sex in ("F", "M"),
+        "gender_valid": visit.gender in ("F", "M", "X"),
         "hba1c_in_range": visit.hba1c_pct is None or _in(visit.hba1c_pct, HBA1C_RANGE),
         "weight_in_range": visit.weight_kg is None or _in(visit.weight_kg, WEIGHT_RANGE),
     }
@@ -503,7 +503,7 @@ def _own_visits(table: Table | None) -> list[Visit] | None:
     for row, raw in zip(table.rows, table.raw):
         own.append(Visit(
             patient_id=raw["patient_id"], date=_iso(row.get("visit_date", "")) if "visit_date" in row else None,
-            raw_id=raw["patient_id"], raw_clinic=raw.get("clinic", ""), raw_sex=raw.get("sex", ""),
+            raw_id=raw["patient_id"], raw_clinic=raw.get("clinic", ""), raw_gender=raw.get("gender", ""),
             **{column: _number(row[column]) for column in NUMBER_COLUMNS},
         ))
     return own
@@ -838,26 +838,26 @@ def check_coded_clinic_filled(root: Path) -> None:
     )
 
 
-def check_coded_sex(root: Path) -> None:
-    _, rows = _coded(root, "sex")
+def check_coded_gender(root: Path) -> None:
+    _, rows = _coded(root, "gender")
     wrong = []
     for visit, row, _ in rows:
-        cell, expected = row["sex"], visit.sex
+        cell, expected = row["gender"], visit.gender
         if expected is None:
             if not _blank(cell):
-                wrong.append(f"{_visit_name(visit.key)} has {cell}, expected a blank for the code {visit.raw_sex}, "
+                wrong.append(f"{_visit_name(visit.key)} has {cell}, expected a blank for the code {visit.raw_gender}, "
                              "which the dictionary does not list (map() turns it into NaN; replace() leaves it)")
         elif cell.casefold() != expected.casefold():
             wrong.append(f"{_visit_name(visit.key)} has {cell or 'blank'}, expected {expected}")
     _assert(
         not wrong,
-        f"{CODED_FILE}, sex: {_first(wrong, 3)}. In Task 3.1, map every spelling to one code with "
-        'labs["sex"].str.strip().str.lower().map({"f": "F", "female": "F", "m": "M", "male": "M"}).',
+        f"{CODED_FILE}, gender: {_first(wrong, 3)}. In Task 3.1, map every spelling to one code with "
+        'labs["gender"].str.strip().str.lower().map({"f": "F", "female": "F", "m": "M", "male": "M", "x": "X", "nb": "X", "nonbinary": "X"}).',
     )
-    mixed = sorted({row["sex"] for _, row, _ in rows if row["sex"] and not _blank(row["sex"])})
+    mixed = sorted({row["gender"] for _, row, _ in rows if row["gender"] and not _blank(row["gender"])})
     _assert(
         len({code.casefold() for code in mixed}) == len(mixed),
-        f"{CODED_FILE}, sex: the codes are written as {_join(mixed)}; map each spelling to F or M with the "
+        f"{CODED_FILE}, gender: the codes are written as {_join(mixed)}; map each spelling to F, M, or X with the "
         "dictionary in Task 3.1.",
     )
 
@@ -976,7 +976,7 @@ def _own_failing(root: Path) -> dict[str, int] | None:
         passes = {
             "patient_id_format": ID_PATTERN.fullmatch(raw["patient_id"]) is not None,
             "visit_date_present": has_date,
-            "sex_valid": raw.get("sex", "") in ("F", "M"),
+            "gender_valid": raw.get("gender", "") in ("F", "M", "X"),
             "hba1c_in_range": visit.hba1c_pct is None or _in(visit.hba1c_pct, HBA1C_RANGE),
             "weight_in_range": visit.weight_kg is None or _in(visit.weight_kg, WEIGHT_RANGE),
         }
@@ -1004,7 +1004,7 @@ def check_validation_counts(root: Path) -> None:
                  '| labs["hba1c_pct"].isna() (and the same for weight_kg) to let a missing value pass.')
     else:
         cause = ("Run the rules on the Task 3 table: patient_id with .str.fullmatch(r\"D[0-9]{4}\", na=False), "
-                 'visit_date with notna(), sex with isin(["F", "M"]), and the two ranges with between(low, high).')
+                 'visit_date with notna(), gender with isin(["F", "M", "X"]), and the two ranges with between(low, high).')
     raise AssertionError(f"{VALIDATION_FILE}, failing_rows: {_first(wrong, 3)}. {cause}")
 
 
@@ -1046,7 +1046,7 @@ def check_clean_dropped(root: Path) -> None:
     if gone:
         problems.append(f"it is missing {_first([_visit_name(key) for key in gone])}")
     out_of_range = [v.key for v in TYPED if v.key in gone and not all(rule_passes(v)[r] for r in RULES[2:])]
-    hint = (" A visit that breaks only a range or sex rule stays, with the bad value blanked." if out_of_range else "")
+    hint = (" A visit that breaks only a range or gender rule stays, with the bad value blanked." if out_of_range else "")
     raise AssertionError(
         f"{CLEAN_FILE} should hold the {len(CLEAN_KEYS)} visits that pass both identity rules, but "
         + "; ".join(problems) + '. In Task 5.1, keep clean[rules["patient_id_format"] & '
@@ -1173,7 +1173,7 @@ CHECKS = (
     Check("coded table: patient IDs cleaned", check_coded_ids),
     Check("coded table: clinic names cleaned", check_coded_clinic),
     Check("coded table: missing clinic filled", check_coded_clinic_filled),
-    Check("coded table: sex codes mapped", check_coded_sex),
+    Check("coded table: gender codes mapped", check_coded_gender),
     Check("coded table: a1c_category", check_coded_category),
     Check("coded table: clinic indicators", check_coded_dummies),
     Check("validation report: one row per rule", check_validation_rows),

@@ -281,9 +281,9 @@ print('Rows:', len(raw), 'raw,', len(clean), 'clean')
 
 ## Independent practice
 
-Continue on your own after class. This cell reuses the core results; if the runtime closed, run the cells above again first.
+Continue on your own after class, outside the live route. This cell reuses the core results; if the runtime closed, run the cells above again first.
 
-### Spot-check random rows
+### Practice 1: Spot-check random rows
 
 `head()` shows only the top of the file. Three random rows show the middle.
 

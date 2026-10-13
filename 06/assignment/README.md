@@ -2,19 +2,31 @@
 
 ## Overview
 
-Profile five raw clinic tables, audit and clean them, stack the two site visit exports, reshape the lab results, join everything into one analysis table, and pivot blood pressure to one row per patient. Each result is saved as a file in `output/`; the notebook cells and decision reasons are read by human review.
+Profile five raw clinic tables, audit and clean them, recode gender as a category, stack the two site visit exports, reshape the lab results, join everything into one analysis table, and pivot blood pressure to one row per patient. Each result is saved as a file in `output/`; the notebook cells and decision reasons are read by human review.
 
 The five files in `data/` are a synthetic follow-up study of adults with high blood pressure and type 2 diabetes at two clinic sites; no real patients are in them.
 
 | File | One row is | Columns |
 | --- | --- | --- |
-| `patients.csv` | One registered patient | `patient_id`; `sex` (`F` or `M`, may be empty); `birth_year` (`9999` means not recorded); `site_code` |
+| `patients.csv` | One registered patient | `patient_id`; `gender`; `birth_year` (`9999` means not recorded); `site_code` |
 | `sites.csv` | One site record | `site_code`; `site_name`; `record_status` (`current` or `retired`) |
-| `visits_north.csv` | One clinic visit at the north site | `patient_id`; `visit` (`baseline` or `week12`); `visit_date` (`YYYY-MM-DD`); `visit_time` (`HH:MM`); `sbp_mmhg` (systolic blood pressure in mmHg; `999` means not measured); `weight_kg` |
+| `visits_north.csv` | One clinic visit at the north site | `patient_id`; `visit`; `visit_date` (`YYYY-MM-DD`); `visit_time` (`HH:MM`); `sbp_mmhg` (systolic blood pressure in mmHg; `999` means not measured); `weight_kg` |
 | `visits_south.csv` | One clinic visit at the south site | The same columns, except the weight column is named `wt_kg` |
 | `a1c_wide.csv` | One patient's central lab results | `patient_id`; `a1c_baseline` and `a1c_week12` (hemoglobin A1c in %; empty means no result) |
 
-The values arrive as staff typed them, so expect stray spaces, mixed letter case, repeated rows, and entries that break these rules. Leave the files exactly as they ship: the notebook's first code cell compares each checksum with `data/manifest.json` and stops if a file has changed.
+The coded columns must hold these values once cleaned:
+
+| Column | Code | Meaning |
+| --- | --- | --- |
+| `gender` | `F` | Female |
+| `gender` | `M` | Male |
+| `gender` | `X` | Nonbinary |
+| `gender` | missing | Empty or `unknown`: not recorded |
+| `site_code` | A code from `sites.csv`, such as `N01` | Uppercase, with no spaces or hyphens |
+| `visit` | `baseline` | The enrollment visit |
+| `visit` | `week12` | The follow-up visit 12 weeks later |
+
+The values arrive as staff typed them, so expect other spellings of these codes, such as `woman` or `wk12`, stray spaces, mixed letter case, repeated rows, and entries that break these rules. Leave the files exactly as they ship: the notebook's first code cell compares each checksum with `data/manifest.json` and stops if a file has changed.
 
 ## Setup
 
@@ -50,6 +62,7 @@ assignment/
     ├── table_profile.csv       # you make in Task 1.2
     ├── issue_audit.csv         # you make in Task 2.3
     ├── patients_clean.csv      # you make in Task 3.1
+    ├── gender_categories.csv   # you make in Task 3.1
     ├── visits_clean.csv        # you make in Task 3.2
     ├── a1c_long.csv            # you make in Task 4.1
     ├── merge_audit.csv         # you make in Task 4.2
@@ -102,12 +115,12 @@ Count each issue below in the raw tables, every row before any duplicate is remo
 
 ```text
 issue,count
-patients: sex values needing normalization,<count>
-patients: empty sex,<count>
+patients: gender values that are not a code,<count>
+patients: empty gender,<count>
 patients: birth_year sentinel 9999,<count>
 patients: site codes needing normalization,<count>
 sites: rows with a repeated site_code,<count>
-visits: visit labels needing normalization,<count>
+visits: visit labels that are not baseline or week12,<count>
 visits: sbp sentinel 999,<count>
 visits: sbp outside 70 through 250,<count>
 visits: date parse failures,<count>
@@ -116,16 +129,16 @@ visits: rows in repeated patient_id and visit pairs,<count>
 
 | Issue | What it counts |
 | --- | --- |
-| `sex values needing normalization` | Rows whose `sex` is not empty after `.str.strip()` and changes under `.str.strip().str.upper()` |
-| `empty sex` | Rows whose `sex` is empty after `.str.strip()` |
+| `gender values that are not a code` | Rows whose `gender` is not empty after `.str.strip()` and, as written, is not exactly `F`, `M`, or `X`: `~isin([...])` |
+| `empty gender` | Rows whose `gender` is empty after `.str.strip()` |
 | `birth_year sentinel 9999` | Rows whose `birth_year` is `9999` |
-| `site codes needing normalization` | Rows whose `site_code` changes under `.str.strip().str.upper()` |
+| `site codes needing normalization` | Rows whose `site_code` changes when uppercased with every space and hyphen removed (Task 3.1's rule) |
 | `rows with a repeated site_code` | Every `sites.csv` row whose `site_code` also appears on another row: `duplicated(subset=["site_code"], keep=False)` |
-| `visit labels needing normalization` | Rows whose `visit` changes under `.str.strip().str.lower()` |
+| `visit labels that are not baseline or week12` | Rows whose `visit`, as written, is not exactly `baseline` or `week12` |
 | `sbp sentinel 999` | Rows whose `sbp_mmhg` is `999` |
 | `sbp outside 70 through 250` | Rows whose `sbp_mmhg` is a number other than `999` below 70 or above 250 |
 | `date parse failures` | Rows whose `visit_date` is not exact `YYYY-MM-DD` text for a date on the calendar (Lecture 05's "Accept only exact dates") |
-| `rows in repeated patient_id and visit pairs` | Every row whose `patient_id` and stripped, lowercased `visit` together also appear on another row: `duplicated(subset=[...], keep=False)` |
+| `rows in repeated patient_id and visit pairs` | Every row whose `patient_id` and `visit`, mapped to `baseline` or `week12` as in Task 3.2 step 2, together also appear on another row: `duplicated(subset=[...], keep=False)` |
 
 A count of 0 is a finding too; keep its row. Auditing must not change `raw`: the notebook's snapshot comparison stays `True`.
 
@@ -140,23 +153,34 @@ Build each cleaned table from a `copy(deep=True)` and never change `raw` or `vis
 
 Build `patients_clean` from `raw["patients"]`:
 
-- Remove exact duplicate rows, keeping the first.
-- `sex`: strip and uppercase; an empty value becomes missing.
-- `birth_year`: the `9999` sentinel becomes missing; dtype `Int64`.
-- `site_code`: strip and uppercase.
-- Renumber the rows with `reset_index(drop=True)`.
+1. Remove exact duplicate rows, keeping the first.
+2. `gender`: list the spellings with `value_counts()`, then strip and lowercase them and map each to its code from the data dictionary with a dictionary and `Series.map()` (Lecture 05), such as `{"female": "F", "woman": "F", ...}`. A spelling the dictionary leaves out, such as `unknown` or an empty value, becomes missing. Convert the result with `astype("category")`.
+3. `birth_year`: the `9999` sentinel becomes missing; dtype `Int64`.
+4. `site_code`: uppercase, then remove every hyphen and space with `.str.replace("-", "")` and `.str.replace(" ", "")`.
+5. Renumber the rows with `reset_index(drop=True)`.
 
-Save it with `index=False`, columns in this order: `patient_id`, `sex`, `birth_year`, `site_code`.
+- Expect: `patients_clean["gender"].cat.categories` shows `['F', 'M', 'X']`.
+
+Save it with `index=False`, columns in this order: `patient_id`, `gender`, `birth_year`, `site_code`. Then save the category counts, missing included, with each category's code. Only a `category` column has `.cat.codes`:
+
+```python
+gender_counts = patients_clean["gender"].value_counts(dropna=False).reset_index()
+gender_counts["code"] = gender_counts["gender"].cat.codes
+gender_counts.to_csv(GENDER_CATEGORIES_PATH, index=False)
+```
 
 > **Checkpoint: `output/patients_clean.csv`**
-> 25 lines: the header `patient_id,sex,birth_year,site_code` and one row per patient.
+> 25 lines: the header `patient_id,gender,birth_year,site_code` and one row per patient.
+
+> **Checkpoint: `output/gender_categories.csv`**
+> 5 lines: the header `gender,count,code`, one row per code with its category code (`F` 0, `M` 1, `X` 2), and a row with an empty `gender` and code `-1` for the missing values.
 
 ### 3.2 Clean the visits
 
 Build `visits_clean` from `visits_raw`:
 
 1. Remove exact duplicate rows, keeping the first.
-2. `visit`: strip and lowercase.
+2. `visit`: list the spellings with `value_counts()`, then strip and lowercase them and map each to `baseline` or `week12` with a dictionary and `Series.map()`, as for `gender`.
 3. `sbp_mmhg`: convert with `pd.to_numeric(..., errors="coerce")`; keep values from 70 through 250, and make everything else, `999` included, missing; dtype `Int64`.
 4. `weight_kg`: convert to numbers (`float64`); an empty value stays missing.
 5. `visit_date`: keep a value only when its text is exact `YYYY-MM-DD` and the date exists on the calendar; anything else becomes missing.
@@ -175,7 +199,8 @@ Build `decision_table`, a DataFrame with the columns `table`, `decision`, and `r
 | `table` | `decision` |
 | --- | --- |
 | `patients` | `remove the exact duplicate row, keeping the first` |
-| `patients` | `strip and uppercase sex and site_code; an empty sex becomes missing` |
+| `patients` | `map gender to F, M, or X with a dictionary and store it as a category` |
+| `patients` | `uppercase site_code and remove its spaces and hyphens` |
 | `patients` | `convert the birth_year sentinel 9999 to missing` |
 | `visits` | `rename wt_kg to weight_kg before stacking` |
 | `visits` | `convert sbp_mmhg outside 70 through 250, including 999, to missing` |
@@ -250,7 +275,7 @@ Keep these columns in this order, with these dtypes, so the read-back in Task 5.
 | `visit_date` | `datetime64[us]` |
 | `sbp_mmhg` | `Int64` |
 | `weight_kg`, `a1c_pct` | `float64` |
-| `sex` | `string` |
+| `gender` | `string` |
 | `birth_year` | `Int64` |
 | `site_code`, `site_name`, `source_file` | `string` |
 
@@ -282,13 +307,13 @@ Then `assert checks.all(), checks[~checks]` directly before the cell that saves,
 Save `analysis` to `output/analysis_visits.csv`, `sbp_wide` to `output/sbp_wide.csv`, and `decision_table` to `output/decision_log.csv`, each with `to_csv(path, index=False)`.
 
 > **Checkpoint: `output/analysis_visits.csv`**
-> 47 lines: the header `patient_id,visit,visit_date,sbp_mmhg,weight_kg,a1c_pct,sex,birth_year,site_code,site_name,source_file` and one row per visit.
+> 47 lines: the header `patient_id,visit,visit_date,sbp_mmhg,weight_kg,a1c_pct,gender,birth_year,site_code,site_name,source_file` and one row per visit.
 
 > **Checkpoint: `output/sbp_wide.csv`**
 > 25 lines: the header `patient_id,baseline,week12,sbp_change` and one row per patient with a visit.
 
 > **Checkpoint: `output/decision_log.csv`**
-> 9 lines: the header `table,decision,reason` and the eight decisions in the order of Task 3.3.
+> 10 lines: the header `table,decision,reason` and the nine decisions in the order of Task 3.3.
 
 ### 5.3 Read the files back
 
@@ -305,14 +330,15 @@ Read `output/analysis_visits.csv` back with `dtype={...}` for every column but `
 | `output/file_inventory.txt` | Task 1.1 | `<count> data/a1c_wide.csv` | 6 |
 | `output/table_profile.csv` | Task 1.2 | `table,rows,columns,exact_duplicate_rows` | 6 |
 | `output/issue_audit.csv` | Task 2.3 | `issue,count` | 11 |
-| `output/patients_clean.csv` | Task 3.1 | `patient_id,sex,birth_year,site_code` | 25 |
+| `output/patients_clean.csv` | Task 3.1 | `patient_id,gender,birth_year,site_code` | 25 |
+| `output/gender_categories.csv` | Task 3.1 | `gender,count,code` | 5 |
 | `output/visits_clean.csv` | Task 3.2 | `patient_id,visit,visit_date,sbp_mmhg,weight_kg,source_file` | 47 |
 | `output/a1c_long.csv` | Task 4.1 | `patient_id,visit,a1c_pct` | 47 |
 | `output/merge_audit.csv` | Task 4.2 | `check,count` | 8 |
-| `output/analysis_visits.csv` | Task 5.2 | `patient_id,visit,visit_date,sbp_mmhg,weight_kg,a1c_pct,sex,birth_year,site_code,site_name,source_file` | 47 |
+| `output/analysis_visits.csv` | Task 5.2 | `patient_id,visit,visit_date,sbp_mmhg,weight_kg,a1c_pct,gender,birth_year,site_code,site_name,source_file` | 47 |
 | `output/sbp_wide.csv` | Task 5.2 | `patient_id,baseline,week12,sbp_change` | 25 |
-| `output/decision_log.csv` | Task 5.2 | `table,decision,reason` | 9 |
+| `output/decision_log.csv` | Task 5.2 | `table,decision,reason` | 10 |
 
-3. Commit `assignment.ipynb` (with its outputs) and the ten `output/` files, then push. Keep `.venv/` out of the commit; `.gitignore` already does. The course grades your fork's `main` branch after the deadline.
+3. Commit `assignment.ipynb` (with its outputs) and the eleven `output/` files, then push. Keep `.venv/` out of the commit; `.gitignore` already does. The course grades your fork's `main` branch after the deadline.
 
 What the points reward and how files are read: [CHECKS.md](CHECKS.md)

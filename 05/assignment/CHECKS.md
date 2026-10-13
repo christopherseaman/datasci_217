@@ -45,7 +45,7 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | `output/labs_coded.csv` | Every patient ID is upper case, without spaces around it. | coded table: patient IDs cleaned | 4 |
 | `output/labs_coded.csv` | Every clinic has one spelling, without spaces around it. | coded table: clinic names cleaned | 4 |
 | `output/labs_coded.csv` | D2008's blank clinic is `Unknown`. | coded table: missing clinic filled | 3 |
-| `output/labs_coded.csv` | Every sex is `F` or `M`, and D2012's `U` is blank. | coded table: sex codes mapped | 4 |
+| `output/labs_coded.csv` | Every gender is `F`, `M`, or `X`, and D2012's `U` is blank. | coded table: gender codes mapped | 4 |
 | `output/labs_coded.csv` | Each `a1c_category` is the HbA1c's band, blank where it has none. | coded table: a1c_category | 5 |
 | `output/labs_coded.csv` | It has one `clinic_` column per clinic, 1 for the row's own clinic and 0 for the others. | coded table: clinic indicators | 4 |
 | `output/validation_report.csv` | It has one row for each of the five rules. | validation report: one row per rule | 3 |

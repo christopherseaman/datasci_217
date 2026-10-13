@@ -4,13 +4,13 @@
 
 Clean a diabetes clinic's lab export the way Lecture 05 does: count and drop missing values, remove repeated rows, turn the export's `-999` code into real gaps, convert types, standardize text, add categories and indicator columns, validate every rule, and save a cleaned table, saving each stage for the checks.
 
-`data/lab_visits.csv` is synthetic. Each row is one clinic visit: `patient_id` (`D` and four digits), `visit_date`, `clinic`, `sex`, `age` in years, `weight_kg`, `hba1c_pct` (**HbA1c**, the percent of hemoglobin carrying glucose, a three-month average of blood sugar), and `glucose_mg_dl` (fasting glucose in mg/dL). Like many real exports, it has blanks, two rows entered twice, `-999` for a measurement that was not taken, an age typed as text, a date that does not exist, and clinic and sex labels spelled several ways.
+`data/lab_visits.csv` is synthetic. Each row is one clinic visit: `patient_id` (`D` and four digits), `visit_date`, `clinic`, `gender`, `age` in years, `weight_kg`, `hba1c_pct` (**HbA1c**, the percent of hemoglobin carrying glucose, a three-month average of blood sugar), and `glucose_mg_dl` (fasting glucose in mg/dL). Like many real exports, it has blanks, two rows entered twice, `-999` for a measurement that was not taken, an age typed as text, a date that does not exist, and clinic and gender labels spelled several ways.
 
 ```text
-patient_id,visit_date,clinic,sex,age,weight_kg,hba1c_pct,glucose_mg_dl
+patient_id,visit_date,clinic,gender,age,weight_kg,hba1c_pct,glucose_mg_dl
 D2001,2026-03-02,Mission,F,54,82.5,7.8,162
 D2002,2026-03-02,mission ,f,61,95.1,6.1,118
-D2003,2026-03-03,Sunset,M,47,-999,8.9,201
+D2003,2026-03-03,Sunset,NB,47,-999,8.9,201
 ```
 
 The cleaned table follows this data contract. One row is one visit; `patient_id` and `visit_date` together identify it, because a patient can visit more than once.
@@ -20,7 +20,7 @@ The cleaned table follows this data contract. One row is one visit; `patient_id`
 | `patient_id` | study patient | `str` | `D` + four digits |
 | `visit_date` | visit day | `datetime64` | a real calendar date; never blank |
 | `clinic` | clinic name | `str` | one spelling per clinic; `Unknown` when the export left it blank |
-| `sex` | sex code | `str` | `F` or `M`; blank when the export's code is neither |
+| `gender` | gender code | `str` | `F`, `M`, or `X` (nonbinary); blank when the export's code is none of these |
 | `age` | age at visit (years) | `Int64` | blank allowed |
 | `weight_kg` | weight (kg) | `float64` | 30 to 250 when present |
 | `hba1c_pct` | HbA1c (%) | `float64` | 4 to 20 when present |
@@ -93,7 +93,7 @@ The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)` and sh
     patient_id                 0          0.0
     visit_date                 1          4.5
     clinic                     1          4.5
-    sex                        0          0.0
+    gender                     0          0.0
     age                        0          0.0
     weight_kg                  0          0.0
     hba1c_pct                  2          9.1
@@ -146,7 +146,7 @@ The export writes `-999` in `weight_kg` and `glucose_mg_dl` for a measurement th
 3. Save with `labs.to_csv(TYPED_PATH, index=False)`. The index holds only row numbers, so leave it out.
 
 > **Checkpoint: `output/labs_typed.csv`**
-> The header line `patient_id,visit_date,clinic,sex,age,weight_kg,hba1c_pct,glucose_mg_dl`, then 19 visits. No `-999` and no `unknown` remain; D2005's age, D2009's and D2013's dates, and the four values from 2.2 are blank.
+> The header line `patient_id,visit_date,clinic,gender,age,weight_kg,hba1c_pct,glucose_mg_dl`, then 19 visits. No `-999` and no `unknown` remain; D2005's age, D2009's and D2013's dates, and the four values from 2.2 are blank.
 
 ## Task 3: Standardize text and encode categories
 
@@ -157,14 +157,14 @@ The export writes `-999` in `weight_kg` and `glucose_mg_dl` for a measurement th
 2. Clean the IDs: `labs["patient_id"] = labs["patient_id"].str.strip().str.upper()`. `d2014 ` becomes `D2014`.
 3. Clean the clinic names with `labs["clinic"].str.strip().str.title()`, then fill the one blank with `.fillna("Unknown")`, and assign the result back to `labs["clinic"]`.
     - Expect: `value_counts()` shows `Mission` 8, `Sunset` 6, `Excelsior` 4, and `Unknown` 1.
-4. Map every spelling of sex to one code. A label the dictionary does not list, such as `u`, becomes `NaN`:
+4. Map every spelling of gender to one code. A label the dictionary does not list, such as `u`, becomes `NaN`:
 
     ```python
-    sex_codes = {"f": "F", "female": "F", "m": "M", "male": "M"}
-    labs["sex"] = labs["sex"].str.strip().str.lower().map(sex_codes)
+    gender_codes = {"f": "F", "female": "F", "m": "M", "male": "M", "x": "X", "nb": "X", "nonbinary": "X"}
+    labs["gender"] = labs["gender"].str.strip().str.lower().map(gender_codes)
     ```
 
-    - Expect: `value_counts(dropna=False)` shows `F` 10, `M` 8, and `NaN` 1 (D2012).
+    - Expect: `value_counts(dropna=False)` shows `F` 9, `M` 7, `X` 2 (D2003 and D2018), and `NaN` 1 (D2012).
 
 ### 3.2 Bin HbA1c
 
@@ -181,7 +181,7 @@ The clinic sorts HbA1c into the standard bands: below 5.7% is normal, 5.7% to 6.
 3. Save with `labs.to_csv(CODED_PATH, index=False)`.
 
 > **Checkpoint: `output/labs_coded.csv`**
-> 19 visits with 13 columns: the eight from Task 2, `a1c_category`, and the four indicators. Every ID is upper case without spaces, every clinic has one spelling, D2008's clinic is `Unknown`, and every sex is `F`, `M`, or blank.
+> 19 visits with 13 columns: the eight from Task 2, `a1c_category`, and the four indicators. Every ID is upper case without spaces, every clinic has one spelling, D2008's clinic is `Unknown`, and every gender is `F`, `M`, `X`, or blank.
 
 ## Task 4: Validate the visits
 
@@ -193,7 +193,7 @@ The clinic sorts HbA1c into the standard bands: below 5.7% is normal, 5.7% to 6.
     rules = pd.DataFrame({
         "patient_id_format": labs["patient_id"].str.fullmatch(r"D[0-9]{4}", na=False),
         "visit_date_present": labs["visit_date"].notna(),
-        "sex_valid": labs["sex"].isin(["F", "M"]),
+        "gender_valid": labs["gender"].isin(["F", "M", "X"]),
         "hba1c_in_range": labs["hba1c_pct"].between(4, 20) | labs["hba1c_pct"].isna(),
         "weight_in_range": labs["weight_kg"].between(30, 250) | labs["weight_kg"].isna(),
     })
@@ -207,7 +207,7 @@ The clinic sorts HbA1c into the standard bands: below 5.7% is normal, 5.7% to 6.
     rule
     patient_id_format     1
     visit_date_present    2
-    sex_valid             1
+    gender_valid          1
     hba1c_in_range        1
     weight_in_range       1
     Name: failing_rows, dtype: int64
@@ -234,7 +234,7 @@ Task 4.2 writes no file; `output/labs_clean.csv` carries the flag.
 ### 5.1 Apply the decisions
 
 1. Work on a copy, so `labs` stays as validated: `clean = labs.copy()`.
-2. Keep only the visits that can be identified, a valid ID and a real date: `clean = clean[rules["patient_id_format"] & rules["visit_date_present"]]`. A visit that breaks only a range or sex rule stays.
+2. Keep only the visits that can be identified, a valid ID and a real date: `clean = clean[rules["patient_id_format"] & rules["visit_date_present"]]`. A visit that breaks only a range or gender rule stays.
     - Expect: 16 visits; D204, D2009, and D2013 are gone.
 3. Blank the impossible values, keeping the visit: `clean["hba1c_pct"] = clean["hba1c_pct"].where(clean["hba1c_pct"].between(4, 20))`, and the same for `weight_kg` with 30 and 250. `where()` keeps a value where the condition is `True` and puts `NaN` elsewhere. Keep the other blanks as they are: nothing says what they were.
     - Expect: D2007's `hba1c_pct` and D2010's `weight_kg` are `NaN`.

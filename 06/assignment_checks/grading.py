@@ -14,16 +14,19 @@ Each check reads one artifact and compares parsed values rather than text, so
 line endings, trailing whitespace, a missing final newline, header spacing, a
 comma, semicolon, or tab between cells, column order, a leading unnamed index
 column, number formatting, the letter case and spacing of labels and text
-values, any unambiguous way of writing a date, and the common spellings of
-missing values never cost points. The exception is the three columns whose
-rule is the normalization itself (`sex` and `site_code` in patients_clean.csv,
-`visit` in visits_clean.csv): their exact text counts there, once, and later
-checks follow the student's exact text as their own merges and pivots did. Each check scores the rows or records it can
-verify on its own, so one wrong value costs only its own share, and no check
-depends on another passing. A later artifact is also judged against the
-student's own earlier one (the joined table against their cleaned tables, the
-merge counts against their own keys, the SBP change against their own
-baseline and week 12 columns), so one mistake is charged once.
+values (codes such as `F` and `f` included), any unambiguous way of writing a
+date, and the common spellings of missing values never cost points. The
+planted spellings need real recoding (`woman` to `F`, `N-01` to `N01`, `wk12`
+to `week12`), so a value left unmapped still differs after case and spacing
+are ignored. Where a later check follows the student's own keys and site
+codes, it compares them exactly as written, as their merges and pivots did.
+Each check scores the rows or records it can verify on its own, so one wrong
+value costs only its own share, and no check depends on another passing. A
+later artifact is also judged against the student's own earlier one (the
+gender counts against their patients_clean, the joined table against their
+cleaned tables, the merge counts against their own keys, the SBP change
+against their own baseline and week 12 columns), so one mistake is charged
+once.
 """
 
 from __future__ import annotations
@@ -64,34 +67,35 @@ PROFILE_HINTS = {
 }
 
 ISSUE_AUDIT = (
-    ("patients: sex values needing normalization", 3),
-    ("patients: empty sex", 1),
+    ("patients: gender values that are not a code", 13),
+    ("patients: empty gender", 1),
     ("patients: birth_year sentinel 9999", 1),
-    ("patients: site codes needing normalization", 2),
+    ("patients: site codes needing normalization", 3),
     ("sites: rows with a repeated site_code", 2),
-    ("visits: visit labels needing normalization", 4),
+    ("visits: visit labels that are not baseline or week12", 4),
     ("visits: sbp sentinel 999", 2),
     ("visits: sbp outside 70 through 250", 1),
     ("visits: date parse failures", 2),
     ("visits: rows in repeated patient_id and visit pairs", 4),
 )
 ISSUE_HINTS = {
-    "patients: sex values needing normalization": "leave out empty values and count every other sex that "
-                                                  ".str.strip().str.upper() changes",
-    "patients: empty sex": "compare the stripped value with '' in the table read with keep_default_na=False",
+    "patients: gender values that are not a code": "leave out empty values and count every other gender, as "
+                                                   "written, that is not exactly F, M, or X",
+    "patients: empty gender": "compare the stripped value with '' in the table read with keep_default_na=False",
     "patients: birth_year sentinel 9999": "count birth_year values equal to '9999'",
-    "patients: site codes needing normalization": "count every site_code that .str.strip().str.upper() changes",
+    "patients: site codes needing normalization": "count every site_code that .str.upper() and removing every "
+                                                  "space and hyphen change",
     "sites: rows with a repeated site_code": "use duplicated(subset=['site_code'], keep=False), which counts the "
                                              "first copy too",
-    "visits: visit labels needing normalization": "count, in both visit files stacked, every visit label that "
-                                                  ".str.strip().str.lower() changes",
+    "visits: visit labels that are not baseline or week12": "count, in both visit files stacked, every visit "
+                                                            "label that is not exactly baseline or week12",
     "visits: sbp sentinel 999": "count sbp_mmhg values equal to '999' in both visit files",
     "visits: sbp outside 70 through 250": "convert with pd.to_numeric, leave out the 999 sentinel, and keep 70 "
                                           "and 250 inside the range",
     "visits: date parse failures": "check the text with .str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}') first, "
                                    "because format='%Y-%m-%d' alone accepts 2026-5-10, then let "
                                    "to_datetime(..., errors='coerce') catch impossible dates",
-    "visits: rows in repeated patient_id and visit pairs": "normalize the visit labels first, then use "
+    "visits: rows in repeated patient_id and visit pairs": "map the visit labels first, then use "
                                                            "duplicated(subset=['patient_id', 'visit'], keep=False) "
                                                            "on both visit files stacked",
 }
@@ -109,18 +113,18 @@ P008,F,1954,N01
 P009,F,1985,N01
 P010,M,1991,N01
 P011,F,1964,N01
-P012,F,1965,N01
+P012,X,1965,N01
 P013,M,1946,S02
 P014,M,1944,S02
 P015,M,1944,S02
-P016,M,1963,S02
+P016,X,1963,S02
 P017,F,1948,S02
-P018,M,1966,S02
+P018,,1966,S02
 P019,F,1951,S02
 P020,,1953,S02
-P021,F,1971,S02
+P021,X,1971,S02
 P022,M,1993,S02
-P023,M,1958,E04
+P023,X,1958,E04
 P024,F,1981,S02
 """
 _VISITS = """\
@@ -203,8 +207,8 @@ def _cell(text: str, kind: Callable[[str], object]) -> object:
     return kind(text) if text else None
 
 
-PATIENTS = {pid: {"sex": _cell(sex, str), "birth_year": _cell(year, int), "site_code": site}
-            for pid, sex, year, site in (line.split(",") for line in _PATIENTS.splitlines())}
+PATIENTS = {pid: {"gender": _cell(gender, str), "birth_year": _cell(year, int), "site_code": site}
+            for pid, gender, year, site in (line.split(",") for line in _PATIENTS.splitlines())}
 VISITS = {(pid, visit): {"visit_date": _cell(day, date.fromisoformat), "sbp_mmhg": _cell(sbp, int),
                          "weight_kg": _cell(weight, float), "source_file": source}
           for pid, visit, day, sbp, weight, source in (line.split(",") for line in _VISITS.splitlines())}
@@ -215,9 +219,12 @@ CURRENT_SITES = {"N01": "North Clinic", "S02": "South Valley Clinic", "W03": "We
 RETIRED_SITES = {"S02": "Southgate Clinic"}
 SITE_CODES = frozenset(CURRENT_SITES)
 VISIT_LABELS = ("baseline", "week12")
+GENDER_CODES = ("F", "M", "X")
+# value_counts(dropna=False) of the categorical gender: each code's count, and the missing values' (None).
+GENDER_COUNTS = {code: sum(row["gender"] == code for row in PATIENTS.values()) for code in (*GENDER_CODES, None)}
 
 # One row per clean visit, as the left merges onto visits_clean give it.
-ANALYSIS = {key: {"a1c_pct": A1C.get(key), **PATIENTS.get(key[0], {"sex": None, "birth_year": None,
+ANALYSIS = {key: {"a1c_pct": A1C.get(key), **PATIENTS.get(key[0], {"gender": None, "birth_year": None,
                                                                    "site_code": None})}
             for key in VISITS}
 for _row in ANALYSIS.values():
@@ -252,7 +259,8 @@ MERGE_HINTS = {
 DECISION_COLUMNS = ("table", "decision", "reason")
 DECISIONS = (
     ("patients", "remove the exact duplicate row, keeping the first"),
-    ("patients", "strip and uppercase sex and site_code; an empty sex becomes missing"),
+    ("patients", "map gender to F, M, or X with a dictionary and store it as a category"),
+    ("patients", "uppercase site_code and remove its spaces and hyphens"),
     ("patients", "convert the birth_year sentinel 9999 to missing"),
     ("visits", "rename wt_kg to weight_kg before stacking"),
     ("visits", "convert sbp_mmhg outside 70 through 250, including 999, to missing"),
@@ -682,13 +690,6 @@ def text_right(expected: object, cell: str) -> bool:
     return label(cell) == label(str(expected))
 
 
-def exact_right(expected: object, cell: str) -> bool:
-    """For a column whose rule is stripping and changing case: the cell must be that normalized text."""
-    if expected is None:
-        return is_missing(cell, TEXT_MISSING)
-    return cell == expected
-
-
 def number_right(expected: object, cell: str) -> bool:
     if expected is None:
         return is_missing(cell)
@@ -818,9 +819,10 @@ def parse_number(cell: str) -> float | None:
 # Task 3.1: patients_clean.csv
 
 PATIENT_RULES = {
-    "sex": "strip and uppercase; an empty sex becomes missing",
+    "gender": "the data dictionary code: F for every spelling of female, M for male, X for nonbinary; missing when "
+              "empty or unknown (strip and lowercase, then Series.map with a dictionary)",
     "birth_year": "a whole year; the 9999 sentinel becomes missing",
-    "site_code": "strip and uppercase",
+    "site_code": "the code as sites.csv writes it: uppercase, with no spaces or hyphens",
 }
 
 
@@ -838,6 +840,58 @@ def patients_column(column: str, right: Callable[[object, str], bool]) -> Callab
     return check
 
 
+def check_gender_categories(root: Path) -> Outcome:
+    """Each code's count and category code, the counts against the expected ones or the student's own patients_clean.
+
+    Only a categorical column has `.cat.codes`, so the `code` column shows the
+    category dtype: each code gets its own whole number from 0 (its position in
+    the categories) and missing gets -1.
+    """
+    table = read_table(root, "gender_categories.csv", index_name="gender", value_name="count")
+    if "code" not in table.columns:
+        raise ArtifactProblem(f"{table.path} has no `code` column; its header reads `{table.header}` (convert gender "
+                              "with astype(\"category\"), then add gender_counts[\"code\"] = gender_counts[\"gender\"].cat.codes)")
+    table.require("gender", "count")
+
+    def code_of(cell: str) -> str | None:
+        return None if is_missing(cell, TEXT_MISSING) else label(cell)
+
+    patients = own_rows(root, "patients_clean.csv", ("patient_id",))
+    own = None
+    if patients is not None and all("gender" in rows[0] for rows in patients.values()):
+        own = [code_of(rows[0]["gender"]) for rows in patients.values()]
+    # The category code each label's rows carry, and how many labels use each code.
+    codes = {}
+    for row in table.rows:
+        codes.setdefault(code_of(row["gender"]), set()).add(number(row["code"]))
+    shared = [code for key, found in codes.items() if key is not None for code in found]
+    outcome = Outcome(total=len(GENDER_COUNTS))
+    for code, expected in GENDER_COUNTS.items():
+        key = code_of(code or "")
+        # Rows that differ only in case, such as F and f, are one code: their counts add up.
+        found = [number(row["count"]) for row in table.rows if code_of(row["gender"]) == key]
+        count = None if None in found else sum(found)
+        accepted = {expected} if own is None else {expected, own.count(key)}
+        name = code or "missing"
+        numbers = codes.get(key, set())
+        if key is None:
+            code_right = numbers <= {-1}
+        else:
+            code_right = all(n is not None and n >= 0 and n == int(n) and shared.count(n) == 1 for n in numbers)
+        if count not in accepted:
+            outcome.problems.append(
+                f"gender {name} should count {expected}, found {'no row' if not found else count} (save "
+                "value_counts(dropna=False) of the categorical gender column; dropna=False keeps the missing count)")
+        elif not code_right:
+            want = "-1" if key is None else "a whole number from 0 that no other code shares"
+            seen = ", ".join("blank" if n is None else f"{n:g}" for n in sorted(numbers, key=str))
+            outcome.problems.append(f"gender {name} should have code {want}, found {seen} (fill the code column "
+                                    "from .cat.codes of the categorical gender column)")
+        else:
+            outcome.right += 1
+    return outcome
+
+
 # Task 3.2: visits_clean.csv
 
 VISIT_KEYS = ("patient_id", "visit")
@@ -853,19 +907,11 @@ VISIT_CHECKS = {"visit_date": date_right, "sbp_mmhg": number_right, "weight_kg":
 
 
 def visits_rows(root: Path) -> Outcome:
-    """One row per visit, each with its visit label stripped and lowercased; an unnormalized label costs its row."""
-    table, grouped = read_keyed(root, "visits_clean.csv", VISIT_KEYS)
-    outcome = best_rows(grouped, [list(VISITS)],
-                        "stack both files, lowercase and strip the visit labels, drop the exact repeat, then keep one "
-                        "row per patient_id and visit")
-    unnormalized = [row for row in table.rows if row["visit"] != row["visit"].strip().lower()]
-    if unnormalized:
-        outcome.right = max(0, outcome.right - len(unnormalized))
-        first = unnormalized[0]
-        outcome.problems.append(f"{len(unnormalized)} visit label(s) not stripped and lowercased, first "
-                                f"{first['patient_id']} {shown(first['visit'])} (apply .str.strip().str.lower() "
-                                "to visit before removing repeats)")
-    return outcome
+    """One row per visit; a label left unmapped, such as wk12, is an unexpected row and its visit is missing."""
+    _, grouped = read_keyed(root, "visits_clean.csv", VISIT_KEYS)
+    return best_rows(grouped, [list(VISITS)],
+                     "stack both files, map every visit label to baseline or week12 with a dictionary, drop the "
+                     "exact repeat, then keep one row per patient_id and visit")
 
 
 def visits_column(column: str) -> Callable[[Path], Outcome]:
@@ -978,8 +1024,8 @@ def analysis_expected(root: Path, column: str) -> dict[Key, list[object]]:
         if column == "a1c_pct" and labs is not None:
             for written in own_visits.get(normal_key(key), [key]):
                 accepted += value_of(labs, written, "a1c_pct", parse_number, exact=True) or [None]
-        if column in ("sex", "birth_year"):
-            accepted += value_of(patients, (key[0],), column, parse_text if column == "sex" else parse_number)
+        if column in ("gender", "birth_year"):
+            accepted += value_of(patients, (key[0],), column, parse_text if column == "gender" else parse_number)
         expected[key] = accepted
     return expected
 
@@ -1007,13 +1053,13 @@ def check_analysis_a1c(root: Path) -> Outcome:
 
 def check_analysis_patient(root: Path) -> Outcome:
     table, grouped = read_keyed(root, "analysis_visits.csv", VISIT_KEYS)
-    table.require("sex", "birth_year")
-    sexes, years = analysis_expected(root, "sex"), analysis_expected(root, "birth_year")
+    table.require("gender", "birth_year")
+    genders, years = analysis_expected(root, "gender"), analysis_expected(root, "birth_year")
     outcome = Outcome(total=len(ANALYSIS))
     wrong = []
     for key in ANALYSIS:
         rows = grouped.get(normal_key(key))
-        if not rows or any(any(text_right(sex, row["sex"]) for sex in sexes[key])
+        if not rows or any(any(text_right(gender, row["gender"]) for gender in genders[key])
                            and any(number_right(year, row["birth_year"]) for year in years[key]) for row in rows):
             outcome.right += 1
         else:
@@ -1022,8 +1068,8 @@ def check_analysis_patient(root: Path) -> Outcome:
         key = tuple(wrong[0].split(" "))
         row = grouped[normal_key(key)][0]
         outcome.problems.append(
-            f"sex and birth_year: {len(wrong)} of {len(ANALYSIS)} visits differ; first {wrong[0]}: expected "
-            f"{shown(sexes[key][0])} and {shown(years[key][0])}, found {shown(row['sex'])} and "
+            f"gender and birth_year: {len(wrong)} of {len(ANALYSIS)} visits differ; first {wrong[0]}: expected "
+            f"{shown(genders[key][0])} and {shown(years[key][0])}, found {shown(row['gender'])} and "
             f"{shown(row['birth_year'])}; the rule: the patient's values from patients_clean, merged on patient_id "
             "with how='left' (missing for a patient not in the registry)")
     return outcome
@@ -1126,9 +1172,10 @@ CHECKS = (
     Check("table_profile.csv", 5, "Task 1.2", check_table_profile),
     Check("issue_audit.csv", 10, "Task 2.3", check_issue_audit),
     Check("patients_clean.csv: rows", 2, T_PATIENTS, patients_rows),
-    Check("patients_clean.csv: sex", 2, T_PATIENTS, patients_column("sex", exact_right)),
+    Check("patients_clean.csv: gender", 2, T_PATIENTS, patients_column("gender", text_right)),
     Check("patients_clean.csv: birth_year", 2, T_PATIENTS, patients_column("birth_year", number_right)),
-    Check("patients_clean.csv: site_code", 2, T_PATIENTS, patients_column("site_code", exact_right)),
+    Check("patients_clean.csv: site_code", 2, T_PATIENTS, patients_column("site_code", text_right)),
+    Check("gender_categories.csv", 2, T_PATIENTS, check_gender_categories),
     Check("visits_clean.csv: rows", 4, T_VISITS, visits_rows),
     Check("visits_clean.csv: visit_date", 3, T_VISITS, visits_column("visit_date")),
     Check("visits_clean.csv: sbp_mmhg", 3, T_VISITS, visits_column("sbp_mmhg")),
@@ -1138,9 +1185,9 @@ CHECKS = (
     Check("a1c_long.csv: a1c_pct", 3, "Task 4.1", a1c_values),
     Check("merge_audit.csv", 7, "Task 4.2", check_merge_audit),
     Check("analysis_visits.csv: rows", 3, T_ANALYSIS, analysis_rows),
-    Check("analysis_visits.csv: site_name", 3, T_ANALYSIS, check_analysis_sites),
-    Check("analysis_visits.csv: a1c_pct", 3, T_ANALYSIS, check_analysis_a1c),
-    Check("analysis_visits.csv: sex and birth_year", 2, T_ANALYSIS, check_analysis_patient),
+    Check("analysis_visits.csv: site_name", 2, T_ANALYSIS, check_analysis_sites),
+    Check("analysis_visits.csv: a1c_pct", 2, T_ANALYSIS, check_analysis_a1c),
+    Check("analysis_visits.csv: gender and birth_year", 2, T_ANALYSIS, check_analysis_patient),
     Check("sbp_wide.csv: rows", 2, T_WIDE, sbp_wide_rows),
     Check("sbp_wide.csv: baseline", 1, T_WIDE, sbp_wide_visit("baseline")),
     Check("sbp_wide.csv: week12", 1, T_WIDE, sbp_wide_visit("week12")),

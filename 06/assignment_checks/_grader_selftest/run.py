@@ -38,15 +38,20 @@ DATA = HANDOUT / "data"
 README = HANDOUT / "README.md"
 CHECKS_MD = HANDOUT / "CHECKS.md"
 EXACT_DATE = r"[0-9]{4}-[0-9]{2}-[0-9]{2}"
+# The spellings in the files, stripped and lowercased, mapped to the data dictionary's codes.
+GENDER_MAP = {"f": "F", "female": "F", "woman": "F", "m": "M", "male": "M", "man": "M",
+              "x": "X", "nb": "X", "nonbinary": "X", "non-binary": "X"}
+VISIT_MAP = {"baseline": "baseline", "bl": "baseline", "week12": "week12", "week 12": "week12", "wk12": "week12"}
 TABLES = ("patients", "sites", "visits_north", "visits_south", "a1c_wide")
 VISIT_COLUMNS = ["patient_id", "visit", "visit_date", "sbp_mmhg", "weight_kg", "source_file"]
-ANALYSIS_COLUMNS = ["patient_id", "visit", "visit_date", "sbp_mmhg", "weight_kg", "a1c_pct", "sex", "birth_year",
+ANALYSIS_COLUMNS = ["patient_id", "visit", "visit_date", "sbp_mmhg", "weight_kg", "a1c_pct", "gender", "birth_year",
                     "site_code", "site_name", "source_file"]
 HEADERS = {
     "file_inventory.txt": "<count> data/a1c_wide.csv",
     "table_profile.csv": "table,rows,columns,exact_duplicate_rows",
     "issue_audit.csv": "issue,count",
-    "patients_clean.csv": "patient_id,sex,birth_year,site_code",
+    "patients_clean.csv": "patient_id,gender,birth_year,site_code",
+    "gender_categories.csv": "gender,count,code",
     "visits_clean.csv": ",".join(VISIT_COLUMNS),
     "a1c_long.csv": "patient_id,visit,a1c_pct",
     "merge_audit.csv": "check,count",
@@ -108,19 +113,21 @@ def solve() -> dict[str, str]:
     assert visits_raw.shape == (48, 7) and not visits_raw.eq("").all().any(), visits_raw.shape
 
     patients, sites = raw["patients"], raw["sites"]
-    sex = patients["sex"].str.strip()
-    labels = visits_raw["visit"].str.strip().str.lower()
+    gender = patients["gender"].str.strip()
+    labels = visits_raw["visit"].str.strip().str.lower().map(VISIT_MAP)
+    site_codes = patients["site_code"].str.upper().str.replace("-", "").str.replace(" ", "")
     sbp_raw = pd.to_numeric(visits_raw["sbp_mmhg"], errors="coerce")
     dates = visits_raw["visit_date"].str.strip()
     parsed = pd.to_datetime(dates.where(dates.str.fullmatch(EXACT_DATE)), format="%Y-%m-%d", errors="coerce")
     audit = {
-        "patients: sex values needing normalization": (sex.ne("") & patients["sex"].ne(sex.str.upper())).sum(),
-        "patients: empty sex": sex.eq("").sum(),
+        "patients: gender values that are not a code":
+            (gender.ne("") & ~patients["gender"].isin(["F", "M", "X"])).sum(),
+        "patients: empty gender": gender.eq("").sum(),
         "patients: birth_year sentinel 9999": patients["birth_year"].str.strip().eq("9999").sum(),
-        "patients: site codes needing normalization":
-            patients["site_code"].ne(patients["site_code"].str.strip().str.upper()).sum(),
+        "patients: site codes needing normalization": patients["site_code"].ne(site_codes).sum(),
         "sites: rows with a repeated site_code": sites.duplicated(subset=["site_code"], keep=False).sum(),
-        "visits: visit labels needing normalization": visits_raw["visit"].ne(labels).sum(),
+        "visits: visit labels that are not baseline or week12":
+            (~visits_raw["visit"].isin(["baseline", "week12"])).sum(),
         "visits: sbp sentinel 999": visits_raw["sbp_mmhg"].str.strip().eq("999").sum(),
         "visits: sbp outside 70 through 250": (sbp_raw.ne(999) & ~sbp_raw.between(70, 250)).sum(),
         "visits: date parse failures": (dates.ne("") & parsed.isna()).sum(),
@@ -132,14 +139,19 @@ def solve() -> dict[str, str]:
     files["issue_audit.csv"] = pd.DataFrame({"issue": list(audit), "count": list(audit.values())}).to_csv(index=False)
 
     pc = patients.copy(deep=True).drop_duplicates(keep="first")
-    pc["sex"] = pc["sex"].str.strip().str.upper().replace("", pd.NA)
+    pc["gender"] = pc["gender"].str.strip().str.lower().map(GENDER_MAP).astype("category")
+    assert list(pc["gender"].cat.categories) == ["F", "M", "X"], pc["gender"].cat.categories
     pc["birth_year"] = pd.to_numeric(pc["birth_year"].replace("9999", pd.NA)).astype("Int64")
-    pc["site_code"] = pc["site_code"].str.strip().str.upper()
+    pc["site_code"] = pc["site_code"].str.upper().str.replace("-", "").str.replace(" ", "")
     pc = pc.reset_index(drop=True)
     files["patients_clean.csv"] = pc.to_csv(index=False)
+    gender_counts = pc["gender"].value_counts(dropna=False).reset_index()
+    gender_counts["code"] = gender_counts["gender"].cat.codes
+    files["gender_categories.csv"] = gender_counts.to_csv(index=False)
 
     v = visits_raw.copy(deep=True).drop_duplicates(keep="first")
-    v["visit"] = v["visit"].str.strip().str.lower()
+    v["visit"] = v["visit"].str.strip().str.lower().map(VISIT_MAP)
+    assert v["visit"].notna().all(), v["visit"].unique()
     sbp = pd.to_numeric(v["sbp_mmhg"], errors="coerce")
     v["sbp_mmhg"] = sbp.where(sbp.between(70, 250)).astype("Int64")
     v["weight_kg"] = pd.to_numeric(v["weight_kg"], errors="coerce").astype("float64")
@@ -193,7 +205,8 @@ def solve() -> dict[str, str]:
     decisions = readme_decisions()
     files["decision_log.csv"] = pd.DataFrame({
         "table": [table for table, _ in decisions], "decision": [decision for _, decision in decisions],
-        "reason": [f"Documented rule {number} for these synthetic clinic files." for number in range(1, 9)],
+        "reason": [f"Documented rule {number} for these synthetic clinic files." for number in
+                   range(1, len(decisions) + 1)],
     }).to_csv(index=False)
 
     # The grader's constants are the independent answer.
@@ -207,15 +220,17 @@ def solve() -> dict[str, str]:
     def value(cell: object) -> object:
         return None if pd.isna(cell) else cell
 
-    assert {row.patient_id: {"sex": value(row.sex), "birth_year": value(row.birth_year), "site_code": row.site_code}
-            for row in pc.itertuples()} == grading.PATIENTS
+    assert {row.patient_id: {"gender": value(row.gender), "birth_year": value(row.birth_year),
+                             "site_code": row.site_code} for row in pc.itertuples()} == grading.PATIENTS
+    counts = pc["gender"].value_counts(dropna=False)
+    assert {value(code): int(count) for code, count in counts.items()} == grading.GENDER_COUNTS, counts
     assert {(row.patient_id, row.visit): {
         "visit_date": None if pd.isna(row.visit_date) else row.visit_date.date(), "sbp_mmhg": value(row.sbp_mmhg),
         "weight_kg": value(row.weight_kg), "source_file": row.source_file.split("_")[1].split(".")[0]}
         for row in v.itertuples()} == grading.VISITS
     assert {(row.patient_id, row.visit): row.a1c_pct for row in a1c.itertuples()} == grading.A1C
     assert dict(zip(current["site_code"], current["site_name"])) == grading.CURRENT_SITES
-    assert {(row.patient_id, row.visit): {"a1c_pct": value(row.a1c_pct), "sex": value(row.sex),
+    assert {(row.patient_id, row.visit): {"a1c_pct": value(row.a1c_pct), "gender": value(row.gender),
                                           "birth_year": value(row.birth_year), "site_code": value(row.site_code),
                                           "site_name": value(row.site_name)}
             for row in analysis.itertuples()} == grading.ANALYSIS
@@ -292,7 +307,8 @@ def loose(files: dict[str, str]) -> dict[str, str | bytes]:
     }
     patients = table(files["patients_clean.csv"])
     patients["patient_id"] = patients["patient_id"].str.lower()
-    patients["sex"] = patients["sex"].replace("", "<NA>")
+    patients["gender"] = patients["gender"].str.lower().replace("", "<NA>")
+    patients["site_code"] = patients["site_code"].str.lower()
     patients["birth_year"] = patients["birth_year"].where(patients["birth_year"].eq(""), patients["birth_year"] + ".0")
     variant["patients_clean.csv"] = crlf(patients.iloc[::-1, ::-1].to_csv()).replace("\r\n", "  \r\n")
     visits = table(files["visits_clean.csv"])
@@ -307,8 +323,13 @@ def loose(files: dict[str, str]) -> dict[str, str | bytes]:
                                                              "a1c_pct": ["", ""]})]).to_csv(index=False)
     analysis = table(files["analysis_visits.csv"])
     analysis["visit_date"] = analysis["visit_date"].str.replace("-", "/")
+    analysis["gender"] = analysis["gender"].str.lower()
     variant["analysis_visits.csv"] = analysis[list(reversed(ANALYSIS_COLUMNS))].to_csv(sep="\t")
     variant["sbp_wide.csv"] = files["sbp_wide.csv"].replace("\n", "\r").rstrip("\r")
+    # Codes in lower case, the missing count first, the columns in another order, NaN for missing.
+    categories = table(files["gender_categories.csv"]).iloc[::-1]
+    variant["gender_categories.csv"] = categories.assign(gender=categories["gender"].str.lower().replace(
+        "", "NaN"))[["code", "count", "gender"]].to_csv(index=False)
     return variant
 
 
@@ -397,21 +418,40 @@ def run() -> None:
 
         p002 = {"patient_id": "P002", "visit": "baseline"}
         p002_wide = {"patient_id": "P002"}
+        # Gender stripped but never mapped, as a student who skipped the dictionary would carry it forward.
+        typed = table((DATA / "patients.csv").read_text(encoding="utf-8")).drop_duplicates().set_index(
+            "patient_id")["gender"].str.strip()
+        unmapped_counts = typed.replace("", pd.NA).astype("category").value_counts(dropna=False).rename_axis(
+            "gender").reset_index()
+        unmapped_gender = unmapped_counts.assign(code=unmapped_counts["gender"].cat.codes).to_csv(index=False)
 
         mutations = {
-            "sex left in lower case": (
-                {"patients_clean.csv": edit(files["patients_clean.csv"], lambda t: t.assign(sex=t["sex"].str.lower()))},
-                {"patients_clean.csv: sex": 2}, ("strip and uppercase",)),
-            "P002's Baseline label left unnormalized, carried into the merges and the pivot": (
-                {"visits_clean.csv": edit(visits_csv, lambda t: at(t, p002, "visit", "Baseline")),
+            "gender stripped but never mapped, carried into the categories and the join": (
+                {"patients_clean.csv": edit(files["patients_clean.csv"],
+                                            lambda t: t.assign(gender=t["patient_id"].map(typed))),
+                 "gender_categories.csv": unmapped_gender,
+                 "analysis_visits.csv": edit(analysis_csv,
+                                             lambda t: t.assign(gender=t["patient_id"].map(typed).fillna("")))},
+                {"patients_clean.csv: gender": 1}, ("P002", "'Female'", "Series.map")),
+            "gender left as text, so the counts have no code column": (
+                {"gender_categories.csv": edit(files["gender_categories.csv"], lambda t: t.drop(columns="code"))},
+                {"gender_categories.csv": 2}, ("code", "astype")),
+            "category codes typed by hand, all 0": (
+                {"gender_categories.csv": edit(files["gender_categories.csv"], lambda t: t.assign(code="0"))},
+                {"gender_categories.csv": 2}, ("code", ".cat.codes")),
+            "gender counts saved without dropna=False": (
+                {"gender_categories.csv": edit(files["gender_categories.csv"], lambda t: t[t["gender"].ne("")])},
+                {"gender_categories.csv": 1}, ("missing", "dropna=False")),
+            "P002's BL label left unmapped, carried into the merges and the pivot": (
+                {"visits_clean.csv": edit(visits_csv, lambda t: at(t, p002, "visit", "BL")),
                  "analysis_visits.csv": edit(analysis_csv, lambda t: at(at(t, p002, "a1c_pct", ""), p002, "visit",
-                                                                         "Baseline")),
+                                                                         "BL")),
                  "merge_audit.csv": edit(files["merge_audit.csv"], lambda t: t.assign(
                      count=t["count"].mask(t.index == 0, "42").mask(t.index == 1, "4").mask(t.index == 2, "4"))),
-                 "sbp_wide.csv": edit(wide_csv, lambda t: at(at(at(t.assign(Baseline=""), p002_wide, "Baseline",
-                                                                   "161"), p002_wide, "baseline", ""),
+                 "sbp_wide.csv": edit(wide_csv, lambda t: at(at(at(t.assign(BL=""), p002_wide, "BL", "161"),
+                                                                p002_wide, "baseline", ""),
                                                              p002_wide, "sbp_change", ""))},
-                {"visits_clean.csv: rows": 1}, ("P002", "'Baseline'", ".str.strip().str.lower()")),
+                {"visits_clean.csv: rows": 1}, ("P002 baseline", "p002 bl", "dictionary")),
             "P009's exact repeat kept": (
                 {"patients_clean.csv": edit(files["patients_clean.csv"], lambda t: pd.concat([t, t.iloc[[8]]]))},
                 {"patients_clean.csv: rows": 1}, ("P009", "drop_duplicates")),
@@ -467,20 +507,20 @@ def run() -> None:
             "the retired S02 name joined in place of the current one": (
                 {"analysis_visits.csv": edit(analysis_csv, lambda t: t.assign(site_name=t["site_name"].mask(
                     t["site_code"].eq("S02"), "Southgate Clinic")))},
-                {"analysis_visits.csv: site_name": 2}, ("current",)),
+                {"analysis_visits.csv: site_name": 1}, ("current",)),
             "A1c merged onto the wrong visit": (
                 {"analysis_visits.csv": edit(analysis_csv, lambda t: at(
                     t, {"patient_id": "P001", "visit": "week12"}, "a1c_pct", "7.7"))},
                 {"analysis_visits.csv: a1c_pct": 1}, ("P001 week12",)),
-            "n01 left unnormalized, so P004 finds no site": (
+            "N-01 left with its hyphen, so P004 finds no site": (
                 {"patients_clean.csv": edit(files["patients_clean.csv"],
-                                            lambda t: at(t, {"patient_id": "P004"}, "site_code", "n01")),
+                                            lambda t: at(t, {"patient_id": "P004"}, "site_code", "N-01")),
                  "analysis_visits.csv": edit(analysis_csv, lambda t: at(
                      at(at(at(t, {"patient_id": "P004", "visit": "baseline"}, "site_name", ""),
                            {"patient_id": "P004", "visit": "week12"}, "site_name", ""),
-                        {"patient_id": "P004", "visit": "baseline"}, "site_code", "n01"),
-                     {"patient_id": "P004", "visit": "week12"}, "site_code", "n01"))},
-                {"patients_clean.csv: site_code": 1}, ("P004", "'n01'")),
+                        {"patient_id": "P004", "visit": "baseline"}, "site_code", "N-01"),
+                     {"patient_id": "P004", "visit": "week12"}, "site_code", "N-01"))},
+                {"patients_clean.csv: site_code": 1}, ("P004", "'N-01'")),
             "sbp_change written baseline minus week12": (
                 {"sbp_wide.csv": edit(wide_csv, lambda t: t.assign(sbp_change=t["sbp_change"].str.replace(
                     r"^(-?)(\d+)$", lambda m: ("" if m.group(1) else "-") + m.group(2), regex=True)))},
@@ -503,7 +543,7 @@ def run() -> None:
                 {"decision_log.csv: reason": 1}, ("row 4",)),
             "one decision rewritten": (
                 {"decision_log.csv": edit(files["decision_log.csv"], lambda t: t.assign(
-                    decision=t["decision"].mask(t.index == 7, "drop every site")))},
+                    decision=t["decision"].mask(t.index == 8, "drop every site")))},
                 {"decision_log.csv: decisions": 1}, ("current site records",)),
             "a profile that counts the header as a row": (
                 {"table_profile.csv": edit(files["table_profile.csv"],

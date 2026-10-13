@@ -1,16 +1,16 @@
 {
-  "fixture_id": "a06-clinic-midterm-v1",
+  "fixture_id": "a06-clinic-midterm-v2",
   "provenance": "course-authored synthetic teaching data; no real patients",
   "files": {
     "patients.csv": {
       "rows": 25,
       "columns": [
         "patient_id",
-        "sex",
+        "gender",
         "birth_year",
         "site_code"
       ],
-      "sha256": "aea4c9db076db22d7742fd12c9f59768522cf759d02356b72c20f213b8a0bcbb"
+      "sha256": "4048bf1249cec42f05a564391c30efee0bd1e8bbfaad2e33e2c26f6fde8597b2"
     },
     "sites.csv": {
       "rows": 4,
@@ -31,7 +31,7 @@
         "sbp_mmhg",
         "weight_kg"
       ],
-      "sha256": "4e3c2dff9b36e04684704361b95ba43e5b45315103c8dfcb05f5db67ab7be8f3"
+      "sha256": "0221033a06c16c94df8cf8f12deaeb856fde1c27a0512d807fccc08e61134a17"
     },
     "visits_south.csv": {
       "rows": 26,
@@ -43,7 +43,7 @@
         "sbp_mmhg",
         "wt_kg"
       ],
-      "sha256": "e5619bdb48b312fb95fee3698274dc79bedc66f7b7b558892220568c1d19cd5f"
+      "sha256": "3059874676b29d50dba425cac616366010cfa4f534ef6f8fa9bff517ba0af53e"
     },
     "a1c_wide.csv": {
       "rows": 24,

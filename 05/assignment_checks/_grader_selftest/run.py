@@ -56,7 +56,7 @@ def group(prefix: str) -> set[str]:
 
 MISSING, TYPED, CODED = group("missing report"), group("typed table"), group("coded table")
 VALIDATION, CLEAN = group("validation report"), group("clean table")
-SEX_CODES = {"f": "F", "female": "F", "m": "M", "male": "M"}
+GENDER_CODES = {"f": "F", "female": "F", "m": "M", "male": "M", "x": "X", "nb": "X", "nonbinary": "X"}
 
 
 def solve(root: Path, wrong: frozenset = frozenset()) -> None:
@@ -100,12 +100,15 @@ def solve(root: Path, wrong: frozenset = frozenset()) -> None:
     labs["clinic"] = clinic if "clinic-not-title" in wrong else clinic.str.title()
     if "clinic-not-filled" not in wrong:
         labs["clinic"] = labs["clinic"].fillna("Unknown")
-    if "sex-upper-only" in wrong:
-        labs["sex"] = labs["sex"].str.strip().str.upper()
-    elif "sex-replace" in wrong:
-        labs["sex"] = labs["sex"].str.strip().str.lower().replace(SEX_CODES)
+    if "gender-upper-only" in wrong:
+        labs["gender"] = labs["gender"].str.strip().str.upper()
+    elif "gender-no-x" in wrong:
+        binary = {key: code for key, code in GENDER_CODES.items() if code != "X"}
+        labs["gender"] = labs["gender"].str.strip().str.lower().map(binary)
+    elif "gender-replace" in wrong:
+        labs["gender"] = labs["gender"].str.strip().str.lower().replace(GENDER_CODES)
     else:
-        labs["sex"] = labs["sex"].str.strip().str.lower().map(SEX_CODES)
+        labs["gender"] = labs["gender"].str.strip().str.lower().map(GENDER_CODES)
     bins = [0, 5.7, 6.5, 20] if "cut-wrong-edges" in wrong else [0, 5.6, 6.4, 20]
     labs["a1c_category"] = pd.cut(labs["hba1c_pct"], bins=bins, labels=["normal", "prediabetes", "diabetes"])
     if "no-dummies" not in wrong:
@@ -121,7 +124,7 @@ def solve(root: Path, wrong: frozenset = frozenset()) -> None:
     rules = pd.DataFrame({
         "patient_id_format": labs["patient_id"].str.fullmatch(r"D[0-9]{4}", na=False),
         "visit_date_present": labs["visit_date"].notna(),
-        "sex_valid": labs["sex"].isin(["F", "M"]),
+        "gender_valid": labs["gender"].isin(["F", "M", "X"]),
         "hba1c_in_range": hba1c_ok,
         "weight_in_range": weight_ok,
     })
@@ -318,8 +321,9 @@ def run() -> None:
         mistake("clinic-unstripped", {"coded table: clinic names cleaned"}, "spaces around them")
         mistake("clinic-not-title", {"coded table: clinic names cleaned"}, "spells mission as")
         mistake("clinic-not-filled", {"coded table: missing clinic filled"}, 'fillna("Unknown")')
-        mistake("sex-upper-only", {"coded table: sex codes mapped"}, "expected F")
-        mistake("sex-replace", {"coded table: sex codes mapped"}, "replace() leaves it")
+        mistake("gender-upper-only", {"coded table: gender codes mapped"}, "expected F")
+        mistake("gender-replace", {"coded table: gender codes mapped"}, "replace() leaves it")
+        mistake("gender-no-x", {"coded table: gender codes mapped"}, "has blank, expected X")
         mistake("cut-wrong-edges", {"coded table: a1c_category"}, "includes its right edge")
         mistake("no-dummies", {"coded table: clinic indicators"}, "pd.get_dummies")
         mistake("rules-pass-count", {"validation report: failing rows"}, "(~rules).sum()")

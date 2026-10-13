@@ -23,8 +23,8 @@ A clinic's intake form exports column names with spaces and units, smoking statu
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
 ```python
-# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5
+# Installs the course's pandas and thefuzz (for the optional last practice) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+%pip install -q --no-warn-conflicts pandas==3.0.5 thefuzz==0.22.1
 ```
 
 ## Core walkthrough
@@ -159,9 +159,9 @@ display(intake[['patient_id', 'age', 'age_band']])
 
 ## Independent practice
 
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
+Continue on your own after class, outside the live route. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
-### SBP quantiles with repeated edges
+### Practice 1: SBP quantiles with repeated edges
 
 Four readings were recorded as exactly 130, a common rounding habit. Asking `qcut` for quartiles fails on purpose here, because two quartile edges are both 130:
 
@@ -181,8 +181,7 @@ display(intake['sbp_band'].value_counts())
 
 **Expect:** `(126.0, 130.0]` 4, `(117.999, 126.0]` 3, `(130.0, 152.0]` 2. Three bins, not four; report them that way.
 
-
-### 7. Store repeated labels as categories
+### Practice 2: Store repeated labels as categories
 
 ```python
 print('site as str:', intake['site'].memory_usage(deep=True), 'bytes')
@@ -194,7 +193,7 @@ print(intake['site'].cat.codes.tolist())
 
 **Expect:** fewer bytes as a category: `616` then `302` in the course environment, or `249` then `180` in Colab, whose `pyarrow` package stores text more compactly. The categories are `['north', 'south', 'west']` and the codes are `[0, 0, 1, 1, 0, 2, 2, 1, 0]`.
 
-### 8. Indicator columns for a model
+### Practice 3: Indicator columns for a model
 
 ```python
 smoking_dummies = pd.get_dummies(intake['smoking_status'], prefix='smoking', drop_first=True, dtype='int64')
@@ -209,8 +208,7 @@ display(intake.dtypes)
 
 **Expect:** `age` is `Int64`, `smoking_code` and `pain_score` are `int64`, `age_band`, `sbp_band`, and `site` are `category`, and `bp_stage` is `str`.
 
-
-### Normalize multiword clinic labels
+### Practice 4: Normalize multiword clinic labels
 
 A second export uses full clinic names with repeated spaces. Keep its original labels beside the normalized ones so you can inspect exactly what changed.
 
@@ -224,3 +222,29 @@ assert clinic_labels['normalized'].tolist() == ['north_clinic', 'south_clinic', 
 ```
 
 **Expect:** three rows preserving the original text, with normalized labels `north_clinic`, `south_clinic`, and `north_clinic`. The counts are `north_clinic 2` and `south_clinic 1`; spaces and letter case no longer create extra clinics.
+
+### Practice 5 (optional extension): Match misspelled clinic names
+
+Prerequisite: [BONUS.md](../BONUS.md), Fuzzy matching for near-duplicates. Nothing in the core route or the assignment needs this.
+
+Normalizing case and spaces cannot fix a typo. `thefuzz` scores how similar two strings are (0 to 100), and `process.extractOne` returns the best canonical name above a cutoff. Names below the cutoff stay missing for a person to review.
+
+```python
+from thefuzz import fuzz, process
+
+canonical = ['north_clinic', 'south_clinic', 'west_clinic']
+typed = pd.DataFrame({'typed_name': ['north_clinic', 'nrth_clinic', 'south_clinc', 'sotuh_clinic', 'west_clinic', 'wset_clinic', 'central_clinic']})
+
+
+def best_match(name, cutoff=80):
+    """Return the closest canonical name scoring at least cutoff, else None."""
+    hit = process.extractOne(name, canonical, scorer=fuzz.ratio, score_cutoff=cutoff)
+    return hit[0] if hit else None
+
+
+typed['matched'] = typed['typed_name'].apply(best_match)
+typed['best_score'] = typed['typed_name'].apply(lambda name: process.extractOne(name, canonical, scorer=fuzz.ratio)[1])
+display(typed)
+```
+
+**Expect:** 7 rows. `north_clinic` and `west_clinic` match themselves at 100. The typos `nrth_clinic` (96), `south_clinc` (96), `sotuh_clinic` (92), and `wset_clinic` (91) map to their canonical names. `central_clinic` scores 72 against `west_clinic`, below the cutoff of 80, so `matched` is `NaN` and the row goes to a person. Check `best_score` before trusting a match: a lower cutoff (70) would wrongly send `central_clinic` to `west_clinic`.

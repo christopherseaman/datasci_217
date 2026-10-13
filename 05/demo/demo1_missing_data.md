@@ -118,7 +118,7 @@ display(clean[['patient_id', 'sbp']])
 
 **Expect:** `Mean SBP with the bad values: 151.28571428571428`, then `Mean SBP after: 127.6`. P004 and P005 now show `NaN`.
 
-`1420` is probably `142` with an extra zero, but that is a guess. Blanking it and flagging the visit for review (step 6) keeps a guess out of the data.
+`1420` is probably `142` with an extra zero, but that is a guess. Blanking it and flagging the visit for review (core step 6) keeps a guess out of the data.
 
 ### 6. Convert text columns
 
@@ -153,9 +153,9 @@ display(clean.dtypes)
 
 ## Independent practice
 
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
+Continue on your own after class, outside the live route. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
-### 7. Recount, then drop or fill
+### Practice 1: Recount, then drop or fill
 
 The disguised problems are now real missing values, so the counts go up.
 
@@ -198,7 +198,7 @@ display(wrong)
 
 **Expect:** P003, P004, and P005 all receive `135`, P002's reading. Leave those gaps missing; `needs_review` already marks them.
 
-### 8. The result
+### Practice 2: The result
 
 ```python
 display(analysis[['patient_id', 'visit_date', 'age', 'sbp', 'cholesterol', 'cholesterol_imputed', 'needs_review']])

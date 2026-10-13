@@ -25,17 +25,22 @@ SEED = 2026_06
 
 # Every planted issue, for the instructor; the handout never lists them.
 PLANTED = {
-    "patients.csv": "P009 repeated exactly; sex ' f', 'm ', 'f', and empty (P020); site_code 'n01' and ' S02'; "
-                    "birth_year 9999 sentinel (P007); P023 at site E04, which sites.csv lacks; P012 has no visits",
+    "patients.csv": "P009 repeated exactly; gender spellings 'Female ', 'f', 'woman', 'female', 'male', 'man', "
+                    "'Male', 'm ', 'nonbinary', 'non-binary', 'NB', 'x', 'unknown', and empty (P020); site_code "
+                    "'N-01', 'n01', and ' S 02'; birth_year 9999 sentinel (P007); P023 at site E04, which sites.csv "
+                    "lacks; P012 has no visits",
     "sites.csv": "S02 listed twice, one retired and one current",
-    "visits_north.csv": "P003 week12 repeated exactly; 'Baseline' and ' week12' labels; sbp 999 sentinel (P006); "
+    "visits_north.csv": "P003 week12 repeated exactly; 'BL' and 'Week 12' labels; sbp 999 sentinel (P006); "
                         "a single-digit month date (P010 week12); P005 has no week12 visit",
-    "visits_south.csv": "weight column named wt_kg; 'WEEK12' and 'Baseline ' labels; P015 baseline rechecked "
+    "visits_south.csv": "weight column named wt_kg; 'wk12' and 'Baseline' labels; P015 baseline rechecked "
                         "(later reading first in the file); sbp 999 (P017) and 18 (P022); 2026-02-30 (P019); "
                         "blank weight (P024 week12); P030 not in the registry; P018 has no week12 visit",
     "a1c_wide.csv": "P099 not in the registry and without visits; blank week12 for P018 and P021; "
                     "P005 has a week12 result without a week12 visit",
 }
+# Each patient's gender as staff typed it: F (female), M (male), X (nonbinary), or missing.
+GENDER = ("F", "Female ", "f", "M", "male", "M", "man", "woman", "F", "m ", "F", "nonbinary", "M", "Male", "M",
+          "NB", "female", "unknown", "F", "", "non-binary", "M", "x", "F")
 
 
 def build(rng: random.Random) -> dict[str, list[list[str]]]:
@@ -44,15 +49,13 @@ def build(rng: random.Random) -> dict[str, list[list[str]]]:
     for number in range(1, 25):
         pid = f"P{number:03d}"
         site = "N01" if number <= 12 else "E04" if number == 23 else "S02"
-        patients.append([pid, rng.choice(["F", "M"]), str(rng.randint(1942, 1994)), site])
+        rng.choice(["F", "M"])  # kept so every later random value stays as it was
+        patients.append([pid, GENDER[number - 1], str(rng.randint(1942, 1994)), site])
     by_id = {row[0]: row for row in patients}
-    by_id["P002"][1] = " f"
-    by_id["P010"][1] = "m "
-    by_id["P019"][1] = "f"
-    by_id["P020"][1] = ""
     by_id["P007"][2] = "9999"
-    by_id["P004"][3] = "n01"
-    by_id["P016"][3] = " S02"
+    by_id["P004"][3] = "N-01"
+    by_id["P011"][3] = "n01"
+    by_id["P016"][3] = " S 02"
     position = next(index for index, row in enumerate(patients) if row[0] == "P009")
     patients.insert(position + 1, list(patients[position]))
 
@@ -86,16 +89,16 @@ def build(rng: random.Random) -> dict[str, list[list[str]]]:
     def row(rows: list[list[str]], pid: str, visit: str) -> list[str]:
         return next(r for r in rows if r[0] == pid and r[1] == visit)
 
-    row(north, "P002", "baseline")[1] = "Baseline"
-    row(north, "P008", "week12")[1] = " week12"
+    row(north, "P002", "baseline")[1] = "BL"
+    row(north, "P008", "week12")[1] = "Week 12"
     row(north, "P006", "baseline")[4] = "999"
     p010 = date.fromisoformat(row(north, "P010", "week12")[2])
     row(north, "P010", "week12")[2] = f"{p010.year}-{p010.month}-{p010.day:02d}"
     duplicate = row(north, "P003", "week12")
     north.insert(north.index(duplicate) + 1, list(duplicate))
 
-    row(south, "P014", "week12")[1] = "WEEK12"
-    row(south, "P021", "baseline")[1] = "Baseline "
+    row(south, "P014", "week12")[1] = "wk12"
+    row(south, "P021", "baseline")[1] = "Baseline"
     row(south, "P017", "week12")[4] = "999"
     row(south, "P022", "baseline")[4] = "18"
     row(south, "P019", "baseline")[2] = "2026-02-30"
@@ -115,7 +118,7 @@ def build(rng: random.Random) -> dict[str, list[list[str]]]:
 
     header = ["patient_id", "visit", "visit_date", "visit_time", "sbp_mmhg"]
     return {
-        "patients.csv": [["patient_id", "sex", "birth_year", "site_code"], *patients],
+        "patients.csv": [["patient_id", "gender", "birth_year", "site_code"], *patients],
         "sites.csv": [["site_code", "site_name", "record_status"], *sites],
         "visits_north.csv": [[*header, "weight_kg"], *north],
         "visits_south.csv": [[*header, "wt_kg"], *south],
@@ -134,7 +137,7 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    manifest = {"fixture_id": "a06-clinic-midterm-v1",
+    manifest = {"fixture_id": "a06-clinic-midterm-v2",
                 "provenance": "course-authored synthetic teaching data; no real patients",
                 "files": {}}
     for name, rows in build(random.Random(SEED)).items():

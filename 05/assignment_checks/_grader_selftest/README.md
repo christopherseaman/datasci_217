@@ -17,8 +17,8 @@ submissions in ignored `scratch/`, and confirms that:
   fractions for percents, the report saved with `index=False`, the no-lab
   visit kept or `how="any"`, repeats kept, `keep=False`, a subset that drops the
   repeat visit, `-999` kept, ages or dates left as text, IDs or clinics not
-  stripped or not re-cased, the blank clinic not filled, sex upper-cased
-  instead of mapped, the wrong `pd.cut` edges, no indicators, passes counted
+  stripped or not re-cased, the blank clinic not filled, gender upper-cased
+  instead of mapped or mapped without `X`, the wrong `pd.cut` edges, no indicators, passes counted
   for failures, a blank failing a range rule, bad IDs kept, every failing row
   dropped, impossible values kept, the outlier flag missing or flagging a
   blank, blanks filled with the median, a row saved twice, a file missing or
