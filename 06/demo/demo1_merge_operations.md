@@ -19,8 +19,8 @@ jupyter:
 # Demo 1: Joining Patient and Lab Tables with `pd.merge()`
 
 - A clinic keeps a patient registry and a separate lab results table.
-- Join them every way the lecture teaches, and find the patients with no labs and the labs with no patient.
-- Match monthly visit counts to targets on several keys and name overlapping columns.
+- Compare an inner join with a left join, then audit both tables with an outer join to find the patients with no labs and the labs with no patient.
+- Match monthly visit counts to targets on three keys.
 - Catch a registry export that would silently duplicate lab rows.
 
 Run the cells from top to bottom; each **Expect** line says what you should see.
@@ -32,31 +32,35 @@ Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ## Core walkthrough
 
-### 1. The two tables
+### 1. Load the tables
+
+This supplied cell keeps any CSV already in `data/` and downloads the rest (`urlretrieve(url, path)` saves the file at a web address to `path`).
+
+```python
+from pathlib import Path
+from urllib.request import urlretrieve
+
+import pandas as pd
+
+REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/data"
+data_dir = Path("data")
+data_dir.mkdir(exist_ok=True)
+for filename in ["demo1_patients.csv", "demo1_labs.csv", "demo1_registry.csv",
+                 "demo1_visits.csv", "demo1_targets.csv",
+                 "demo1_central_a1c.csv", "demo1_poc_a1c.csv"]:
+    path = data_dir / filename
+    if not path.exists():
+        urlretrieve(f"{REPO_RAW}/{filename}", path)
+print(sorted(p.name for p in data_dir.glob("demo1_*.csv")))
+```
+
+**Expect:** a list of the 7 `demo1_*.csv` file names.
 
 The registry has one row per patient, so `patient_id` is its primary key. The lab table has one row per test; its `patient_id` is a foreign key that can repeat.
 
 ```python
-import pandas as pd
-
-patients = pd.DataFrame({
-    'patient_id': ['P001', 'P002', 'P003', 'P004', 'P005'],
-    'birth_year': [1958, 1971, 1964, 1990, 1983],
-    'sex': ['F', 'M', 'F', 'M', 'F'],
-    'clinic': ['North', 'South', 'North', 'South', 'North'],
-    'bmi': [31.4, 27.8, 29.9, 24.1, 26.5],
-})
-
-labs = pd.DataFrame({
-    'lab_id': ['L01', 'L02', 'L03', 'L04', 'L05', 'L06', 'L07'],
-    'patient_id': ['P001', 'P001', 'P002', 'P003', 'P006', 'P001', 'P002'],
-    'test': ['A1c', 'LDL', 'A1c', 'A1c', 'A1c', 'A1c', 'LDL'],
-    'value': [7.2, 142.0, 5.6, 8.1, 6.4, 6.9, 118.0],
-    'units': ['%', 'mg/dL', '%', '%', '%', '%', 'mg/dL'],
-    'collected': ['2026-01-12', '2026-01-12', '2026-01-20', '2026-02-03',
-                  '2026-02-05', '2026-04-14', '2026-04-22'],
-})
-
+patients = pd.read_csv(data_dir / "demo1_patients.csv")
+labs = pd.read_csv(data_dir / "demo1_labs.csv")
 display(patients)
 display(labs)
 print(patients['patient_id'].is_unique, labs['patient_id'].is_unique)
@@ -70,7 +74,20 @@ Before merging, note three things the join types will reveal:
 - P004 and P005 have **no** lab results yet.
 - P006 has a lab result but **no registry record**, for example a referral that was never registered.
 
-### 2. Outer join with `indicator=True`: see what matches
+### 2. Inner join vs left join: who drops out
+
+**Question:** "Which lab results attach to a registered patient, and which patients have none?" An inner join keeps only matching keys. A left join keeps every patient.
+
+```python
+inner_merge = pd.merge(patients, labs, on='patient_id', how='inner')
+left_merge = pd.merge(patients, labs, on='patient_id', how='left')
+print('inner:', len(inner_merge), 'left:', len(left_merge))
+display(left_merge[left_merge['lab_id'].isna()][['patient_id', 'clinic', 'lab_id', 'test']])
+```
+
+**Expect:** `inner: 6 left: 8`. The inner join silently dropped P004 and P005. The left join keeps them as the 2 rows shown, with `NaN` in `lab_id` and `test`. Neither join keeps P006's lab, because P006 is not in the left table.
+
+### 3. Outer join with `indicator=True`: see what matches
 
 **Question:** "Which patients and labs match, and which are left over?" An outer join keeps every row from both tables; `indicator=True` adds a `_merge` column saying where each row came from.
 
@@ -83,17 +100,30 @@ display(audit[audit['_merge'] != 'both'][['patient_id', 'clinic', 'lab_id', '_me
 
 **Expect:** 9 rows. `_merge` counts: `both` 6, `left_only` 2, `right_only` 1. The leftover table has 3 rows: P004 and P005 as `left_only` (registered, no labs) and P006 as `right_only` (a lab with no registry record, so `clinic` is `NaN`). Use `indicator=True` whenever a merge's row count surprises you.
 
-### 3. Check the cardinality before you trust a merge
+### 4. Merging on several keys: visits against targets
+
+Clinic operations tracks monthly visits by clinic and service. Targets are set per clinic, month, and service, so a visit count matches a target only when **all three** keys agree.
+
+```python
+visits = pd.read_csv(data_dir / "demo1_visits.csv")
+targets = pd.read_csv(data_dir / "demo1_targets.csv")
+display(visits)
+display(targets)
+
+keys = ['clinic', 'month', 'service']
+vs_target = pd.merge(visits, targets, on=keys, how='left')
+vs_target['pct_of_target'] = (vs_target['visits'] / vs_target['target'] * 100).round(1)
+display(vs_target)
+```
+
+**Expect:** 5 January visit rows and 6 target rows (4 for January, 2 for February). The merge has 5 rows. `pct_of_target` is 102.5 for North primary care, 92.3 for North cardiology, 95.0 for South primary care, and 105.6 for South cardiology. East has no target, so its `target` and `pct_of_target` are `NaN`.
+
+### 5. Check the cardinality before you trust a merge
 
 Next month's registry export arrives. Looking up each lab's patient is a **many-to-one** merge (many lab rows, one registry row per patient). Watch the row count.
 
 ```python
-registry = pd.DataFrame({
-    'patient_id': ['P001', 'P002', 'P003', 'P003', 'P004', 'P005'],
-    'clinic': ['North', 'South', 'North', 'South', 'South', 'North'],
-    'record_status': ['current', 'current', 'retired', 'current', 'current', 'current'],
-})
-
+registry = pd.read_csv(data_dir / "demo1_registry.csv")
 print('missing keys:', labs['patient_id'].isna().sum(), registry['patient_id'].isna().sum())
 unchecked = pd.merge(labs, registry, on='patient_id', how='left')
 print('lab rows before:', len(labs), 'after:', len(unchecked))
@@ -140,41 +170,6 @@ display(labs_with_clinic[['lab_id', 'patient_id', 'clinic', '_merge']])
 
 Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
-### 4. Inner join: only matching keys
-
-**Question:** "Which lab results can I attach to a registered patient?"
-
-```python
-inner_merge = pd.merge(patients, labs, on='patient_id', how='inner')
-print(len(inner_merge))
-display(inner_merge)
-```
-
-**Expect:** 6 rows. P001 appears 3 times, P002 twice, P003 once. P004 and P005 (no labs) and P006's lab (no registry record) are gone.
-
-Always check row counts: if you expected every patient, the inner join silently dropped two of them.
-
-### 5. Left join: every patient
-
-**Question:** "Show every registered patient, with labs where they exist."
-
-```python
-left_merge = pd.merge(patients, labs, on='patient_id', how='left')
-print(len(left_merge))
-display(left_merge)
-```
-
-**Expect:** 8 rows: the 6 matched rows plus P004 and P005 with `NaN` in `lab_id`, `test`, `value`, `units`, and `collected`. P006's lab is still excluded because P006 is not in the left table.
-
-These patients have no lab rows in this extract. Check the care plan and other records before deciding whether a test is due.
-
-```python
-no_labs = left_merge[left_merge['lab_id'].isna()]
-display(no_labs[['patient_id', 'clinic', 'bmi']])
-```
-
-**Expect:** 2 rows: P004 (South) and P005 (North).
-
 ### 6. Right join: every lab result
 
 **Question:** "Show every lab result, even when the patient is not registered."
@@ -188,41 +183,19 @@ display(orphans[['lab_id', 'patient_id', 'test', 'value', 'units']])
 
 **Expect:** 7 rows in the right join, one per lab. The orphan table has 1 row: `L05`, `P006`, `A1c`, `6.4`, `%`. An orphaned lab is a data-quality issue to send back to registration.
 
-### 7. Merging on several keys: visits against targets
+### 7. Why all three keys matter
 
-Clinic operations tracks monthly visits by clinic and service. Targets are set per clinic, month, and service, so a visit count matches a target only when **all three** keys agree.
+Check that each key combination appears once in each table, then confirm the merge is one-to-one with `validate`.
 
 ```python
-visits = pd.DataFrame({
-    'clinic': ['North', 'North', 'South', 'South', 'East'],
-    'month': ['2026-01'] * 5,
-    'service': ['primary_care', 'cardiology', 'primary_care', 'cardiology', 'primary_care'],
-    'visits': [410, 120, 380, 95, 150],
-})
-
-targets = pd.DataFrame({
-    'clinic': ['North', 'North', 'South', 'South', 'North', 'South'],
-    'month': ['2026-01', '2026-01', '2026-01', '2026-01', '2026-02', '2026-02'],
-    'service': ['primary_care', 'cardiology', 'primary_care', 'cardiology',
-                'primary_care', 'primary_care'],
-    'target': [400, 130, 400, 90, 420, 410],
-})
-
-keys = ['clinic', 'month', 'service']
 print(visits.duplicated(subset=keys).sum(), targets.duplicated(subset=keys).sum())
+checked = pd.merge(visits, targets, on=keys, how='left', validate='one_to_one')
+print(len(checked))
 ```
 
-**Expect:** `0 0`: each key combination appears once in each table, so this is a one-to-one merge.
+**Expect:** `0 0`, then `5`: no repeated key combination, so `validate='one_to_one'` passes.
 
-```python
-vs_target = pd.merge(visits, targets, on=keys, how='left', validate='one_to_one')
-vs_target['pct_of_target'] = (vs_target['visits'] / vs_target['target'] * 100).round(1)
-display(vs_target)
-```
-
-**Expect:** 5 rows. `pct_of_target` is 102.5 for North primary care, 92.3 for North cardiology, 95.0 for South primary care, and 105.6 for South cardiology. East has no target, so its `target` and `pct_of_target` are `NaN`.
-
-Why all three keys matter: merging on `clinic` alone pairs every January count with every target for that clinic, including February's.
+Merging on `clinic` alone pairs every January count with every target for that clinic, including February's.
 
 ```python
 wrong = pd.merge(visits, targets, on='clinic')
@@ -237,8 +210,8 @@ print(list(wrong.columns))
 A missing target leaves no row to find. Build the expected grid of every clinic with every service using `how='cross'`, then left-merge January's targets onto it.
 
 ```python
-clinic_list = pd.DataFrame({'clinic': ['North', 'South', 'East']})
-services = pd.DataFrame({'service': ['primary_care', 'cardiology']})
+clinic_list = visits[['clinic']].drop_duplicates()
+services = visits[['service']].drop_duplicates()
 expected = pd.merge(clinic_list, services, how='cross')
 print(len(expected))
 
@@ -255,17 +228,8 @@ display(coverage[coverage['_merge'] == 'left_only'][['clinic', 'service']])
 The central lab and a point-of-care (POC) device both report A1c in a column named `a1c`. `a1c` is not the key, so pandas must rename one of them.
 
 ```python
-central = pd.DataFrame({
-    'patient_id': ['P001', 'P002', 'P003', 'P007'],
-    'a1c': [7.2, 5.6, 8.1, 6.3],
-    'collected': ['2026-01-12', '2026-01-20', '2026-02-03', '2026-02-10'],
-})
-poc = pd.DataFrame({
-    'patient_id': ['P001', 'P002', 'P003', 'P007'],
-    'a1c': [7.0, 5.8, 7.4, 6.4],
-    'device': ['DCA-1', 'DCA-1', 'DCA-2', 'DCA-2'],
-})
-
+central = pd.read_csv(data_dir / "demo1_central_a1c.csv")
+poc = pd.read_csv(data_dir / "demo1_poc_a1c.csv")
 display(pd.merge(central, poc, on='patient_id', validate='one_to_one'))
 ```
 

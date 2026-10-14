@@ -1,0 +1,11 @@
+{
+  "generator": "generate_data.py",
+  "seed": 217,
+  "files": {
+    "data/lab_visits.csv": {
+      "rows": 59447,
+      "bytes": 2668900,
+      "sha256": "d2f5f1e71ec3b6ca8d058e42bfd1fafc037a347e70890544a01898941714fe68"
+    }
+  }
+}

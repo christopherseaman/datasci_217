@@ -12,8 +12,9 @@ import urllib.request
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-# The course-owned files that decide the grade; the pytest entrypoint and this script are not needed to grade.
-LATEST_FILES = ("_value_checks.py", "grading.py")
+# The course-owned files that decide the grade: the checks, their points, and the generator that rebuilds the
+# data they compare with. The pytest entrypoint and this script are not needed to grade.
+LATEST_FILES = ("_value_checks.py", "grading.py", "generate_data.py")
 LATEST_URL = os.environ.get(
     "DS217_CHECKS_URL", "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/05/assignment_checks"
 )
@@ -22,7 +23,7 @@ LATEST_FOLDER = HERE / ".checks"
 
 def _import_grader(folder: Path):
     """Import `grading` from `folder`, forgetting any earlier copy, and return the module."""
-    for name in ("grading", "_value_checks"):
+    for name in ("grading", "_value_checks", "generate_data"):
         sys.modules.pop(name, None)
     sys.path.insert(0, str(folder))
     try:

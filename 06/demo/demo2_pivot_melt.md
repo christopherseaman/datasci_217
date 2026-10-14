@@ -19,8 +19,8 @@ jupyter:
 # Demo 2: Row Labels and Reshaping Blood-Pressure Visits
 
 - A small hypertension study records systolic blood pressure (SBP, mmHg) at baseline, week 4, and week 12.
-- Give the table meaningful row labels.
-- Reshape it from wide to long and back.
+- Give the table meaningful row labels, including two-level ones.
+- Reshape it from wide to long and back with `melt()`, `unstack()`, `stack()`, and `pivot()`.
 - Fix the repeated reading that stops `pivot()`.
 
 Run the cells from top to bottom; each **Expect** line says what you should see.
@@ -32,67 +32,50 @@ Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ## Core walkthrough
 
-### 1. The study table (wide)
+### 1. Load the study table (wide)
+
+This supplied cell keeps any CSV already in `data/` and downloads the rest (`urlretrieve(url, path)` saves the file at a web address to `path`).
+
+```python
+from pathlib import Path
+from urllib.request import urlretrieve
+
+import pandas as pd
+
+REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/data"
+data_dir = Path("data")
+data_dir.mkdir(exist_ok=True)
+for filename in ["demo2_bp_wide.csv", "demo2_device_week4.csv"]:
+    path = data_dir / filename
+    if not path.exists():
+        urlretrieve(f"{REPO_RAW}/{filename}", path)
+print(sorted(p.name for p in data_dir.glob("demo2_*.csv")))
+```
+
+**Expect:** `['demo2_bp_wide.csv', 'demo2_device_week4.csv']`.
 
 One row per patient, one SBP column per visit. `ids` lists the columns that describe a patient and do not change between visits.
 
 ```python
-import pandas as pd
-
-bp_wide = pd.DataFrame({
-    'patient_id': ['P001', 'P002', 'P003', 'P004'],
-    'age': [67, 54, 61, 49],
-    'sex': ['F', 'M', 'F', 'M'],
-    'clinic': ['North', 'South', 'North', 'South'],
-    'baseline': [152, 138, 147, 141],
-    'week_04': [144, 135, 140, 136],
-    'week_12': [138, 131, 129, 130],
-})
+bp_wide = pd.read_csv(data_dir / "demo2_bp_wide.csv")
 ids = ['patient_id', 'age', 'sex', 'clinic']
 print(bp_wide.shape)
 display(bp_wide)
 ```
 
-**Expect:** `(4, 7)`: 4 patients, and the columns `patient_id`, `age`, `sex`, `clinic`, `baseline`, `week_04`, `week_12`. The row labels down the left are `0` to `3`, a RangeIndex that only counts rows.
+**Expect:** `(4, 7)`: patients P001 to P004, and the columns `patient_id`, `age`, `sex`, `clinic`, `baseline`, `week_04`, `week_12`.
 
 ### 2. Patient IDs as row labels
 
-Move `patient_id` into the index and check that each patient appears once.
+As in Lecture 04, `set_index()` turns a column into row labels.
 
 ```python
 bp = bp_wide.set_index('patient_id')
 print(bp.index.is_unique)
-display(bp)
-```
-
-**Expect:** `True`, and the row labels are now `P001` to `P004`; `patient_id` is no longer an ordinary column.
-
-Now a patient's row is one label away.
-
-```python
-display(bp.loc['P003'])
 print(bp.loc['P003', 'week_12'])
 ```
 
-**Expect:** P003's row as a Series (`age` 61, `sex` F, `clinic` North, `baseline` 147, `week_04` 140, `week_12` 129, `dtype: object` because it mixes text and numbers), then `129`.
-
-Labels also line rows up. Each patient's SBP goal from the care plan arrives in a different order; subtracting matches patients by label, not by position.
-
-```python
-goal = pd.Series([130, 140, 130, 130], index=['P004', 'P003', 'P002', 'P001'])
-above_goal = bp['week_12'] - goal
-display(above_goal)
-```
-
-**Expect:** P001 `8`, P002 `1`, P003 `-11`, P004 `0`. P003 is the only patient below goal at week 12 (P003's goal is 140), and P004 is exactly at goal.
-
-`reset_index()` moves the labels back into a column, and the table is exactly what we started with.
-
-```python
-print(bp.reset_index().equals(bp_wide))
-```
-
-**Expect:** `True`.
+**Expect:** `True` (each patient appears once), then `129`.
 
 ### 3. Wide to long with `melt()`
 
@@ -111,20 +94,42 @@ display(bp_long.head(6))
 
 **Expect:** `(12, 6)`: 4 patients × 3 visits = 12 rows, with columns `patient_id`, `age`, `sex`, `clinic`, `visit`, `sbp`. The first four rows are every patient's `baseline`, then the `week_04` rows begin.
 
-The visit labels are text. A number of weeks is easier to plot and sort, so look each label up in a dictionary with `.map()` (Lecture 05).
+### 4. Two-level row labels
+
+In the long table one patient has three rows, so `patient_id` alone no longer names a row; `patient_id` and `visit` together do.
 
 ```python
-weeks = {'baseline': 0, 'week_04': 4, 'week_12': 12}
-bp_long['week'] = bp_long['visit'].map(weeks)
-print(bp_long['week'].isna().sum())
-display(bp_long.sort_values(['patient_id', 'week']).head(3))
+by_visit = bp_long.set_index(['patient_id', 'visit']).sort_index()
+print(by_visit.index.is_unique)
+display(by_visit.loc['P003'])
+print(by_visit.loc[('P003', 'week_12'), 'sbp'])
 ```
 
-**Expect:** `0` unmapped labels, then P001's three rows in time order: 152 at week 0, 144 at week 4, and 138 at week 12.
+**Expect:** `True`, then P003's three visits (`baseline`, `week_04`, `week_12`) with SBP 147, 140, and 129, then `129`. The labels sort alphabetically, which here is also time order.
 
-### 4. Long back to wide with `pivot()`
+### 5. Move a level with `unstack()` and `stack()`
 
-`pivot()` rebuilds the wide table: `visit` supplies the headers and `sbp` fills the cells. With two identifier columns, the result has two-level row labels, so `reset_index()` turns them back into columns.
+`unstack()` moves the inner level, `visit`, up into the columns: one row per patient again.
+
+```python
+sbp_by_visit = by_visit['sbp'].unstack()
+display(sbp_by_visit)
+display(by_visit['sbp'].unstack(level='patient_id'))
+```
+
+**Expect:** first a 4 × 3 table with patients as rows and `baseline`, `week_04`, `week_12` as columns (P001: 152, 144, 138). Then the same numbers turned the other way: visits as rows, P001 to P004 as columns.
+
+`stack()` moves the visit columns back down into the inner row level.
+
+```python
+print(sbp_by_visit.stack().equals(by_visit['sbp']))
+```
+
+**Expect:** `True`: no value was lost or moved to another patient.
+
+### 6. Long back to wide with `pivot()`
+
+`pivot()` does `set_index()` and `unstack()` in one call: `visit` supplies the headers and `sbp` fills the cells. With four identifier columns in `ids`, the result has four-level row labels, so `reset_index()` turns them back into columns.
 
 ```python
 bp_wide_again = bp_long.pivot(
@@ -137,62 +142,14 @@ print(bp_wide_again.equals(bp_wide))
 display(bp_wide_again)
 ```
 
-**Expect:** `True`: the round trip reproduces the original table exactly, the same 4 rows, 7 columns, values, and dtypes. The extra `week` column is simply not used, because `values='sbp'` names the one column that fills the cells.
-
-## Independent practice
-
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
-
-### 5. Renumber rows after a filter
-
-Filtering keeps the original row labels, so the numbers now have gaps.
-
-```python
-high_baseline = bp_wide[bp_wide['baseline'] >= 140]
-print(list(high_baseline.index))
-
-high_baseline = high_baseline.reset_index(drop=True)
-print(list(high_baseline.index))
-display(high_baseline[['patient_id', 'age', 'baseline']])
-```
-
-**Expect:** `[0, 2, 3]`, then `[0, 1, 2]`: P001, P003, and P004 started at 140 mmHg or higher. `drop=True` throws the old labels away instead of saving them as a column, because `0, 2, 3` carried no information.
-
-### 6. Two-level row labels on the long table
-
-In the long table one patient has three rows, so `patient_id` alone no longer names a row; `patient_id` and `visit` together do.
-
-```python
-by_visit = bp_long.set_index(['patient_id', 'visit']).sort_index()
-print(by_visit.index.is_unique)
-display(by_visit.loc['P003'])
-```
-
-**Expect:** `True`, then P003's three visits (`baseline`, `week_04`, `week_12`) with SBP 147, 140, and 129. The labels sort alphabetically, which here is also time order because `baseline` comes before `week_04` and `week_12`.
-
-```python
-display(by_visit.loc[('P003', 'week_12'), :])
-```
-
-**Expect:** one row as a Series: `age` 61, `sex` F, `clinic` North, `sbp` 129, `week` 12.
-
-```python
-print(by_visit.reset_index().shape)
-```
-
-**Expect:** `(12, 7)`: both label levels are ordinary columns again.
+**Expect:** `True`: the round trip reproduces the original table exactly, the same 4 rows, 7 columns, values, and dtypes.
 
 ### 7. When `pivot()` finds a repeated pair
 
-The BP cuff's own export for the week 4 visit arrives. Pivot it to one column per visit.
+The BP cuff's own export for the week 4 visit arrives.
 
 ```python
-device_week4 = pd.DataFrame({
-    'patient_id': ['P001', 'P002', 'P003', 'P003', 'P004'],
-    'visit': ['week_04'] * 5,
-    'sbp': [144, 135, 152, 140, 136],
-    'reading_time': ['09:05', '09:40', '10:15', '10:22', '11:02'],
-})
+device_week4 = pd.read_csv(data_dir / "demo2_device_week4.csv")
 display(device_week4)
 ```
 
@@ -229,3 +186,48 @@ display(recorded.pivot(index='patient_id', columns='visit', values='sbp'))
 **Expect:** `4` rows, then a one-column table (`week_04`) with P001 144, P002 135, P003 140, and P004 136. These match the `week_04` column of `bp_wide`, so the study table recorded the recheck too.
 
 If both readings should count, `pivot_table()` would average them instead.
+
+## Independent practice
+
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
+
+### 8. Visit numbers instead of labels
+
+The visit labels are text. A number of weeks is easier to plot and sort, so look each label up in a dictionary with `.map()` (Lecture 05).
+
+```python
+weeks = {'baseline': 0, 'week_04': 4, 'week_12': 12}
+bp_long['week'] = bp_long['visit'].map(weeks)
+print(bp_long['week'].isna().sum())
+display(bp_long.sort_values(['patient_id', 'week']).head(3))
+```
+
+**Expect:** `0` unmapped labels, then P001's three rows in time order: 152 at week 0, 144 at week 4, and 138 at week 12.
+
+### 9. A missed visit after `unstack()`
+
+P002 missed the week 12 visit. Drop that row and unstack again.
+
+```python
+missed = by_visit['sbp'].drop(('P002', 'week_12'))
+gappy = missed.unstack()
+display(gappy)
+print(len(gappy.stack()), len(gappy.stack().dropna()))
+```
+
+**Expect:** P002's `week_12` cell is `NaN`, and the SBP columns become floats (`138.0`) because `NaN` is a float. Then `12 11`: `stack()` keeps the empty cell as a row, and `.dropna()` removes it.
+
+### 10. Renumber rows after a filter
+
+Filtering keeps the original row labels, so the numbers now have gaps.
+
+```python
+high_baseline = bp_wide[bp_wide['baseline'] >= 140]
+print(list(high_baseline.index))
+
+high_baseline = high_baseline.reset_index(drop=True)
+print(list(high_baseline.index))
+display(high_baseline[['patient_id', 'age', 'baseline']])
+```
+
+**Expect:** `[0, 2, 3]`, then `[0, 1, 2]`: P001, P003, and P004 started at 140 mmHg or higher. `drop=True` throws the old labels away instead of saving them as a column, because `0, 2, 3` carried no information.

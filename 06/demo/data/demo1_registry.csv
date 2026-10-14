@@ -1,0 +1,7 @@
+patient_id,clinic,record_status
+P001,North,current
+P002,South,current
+P003,North,retired
+P003,South,current
+P004,South,current
+P005,North,current

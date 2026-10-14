@@ -1,28 +1,29 @@
 {
-  "fixture_id": "a06-clinic-midterm-v2",
+  "fixture_id": "a06-clinic-midterm-v3",
   "provenance": "course-authored synthetic teaching data; no real patients",
+  "generator": "generate_data.py",
   "files": {
     "patients.csv": {
-      "rows": 25,
+      "rows": 30045,
       "columns": [
         "patient_id",
         "gender",
         "birth_year",
         "site_code"
       ],
-      "sha256": "4048bf1249cec42f05a564391c30efee0bd1e8bbfaad2e33e2c26f6fde8597b2"
+      "sha256": "7ebbe818af63b951cc227d430d8dec83b90d944fbdfc6f24b2aa33ba7ca3b993"
     },
     "sites.csv": {
-      "rows": 4,
+      "rows": 5,
       "columns": [
         "site_code",
         "site_name",
         "record_status"
       ],
-      "sha256": "8d67e420e4c962bcd0aa8a11d631773878906cda0de47842a9d155bea5f1bc77"
+      "sha256": "daaa4f3fc475900db905590faf6524f34143e78b73633b1794de4c6cf4b56a77"
     },
     "visits_north.csv": {
-      "rows": 22,
+      "rows": 26394,
       "columns": [
         "patient_id",
         "visit",
@@ -31,10 +32,10 @@
         "sbp_mmhg",
         "weight_kg"
       ],
-      "sha256": "0221033a06c16c94df8cf8f12deaeb856fde1c27a0512d807fccc08e61134a17"
+      "sha256": "9136d39ad6571e4ff6b21f1119dde6cd6a16d101bc7d9348b86e7ac15a0efbd2"
     },
     "visits_south.csv": {
-      "rows": 26,
+      "rows": 30927,
       "columns": [
         "patient_id",
         "visit",
@@ -43,16 +44,16 @@
         "sbp_mmhg",
         "wt_kg"
       ],
-      "sha256": "3059874676b29d50dba425cac616366010cfa4f534ef6f8fa9bff517ba0af53e"
+      "sha256": "96d19aad4cbbefa5d96536f2154cdfb7a17cf8c04cad823171def21ac7a1842c"
     },
     "a1c_wide.csv": {
-      "rows": 24,
+      "rows": 29469,
       "columns": [
         "patient_id",
         "a1c_baseline",
         "a1c_week12"
       ],
-      "sha256": "26fba1dd905d50c68011e543c82f9805632a6c066c303de289c673451c08a40f"
+      "sha256": "21c343765c3b6131c9ebda7f201d66089f4d859b9a6aa8ff4b51ef8457825219"
     }
   }
 }

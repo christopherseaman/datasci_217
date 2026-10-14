@@ -18,7 +18,7 @@ jupyter:
 
 # Demo 2: Transforming a Clinic Intake Export
 
-A clinic's intake form exports column names with spaces and units, smoking status and site typed several ways, age as text, and pain as `'7/10'`. This demo renames the columns, normalizes the text, turns labels and text into numbers, groups values into bands, and prepares indicator columns for a model.
+A clinic's intake form exports column names with spaces and units, smoking status and site typed several ways, age as text, and pain as `'7/10'`. This demo renames the columns, normalizes the text, turns labels and text into numbers, groups values into bands, flags text with a pattern, stores repeated labels as categories, and prepares indicator columns for a model.
 
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
@@ -52,7 +52,7 @@ P109,52,130,80,former,north,6/10
 output_dir = Path('output')
 output_dir.mkdir(exist_ok=True)
 raw_path = output_dir / 'intake_raw.csv'
-with raw_path.open('w', encoding='utf-8', newline='') as file:
+with raw_path.open('w', encoding='utf-8') as file:
     file.write(export_text)
 
 intake = pd.read_csv(raw_path)
@@ -148,7 +148,7 @@ display(pd.Series(['never', 'Former', 'current']).map({'never': 0, 'former': 1, 
 
 ### 6. Group values into bands
 
-Age bands with edges chosen to match a clinical table (`cut`). Independent practice adds SBP quartiles chosen by the data (`qcut`).
+Age bands with edges chosen to match a clinical table (`cut`), and SBP groups with edges chosen by the data so each holds about the same number of rows (`qcut`).
 
 ```python
 intake['age_band'] = pd.cut(intake['age'], bins=[17, 39, 64, 120], labels=['18-39', '40-64', '65+'])
@@ -156,6 +156,51 @@ display(intake[['patient_id', 'age', 'age_band']])
 ```
 
 **Expect:** P101 and P107 are `18-39`, P105 is `65+`, and the two missing ages stay `NaN` instead of landing in a band.
+
+```python
+intake['sbp_group'] = pd.qcut(intake['sbp'], q=3, labels=['low', 'middle', 'high'])
+display(intake[['patient_id', 'sbp', 'sbp_group']])
+display(intake['sbp_group'].value_counts())
+```
+
+**Expect:** `low` for 118, 120, and 126; `high` for 142 and 152; `middle` for the four readings of 130. Counts are `middle 4`, `low 3`, `high 2`, uneven because tied values cannot be split.
+
+### 7. Flag text with a pattern
+
+`str.contains` reads its pattern as a regular expression, and `|` means "or".
+
+```python
+intake['ever_smoker'] = intake['smoking_status'].str.contains('former|current')
+display(intake[['patient_id', 'smoking_status', 'ever_smoker']])
+print('Ever smokers:', intake['ever_smoker'].sum())
+```
+
+**Expect:** `True` for P102, P103, P105, P106, and P109, `False` for the four `never` rows, and `Ever smokers: 5`.
+
+### 8. Store repeated labels as categories
+
+```python
+intake['site'] = intake['site'].astype('category')
+print(intake['site'].cat.categories)
+print(intake['site'].cat.codes.tolist())
+```
+
+**Expect:** categories `['north', 'south', 'west']` and codes `[0, 0, 1, 1, 0, 2, 2, 1, 0]`: each row stores a small number that points to its label.
+
+### 9. Indicator columns for a model
+
+```python
+smoking_dummies = pd.get_dummies(intake['smoking_status'], prefix='smoking', drop_first=True, dtype='int64')
+display(intake[['patient_id', 'smoking_status']].join(smoking_dummies))
+```
+
+**Expect:** two columns, `smoking_former` and `smoking_never`. `drop_first=True` dropped the alphabetically first label, `current`, so current smokers (P102 and P105) are 0 in both columns: `current` is the reference.
+
+```python
+display(intake.dtypes)
+```
+
+**Expect:** `age` is `Int64`, `smoking_code` and `pain_score` are `int64`, `age_band`, `sbp_group`, and `site` are `category`, `ever_smoker` is `bool`, and `bp_stage` is `str`.
 
 ## Independent practice
 
@@ -181,34 +226,17 @@ display(intake['sbp_band'].value_counts())
 
 **Expect:** `(126.0, 130.0]` 4, `(117.999, 126.0]` 3, `(130.0, 152.0]` 2. Three bins, not four; report them that way.
 
-### Practice 2: Store repeated labels as categories
+### Practice 2: Compare category storage
 
 ```python
-print('site as str:', intake['site'].memory_usage(deep=True), 'bytes')
-intake['site'] = intake['site'].astype('category')
+intake['site_text'] = intake['site'].astype('str')
+print('site as str:', intake['site_text'].memory_usage(deep=True), 'bytes')
 print('site as category:', intake['site'].memory_usage(deep=True), 'bytes')
-print(intake['site'].cat.categories)
-print(intake['site'].cat.codes.tolist())
 ```
 
-**Expect:** fewer bytes as a category: `616` then `302` in the course environment, or `249` then `180` in Colab, whose `pyarrow` package stores text more compactly. The categories are `['north', 'south', 'west']` and the codes are `[0, 0, 1, 1, 0, 2, 2, 1, 0]`.
+**Expect:** fewer bytes as a category. About `616` then `302` bytes in the local environment; Colab, which has `pyarrow`, shows about `247` then `180`.
 
-### Practice 3: Indicator columns for a model
-
-```python
-smoking_dummies = pd.get_dummies(intake['smoking_status'], prefix='smoking', drop_first=True, dtype='int64')
-display(intake[['patient_id', 'smoking_status']].join(smoking_dummies))
-```
-
-**Expect:** two columns, `smoking_former` and `smoking_never`. `drop_first=True` dropped the alphabetically first label, `current`, so current smokers (P102 and P105) are 0 in both columns: `current` is the reference.
-
-```python
-display(intake.dtypes)
-```
-
-**Expect:** `age` is `Int64`, `smoking_code` and `pain_score` are `int64`, `age_band`, `sbp_band`, and `site` are `category`, and `bp_stage` is `str`.
-
-### Practice 4: Normalize multiword clinic labels
+### Practice 3: Normalize multiword clinic labels
 
 A second export uses full clinic names with repeated spaces. Keep its original labels beside the normalized ones so you can inspect exactly what changed.
 
@@ -223,9 +251,9 @@ assert clinic_labels['normalized'].tolist() == ['north_clinic', 'south_clinic', 
 
 **Expect:** three rows preserving the original text, with normalized labels `north_clinic`, `south_clinic`, and `north_clinic`. The counts are `north_clinic 2` and `south_clinic 1`; spaces and letter case no longer create extra clinics.
 
-### Practice 5 (optional extension): Match misspelled clinic names
+### Practice 4 (optional extension): Match misspelled clinic names
 
-Prerequisite: [BONUS.md](../BONUS.md), Fuzzy matching for near-duplicates. Nothing in the core route or the assignment needs this.
+Prerequisite: BONUS.md, Fuzzy matching for near-duplicates. Nothing in the core route or the assignment needs this.
 
 Normalizing case and spaces cannot fix a typo. `thefuzz` scores how similar two strings are (0 to 100), and `process.extractOne` returns the best canonical name above a cutoff. Names below the cutoff stay missing for a person to review.
 

@@ -1,0 +1,4 @@
+unit_code,unit_name,beds
+ICU,Intensive Care,12
+MED,Medicine,30
+SURG,Surgery,24

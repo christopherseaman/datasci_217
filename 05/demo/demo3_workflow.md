@@ -72,7 +72,7 @@ V012,P012,2026-02-17,south,48,126,79
 output_dir = Path('output')
 output_dir.mkdir(exist_ok=True)
 raw_path = output_dir / 'clinic_visits_raw.csv'
-with raw_path.open('w', encoding='utf-8', newline='') as file:
+with raw_path.open('w', encoding='utf-8') as file:
     file.write(export_text)
 
 raw = pd.read_csv(raw_path, dtype='string', keep_default_na=False)
@@ -82,6 +82,14 @@ print('Blank cells:', (raw == '').sum().sum(), '| cells holding the text NA:', (
 ```
 
 **Expect:** 13 rows and 7 columns, all `string`. V007's age is blank in both of its rows, and V006's SBP shows the text `NA`: `Blank cells: 2 | cells holding the text NA: 1`.
+
+`head()` shows only the top of the file. Three random rows show the middle.
+
+```python
+display(raw.sample(n=3, random_state=42))
+```
+
+**Expect:** V011, V009, and V001, in that order. One random draw already turns up `' North '` and the 210 reading, so problems are not confined to the top of the file.
 
 Record the file itself too: its name, its size, and its SHA-256 hash. Step 7 saves the hash with the decisions, so anyone can check they are cleaning the same file.
 
@@ -278,17 +286,3 @@ print('Rows:', len(raw), 'raw,', len(clean), 'clean')
 ```
 
 **Expect:** the same dtypes as in step 6, `Round trip equals clean: True`, `Raw table unchanged: True`, `Raw file unchanged: True`, and `Rows: 13 raw, 12 clean`. The checks show the table matches its contract; the decision log shows why each value changed and which file it came from.
-
-## Independent practice
-
-Continue on your own after class, outside the live route. This cell reuses the core results; if the runtime closed, run the cells above again first.
-
-### Practice 1: Spot-check random rows
-
-`head()` shows only the top of the file. Three random rows show the middle.
-
-```python
-display(raw.sample(n=3, random_state=42))
-```
-
-**Expect:** V011, V009, and V001, in that order. One random draw already turns up `' North '` and the 210 reading, so problems are not confined to the top of the file.

@@ -27,12 +27,11 @@ uv sync
 
 This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 
-- 8.1 (hierarchical indexing, and indexing with a DataFrame's columns)
-- 8.2 (database-style DataFrame joins, concatenating along an axis, and combining data with overlap)
-- 8.3 (pivoting "long" to "wide" format and "wide" to "long" format)
+- Chapter 8 (data wrangling: join, combine, and reshape)
 
 # Database-Style DataFrame Joins
 
+- **Database-style**: a **relational database** stores data as separate tables linked by shared key columns, and pandas borrows its vocabulary for combining them.
 - **Join** (a **merge** in pandas): puts related rows from two tables side by side by matching a key.
 - **Key**: a column, such as `patient_id`, whose values name the same thing in both tables.
 - Health data rarely arrives in one table: asking whether older patients have higher A1c means joining patients to lab results first.
@@ -103,6 +102,8 @@ Every row either table can contribute, and the join types (`how=`) that keep it:
 | P003 | 1985 | NaN | NaN | Patient with no labs yet |  | ✓ |  | ✓ |
 | P004 | NaN | A1c | 7.9 | Lab with no patient record |  |  | ✓ | ✓ |
 
+Add `indicator=True` to any merge to get a `_merge` column that says where each row came from: `both`, `left_only`, or `right_only`.
+
 ### Reference Card: Join types
 
 | `how` | Retains | Unmatched side |
@@ -112,8 +113,6 @@ Every row either table can contribute, and the join types (`how=`) that keep it:
 | `right` | Every right row | Left fields become `NaN` |
 | `outer` | Every row from both | Missing fields become `NaN` |
 | `cross` | Every left row paired with every right row; takes no `on=` | Nothing to match; `len(left) × len(right)` rows |
-
-Add `indicator=True` to any merge to get a `_merge` column that says where each row came from: `both`, `left_only`, or `right_only`.
 
 ### Code Snippet: Compare join types
 
@@ -168,10 +167,16 @@ When both tables have a non-key column with the same name, `merge()` keeps both 
 
 ### Code Snippet: Name overlapping columns
 
-```python
-lab = pd.DataFrame({'patient_id': ['P001', 'P002'], 'a1c': [7.4, 5.6]})   # central lab
-poc = pd.DataFrame({'patient_id': ['P001', 'P002'], 'a1c': [7.1, 5.9]})   # point-of-care device
+`lab` holds central-lab A1c results and `poc` holds point-of-care device results for the same patients:
 
+```text
+lab                 poc
+patient_id  a1c     patient_id  a1c
+P001        7.4     P001        7.1
+P002        5.6     P002        5.9
+```
+
+```python
 display(pd.merge(lab, poc, on='patient_id'))
 display(pd.merge(lab, poc, on='patient_id', suffixes=('_lab', '_poc')))
 ```
@@ -227,14 +232,20 @@ display(merged)
 
 ### Code Snippet: Find missing reports with a cross join
 
-`clinic_list` has North and South; `hours` has 8, 9, and 10.
+`clinic_list` has North and South; `hours` has 8, 9, and 10. `reports` holds the four hourly reports that arrived:
+
+```text
+clinic  hour  arrivals
+North   8     3
+North   10    0
+South   8     5
+South   9     2
+```
 
 ```python
 expected = pd.merge(clinic_list, hours, how='cross')
 print(len(expected))   # 6: 2 clinics × 3 hours
 
-reports = pd.DataFrame({'clinic': ['North', 'North', 'South', 'South'],
-                        'hour': [8, 10, 8, 9], 'arrivals': [3, 0, 5, 2]})
 coverage = pd.merge(expected, reports, on=['clinic', 'hour'], how='left', indicator=True)
 display(coverage)
 ```
@@ -297,7 +308,7 @@ pd.merge(visits, clinics, on='clinic_id', how='left', validate='many_to_one')
 
 # Working with DataFrame Indexes
 
-- The **index** holds the row labels that `loc` and `concat(axis=1)` use to find and line up rows.
+- The index, as in Lecture 04, holds the row labels that `loc` uses to find rows.
 - Sometimes one column cannot name a row: a clinic has one visit count per quarter, so the row needs a clinic _and_ a quarter.
 
 ![xkcd 1762: Moving Boxes. A good row label says what is inside, like a patient ID](media/xkcd_1762.png)
@@ -305,7 +316,7 @@ pd.merge(visits, clinics, on='clinic_id', how='left', validate='many_to_one')
 ## Two-Level Row Labels
 
 - **MultiIndex** (hierarchical index): row labels with more than one level, such as a `(clinic, quarter)` pair. The outer label prints once, with the inner labels under it.
-- Build one by passing `set_index()` a list of columns when one column cannot name a row, such as a quarterly visit count identified by clinic _and_ quarter.
+- Build one by passing `set_index()` a list of columns.
 
 ### Reference Card: Two-level row labels
 
@@ -340,6 +351,52 @@ The `loc` line prints `362`; `loc['South']` shows the two South rows:
 | --- | --- |
 | Q1 | 380 |
 | Q2 | 362 |
+
+## Moving Index Levels with stack() and unstack()
+
+- **unstack()** moves an index level from the rows to the columns: each quarter becomes its own column.
+- **stack()** does the reverse, moving the column labels down into an inner row level.
+- Both change the layout only; every value keeps its clinic and quarter labels.
+- By default each moves the innermost level; `level=` names a different one.
+
+```text
+stacked: summary['visits']            unstacked: summary['visits'].unstack()
+clinic  quarter                       quarter  Q1   Q2
+North   Q1        410                 clinic
+        Q2        395                 North    410  395
+South   Q1        380                 South    380  362
+        Q2        362
+```
+
+### Reference Card: `stack()` and `unstack()`
+
+| Call | Purpose | Output / note |
+| --- | --- | --- |
+| `s.unstack()` | Move the inner row level to columns | `DataFrame`: one row per outer label, one column per inner label |
+| `s.unstack(level='clinic')` | Move a named level (or a number, `0` for outer) instead | Clinics become the columns |
+| `df.stack()` | Move the column labels into an inner row level | `Series` with a two-level index |
+| Missing combination | A pair absent from the data | `unstack()` fills `NaN`; `stack()` keeps that `NaN` row, so add `.dropna()` to remove it |
+
+### Code Snippet: Unstack quarters into columns
+
+```python
+by_quarter = summary['visits'].unstack()
+display(by_quarter)
+display(summary['visits'].unstack(level='clinic'))
+print(by_quarter.stack().equals(summary['visits']))   # True: stack() undoes unstack()
+```
+
+| quarter | Q1 | Q2 |
+| --- | --- | --- |
+| **clinic** |  |  |
+| North | 410 | 395 |
+| South | 380 | 362 |
+
+| clinic | North | South |
+| --- | --- | --- |
+| **quarter** |  |  |
+| Q1 | 410 | 380 |
+| Q2 | 395 | 362 |
 
 # Reshaping: Wide vs Long Format
 
@@ -404,6 +461,7 @@ display(long)
 - `pivot()` runs `melt()` backwards, for a reader or a matrix-shaped tool that needs one column per visit.
 - It files each value by its labels, so the long rows may come in any order.
 - It never aggregates, so each `index`/`columns` pair must identify exactly one value.
+- `pivot()` is a shortcut for `set_index()` on the two label columns followed by `unstack()`; `melt()` likewise does the work of `stack()` on ordinary columns.
 
 ### Reference Card: `pivot()`
 
@@ -470,7 +528,7 @@ display(rechecked[rechecked.duplicated(subset=['patient_id', 'visit'], keep=Fals
 
 - **Concatenation**: gluing together tables that are pieces of one table, such as monthly admission extracts with the same columns.
 - **Axis**: `axis=0` stacks rows; `axis=1` puts columns side by side (Lecture 03).
-- It matches no key values the way `merge()` does: stacking lines columns up by name, and placing side by side lines rows up by index label.
+- `concat()` does not match key values the way `merge()` does. Stacking (`axis=0`) aligns columns by name; side by side (`axis=1`) aligns rows by index label.
 
 ```
 VERTICAL CONCATENATION (axis=0)
@@ -537,59 +595,29 @@ print(list(combined.index))   # [0, 1, 2, 3, 4]: a clean sequential index
 
 ![xkcd 2502: Every Data Table. A source column records where each stacked row came from](media/xkcd_2502.png)
 
-## Horizontal Concatenation: Adding More Columns
-
-### Reference Card: Horizontal `concat()`
-
-| Call / rule | Purpose | Result |
-| --- | --- | --- |
-| `pd.concat([df1, df2], axis=1)` | Add columns | Index labels align rows |
-| Shared index labels | Define row identity | Matching labels share a row |
-| Missing labels | Preserve unmatched rows | `NaN` in absent fields |
-
-### Code Snippet: Align columns by index
-
-```python
-a1c = pd.DataFrame({'patient_id': ['P001', 'P002', 'P003'],
-                    'a1c': [7.4, 5.6, 6.1]}).set_index('patient_id')
-vitals = pd.DataFrame({'patient_id': ['P002', 'P003', 'P004'], 'sbp': [128, 141, 119],
-                       'weight_kg': [81.5, 67.0, 90.2]}).set_index('patient_id')
-
-combined = pd.concat([a1c, vitals], axis=1)
-display(combined)
-```
-
-| patient_id | a1c | sbp | weight_kg |
-| --- | --- | --- | --- |
-| P001 | 7.4 | NaN | NaN |
-| P002 | 5.6 | 128.0 | 81.5 |
-| P003 | 6.1 | 141.0 | 67.0 |
-| P004 | NaN | 119.0 | 90.2 |
-
-<callout icon="⚠️" color="yellow_bg">
-	## `axis=1` lines rows up by label, not by position!
-	Two tables loaded separately both number their rows `0, 1, 2, …`, so `axis=1` pairs their unrelated first rows. `set_index()` the real identifier first, or `merge()` on the key column instead.
-</callout>
-
 ## Column-Set Alignment with the join Parameter
 
-The `join=` argument of `concat()` is not a merge: it only chooses which columns to keep, or with `axis=1`, which row labels.
+When stacked extracts do not share every column, the `join=` argument of `concat()` chooses which columns to keep. It matches no key values, so it is not a merge.
 
 ### Reference Card: `concat(join=...)`
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
-| `join='outer'` (default) | Keep all columns from both frames | Union of columns |
+| `join='outer'` (default) | Keep all columns from both frames | Union of columns; `NaN` where a piece lacks a column |
 | `join='inner'` | Keep only columns shared by all inputs | Stacked `DataFrame` with the column intersection |
-| `axis=1, join='inner'` | Keep only row labels found in every input | Side-by-side `DataFrame` without unmatched rows |
 
 ### Code Snippet: Choose a column set
 
-```python
-jan = pd.DataFrame({'admission_id': ['A101', 'A102'], 'age': [67, 45], 'los_days': [4, 2]})
-feb = pd.DataFrame({'admission_id': ['A201', 'A202'], 'los_days': [5, 1],
-                    'payer': ['Medicare', 'Private']})   # February dropped age and added payer
+This `jan` and `feb` are two admission extracts whose columns changed: February dropped `age` and added `payer`.
 
+```text
+jan                            feb
+admission_id  age  los_days    admission_id  los_days  payer
+A101          67   4           A201          5         Medicare
+A102          45   2           A202          1         Private
+```
+
+```python
 display(pd.concat([jan, feb], join='outer', ignore_index=True))
 display(pd.concat([jan, feb], join='inner', ignore_index=True))
 ```
@@ -608,6 +636,46 @@ display(pd.concat([jan, feb], join='inner', ignore_index=True))
 | 2 | A201 | 5 |
 | 3 | A202 | 1 |
 
+## Horizontal Concatenation: Adding More Columns
+
+### Reference Card: Horizontal `concat()`
+
+| Call / rule | Purpose | Result |
+| --- | --- | --- |
+| `pd.concat([df1, df2], axis=1)` | Add columns | Index labels align rows |
+| Shared index labels | Define row identity | Matching labels share a row |
+| Missing labels | Preserve unmatched rows | `NaN` in absent fields |
+| `axis=1, join='inner'` | Keep only row labels found in every input | Side-by-side `DataFrame` without unmatched rows |
+
+### Code Snippet: Align columns by index
+
+`a1c` and `vitals` both use `patient_id` as their index, and only P002 and P003 appear in both:
+
+```text
+a1c                 vitals
+patient_id  a1c     patient_id  sbp  weight_kg
+P001        7.4     P002        128  81.5
+P002        5.6     P003        141  67.0
+P003        6.1     P004        119  90.2
+```
+
+```python
+combined = pd.concat([a1c, vitals], axis=1)
+display(combined)
+```
+
+| patient_id | a1c | sbp | weight_kg |
+| --- | --- | --- | --- |
+| P001 | 7.4 | NaN | NaN |
+| P002 | 5.6 | 128.0 | 81.5 |
+| P003 | 6.1 | 141.0 | 67.0 |
+| P004 | NaN | 119.0 | 90.2 |
+
+<callout icon="⚠️" color="yellow_bg">
+	## `axis=1` lines rows up by label, not by position!
+	Two tables loaded separately both number their rows `0, 1, 2, …`, so `axis=1` pairs their unrelated first rows. `set_index()` the real identifier first, or `merge()` on the key column instead.
+</callout>
+
 ## Patching Gaps with combine_first()
 
 `primary.combine_first(fallback)` patches the gaps in a trusted source from a lower-priority one that holds the same variables, such as a primary weight record and an intake form.
@@ -623,12 +691,17 @@ display(pd.concat([jan, feb], join='inner', ignore_index=True))
 
 ### Code Snippet: Patch from a fallback source
 
-```python
-primary = pd.DataFrame({'patient_id': ['P001', 'P002', 'P003'],
-                        'weight_kg': [81.5, None, 67.0]}).set_index('patient_id')
-intake = pd.DataFrame({'patient_id': ['P002', 'P003', 'P004'],
-                       'weight_kg': [74.8, 66.1, 90.2]}).set_index('patient_id')
+`primary` and `intake` both use `patient_id` as their index; the primary record lacks P002's weight:
 
+```text
+primary                   intake
+patient_id  weight_kg     patient_id  weight_kg
+P001        81.5          P002        74.8
+P002        NaN           P003        66.1
+P003        67.0          P004        90.2
+```
+
+```python
 complete = primary.combine_first(intake)
 display(complete)
 ```

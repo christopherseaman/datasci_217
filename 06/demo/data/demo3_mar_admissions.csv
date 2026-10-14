@@ -1,0 +1,4 @@
+admission_id,unit,diagnosis,los_days,payer
+A301,SURG,hernia,3,Medicare
+A302,MED,COPD,2,Private
+A303,ICU,stroke,7,Medicaid

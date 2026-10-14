@@ -1,2 +1,0 @@
-# Keep the supplied data byte for byte on every OS: its trailing spaces and line endings are part of the exercise.
-data/lab_visits.csv -text

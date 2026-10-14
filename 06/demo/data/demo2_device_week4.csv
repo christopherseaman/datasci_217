@@ -1,0 +1,6 @@
+patient_id,visit,sbp,reading_time
+P001,week_04,144,09:05
+P002,week_04,135,09:40
+P003,week_04,152,10:15
+P003,week_04,140,10:22
+P004,week_04,136,11:02

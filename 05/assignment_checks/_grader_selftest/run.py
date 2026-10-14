@@ -1,17 +1,17 @@
 """Development regression checks for the Assignment 05 checks.
 
-Answers the assignment with pandas the way a student would, builds
-submissions in ignored `scratch/`, and confirms what each kind of submission
-scores: a correct one scores 100 however it is formatted, and each mistake
-costs only its own checks. It also confirms that the data the checks hold
-match the handout's data, and that the handout in `05/assignment/` ships the
-course-owned checks byte for byte. Nothing here reads or runs student code.
+Answers the assignment with pandas the way a student would, builds submissions in ignored `scratch/`, and
+confirms what each kind of submission scores: a correct one scores 100 however it is formatted, and each
+mistake costs only its own checks. It also confirms that the handout's generator writes the data its
+manifest names, and that the handout in `05/assignment/` ships the course-owned checks byte for byte.
+Nothing here reads or runs student code.
 
     uv run --python 3.13 --with pandas==3.0.5 --with pyarrow==25.0.0 python 05/assignment_checks/_grader_selftest/run.py
 """
 
 import contextlib
 import csv
+import hashlib
 import io
 import json
 import os
@@ -31,39 +31,47 @@ os.environ["DS217_LOCAL_CHECKS"] = "1"
 
 CHECKS = Path(__file__).resolve().parents[1]
 HANDOUT = CHECKS.parent / "assignment"
-SCRATCH = CHECKS.parents[1] / "scratch"
-DATA = HANDOUT / "data" / "lab_visits.csv"
+REPO = CHECKS.parents[1]
+SCRATCH = REPO / "scratch"
 sys.path.insert(0, str(CHECKS))
+import generate_data  # noqa: E402
 from _value_checks import (  # noqa: E402
+    A1C_FILE,
     CHECKS as VALUE_CHECKS,
-    CLEAN_FILE,
-    CODED_FILE,
+    CLINIC_FILE,
+    DECISION_FILE,
+    FENCES_FILE,
+    GENDER_FILE,
     MISSING_FILE,
-    RAW_COLUMNS,
-    RAW_ROWS,
-    TYPED_FILE,
+    PROFILE_FILE,
+    ROWS_FILE,
+    SAMPLE_FILE,
+    SAMPLE_IDS,
+    SUMMARY_FILE,
     VALIDATION_FILE,
 )
 from grading import POINTS, grade_submission  # noqa: E402
 
 CHECK_POINTS = {check.name: points for check, points in zip(VALUE_CHECKS, POINTS, strict=True)}
-FILES = (MISSING_FILE, TYPED_FILE, CODED_FILE, VALIDATION_FILE, CLEAN_FILE)
+FILES = (MISSING_FILE, ROWS_FILE, PROFILE_FILE, CLINIC_FILE, GENDER_FILE, A1C_FILE, SAMPLE_FILE, VALIDATION_FILE,
+         FENCES_FILE, DECISION_FILE, SUMMARY_FILE)
+REPORTS = (MISSING_FILE, ROWS_FILE, VALIDATION_FILE, FENCES_FILE, DECISION_FILE)
+GENDER_CODES = {"f": "F", "female": "F", "m": "M", "male": "M", "x": "X", "nb": "X", "nonbinary": "X"}
 
 
 def group(prefix: str) -> set[str]:
     return {name for name in CHECK_POINTS if name.startswith(prefix)}
 
 
-MISSING, TYPED, CODED = group("missing report"), group("typed table"), group("coded table")
-VALIDATION, CLEAN = group("validation report"), group("clean table")
-GENDER_CODES = {"f": "F", "female": "F", "m": "M", "male": "M", "x": "X", "nb": "X", "nonbinary": "X"}
+class GateStopped(Exception):
+    """Task 5.2's assert stopped the cell before clean_summary.csv was saved."""
 
 
-def solve(root: Path, wrong: frozenset = frozenset()) -> None:
+def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
     """Write every artifact with Lecture 05's pandas methods, as the README asks; `wrong` names mistakes to make."""
     output = root / "output"
     output.mkdir(parents=True, exist_ok=True)
-    labs = pd.read_csv(DATA)
+    labs = pd.read_csv(data)
 
     # Task 1
     gaps = labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="all") if "count-after-dropna" in wrong else labs
@@ -73,10 +81,12 @@ def solve(root: Path, wrong: frozenset = frozenset()) -> None:
     })
     missing_report.index.name = "column"
     missing_report.to_csv(output / "missing_report.csv", index="report-index-false" not in wrong)
+    rows_read = len(labs)
     if "dropna-any" in wrong:
         labs = labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="any")
     elif "no-dropna" not in wrong:
         labs = labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="all")
+    rows_with_labs = len(labs)
 
     # Task 2
     if "dedupe-by-patient" in wrong:
@@ -85,13 +95,29 @@ def solve(root: Path, wrong: frozenset = frozenset()) -> None:
         labs = labs.drop_duplicates(keep=False)
     elif "no-dedupe" not in wrong:
         labs = labs.drop_duplicates()
+    row_counts = pd.Series({"read": rows_read, "with_labs": rows_with_labs, "unique": len(labs)}, name="rows")
+    row_counts.index.name = "step"
+    row_counts.to_csv(output / "row_counts.csv")
     if "sentinel-kept" not in wrong:
         labs = labs.replace({"weight_kg": {-999: np.nan}, "glucose_mg_dl": {-999: np.nan}})
     if "age-text" not in wrong:
         labs["age"] = pd.to_numeric(labs["age"], errors="coerce").astype("Int64")
+    if "age-fill-zero" in wrong:
+        labs["age"] = labs["age"].fillna(0)
     if "dates-text" not in wrong:
         labs["visit_date"] = pd.to_datetime(labs["visit_date"], format="%Y-%m-%d", errors="coerce")
-    labs.to_csv(output / "labs_typed.csv", index=False)
+    if "drop-undated" in wrong:
+        labs = labs.dropna(subset=["visit_date"])
+    typed = labs[["visit_date", "age", "weight_kg", "hba1c_pct", "glucose_mg_dl"]]
+    typed_profile = pd.DataFrame({
+        "dtype": typed.dtypes.astype(str),
+        "missing_count": typed.isna().sum(),
+        "min": typed.min(),
+        "max": typed.max(),
+        "mean": typed.mean(numeric_only=True).round(2),
+    })
+    typed_profile.index.name = "column"
+    typed_profile.to_csv(output / "typed_profile.csv")
 
     # Task 3
     ids = labs["patient_id"] if "ids-unstripped" in wrong else labs["patient_id"].str.strip()
@@ -109,11 +135,15 @@ def solve(root: Path, wrong: frozenset = frozenset()) -> None:
         labs["gender"] = labs["gender"].str.strip().str.lower().replace(GENDER_CODES)
     else:
         labs["gender"] = labs["gender"].str.strip().str.lower().map(GENDER_CODES)
+    labs["clinic"].value_counts(dropna=False).to_csv(output / "clinic_counts.csv")
+    labs["gender"].value_counts(dropna=False).to_csv(output / "gender_counts.csv")
     bins = [0, 5.7, 6.5, 20] if "cut-wrong-edges" in wrong else [0, 5.6, 6.4, 20]
     labs["a1c_category"] = pd.cut(labs["hba1c_pct"], bins=bins, labels=["normal", "prediabetes", "diabetes"])
+    labs["a1c_category"].value_counts(dropna=False).to_csv(output / "a1c_counts.csv")
     if "no-dummies" not in wrong:
         labs = labs.join(pd.get_dummies(labs["clinic"], prefix="clinic", dtype="int64"))
-    labs.to_csv(output / "labs_coded.csv", index=False)
+    coded_sample = labs[labs["patient_id"].isin(SAMPLE_IDS)].sort_values(["patient_id", "visit_date"])
+    coded_sample.to_csv(output / "coded_sample.csv", index=False)
 
     # Task 4
     hba1c_ok = labs["hba1c_pct"].between(4, 20)
@@ -122,11 +152,11 @@ def solve(root: Path, wrong: frozenset = frozenset()) -> None:
         hba1c_ok = hba1c_ok | labs["hba1c_pct"].isna()
         weight_ok = weight_ok | labs["weight_kg"].isna()
     rules = pd.DataFrame({
-        "patient_id_format": labs["patient_id"].str.fullmatch(r"D[0-9]{4}", na=False),
+        "patient_id_format": labs["patient_id"].str.fullmatch(r"D[0-9]{5}", na=False),
         "visit_date_present": labs["visit_date"].notna(),
         "gender_valid": labs["gender"].isin(["F", "M", "X"]),
         "hba1c_in_range": hba1c_ok,
-        "weight_in_range": weight_ok,
+        ("weight_ok" if "rule-renamed" in wrong else "weight_in_range"): weight_ok,
     })
     validation_report = rules.sum() if "rules-pass-count" in wrong else (~rules).sum()
     validation_report.index.name = "rule"
@@ -134,27 +164,55 @@ def solve(root: Path, wrong: frozenset = frozenset()) -> None:
     validation_report.to_csv(output / "validation_report.csv")
     glucose = labs["glucose_mg_dl"]
     q1, q3 = glucose.quantile(0.25), glucose.quantile(0.75)
-    lower, upper = q1 - 1.5 * (q3 - q1), q3 + 1.5 * (q3 - q1)
+    multiplier = 1 if "iqr-multiplier-1" in wrong else 1.5
+    lower, upper = q1 - multiplier * (q3 - q1), q3 + multiplier * (q3 - q1)
     if "outlier-blank-flagged" in wrong:
         labs["glucose_outlier"] = ~glucose.between(lower, upper)
-    elif "no-outlier" not in wrong:
+    else:
         labs["glucose_outlier"] = (glucose < lower) | (glucose > upper)
+    fences = {"q1": q1, "q3": q3, "lower": lower, "upper": upper, "outliers": labs["glucose_outlier"].sum()}
+    if "no-outlier-count" in wrong:
+        del fences["outliers"]
+    glucose_fences = pd.Series(fences, name="value")
+    glucose_fences.index.name = "measure"
+    glucose_fences.to_csv(output / "glucose_fences.csv")
 
     # Task 5
     clean = labs.copy()
     if "drop-every-failure" in wrong:
         clean = clean[rules.all(axis="columns")]
-    elif "keep-bad-ids" not in wrong:
+    elif "keep-bad-ids" in wrong:
+        clean = clean[rules["visit_date_present"]]
+    else:
         clean = clean[rules["patient_id_format"] & rules["visit_date_present"]]
+    hba1c_outside = ((clean["hba1c_pct"] < 4) | (clean["hba1c_pct"] > 20)).sum()
+    weight_outside = ((clean["weight_kg"] < 30) | (clean["weight_kg"] > 250)).sum()
     if "range-kept" not in wrong:
         clean["hba1c_pct"] = clean["hba1c_pct"].where(clean["hba1c_pct"].between(4, 20))
         clean["weight_kg"] = clean["weight_kg"].where(clean["weight_kg"].between(30, 250))
+    if "count-after-blanking" in wrong:
+        hba1c_outside = ((clean["hba1c_pct"] < 4) | (clean["hba1c_pct"] > 20)).sum()
+        weight_outside = ((clean["weight_kg"] < 30) | (clean["weight_kg"] > 250)).sum()
     if "fill-median" in wrong:
         clean = clean.fillna(clean.median(numeric_only=True))
     clean = clean.reset_index(drop=True)
-    if "clean-twice" in wrong:
-        clean = pd.concat([clean, clean.iloc[:1]])
-    clean.to_csv(output / "labs_clean.csv", index=False)
+    decision_log = pd.Series({"visits_dropped": len(labs) - len(clean), "hba1c_blanked": hba1c_outside,
+                              "weight_blanked": weight_outside}, name="rows")
+    decision_log.index.name = "decision"
+    decision_log.to_csv(output / "decision_log.csv")
+    checks = pd.Series({
+        "one row per visit": not clean.duplicated(subset=["patient_id", "visit_date"]).any(),
+        "patient IDs valid": clean["patient_id"].str.fullmatch(r"D[0-9]{5}").all(),
+        "visit dates present": clean["visit_date"].notna().all(),
+        "hba1c in range": clean["hba1c_pct"].dropna().between(4, 20).all(),
+        "weight in range": clean["weight_kg"].dropna().between(30, 250).all(),
+    })
+    if not checks.all() and "no-gate" not in wrong:
+        raise GateStopped(checks[~checks].index.tolist())
+    columns = [c for c in ("age", "weight_kg", "hba1c_pct", "glucose_mg_dl") if c in clean.columns]
+    clean_summary = clean[columns].describe().round(2).T
+    clean_summary.index.name = "column"
+    clean_summary.to_csv(output / "clean_summary.csv")
 
 
 def scores(root: Path) -> dict[str, int]:
@@ -200,6 +258,11 @@ def run() -> None:
     SCRATCH.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=SCRATCH, prefix="a05-selftest-") as temporary:
         workspace = Path(temporary)
+        data = workspace / "lab_visits.csv"
+        with data.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle, lineterminator="\n")
+            writer.writerow(generate_data.COLUMNS)
+            writer.writerows(generate_data.generate_rows())
 
         empty = workspace / "empty"
         empty.mkdir()
@@ -207,22 +270,28 @@ def run() -> None:
         assert checker_report(CHECKS, empty)["score"] == 0
 
         fresh = workspace / "handout"
-        shutil.copytree(HANDOUT, fresh, ignore=shutil.ignore_patterns("__pycache__", ".venv", ".pytest_cache", ".checks"))
+        shutil.copytree(HANDOUT, fresh, ignore=shutil.ignore_patterns("__pycache__", ".venv", ".pytest_cache",
+                                                                      ".checks", "data"))
         assert sum(scores(fresh).values()) == 0
 
         correct = workspace / "correct"
-        solve(correct)
+        solve(correct, data)
         assert lost(correct) == set(), details(correct)
         for checks in (CHECKS, HANDOUT):
             assert checker_report(checks, correct)["score"] == 100, checks
             assert checker_report(checks, empty) == checker_report(CHECKS, empty), checks
+        total = sum((correct / name).stat().st_size for name in FILES)
+        assert total < 200_000 and all((correct / name).stat().st_size < 10_000 for name in FILES), total
 
         def variant(label: str) -> Path:
             root = workspace / label
             shutil.copytree(correct, root)
             return root
 
+        reformatted_labels = []
+
         def full_marks(label: str, change) -> None:
+            reformatted_labels.append(label)
             root = variant(label)
             change(root)
             assert lost(root) == set(), (label, details(root))
@@ -236,110 +305,162 @@ def run() -> None:
         full_marks("upper-case-crlf", loose)
 
         def respaced(root: Path) -> None:
-            for name in (MISSING_FILE, VALIDATION_FILE):
+            for name in REPORTS + (PROFILE_FILE, SUMMARY_FILE, GENDER_FILE, A1C_FILE):
                 edit(root / name, lambda text: "\n".join(
                     ", ".join(f" {cell} " for cell in line.split(",")) for line in text.splitlines()))
 
         full_marks("spaced-reports", respaced)
 
         def reformatted(root: Path) -> None:
-            for name in (TYPED_FILE, CODED_FILE, CLEAN_FILE):
-                table = pd.read_csv(root / name, dtype=str, keep_default_na=False)
-                table = table[table.columns[::-1]]
-                table["visit_date"] = table["visit_date"].map(lambda d: f"{d} 00:00:00" if d else "NaT")
-                table.to_csv(root / name, sep=";", quoting=csv.QUOTE_ALL)
-            report = pd.read_csv(root / MISSING_FILE)
-            report.sample(frac=1, random_state=1).to_csv(root / MISSING_FILE, sep="\t", index=False)
+            sample = pd.read_csv(root / SAMPLE_FILE, dtype=str, keep_default_na=False)
+            sample = sample[sample.columns[::-1]].sample(frac=1, random_state=1)
+            sample.to_csv(root / SAMPLE_FILE, sep=";", quoting=csv.QUOTE_ALL)
+            for name in (MISSING_FILE, PROFILE_FILE, CLINIC_FILE, SUMMARY_FILE):
+                report = pd.read_csv(root / name, dtype=str, keep_default_na=False)
+                report.sample(frac=1, random_state=1).to_csv(root / name, sep="\t")
+            for name in (GENDER_FILE, VALIDATION_FILE):
+                report = pd.read_csv(root / name, dtype=str, keep_default_na=False)
+                report[report.columns[::-1]].to_csv(root / name, index=False, quoting=csv.QUOTE_ALL)
 
         full_marks("quoted-reordered-row-numbers", reformatted)
 
         def redated(root: Path) -> None:
-            for name, form in ((TYPED_FILE, "%Y/%m/%d"), (CODED_FILE, "%Y%m%d"), (CLEAN_FILE, "%Y/%m/%d")):
-                table = pd.read_csv(root / name, parse_dates=["visit_date"])
-                table.to_csv(root / name, index=False, date_format=form)
+            profile = pd.read_csv(root / PROFILE_FILE, index_col=0, dtype=str)
+            for stat, form in (("min", "%d/%m/%Y"), ("max", "%B %d, %Y")):
+                day = pd.to_datetime(profile.loc["visit_date", stat])
+                profile.loc["visit_date", stat] = day.strftime(form)
+            profile.to_csv(root / PROFILE_FILE)
+            sample = pd.read_csv(root / SAMPLE_FILE, parse_dates=["visit_date"])
+            sample.to_csv(root / SAMPLE_FILE, index=False, date_format="%Y/%m/%d")
 
-        full_marks("slash-and-compact-dates", redated)
+        full_marks("other-date-formats", redated)
 
         def encoded(root: Path) -> None:
-            text = (root / TYPED_FILE).read_text(encoding="utf-8")
-            (root / TYPED_FILE).write_bytes(text.encode("utf-16"))
-            text = (root / CLEAN_FILE).read_text(encoding="utf-8")
-            (root / CLEAN_FILE).unlink()
-            (root / "output" / "Labs_Clean.csv").write_bytes(("﻿" + text).encode("utf-8"))
+            text = (root / PROFILE_FILE).read_text(encoding="utf-8")
+            (root / PROFILE_FILE).write_bytes(text.encode("utf-16"))
+            text = (root / SUMMARY_FILE).read_text(encoding="utf-8")
+            (root / SUMMARY_FILE).unlink()
+            (root / "output" / "Clean_Summary.csv").write_bytes(("﻿" + text).encode("utf-8"))
 
         full_marks("utf16-bom-renamed", encoded)
 
         def alternatives(root: Path) -> None:
-            # Unrounded percents, True/False indicators, 0/1 flags, and rules saved with readable names.
-            labs = pd.read_csv(DATA)
+            # Unrounded percents and summaries, True/False indicators, a sideways describe(), and other labels.
+            labs = pd.read_csv(data)
             report = pd.DataFrame({"missing_count": labs.isna().sum(), "missing_pct": labs.isna().mean() * 100})
             report.index.name = "column"
             report.to_csv(root / MISSING_FILE)
-            coded = pd.read_csv(root / CODED_FILE, keep_default_na=False, dtype=str)
-            for column in [c for c in coded.columns if c.startswith("clinic_")]:
-                coded[column] = coded[column].map({"1": "True", "0": "False"})
-            coded.to_csv(root / CODED_FILE, index=False)
-            clean = pd.read_csv(root / CLEAN_FILE, keep_default_na=False, dtype=str)
-            clean["glucose_outlier"] = clean["glucose_outlier"].map({"True": "1", "False": "0"})
-            clean.to_csv(root / CLEAN_FILE, index=False)
+            sample = pd.read_csv(root / SAMPLE_FILE, keep_default_na=False, dtype=str)
+            for column in [c for c in sample.columns if c.startswith("clinic_")]:
+                sample[column] = sample[column].map({"1": "True", "0": "False"})
+            sample.to_csv(root / SAMPLE_FILE, index=False)
+            pd.read_csv(root / SUMMARY_FILE, index_col=0).T.to_csv(root / SUMMARY_FILE)
             edit(root / VALIDATION_FILE, lambda text: text.replace("patient_id_format", "Patient ID format")
-                 .replace("hba1c_in_range", "HbA1c range"))
+                 .replace("hba1c_in_range", "HbA1c in range"))
+            edit(root / ROWS_FILE, lambda text: text.replace("with_labs", "after dropna")
+                 .replace("unique", "after drop_duplicates").replace("read", "rows read"))
+            edit(root / FENCES_FILE, lambda text: text.replace("lower", "lower_fence").replace("upper", "upper_fence"))
 
         full_marks("alternative-forms", alternatives)
+
+        def whole_percents(root: Path) -> None:
+            labs = pd.read_csv(data)
+            report = pd.DataFrame({"missing_count": labs.isna().sum(), "missing_pct": (labs.isna().mean() * 100).round()})
+            report.index.name = "column"
+            report.to_csv(root / MISSING_FILE)
+
+        full_marks("whole-percents", whole_percents)
+
+        def missing_word(root: Path) -> None:
+            # to_csv(na_rep="missing") writes the word missing for every blank.
+            for name in (GENDER_FILE, A1C_FILE, SAMPLE_FILE, PROFILE_FILE):
+                table = pd.read_csv(root / name, dtype=str, keep_default_na=False)
+                table.replace("", "missing").to_csv(root / name, index=False)
+
+        full_marks("na-rep-missing", missing_word)
 
         # Each mistake costs only the checks it gets wrong.
         mistakes = []
 
-        def mistake(label: str, expected: set[str], hint: str, change=None) -> Path:
+        def mistake(label: str, expected: set[str], hint: str, change=None, gate: bool = True) -> Path:
+            """`gate=False` skips Task 5.2's assert, which stops this mistake, to show the later files still count."""
             root = workspace / label
             mistakes.append(label)
             if change is None:
-                solve(root, frozenset({label}))
+                solve(root, data, frozenset({label} if gate else {label, "no-gate"}))
             else:
                 shutil.copytree(correct, root)
                 change(root)
             found = lost(root)
             assert found == expected, (label, found, details(root))
-            assert any(hint in details(root)[name] for name in expected), (label, details(root))
-            assert checker_report(HANDOUT, root) == checker_report(CHECKS, root), label
+            assert any(hint in details(root)[name] for name in expected), (label, hint, details(root))
             return root
 
         mistake("count-after-dropna", {"missing report: missing_count"}, "before Task 1.2's dropna()")
         mistake("count-present", {"missing report: missing_count"}, "isna().sum() counts the gaps")
         mistake("pct-as-fraction", {"missing report: missing_pct"}, "multiply it by 100")
-        mistake("report-index-false", MISSING, "index=False leaves them out")
-        mistake("no-dropna", {"typed table: no-lab visit dropped"}, 'how="all"')
-        mistake("dropna-any", {"typed table: no-lab visit dropped"}, "has one of the two lab results")
-        mistake("no-dedupe", {"typed table: exact repeats removed"}, "entered twice by mistake")
-        mistake("dedupe-keep-false", {"typed table: exact repeats removed"}, "keep=False drops every copy")
-        mistake("dedupe-by-patient", {"typed table: repeat visit kept"}, 'subset=["patient_id"]')
-        mistake("sentinel-kept", {"typed table: -999 read as missing"}, "-999 is the export's code")
-        mistake("age-text", {"typed table: age as numbers"}, "errors=\"coerce\"")
-        mistake("dates-text", {"typed table: visit dates parsed"}, "a date that does not exist into NaT")
-        mistake("ids-unstripped", {"coded table: patient IDs cleaned"}, "spaces around them")
-        mistake("ids-not-upper", {"coded table: patient IDs cleaned"}, "mixes letter cases")
-        mistake("clinic-unstripped", {"coded table: clinic names cleaned"}, "spaces around them")
-        mistake("clinic-not-title", {"coded table: clinic names cleaned"}, "spells mission as")
-        mistake("clinic-not-filled", {"coded table: missing clinic filled"}, 'fillna("Unknown")')
-        mistake("gender-upper-only", {"coded table: gender codes mapped"}, "expected F")
-        mistake("gender-replace", {"coded table: gender codes mapped"}, "replace() leaves it")
-        mistake("gender-no-x", {"coded table: gender codes mapped"}, "has blank, expected X")
-        mistake("cut-wrong-edges", {"coded table: a1c_category"}, "includes its right edge")
-        mistake("no-dummies", {"coded table: clinic indicators"}, "pd.get_dummies")
+        mistake("report-index-false", {"missing report: one row per column"}, "index=False leaves them out")
+        mistake("no-dropna", {"row counts: no-lab visits dropped"}, "nothing was dropped")
+        mistake("dropna-any", {"row counts: no-lab visits dropped"}, 'how="any"')
+        mistake("no-dedupe", {"row counts: exact repeats removed"}, "nothing was removed", gate=False)
+        mistake("dedupe-keep-false", {"row counts: exact repeats removed"}, "keep=False drops every copy")
+        mistake("dedupe-by-patient", {"row counts: repeat visits kept"}, 'subset=["patient_id"]')
+        mistake("sentinel-kept", {"typed profile: -999 read as missing"}, "-999, the export's code")
+        mistake("age-text", {"typed profile: age as numbers"}, 'errors="coerce"')
+        mistake("age-fill-zero", {"typed profile: unreadable ages left blank"}, "fillna() with 0")
+        mistake("dates-text", {"typed profile: visit dates parsed"}, "expected datetime64")
+        mistake("drop-undated", {"typed profile: undated visits kept"}, 'dropna(subset=["visit_date"])')
+        mistake("ids-unstripped", {"coded sample: patient IDs cleaned"}, "matches isin() only")
+        mistake("ids-not-upper", {"coded sample: patient IDs cleaned"}, "matches isin() only")
+        mistake("clinic-unstripped", {"clinic counts: clinic names cleaned"}, "spaces around them")
+        mistake("clinic-not-title", {"clinic counts: clinic names cleaned"}, "spells mission as")
+        mistake("clinic-not-filled", {"clinic counts: missing clinic filled"}, 'fillna("Unknown")')
+        mistake("gender-upper-only", {"gender counts: gender codes mapped"}, "which are spellings")
+        mistake("gender-replace", {"gender counts: gender codes mapped"}, "replace() leaves it")
+        mistake("gender-no-x", {"gender counts: gender codes mapped"}, "there is no X")
+        mistake("cut-wrong-edges", {"a1c counts: a1c_category"}, "includes its right edge")
+        mistake("no-dummies", {"coded sample: clinic indicators"}, "pd.get_dummies")
         mistake("rules-pass-count", {"validation report: failing rows"}, "(~rules).sum()")
         mistake("rules-blank-fails", {"validation report: failing rows"}, "between() is False for NaN")
-        mistake("keep-bad-ids", {"clean table: failing visits dropped"}, "fail the patient_id_format")
-        mistake("drop-every-failure", {"clean table: failing visits dropped"}, "stays, with the bad value blanked")
-        mistake("range-kept", {"clean table: impossible values blanked"}, ".where(")
-        mistake("no-outlier", {"clean table: glucose_outlier flag"}, "has no glucose_outlier column")
-        mistake("outlier-blank-flagged", {"clean table: glucose_outlier flag"}, "a blank glucose is not an outlier")
-        mistake("fill-median", {"clean table: other values kept"}, "keeps blanks as blanks")
-        mistake("clean-twice", {"clean table: one row per visit"}, "each visit should appear once")
-        mistake("typed-missing", TYPED, "is missing; run the Task 2.3 cell",
-                lambda root: (root / TYPED_FILE).unlink())
-        mistake("coded-in-root", CODED, "the assignment folder itself has labs_coded.csv",
-                lambda root: (root / CODED_FILE).rename(root / "labs_coded.csv"))
-        mistake("validation-sideways", VALIDATION, "rules across the top",
+        mistake("rule-renamed", {"validation report: rule names"}, "it has weight_ok for weight_in_range")
+        mistake("iqr-multiplier-1", {"glucose fences: quartiles and fences"}, "1 * IQR")
+        mistake("outlier-blank-flagged", {"glucose fences: outliers flagged"}, "~between() is True for NaN")
+        mistake("no-outlier-count", {"glucose fences: outliers flagged"}, "has no value for outliers")
+        mistake("keep-bad-ids", {"decision log: failing visits dropped"}, "drops only the undated visits", gate=False)
+        mistake("drop-every-failure", {"decision log: failing visits dropped"}, "fails any rule")
+        mistake("count-after-blanking", {"decision log: out-of-range values counted"}, "Count them before blanking")
+        mistake("fill-median", {"clean summary: blanks kept"}, "keeps blanks as blanks")
+        mistake("range-kept", {"clean summary: impossible values blanked"}, ".where(", gate=False)
+
+        def gate_stops(root: Path) -> None:
+            (root / SUMMARY_FILE).unlink()
+            try:
+                solve(root, data, frozenset({"range-kept"}))
+            except GateStopped:
+                return
+            raise AssertionError("Task 5.2's checks should stop a submission that keeps impossible values")
+
+        mistake("gate-stopped", {"clean summary: impossible values blanked"}, "assert probably stopped", gate_stops)
+
+        def repeats_stop(root: Path) -> None:
+            shutil.rmtree(root / "output")
+            try:
+                solve(root, data, frozenset({"no-dedupe"}))
+            except GateStopped:
+                return
+            raise AssertionError("Task 5.2's checks should stop a submission that keeps exact repeats")
+
+        mistake("no-dedupe-stopped", {"row counts: exact repeats removed"}, "nothing was removed", repeats_stop)
+        mistake("profile-missing", group("typed profile"), "is missing; run the Task 2.3 cell",
+                lambda root: (root / PROFILE_FILE).unlink())
+        mistake("sample-in-root", group("coded sample"), "the assignment folder itself has coded_sample.csv",
+                lambda root: (root / SAMPLE_FILE).rename(root / "coded_sample.csv"))
+        mistake("counts-index-false", {"gender counts: gender codes mapped"}, "index=False leaves them out",
+                lambda root: pd.read_csv(root / GENDER_FILE)[["count"]].to_csv(root / GENDER_FILE, index=False))
+        mistake("validation-index-false", {"validation report: one row per rule"}, "index=False leaves them out",
+                lambda root: pd.read_csv(root / VALIDATION_FILE)[["failing_rows"]].to_csv(root / VALIDATION_FILE,
+                                                                                          index=False))
+        mistake("validation-sideways", {"validation report: one row per rule"}, "rules across the top",
                 lambda root: pd.read_csv(root / VALIDATION_FILE, index_col="rule").T.to_csv(root / VALIDATION_FILE))
 
         def written_twice(root: Path) -> None:
@@ -349,26 +470,24 @@ def run() -> None:
         mistake("validation-written-twice", {"validation report: one row per rule"}, "holds the same table 2 times",
                 written_twice)
 
+        for label in ("sentinel-kept", "ids-unstripped", "gate-stopped"):
+            assert checker_report(HANDOUT, workspace / label) == checker_report(CHECKS, workspace / label), label
+
         # A mistake upstream is charged where it was made, and later files are judged against the student's own.
-        cascade = {
-            "no-dedupe": "typed table: exact repeats removed",
-            "sentinel-kept": "typed table: -999 read as missing",
-            "dates-text": "typed table: visit dates parsed",
-            "ids-unstripped": "coded table: patient IDs cleaned",
-            "clinic-unstripped": "coded table: clinic names cleaned",
-            "clinic-not-filled": "coded table: missing clinic filled",
-        }
-        for label, name in cascade.items():
-            assert lost(workspace / label) == {name}, (label, details(workspace / label))
+        for label in ("no-dropna", "no-dedupe", "sentinel-kept", "age-fill-zero", "dates-text", "drop-undated",
+                      "ids-unstripped", "clinic-not-filled", "gender-replace", "keep-bad-ids"):
+            assert len(lost(workspace / label)) == 1, (label, details(workspace / label))
 
         # The printed report says each shared fix once and ends by naming the checks left to fix.
         report = printed(empty)
-        assert report.count("is missing; run the Task") == 5, report
+        assert report.count("is missing; run the Task") == len(FILES), report
         assert report.rstrip().endswith(
-            "Left to fix (100 points): missing report (all 3 checks); typed table (all 7 checks); coded table "
-            "(all 6 checks); validation report (all 2 checks); clean table (all 5 checks)."), report
+            "Left to fix (100 points): missing report (all 3 checks); row counts (all 3 checks); typed profile "
+            "(all 6 checks); clinic counts (all 2 checks); gender counts: gender codes mapped; a1c counts: "
+            "a1c_category; coded sample (all 2 checks); validation report (all 3 checks); glucose fences (all 2 "
+            "checks); decision log (all 2 checks); clean summary (all 3 checks)."), report
         report = printed(workspace / "sentinel-kept")
-        assert report.rstrip().endswith("Score: 95/100\nLeft to fix (5 points): typed table: -999 read as missing."), report
+        assert report.rstrip().endswith("Score: 96/100\nLeft to fix (4 points): typed profile: -999 read as missing."), report
         assert printed(correct).rstrip().endswith("Score: 100/100\nAll checks passed."), printed(correct)
 
         # The notebook's last cell calls run_checks(): same report dict and same text as the command line.
@@ -386,9 +505,12 @@ def run() -> None:
     shown = re.search(r"Before Task 1, for example, the missing-report checks report:\n\n```text\n(.*?)```", checks_md,
                       re.DOTALL)
     assert shown is not None, "CHECKS.md no longer shows the Before Task 1 example"
-    handout_report = subprocess.run(
-        [sys.executable, "-B", "check_assignment.py"], cwd=HANDOUT, capture_output=True, text=True, check=False
-    ).stdout
+    with tempfile.TemporaryDirectory(dir=SCRATCH, prefix="a05-handout-") as temporary:
+        copy = Path(temporary) / "handout"
+        shutil.copytree(HANDOUT, copy, ignore=shutil.ignore_patterns("__pycache__", ".venv", ".checks", "output"))
+        handout_report = subprocess.run(
+            [sys.executable, "-B", "check_assignment.py"], cwd=copy, capture_output=True, text=True, check=False
+        ).stdout
     assert shown.group(1) in handout_report, (shown.group(1), handout_report)
 
     # CHECKS.md's completion contract agrees with the checks and their points.
@@ -398,21 +520,12 @@ def run() -> None:
     }
     assert contract == CHECK_POINTS, (contract, CHECK_POINTS)
 
-    print(f"Assignment 05 checks: empty, handout, correct, and 5 reformatted submissions score as intended, "
-          f"and so do {len(mistakes)} submissions with mistakes.")
+    print(f"Assignment 05 checks: empty, handout, correct, and {len(reformatted_labels)} reformatted submissions "
+          f"score as intended, and so do {len(mistakes)} submissions with mistakes.")
 
 
 def run_handout() -> None:
-    """The handout's data match the checks, and it ships the course's checks unchanged."""
-    with DATA.open(newline="", encoding="utf-8") as handle:
-        rows = list(csv.reader(handle))
-    assert tuple(rows[0]) == RAW_COLUMNS, "data/lab_visits.csv's header differs from RAW_COLUMNS"
-    assert tuple(map(tuple, rows[1:])) == RAW_ROWS, "data/lab_visits.csv differs from RAW_ROWS in _value_checks.py"
-    sys.path.insert(0, str(CHECKS.parents[1] / "scripts"))
-    import make_assignment05_data
-    assert make_assignment05_data.COLUMNS == RAW_COLUMNS and make_assignment05_data.ROWS == RAW_ROWS, (
-        "scripts/make_assignment05_data.py and RAW_ROWS differ")
-
+    """The handout's generator writes the data its manifest names, and it ships the course's checks unchanged."""
     workflow = (HANDOUT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
     assert re.search(r'^  CHECKS_PATH: "05/assignment_checks"$', workflow, re.MULTILINE), (
         "tests.yml does not download from 05/assignment_checks"
@@ -429,12 +542,35 @@ def run_handout() -> None:
         assert (HANDOUT / name).read_bytes() == (CHECKS / name).read_bytes(), (
             f"05/assignment/{name} differs from 05/assignment_checks/{name}; copy the course-owned file over it"
         )
+    checker = (CHECKS / "check_assignment.py").read_text(encoding="utf-8")
+    latest = re.search(r"^LATEST_FILES = \((.*)\)$", checker, re.MULTILINE)
+    assert latest is not None and {"_value_checks.py", "grading.py", "generate_data.py"} == set(
+        re.findall(r'"([^"]+)"', latest.group(1))), "check_assignment.py must download every module the checks import"
 
-    # The handout's only Python files are the checks; the self-test and its answers stay here.
+    # The handout's only Python files are the checks and the generator; the self-test and its answers stay here.
     handout_python = {path.relative_to(HANDOUT).as_posix() for path in HANDOUT.rglob("*.py")
                       if ".venv" not in path.parts and ".checks" not in path.parts}
     assert handout_python == set(files) - {".github/test/requirements.txt"}, sorted(handout_python)
     assert not (HANDOUT / "_grader_selftest").exists()
+
+    # The data are generated, never committed, and the generator writes exactly what the manifest names.
+    committed = subprocess.run(["git", "ls-files", "05/assignment/data"], cwd=REPO, capture_output=True, text=True,
+                               check=True).stdout.split()
+    # A deletion not yet committed still lists the file, so only files on disk count.
+    committed = [name for name in committed if (REPO / name).exists()]
+    assert committed == [], f"the handout commits generated data: {committed}"
+    assert "data/" in (HANDOUT / ".gitignore").read_text(encoding="utf-8").split(), ".gitignore should list data/"
+    manifest = json.loads((HANDOUT / "data_manifest.json").read_text(encoding="utf-8"))
+    with tempfile.TemporaryDirectory(dir=SCRATCH, prefix="a05-generate-") as temporary:
+        folder = Path(temporary)
+        shutil.copy(HANDOUT / "generate_data.py", folder)
+        for _ in range(2):
+            subprocess.run([sys.executable, "-B", "generate_data.py"], cwd=folder, check=True, capture_output=True)
+            for name, expected in manifest["files"].items():
+                body = (folder / name).read_bytes()
+                assert hashlib.sha256(body).hexdigest() == expected["sha256"], f"{name} differs from data_manifest.json"
+                assert body.count(b"\n") - 1 == expected["rows"] and b"\r" not in body, name
+                assert 2_000_000 <= len(body) <= 8_000_000, len(body)
 
     # Setup follows Lecture 03: uv sync builds the notebook's environment from pyproject.toml and uv.lock.
     assert not (HANDOUT / "requirements.txt").exists(), "the handout ships pyproject.toml and uv.lock, not requirements.txt"
@@ -446,13 +582,24 @@ def run_handout() -> None:
     assert (HANDOUT / ".python-version").read_text(encoding="utf-8").strip() == "3.13", ".python-version should name 3.13"
 
     notebook = json.loads((HANDOUT / "assignment.ipynb").read_text(encoding="utf-8"))
+    code = ["".join(cell["source"]) for cell in notebook["cells"] if cell["cell_type"] == "code"]
     for cell in notebook["cells"]:
         if cell["cell_type"] == "code":
             assert cell["outputs"] == [] and cell["execution_count"] is None, "clear the handout notebook's outputs"
     assert "run_checks()" in "".join(notebook["cells"][-1]["source"]), "the notebook's last cell should run the checks"
+    assert "generate_data.py" in code[0] and "data_manifest.json" in code[0], "the first cell should build the data"
+    # Only the gated summary is saved after Task 5.2's assert, so one failing check stops no other file.
+    source = "\n".join(code)
+    gate = source.index("# TODO: assert that every check passes")
+    before, after = source[:gate], source[gate:].split("run_checks")[0]
+    assert set(re.findall(r"\b[A-Z0-9]+_PATH\b", after)) == {"SUMMARY_PATH"}, "save only clean_summary.csv after the assert"
+    saved = set(re.findall(r"save \w+ to ([A-Z0-9]+_PATH)|and \w+ to ([A-Z0-9]+_PATH)", before))
+    assert {name for pair in saved for name in pair if name} == {
+        name for name in re.findall(r"^([A-Z0-9]+_PATH) = ", source, re.MULTILINE) if name not in ("SUMMARY_PATH", "DATA_PATH")
+    }, "save every file but clean_summary.csv before the assert"
 
-    print(f"Assignment 05 handout: data match the checks, pyproject.toml and uv.lock pin the course packages, "
-          f"and all {len(files)} check files match 05/assignment_checks byte for byte.")
+    print(f"Assignment 05 handout: generate_data.py writes the bytes data_manifest.json names, pyproject.toml and "
+          f"uv.lock pin the course packages, and all {len(files)} check files match 05/assignment_checks byte for byte.")
 
 
 if __name__ == "__main__":

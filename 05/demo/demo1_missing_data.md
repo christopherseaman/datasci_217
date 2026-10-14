@@ -74,7 +74,7 @@ display(visits.isna().sum(axis=1))              # gaps per row
 print('Rows with any gap:', visits.isna().any(axis=1).sum(), 'of', len(visits))
 ```
 
-**Expect:** gaps of 1 in `visit_date`, 2 in `sbp`, and 4 in `cholesterol` (10.0, 20.0, and 40.0 percent), and `Rows with any gap: 5 of 10`. These counts miss `-999`, `1420`, `'unknown'`, `'forty'`, and `'2026-02-30'`, because none of them is blank yet.
+**Expect:** gaps of 1 in `visit_date`, 2 in `sbp`, and 4 in `cholesterol` (10.0, 20.0, and 40.0 percent), `P003` and `P006` (labels 2 and 5) each have 2 gaps, and `Rows with any gap: 5 of 10`. These counts miss `-999`, `1420`, `'unknown'`, `'forty'`, and `'2026-02-30'`, because none of them is blank yet.
 
 ### 4. Double entry or repeat visit?
 
@@ -151,11 +151,7 @@ display(clean.dtypes)
 
 **Expect:** `parse_failed` is `True` only for P006 (`2026-02-30`). P003's date is also `NaT`, but it was never recorded, so it is not a parse failure. The dtypes now include `datetime64[us]`, `Int64`, and `boolean`.
 
-## Independent practice
-
-Continue on your own after class, outside the live route. These cells reuse the core results; if the runtime closed, run the cells above again first.
-
-### Practice 1: Recount, then drop or fill
+### 7. Drop or fill the gaps
 
 The disguised problems are now real missing values, so the counts go up.
 
@@ -188,7 +184,23 @@ display(analysis[['patient_id', 'cholesterol', 'cholesterol_imputed']])
 
 **Expect:** `Rule: fill missing cholesterol with the median, 202.5 mg/dL; 2 values filled`. P002 and P007 show `202.5` and `True`.
 
-**What not to do:** forward fill copies the previous row down. These rows are different patients, so the previous row says nothing about this one.
+### 8. The result
+
+```python
+display(analysis[['patient_id', 'visit_date', 'age', 'sbp', 'cholesterol', 'cholesterol_imputed', 'needs_review']])
+print('Rows:', len(visits), 'raw,', len(analysis), 'for analysis;',
+      analysis['needs_review'].sum(), 'flagged for review')
+```
+
+**Expect:** 8 rows and `Rows: 10 raw, 8 for analysis; 4 flagged for review` (P002, P003, P004, and P005). Every change is visible: the double entry is gone, sentinels and impossible values are missing rather than averaged, the filled cholesterol values are marked.
+
+## Independent practice
+
+Continue on your own after class, outside the live route. These cells reuse the core results; if the runtime closed, run the cells above again first.
+
+### Practice 1: Forward fill
+
+**What not to do:** forward fill copies the previous row down. The row above is usually another patient.
 
 ```python
 wrong = analysis[['patient_id', 'sbp']].copy()
@@ -197,13 +209,3 @@ display(wrong)
 ```
 
 **Expect:** P003, P004, and P005 all receive `135`, P002's reading. Leave those gaps missing; `needs_review` already marks them.
-
-### Practice 2: The result
-
-```python
-display(analysis[['patient_id', 'visit_date', 'age', 'sbp', 'cholesterol', 'cholesterol_imputed', 'needs_review']])
-print('Rows:', len(visits), 'raw,', len(analysis), 'for analysis;',
-      analysis['needs_review'].sum(), 'flagged for review')
-```
-
-**Expect:** 8 rows and `Rows: 10 raw, 8 for analysis; 4 flagged for review` (P002, P003, P004, and P005). Every change is visible: the double entry is gone, sentinels and impossible values are missing rather than averaged, the filled cholesterol values are marked, and nothing was carried from one patient to another.

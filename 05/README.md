@@ -31,11 +31,7 @@ This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 
 - 3.2 (anonymous `lambda` functions)
 - 5.2 (function application and mapping)
-- 7.1 (handling missing data)
-- 7.2 (data transformation: removing duplicates, mapping and replacing values, renaming axis indexes, binning, outliers, random sampling, and indicator variables)
-- 7.3 (extension data types)
-- 7.4 (string manipulation and regular expressions)
-- 7.5 (categorical data)
+- Chapter 7 (data cleaning and preparation)
 
 # What Clean Means: The Data Contract
 
@@ -57,7 +53,7 @@ This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 | `visit_date` | visit day | `datetime64` | a real calendar date |
 | `sbp` | systolic blood pressure (mmHg) | `Int64` | 60-250 when present |
 
-Two dtypes are new: `datetime64` stores calendar dates rather than text, and `Int64` (capital I) stores whole numbers that may be blank. For text, `str` is the pandas 3 default and marks gaps as `NaN`; `string` is the nullable text type and marks them `<NA>`.
+Two dtypes are new: `datetime64` stores calendar dates rather than text, and `Int64` (capital I) stores whole numbers that may be blank. For text, `str` is the pandas 3 default and marks gaps as `NaN`; `string` marks them `<NA>`. `Int64` and `string` are **nullable** dtypes: they store `<NA>` beside real values.
 
 ![xkcd 2494: Flawed Data. Convincing-looking values do not repair flawed data](media/xkcd_2494.png)
 
@@ -144,11 +140,6 @@ Original Data:        Forward Fill (ffill):           Backward Fill (bfill):
     5   [NaN]             5     15 ←┘ from 15             5   [NaN] no later rows
 ```
 
-<callout icon="⚠️" color="yellow_bg">
-	## `ffill()` copies across patients!
-	Forward and backward fill copy whatever row sits above or below. Use them only on rows in time order for one patient or one sensor.
-</callout>
-
 ### Reference Card: Dropping and filling
 
 | Task | Code | Output / caution |
@@ -188,6 +179,11 @@ print(labs['glucose'].fillna(labs['glucose'].median()).tolist())  # [98.0, 104.0
 print(readings.ffill(limit=1).tolist())  # [10.0, 10.0, nan, 15.0]: only the first gap filled
 ```
 
+<callout icon="⚠️" color="yellow_bg">
+	## `ffill()` copies across patients!
+	Forward and backward fill copy whatever row sits above or below. Use them only on rows in time order for one patient or one sensor.
+</callout>
+
 ![xkcd 1827: Survivorship Bias. Dropping incomplete records can leave a convincing but biased sample](media/xkcd_1827.png)
 
 # Repeated Rows, Sentinels, and Wrong Types
@@ -195,7 +191,7 @@ print(readings.ffill(limit=1).tolist())  # [10.0, 10.0, nan, 15.0]: only the fir
 Three problems hide beside blanks:
 
 - **Repeated rows**: the same visit entered twice; pandas counts it twice.
-- **Sentinels**: a code such as `-999` standing in for a missing value; pandas averages it as real data.
+- **Sentinels**: pandas averages a code such as `-999` as real data.
 - **Wrong types**: numbers or dates stored as text; `mean()` raises `TypeError`, and `sum()` joins them into one string.
 
 ## Detecting and Resolving Duplicates
@@ -283,7 +279,7 @@ print(ages.mask(ages > 120).tolist())  # [34.0, nan, 52.0]; check 150 against th
 
 - Numbers often arrive as text: one `?` turns a whole CSV column into `str` (Lecture 04), and so do hand-typed entries such as `'forty'` or `'unknown'`.
 - `errors='coerce'` turns anything a parser cannot read into a missing value instead of stopping with an error.
-- **Nullable** types (capital-I `Int64`, `string`, and `boolean`) store `<NA>` alongside real values. NumPy's `int64` cannot, which is why a whole-number column with one gap reads as `float64` (`34.0`).
+- NumPy's `int64` cannot store `<NA>`, which is why a whole-number column with one gap reads as `float64` (`34.0`); nullable `Int64` keeps it whole.
 
 ### Reference Card: Converting messy columns
 
@@ -291,8 +287,9 @@ print(ages.mask(ages > 120).tolist())  # [34.0, nan, 52.0]; check 150 against th
 | --- | --- | --- |
 | Text to number, invalid to missing | `pd.to_numeric(s, errors='coerce')` | Numbers (`float64` once any value becomes `NaN`); `'forty'` becomes `NaN` |
 | Change a clean column's type | `s.astype('float64')` / `s.astype('int64')` | Raises an error if any value cannot convert; `int64` cannot hold missing values |
+| Change several columns at once | `df.astype({'patient_id': 'string', 'age': 'Int64'})` | New `DataFrame`; columns not named keep their dtype |
 | Keep only whole numbers | `s.where(s % 1 == 0)` | `s % 1 == 0` is `True` where the value has no fractional part, so `40.5` becomes missing |
-| Whole numbers with gaps | `s.astype('Int64')` | Nullable integers. `40.5` raises `TypeError` from `float64` but silently becomes `40` from the nullable `Float64` that `to_numeric` returns for `string` text, so drop fractions first |
+| Whole numbers with gaps | `s.astype('Int64')` | Nullable integers; a fraction such as `40.5` may raise or be silently truncated, so drop fractions first |
 | Nullable text (`<NA>` for gaps) | `s.astype('string')` | Nullable text; missing shows as `<NA>` |
 | Dates in a known format | `pd.to_datetime(s, format='%Y-%m-%d', errors='coerce')` | `%Y` year, `%m` month, `%d` day; `datetime64[us]`; impossible dates such as `2026-02-30` become `NaT`, but single-digit parts such as `2026-7-01` are still accepted (exact check: Data Validation Rules) |
 | True/false with unknowns | `s.astype('boolean')` | Nullable `True` / `False` / `<NA>` |
@@ -314,6 +311,20 @@ display(form)
 | 1 | unknown | NaT | <NA> | True |
 | 2 | 52 | 2026-03-01 | 52 | False |
 
+### Code Snippet: Set several dtypes at once
+
+`intake` has `patient_id` as `str` (`'P001'`, `'P002'`, `'P003'`) and `age` as `float64` (`34.0`, `NaN`, `52.0`).
+
+```python
+intake = intake.astype({'patient_id': 'string', 'age': 'Int64'})
+display(intake.dtypes)
+```
+
+|  | value |
+| --- | --- |
+| patient_id | string |
+| age | Int64 |
+
 ![xkcd 1179: ISO 8601. Pass format='%Y-%m-%d' and every date has one spelling](media/xkcd_1179.png)
 
 # LIVE DEMO!
@@ -329,7 +340,7 @@ display(form)
 
 - `map()` and `apply()` run a rule written for one value, such as a Lecture 02 function with `if`/`elif`, on every value of a column or every row of a table.
 - **`lambda`**: a one-line function without a name, for a rule you use once: `lambda x: x * 2` does the same as `def double(x): return x * 2`.
-- Arithmetic such as `vitals['sbp'] - vitals['dbp']` already works on whole columns and runs much faster, so save `apply` for rules that need `if`/`elif`.
+- Arithmetic such as subtracting one pressure column from another already works on whole columns and runs much faster, so save `apply` for rules that need `if`/`elif`.
 
 | Raw value | Rule | Result |
 | --- | --- | --- |
@@ -443,8 +454,9 @@ Index(['patient id', 'sbp (mmhg)'], dtype='str')
 
 ### Code Snippet: Create ordered categories
 
+`ages` contains `[25, 30, 45, 60, 75]`:
+
 ```python
-ages = pd.Series([25, 30, 45, 60, 75])
 print(pd.cut(ages, bins=[0, 30, 50, 100], labels=['Young', 'Middle', 'Senior']))  # 30 falls in (0, 30]
 ```
 
@@ -457,6 +469,8 @@ print(pd.cut(ages, bins=[0, 30, 50, 100], labels=['Young', 'Middle', 'Senior']))
 dtype: category
 Categories (3, str): ['Young' < 'Middle' < 'Senior']
 ```
+
+The labels are ordered categories: they sort by band, and comparing the result with `< 'Senior'` gives `True` for every Young and Middle row.
 
 # String Manipulation
 
@@ -487,17 +501,17 @@ Categories (3, str): ['Young' < 'Middle' < 'Senior']
 | `series.str.contains(pattern, na=False)` | Test whether each value contains `pattern`, read as a regex; `regex=False` searches for literal text | Boolean `Series`; missing becomes `False` |
 | `series.str.replace(old, new, regex=False)` | Replace literal substrings | String `Series` |
 | `df.columns.str.replace(' ', '_')` | The same `.str` methods work on column labels | New `Index` of labels; assign it back to `df.columns` |
-| `series.str.replace(r' +', '_', regex=True)` | Replace each run of spaces with one underscore; as a regex, `+` means one or more of the preceding character | String `Series`; `'north  clinic'` becomes `'north_clinic'` |
+| `series.str.replace(r' +', '_', regex=True)` | Replace each run of spaces with one underscore | String `Series`; `'north  clinic'` becomes `'north_clinic'` |
 | `series.str.split(sep)` | Split each value at a literal separator; `.str[0]` takes the first part, `expand=True` gives one column per part | `Series` of lists; `DataFrame` with `expand=True` |
 | `series.str.startswith(prefix, na=False)` | Test a literal prefix | Boolean `Series` |
 | `series.str.endswith(suffix, na=False)` | Test a literal suffix | Boolean `Series` |
 
 ### Code Snippet: Normalize text fields
 
+`names` contains `['  alice smith ', 'BOB JONES', None]`, and `tests` contains `['fasting glucose', 'random glucose', 'HbA1c']`:
+
 ```python
-names = pd.Series(['  alice smith ', 'BOB JONES', None])
 display(names.str.strip().str.title())
-tests = pd.Series(['fasting glucose', 'random glucose', 'HbA1c'])
 display(tests.str.contains('fasting'))
 ```
 
@@ -530,8 +544,6 @@ display(tests.str.contains('fasting'))
 Category codes point to labels; they do not mean that one smoking status is twice another. Indicators express membership instead.
 
 ## Categorical Data Type
-
-- `pd.cut()` above already printed `dtype: category` with its ordered labels.
 
 ### Reference Card: Categorical dtype
 
@@ -583,8 +595,9 @@ With `pyarrow` installed, as in Colab, the counts read `69132` and `5175` bytes;
 
 ### Code Snippet: Encode categories
 
+`colors` contains `['red', 'blue', 'red', 'green']`:
+
 ```python
-colors = pd.Series(['red', 'blue', 'red', 'green'], name='color')
 display(pd.get_dummies(colors, prefix='color', dtype='int64'))
 display(pd.get_dummies(colors, prefix='color', drop_first=True, dtype='int64'))  # blue, first, is the reference
 ```
@@ -633,7 +646,7 @@ display(pd.get_dummies(colors, prefix='color', drop_first=True, dtype='int64')) 
 | --- | --- | --- |
 | Inclusive range | `series.between(low, high)` | Boolean `Series`; `True` when `low <= value <= high` |
 | Allowed list | `series.isin(['north', 'south', 'west'])` | Boolean `Series`; `True` for listed values |
-| Describe a pattern | `r'P[0-9]{3}'` | A regular expression: `P`, then `[0-9]` (any digit) exactly `{3}` times; the `r` prefix marks a raw string, as in `str.contains` above |
+| Describe a pattern | `r'P[0-9]{3}'` | `P` plus three digits, used by the rules below |
 | Whole-value pattern | `series.str.fullmatch(pattern, na=False)` | `True` only when the whole value matches; `na=False` makes a missing value fail the rule |
 | Start-only pattern | `series.str.match(pattern)` | Checks the start only, so `'P0012'` passes `P[0-9]{3}`; prefer `fullmatch` for rules |
 | Exact date text | `series.str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')` | `True` only for exact `YYYY-MM-DD` text; needed because `to_datetime(..., format='%Y-%m-%d')` still accepts `2026-7-01` |
@@ -658,8 +671,9 @@ display(patients[~(valid_age & valid_id)])                     # rows to review
 
 ### Code Snippet: Accept only exact dates
 
+`dates` contains `['2026-01-15', '2026-7-01', '2026-02-30']`:
+
 ```python
-dates = pd.Series(['2026-01-15', '2026-7-01', '2026-02-30'])
 exact = dates.str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')  # four digits, dash, two, dash, two
 parsed = pd.to_datetime(dates.where(exact), format='%Y-%m-%d', errors='coerce')
 display(parsed)
@@ -696,10 +710,10 @@ display(parsed)
 `df['value']` holds 1 to 5 four times over, then one 100:
 
 ```python
-Q1 = df['value'].quantile(0.25)
-Q3 = df['value'].quantile(0.75)
-IQR = Q3 - Q1                                    # quartiles 2 and 4, so the fences are -1 and 7
-iqr_flag = (df['value'] < Q1 - 1.5 * IQR) | (df['value'] > Q3 + 1.5 * IQR)
+q1 = df['value'].quantile(0.25)
+q3 = df['value'].quantile(0.75)
+iqr = q3 - q1                                    # quartiles 2 and 4, so the fences are -1 and 7
+iqr_flag = (df['value'] < q1 - 1.5 * iqr) | (df['value'] > q3 + 1.5 * iqr)
 display(df.loc[iqr_flag])                        # the row to investigate
 ```
 

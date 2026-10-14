@@ -25,6 +25,7 @@ env:
     _value_checks.py
     check_assignment.py
     grading.py
+    generate_data.py
 
 jobs:
   pytest:

@@ -1,0 +1,4 @@
+admission_id,unit,age,diagnosis,los_days
+A201,MED,58,heart failure,5
+A202,ICU,81,sepsis,9
+A203,MED,39,cellulitis,1

@@ -4,3 +4,5 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .checks/
+# generate_data.py writes the data; data_manifest.json holds its checksum.
+data/

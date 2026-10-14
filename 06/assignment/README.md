@@ -2,9 +2,9 @@
 
 ## Overview
 
-Profile five raw clinic tables, audit and clean them, recode gender as a category, stack the two site visit exports, reshape the lab results, join everything into one analysis table, and pivot blood pressure to one row per patient. Each result is saved as a file in `output/`; the notebook cells and decision reasons are read by human review.
+Profile five raw clinic tables, audit and clean them, recode gender as a category, stack the two site visit exports, reshape the lab results, join everything into one analysis table, and pivot blood pressure to one row per patient. You hand over what an analyst would: audits, summaries, and small extracts, each a few KB, saved in `output/`. The full cleaned tables stay in the notebook; the notebook cells and decision reasons are read by human review.
 
-The five files in `data/` are a synthetic follow-up study of adults with high blood pressure and type 2 diabetes at two clinic sites; no real patients are in them.
+`generate_data.py` writes the five files into `data/`: a synthetic follow-up study of adults with high blood pressure and type 2 diabetes, with no real patients. The registry holds about 30,000 patients with about 57,000 visits, too many rows to inspect by eye, so every count here comes from code. Two clinics, North Clinic (`N01`) and South Valley Clinic (`S02`), each export a visit file. `sites.csv` lists three site codes, `N01`, `S02`, and `W03` (a site with no patients yet), and some registry rows carry `E04`, a code `sites.csv` does not list.
 
 | File | One row is | Columns |
 | --- | --- | --- |
@@ -26,7 +26,9 @@ The coded columns must hold these values once cleaned:
 | `visit` | `baseline` | The enrollment visit |
 | `visit` | `week12` | The follow-up visit 12 weeks later |
 
-The values arrive as staff typed them, so expect other spellings of these codes, such as `woman` or `wk12`, stray spaces, mixed letter case, repeated rows, and entries that break these rules. Leave the files exactly as they ship: the notebook's first code cell compares each checksum with `data/manifest.json` and stops if a file has changed.
+The values arrive as staff typed them, so expect other spellings of these codes, such as `woman` or `wk12`, stray spaces, mixed letter case, repeated rows, and entries that break these rules. Leave the generated files exactly as they are: the notebook's first code cell compares each checksum with `data_manifest.json` and stops if a file has changed.
+
+The two extracts (Tasks 4.3 and 5.2) hold the rows of 16 sample patients, `SAMPLE_IDS` in the first code cell, chosen to show the data's problems: `P00001`, `P00004`, `P00088`, `P00260`, `P00446`, `P00487`, `P00631`, `P00851`, `P02354`, `P03836`, `P05763`, `P07510`, `P14287`, `P16486`, `P17390`, `P30001`.
 
 ## Setup
 
@@ -39,37 +41,41 @@ The values arrive as staff typed them, so expect other spellings of these codes,
     uv sync
     ```
 
-    - Expect: `uv sync` lists `+ numpy==2.3.3` and `+ pandas==3.0.5`.
+    - Expect: `uv sync` lists `+ ipykernel==6.29.5`, `+ numpy==2.3.3`, and `+ pandas==3.0.5`.
 3. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`.
-4. Run the first code cell.
-    - Expect: the Python, NumPy, and pandas versions, then `Verified 5 data files`.
+4. Run the first code cell. When `data/` is missing, it runs `generate_data.py` (`python3 generate_data.py` in the terminal does the same) and writes the five files in about a second.
+    - Expect: the Python, NumPy, and pandas versions, `Wrote 5 data files to .../data` on the first run, then `Verified 5 data files`.
 
-The first cell supplies `DATA_DIR`, `OUTPUT_DIR`, a path for each output file, and `raw`, a dictionary holding each raw table with every column read as text (`raw["patients"]`, `raw["visits_south"]`, ...). Function names in the scaffold are suggestions: grading reads the files in `output/` and the cells named in CHECKS.md. The "Cumulative midterm checkpoint" cell, just below the first code cell, asks for an evidence map; fill it in whenever you like.
+The first cell supplies `DATA_DIR`, `OUTPUT_DIR`, a path for each output file, `SAMPLE_IDS`, and `raw`, a dictionary holding each raw table with every column read as text (`raw["patients"]`, `raw["visits_south"]`, ...). Function names in the scaffold are suggestions: grading reads the files in `output/` and the cells named in CHECKS.md. The "Cumulative midterm checkpoint" cell, just below the first code cell, asks for an evidence map; fill it in whenever you like.
 
 ## Files
 
 ```text
 assignment/
 ├── assignment.ipynb            # notebook scaffold: complete every TODO, then run it top to bottom
-├── data/                       # supplied raw tables (the five files above); never edit them
-├── data/manifest.json          # supplied: each data file's row count, columns, and sha256 checksum
+├── generate_data.py            # supplied: writes the five data files into data/
+├── data_manifest.json          # supplied: each data file's row count, columns, and sha256 checksum
+├── data/                       # made by generate_data.py; never edit it (Git ignores it)
 ├── pyproject.toml, uv.lock     # supplied: the packages and exact versions `uv sync` installs
 ├── .python-version             # supplied: Python 3.13
 ├── CHECKS.md                   # supplied: what earns the points
-├── .gitattributes, .gitignore  # supplied: keep the data byte for byte, keep .venv/ out of Git
+├── HINTS.md                    # supplied: how to find the cause when a task goes wrong
+├── .gitignore                  # supplied: keeps data/ and .venv/ out of Git
 └── output/
     ├── file_inventory.txt      # you make in Task 1.1, in the terminal
     ├── table_profile.csv       # you make in Task 1.2
     ├── issue_audit.csv         # you make in Task 2.3
-    ├── patients_clean.csv      # you make in Task 3.1
+    ├── patients_summary.csv    # you make in Task 3.1
     ├── gender_categories.csv   # you make in Task 3.1
-    ├── visits_clean.csv        # you make in Task 3.2
-    ├── a1c_long.csv            # you make in Task 4.1
+    ├── visits_summary.csv      # you make in Task 3.2
+    ├── decision_log.csv        # you make in Task 3.3
+    ├── a1c_summary.csv         # you make in Task 4.1
     ├── merge_audit.csv         # you make in Task 4.2
-    ├── analysis_visits.csv     # you make in Task 5.2
-    ├── sbp_wide.csv            # you make in Task 5.2
-    └── decision_log.csv        # you make in Task 5.2
+    ├── sbp_wide_sample.csv     # you make in Task 4.3
+    └── analysis_sample.csv     # you make in Task 5.2
 ```
+
+Each task saves its own file as soon as it is made, so one mistake never stops a later, independent file from being written. Only `analysis_sample.csv` waits for the Task 4.4 join and the Task 5.1 validation. An error or a failed check stops Run All, so a file whose cell never runs is not written and earns 0 points: fix the cause and run again. [HINTS.md](HINTS.md) lists the likely cause and a check for each task.
 
 ## Task 1: Inventory the files
 
@@ -81,7 +87,7 @@ In the terminal, from the assignment directory, run one command that counts the 
 wc -l data/*.csv > output/file_inventory.txt
 ```
 
-Then paste the command into the notebook's Task 1.1 cell.
+Then paste the command into the `%%bash` cell under Task 1.1 in the notebook.
 
 > **Checkpoint: `output/file_inventory.txt`**
 > 6 lines: one count and path per data file, in alphabetical order starting with `data/a1c_wide.csv`, then a `total` line. Each count includes the header line.
@@ -90,6 +96,8 @@ Then paste the command into the notebook's Task 1.1 cell.
 
 Write a function that takes a table's name and the table and returns a dictionary with four keys: `table` (the file name, such as `patients.csv`), `rows` (data rows, not the header), `columns`, and `exact_duplicate_rows` (rows identical to an earlier row: `table.duplicated().sum()`). Call it for each table in `raw`, build a DataFrame from the results, and save it with `to_csv(path, index=False)`.
 
+- Self-check: each `rows` is one less than the file's `wc -l` count in Task 1.1.
+
 > **Checkpoint: `output/table_profile.csv`**
 > 6 lines: the header `table,rows,columns,exact_duplicate_rows` and one row per data file, in the order of the Overview table.
 
@@ -97,7 +105,7 @@ Write a function that takes a table's name and the table and returns a dictionar
 
 ### 2.1 Write the data contract
 
-In the notebook's Task 2.1 Markdown cell, state for each of the five tables its grain (what one row represents) and its key: a single column or a composite key (Lectures 05 and 06). Then name the cardinality you expect for each join in Task 4.3: visits to patients, patients to sites, and visits to A1c results. Human review reads this cell.
+In the notebook's Task 2.1 Markdown cell, state for each of the five tables its grain (what one row represents) and its key: a single column or a composite key (Lectures 05 and 06). Then name the cardinality you expect for each join in Task 4.4: visits to patients, patients to sites, and visits to A1c results. Human review reads this cell.
 
 ### 2.2 Stack the two visit files
 
@@ -107,7 +115,7 @@ Build `visits_raw`, one table of every raw visit row from both sites:
 2. Add a `source_file` column to each table holding its file name, `visits_north.csv` or `visits_south.csv`, before stacking (Lecture 06's provenance column).
 3. Stack them with `pd.concat([...], ignore_index=True)`, north first.
 
-- Expect: 48 rows and 7 columns, with no column of only missing values (one would mean a column name still differs).
+- Expect: 57321 rows and 7 columns, with no column of only missing values (one would mean a column name still differs).
 
 ### 2.3 Audit the raw tables
 
@@ -140,14 +148,48 @@ visits: rows in repeated patient_id and visit pairs,<count>
 | `date parse failures` | Rows whose `visit_date` is not exact `YYYY-MM-DD` text for a date on the calendar (Lecture 05's "Accept only exact dates") |
 | `rows in repeated patient_id and visit pairs` | Every row whose `patient_id` and `visit`, mapped to `baseline` or `week12` as in Task 3.2 step 2, together also appear on another row: `duplicated(subset=[...], keep=False)` |
 
-A count of 0 is a finding too; keep its row. Auditing must not change `raw`: the notebook's snapshot comparison stays `True`.
+Each count is the `.sum()` of a `True`/`False` Series. A worked example on five made-up registry rows, not the real data:
+
+```text
+patient_id,gender,birth_year,site_code
+P1,F,1950,N01
+P2,woman,9999,n-01
+P3, ,1962,S02
+P3, ,1962,S02
+P4,M ,1971,S02
+```
+
+Here `woman` and `M ` (a trailing space) are not codes as written, so the first count is 2; `P3`'s blank gender is counted on both of its rows, before the repeat is removed, so the second is also 2; one `9999`; and one site code, `n-01`, needs normalization. The first four lines of this example's audit file would read:
+
+```text
+issue,count
+patients: gender values that are not a code,2
+patients: empty gender,2
+patients: birth_year sentinel 9999,1
+patients: site codes needing normalization,1
+```
+
+Self-checks before you save:
+
+- Every count is a whole number from 0 up to its table's `rows` in `table_profile.csv`; most are far smaller.
+- A row with `999` is counted as a sentinel, never also as outside 70 through 250.
+- A count from `keep=False` includes the first copy, so `sites: rows with a repeated site_code` and the repeated-pair count are 0 or at least 2.
+- A count of 0 is a finding too; keep its row.
+- Auditing must not change `raw`: the notebook's snapshot comparison stays `True`.
 
 > **Checkpoint: `output/issue_audit.csv`**
 > 11 lines: the header `issue,count` and the 10 issues in the order above, each with a whole-number count.
 
 ## Task 3: Clean
 
-Build each cleaned table from a `copy(deep=True)` and never change `raw` or `visits_raw`. Leave missing values missing.
+Build each cleaned table from a `copy(deep=True)` and never change `raw` or `visits_raw`. Leave missing values missing. A summary file has two columns, `metric` and `value`, one row per metric; build it as a DataFrame from two lists:
+
+```python
+summary = pd.DataFrame({
+    "metric": ["patients", "birth_year missing"],
+    "value": [len(patients_clean), patients_clean["birth_year"].isna().sum()],
+})
+```
 
 ### 3.1 Clean the patients
 
@@ -161,7 +203,31 @@ Build `patients_clean` from `raw["patients"]`:
 
 - Expect: `patients_clean["gender"].cat.categories` shows `['F', 'M', 'X']`.
 
-Save it with `index=False`, columns in this order: `patient_id`, `gender`, `birth_year`, `site_code`. Then save the category counts, missing included, with each category's code. Only a `category` column has `.cat.codes`:
+Save the patients summary to `output/patients_summary.csv` with these metrics, in this order:
+
+```text
+metric,value
+patients,<count>
+birth_year missing,<count>
+birth_year min,<year>
+birth_year max,<year>
+site_code values,<count>
+patients at N01,<count>
+patients at S02,<count>
+patients at E04,<count>
+```
+
+| Metric | What it holds |
+| --- | --- |
+| `patients` | `len(patients_clean)` |
+| `birth_year missing` | `patients_clean["birth_year"].isna().sum()` |
+| `birth_year min`, `birth_year max` | `.min()` and `.max()` of `birth_year` |
+| `site_code values` | `patients_clean["site_code"].nunique()` |
+| `patients at N01`, `S02`, `E04` | The rows whose `site_code` is that code, such as `(patients_clean["site_code"] == "N01").sum()` |
+
+Self-checks: `patients` equals the `patients.csv` rows minus its `exact_duplicate_rows` in `table_profile.csv`; `patients at N01`, `S02`, and `E04` add up to `patients`, so `site_code values` counts only codes from the data dictionary; `birth_year min` and `max` are real birth years for adults in 2026, never `9999`.
+
+Then save the category counts, missing included, with each category's code. Only a `category` column has `.cat.codes`:
 
 ```python
 gender_counts = patients_clean["gender"].value_counts(dropna=False).reset_index()
@@ -169,8 +235,10 @@ gender_counts["code"] = gender_counts["gender"].cat.codes
 gender_counts.to_csv(GENDER_CATEGORIES_PATH, index=False)
 ```
 
-> **Checkpoint: `output/patients_clean.csv`**
-> 25 lines: the header `patient_id,gender,birth_year,site_code` and one row per patient.
+- Self-check: the four counts add up to `patients`.
+
+> **Checkpoint: `output/patients_summary.csv`**
+> 9 lines: the header `metric,value` and the 8 metrics in the order above.
 
 > **Checkpoint: `output/gender_categories.csv`**
 > 5 lines: the header `gender,count,code`, one row per code with its category code (`F` 0, `M` 1, `X` 2), and a row with an empty `gender` and code `-1` for the missing values.
@@ -187,14 +255,46 @@ Build `visits_clean` from `visits_raw`:
 6. Show the rows whose `patient_id` and `visit` pair still repeats, with `duplicated(subset=[...], keep=False)`. A repeat here is a recheck: keep the later reading with `sort_values("visit_time")`, then `drop_duplicates(subset=["patient_id", "visit"], keep="last")` (Lecture 06's "When pivot() Finds a Repeated Pair").
 7. Sort by `patient_id` and `visit`, renumber with `reset_index(drop=True)`, and keep these columns in this order: `patient_id`, `visit`, `visit_date`, `sbp_mmhg`, `weight_kg`, `source_file`.
 
-- Expect: step 6 shows exactly two rows, the same patient's baseline at two times.
+- Expect: step 6 shows 240 rows: 120 `patient_id` and `visit` pairs, each read twice at different times.
+- Expect: `visits_clean["visit"].value_counts(dropna=False)` shows only `baseline` and `week12`, with no missing.
 
-> **Checkpoint: `output/visits_clean.csv`**
-> 47 lines: the header `patient_id,visit,visit_date,sbp_mmhg,weight_kg,source_file` and one row per visit.
+Save the visits summary to `output/visits_summary.csv` with these metrics, in this order:
+
+```text
+metric,value
+visits,<count>
+baseline visits,<count>
+week12 visits,<count>
+visit_date missing,<count>
+visit_date min,<date>
+visit_date max,<date>
+sbp_mmhg missing,<count>
+sbp_mmhg min,<mmHg>
+sbp_mmhg max,<mmHg>
+weight_kg missing,<count>
+weight_kg mean,<kg>
+visits from visits_north.csv,<count>
+visits from visits_south.csv,<count>
+```
+
+| Metric | What it holds |
+| --- | --- |
+| `visits` | `len(visits_clean)` |
+| `baseline visits`, `week12 visits` | The rows with that `visit` label |
+| `visit_date missing`, `sbp_mmhg missing`, `weight_kg missing` | `.isna().sum()` of that column |
+| `visit_date min`, `visit_date max` | The earliest and latest date, `.min()` and `.max()` of `visit_date` (a `00:00:00` time after the date is fine) |
+| `sbp_mmhg min`, `sbp_mmhg max` | `.min()` and `.max()` of `sbp_mmhg` |
+| `weight_kg mean` | `round(visits_clean["weight_kg"].mean(), 2)` |
+| `visits from visits_north.csv`, `visits from visits_south.csv` | The rows with that `source_file` |
+
+Self-checks: `baseline visits` plus `week12 visits` equals `visits`, and so do the two `visits from` counts; `visits` is below the 57321 rows of `visits_raw`; `sbp_mmhg min` is at least 70 and `max` at most 250; both dates fall in 2026 on clinic weekdays (Monday to Friday); each missing count is a small share of `visits`; `weight_kg mean` is an adult weight in kg.
+
+> **Checkpoint: `output/visits_summary.csv`**
+> 14 lines: the header `metric,value` and the 13 metrics in the order above.
 
 ### 3.3 Record the decisions
 
-Build `decision_table`, a DataFrame with the columns `table`, `decision`, and `reason`: one row for each decision below, in this order, with `table` and `decision` copied exactly. Write each `reason` yourself: one sentence, on one line, about these files. Human review reads each reason.
+Build `decision_table`, a DataFrame with the columns `table`, `decision`, and `reason`: one row for each decision below, in this order, with `table` and `decision` copied exactly. Write each `reason` yourself: one sentence, on one line, about these files. Human review reads each reason. Save it to `output/decision_log.csv` with `to_csv(path, index=False)`.
 
 | `table` | `decision` |
 | --- | --- |
@@ -208,6 +308,9 @@ Build `decision_table`, a DataFrame with the columns `table`, `decision`, and `r
 | `visits` | `keep the later reading of a repeated patient_id and visit pair` |
 | `sites` | `keep only current site records before joining` |
 
+> **Checkpoint: `output/decision_log.csv`**
+> 10 lines: the header `table,decision,reason` and the nine decisions in the order above.
+
 Commit your work so far with a message that says what it holds, such as `Clean patients and visits` (Lecture 02).
 
 ## Task 4: Reshape and join
@@ -220,16 +323,18 @@ Turn `raw["a1c_wide"]` into `a1c_long`, one row per patient and visit:
 2. Map the visit labels to the ones `visits_clean` uses: `{"a1c_baseline": "baseline", "a1c_week12": "week12"}`.
 3. Convert `a1c_pct` to numbers (`float64`), drop the rows with no result with `dropna(subset=["a1c_pct"])`, and renumber with `reset_index(drop=True)`.
 
-Save it with `index=False`, columns `patient_id`, `visit`, `a1c_pct`.
+Save a per-visit summary of `a1c_long` to `output/a1c_summary.csv`: the columns `visit`, `results` (the rows with that label), and `a1c_pct_mean` (the mean of their `a1c_pct`, rounded to two decimals), one row for `baseline`, then one for `week12`. For one label, `(a1c_long["visit"] == "baseline").sum()` counts the rows and `a1c_long.loc[a1c_long["visit"] == "baseline", "a1c_pct"].mean()` takes the mean.
 
-> **Checkpoint: `output/a1c_long.csv`**
-> 47 lines: the header `patient_id,visit,a1c_pct` and one row per result.
+Self-checks: the two `results` add up to `len(a1c_long)`, which is below twice the `a1c_wide.csv` rows because rows with no result were dropped; each mean is between 5 and 14 %; most patients improve, so the `week12` mean is the lower one.
+
+> **Checkpoint: `output/a1c_summary.csv`**
+> 3 lines: the header `visit,results,a1c_pct_mean`, then the `baseline` and `week12` rows.
 
 ### 4.2 Check the keys before joining
 
 In the Task 4.2 cells:
 
-1. Merge `patients_clean` with `sites` on `site_code` with `how="left"` and `validate="many_to_one"` inside `try`/`except pd.errors.MergeError`, and print the error.
+1. Merge `patients_clean` with `sites` (`raw["sites"]`, supplied in the cell) on `site_code` with `how="left"` and `validate="many_to_one"` inside `try`/`except pd.errors.MergeError`, and print the error.
 2. Show the repeated site rows with `duplicated(subset=["site_code"], keep=False)`, then build `sites_current`: the rows whose `record_status` is `current`, with the columns `site_code` and `site_name`.
 3. Merge `visits_clean` and `a1c_long` on `["patient_id", "visit"]` with `how="outer"` and `indicator=True`, and show `value_counts()` of `_merge`.
 
@@ -256,10 +361,41 @@ site list rows removed by the current-record rule,<count>
 | `registry patients whose site is not in the site list` | `patients_clean` rows whose `site_code` is not in `sites.csv` |
 | `site list rows removed by the current-record rule` | `sites.csv` rows minus `sites_current` rows |
 
+A worked example with made-up keys, not the real data: three clean visits and three A1c results.
+
+```text
+visits_clean            a1c_long
+patient_id,visit        patient_id,visit,a1c_pct
+P1,baseline             P1,baseline,7.9
+P1,week12               P2,baseline,8.4
+P2,baseline             P9,baseline,6.8
+```
+
+The outer merge pairs `P1 baseline` and `P2 baseline` (`both`, 2), keeps `P1 week12` with no result (`left_only`, 1), and keeps `P9`'s result with no visit (`right_only`, 1). `both` plus `left_only` is 3, the rows of `visits_clean`; `both` plus `right_only` is 3, the rows of `a1c_long`.
+
+Self-checks before you save:
+
+- `visits with an A1c result` plus `visits without an A1c result` equals `visits` in your `visits_summary.csv`.
+- `visits with an A1c result` plus `A1c results without a visit` equals the two `results` in your `a1c_summary.csv` added together.
+- `patients at N01` plus `patients at S02` plus `registry patients whose site is not in the site list` equals `patients` in your `patients_summary.csv`, because no patient lists `W03`.
+- `visits whose patient is not in the registry` is at most `visits`, and `registry patients with no visit` at most `patients`; both are small shares.
+- `site list rows removed by the current-record rule` is `sites.csv`'s 5 rows minus the rows of `sites_current`.
+
 > **Checkpoint: `output/merge_audit.csv`**
 > 8 lines: the header `check,count` and the 7 checks in the order above, each with a whole-number count.
 
-### 4.3 Join the analysis table
+### 4.3 Pivot blood pressure to one row per patient
+
+Build `sbp_wide` from `visits_clean` with `pivot(index="patient_id", columns="visit", values="sbp_mmhg")`, then `reset_index()` and set `columns.name = None` (Lecture 06). Add `sbp_change`, `week12` minus `baseline`; it is missing when either reading is missing.
+
+Save the rows for the sample patients with `sbp_wide[sbp_wide["patient_id"].isin(SAMPLE_IDS)]` to `output/sbp_wide_sample.csv`, with `index=False`.
+
+- Expect: `sbp_wide` has one row per patient with a visit and the columns `patient_id`, `baseline`, `week12`, `sbp_change`; a sample patient with no visit has no row.
+
+> **Checkpoint: `output/sbp_wide_sample.csv`**
+> 16 lines: the header `patient_id,baseline,week12,sbp_change` and one row per sample patient with a visit.
+
+### 4.4 Join the analysis table
 
 Build `analysis`, one row per clean visit, with three left merges onto `visits_clean`, each with the `validate=` that matches your Task 2.1 contract:
 
@@ -279,13 +415,10 @@ Keep these columns in this order, with these dtypes, so the read-back in Task 5.
 | `birth_year` | `Int64` |
 | `site_code`, `site_name`, `source_file` | `string` |
 
-- Expect: as many rows as `visits_clean`; a visit whose patient or site is unknown keeps its row with missing patient or site values.
+- Expect: as many rows as `visits_clean` after each merge; a visit whose patient or site is unknown keeps its row with missing patient or site values.
 
-### 4.4 Pivot blood pressure to one row per patient
-
-Build `sbp_wide` from `visits_clean` with `pivot(index="patient_id", columns="visit", values="sbp_mmhg")`, then `reset_index()` and set `columns.name = None` (Lecture 06). Add `sbp_change`, `week12` minus `baseline`; it is missing when either reading is missing.
-
-- Expect: one row per patient with a visit and the columns `patient_id`, `baseline`, `week12`, `sbp_change`.
+> **A `MergeError` here, or a failed Task 5.1 check, means an earlier step left a problem.**
+> `analysis_sample.csv` is not written until it is fixed, and its 9 points are lost until then. Find the cause upstream; do not remove `validate=`. Print the failing merge's key with `duplicated(subset=[...], keep=False)` and compare row counts with `visits_summary.csv` and `merge_audit.csv`. Steps in [HINTS.md](HINTS.md).
 
 ## Task 5: Validate, save, and read back
 
@@ -300,45 +433,44 @@ In the Task 5.1 cell, collect named `True`/`False` checks in a Series, as Lectur
 - `sbp_wide["patient_id"]` is unique;
 - every raw table still equals its snapshot.
 
-Then `assert checks.all(), checks[~checks]` directly before the cell that saves, so a failed check means no file is written.
+Then `assert checks.all(), checks[~checks]` directly before the cell that saves the analysis extract, so a failed check means it is not written. The files from Tasks 1 to 4.3 are already saved.
 
-### 5.2 Save the joined, pivoted, and decision tables
+> **An `AssertionError` here means an earlier step left a problem.**
+> `analysis_sample.csv` is not written until every check is `True`, and its 9 points are lost until then. Print `checks[~checks]` to see which checks failed, then trace each to its task in [HINTS.md](HINTS.md). Never loosen or skip the assert.
 
-Save `analysis` to `output/analysis_visits.csv`, `sbp_wide` to `output/sbp_wide.csv`, and `decision_table` to `output/decision_log.csv`, each with `to_csv(path, index=False)`.
+### 5.2 Save the analysis extract
 
-> **Checkpoint: `output/analysis_visits.csv`**
-> 47 lines: the header `patient_id,visit,visit_date,sbp_mmhg,weight_kg,a1c_pct,gender,birth_year,site_code,site_name,source_file` and one row per visit.
+Keep the `analysis` rows for the sample patients and renumber them: `analysis_sample = analysis[analysis["patient_id"].isin(SAMPLE_IDS)].reset_index(drop=True)`. Save it to `output/analysis_sample.csv` with `to_csv(path, index=False)`.
 
-> **Checkpoint: `output/sbp_wide.csv`**
-> 25 lines: the header `patient_id,baseline,week12,sbp_change` and one row per patient with a visit.
+- Self-check: it has as many rows as `visits_clean["patient_id"].isin(SAMPLE_IDS).sum()`.
 
-> **Checkpoint: `output/decision_log.csv`**
-> 10 lines: the header `table,decision,reason` and the nine decisions in the order of Task 3.3.
+> **Checkpoint: `output/analysis_sample.csv`**
+> 29 lines: the header `patient_id,visit,visit_date,sbp_mmhg,weight_kg,a1c_pct,gender,birth_year,site_code,site_name,source_file` and one row per visit of a sample patient.
 
-### 5.3 Read the files back
+### 5.3 Read the file back
 
-Read `output/analysis_visits.csv` back with `dtype={...}` for every column but `visit_date` and `parse_dates=["visit_date"]`, and print `round_trip.equals(analysis)`, which should be `True` (Lecture 05's "Read the saved file back").
+Read `output/analysis_sample.csv` back with `dtype={...}` for every column but `visit_date` and `parse_dates=["visit_date"]`, and print `round_trip.equals(analysis_sample)`, which should be `True` (Lecture 05's "Read the saved file back").
 
 ## Check your work
 
 1. Click **Restart**, then **Run All**.
     - Expect: no errors, the validation cell shows only `True`, and the read-back prints `True`.
-2. Open each file in `output/` and compare it with this table. The line count is the number beside the last line with text; VS Code may number one empty line after it; do not count that.
+2. In the terminal, compare each file in `output/` with this table: `wc -l output/*` prints each file's line count, and `head -n 1 output/FILE` its first line.
 
 | File | Made in | First line | Lines |
 | --- | --- | --- | --- |
 | `output/file_inventory.txt` | Task 1.1 | `<count> data/a1c_wide.csv` | 6 |
 | `output/table_profile.csv` | Task 1.2 | `table,rows,columns,exact_duplicate_rows` | 6 |
 | `output/issue_audit.csv` | Task 2.3 | `issue,count` | 11 |
-| `output/patients_clean.csv` | Task 3.1 | `patient_id,gender,birth_year,site_code` | 25 |
+| `output/patients_summary.csv` | Task 3.1 | `metric,value` | 9 |
 | `output/gender_categories.csv` | Task 3.1 | `gender,count,code` | 5 |
-| `output/visits_clean.csv` | Task 3.2 | `patient_id,visit,visit_date,sbp_mmhg,weight_kg,source_file` | 47 |
-| `output/a1c_long.csv` | Task 4.1 | `patient_id,visit,a1c_pct` | 47 |
+| `output/visits_summary.csv` | Task 3.2 | `metric,value` | 14 |
+| `output/decision_log.csv` | Task 3.3 | `table,decision,reason` | 10 |
+| `output/a1c_summary.csv` | Task 4.1 | `visit,results,a1c_pct_mean` | 3 |
 | `output/merge_audit.csv` | Task 4.2 | `check,count` | 8 |
-| `output/analysis_visits.csv` | Task 5.2 | `patient_id,visit,visit_date,sbp_mmhg,weight_kg,a1c_pct,gender,birth_year,site_code,site_name,source_file` | 47 |
-| `output/sbp_wide.csv` | Task 5.2 | `patient_id,baseline,week12,sbp_change` | 25 |
-| `output/decision_log.csv` | Task 5.2 | `table,decision,reason` | 10 |
+| `output/sbp_wide_sample.csv` | Task 4.3 | `patient_id,baseline,week12,sbp_change` | 16 |
+| `output/analysis_sample.csv` | Task 5.2 | `patient_id,visit,visit_date,sbp_mmhg,weight_kg,a1c_pct,gender,birth_year,site_code,site_name,source_file` | 29 |
 
-3. Commit `assignment.ipynb` (with its outputs) and the eleven `output/` files, then push. Keep `.venv/` out of the commit; `.gitignore` already does. The course grades your fork's `main` branch after the deadline.
+3. Commit `assignment.ipynb` (with its outputs) and the eleven `output/` files, then push. Keep `data/` and `.venv/` out of the commit; `.gitignore` already does. The course grades your fork's `main` branch after the deadline.
 
 What the points reward and how files are read: [CHECKS.md](CHECKS.md)

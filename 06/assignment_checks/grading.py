@@ -5,37 +5,38 @@ fork's committed files in `output/` with this module, through
 `check_assignment.py` and `scripts/grade_submissions.py`. Student code is never
 imported, executed, or read, and the notebook is left to human review.
 
-Every expected value follows from the five supplied files in `data/` (their
-SHA-256 values are in `data/manifest.json`); `_grader_selftest/run.py`
-recomputes each one from those files with pandas and confirms it matches the
-constants below.
+The handout ships `generate_data.py`, never the data. Every expected value is
+derived, when this module loads, from the bytes the course copy of that
+generator (`06/assignment/generate_data.py`, found above these checks) builds
+in memory, accepted only when each file's SHA-256 matches `DATA_SHA256` (the
+values the handout's `data_manifest.json` lists). Nothing is written to disk.
+`_grader_selftest/run.py` recomputes each value with pandas.
 
-Each check reads one artifact and compares parsed values rather than text, so
-line endings, trailing whitespace, a missing final newline, header spacing, a
-comma, semicolon, or tab between cells, column order, a leading unnamed index
-column, number formatting, the letter case and spacing of labels and text
-values (codes such as `F` and `f` included), any unambiguous way of writing a
-date, and the common spellings of missing values never cost points. The
-planted spellings need real recoding (`woman` to `F`, `N-01` to `N01`, `wk12`
-to `week12`), so a value left unmapped still differs after case and spacing
-are ignored. Where a later check follows the student's own keys and site
-codes, it compares them exactly as written, as their merges and pivots did.
-Each check scores the rows or records it can verify on its own, so one wrong
-value costs only its own share, and no check depends on another passing. A
-later artifact is also judged against the student's own earlier one (the
-gender counts against their patients_clean, the joined table against their
-cleaned tables, the merge counts against their own keys, the SBP change
-against their own baseline and week 12 columns), so one mistake is charged
-once.
+The outputs are analyst-sized: audits and summaries of the whole tables, plus
+small extracts of the rows for the patients in `SAMPLE_IDS`. Each check reads
+one artifact and compares parsed values rather than text, so line endings,
+trailing whitespace, a missing final newline, header spacing, a comma,
+semicolon, or tab between cells, column order, a leading unnamed index column,
+number formatting, the letter case and spacing of labels and text values, any
+unambiguous way of writing a date, and the common spellings of missing values
+never cost points. Each check scores the units it can verify on its own, so one
+wrong value costs only its own share, and no check depends on another passing.
+A later artifact is also judged against the student's own earlier summaries
+(the merge counts against their own visit, A1c, and patient summaries; the
+extracts accept the values an upstream mistake already charged would carry),
+so one mistake is charged once.
 """
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Callable, Sequence
 import csv
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from difflib import SequenceMatcher
+from functools import lru_cache
+import hashlib
 import io
 import math
 from pathlib import Path
@@ -46,19 +47,29 @@ SCHEMA = "datasci217/grading-result/v1"
 OUTPUT = Path("output")
 
 DATA_FILES = ("patients.csv", "sites.csv", "visits_north.csv", "visits_south.csv", "a1c_wide.csv")
-# `wc -l data/*.csv` counts newline characters, so each count includes the header line.
-INVENTORY = {"patients.csv": 26, "sites.csv": 5, "visits_north.csv": 23, "visits_south.csv": 27,
-             "a1c_wide.csv": 25}
-INVENTORY_TOTAL = 106
-
-# Each raw table's data rows, columns, and rows identical to an earlier row.
-TABLE_PROFILE = {
-    "patients.csv": (25, 4, 1),
-    "sites.csv": (4, 3, 0),
-    "visits_north.csv": (22, 6, 1),
-    "visits_south.csv": (26, 6, 0),
-    "a1c_wide.csv": (24, 3, 0),
+# The generated files' SHA-256 values, as the handout's data_manifest.json lists them. Every expected value
+# below is derived from files with exactly these bytes (built by 06/assignment/generate_data.py).
+DATA_SHA256 = {
+    "patients.csv": "7ebbe818af63b951cc227d430d8dec83b90d944fbdfc6f24b2aa33ba7ca3b993",
+    "sites.csv": "daaa4f3fc475900db905590faf6524f34143e78b73633b1794de4c6cf4b56a77",
+    "visits_north.csv": "9136d39ad6571e4ff6b21f1119dde6cd6a16d101bc7d9348b86e7ac15a0efbd2",
+    "visits_south.csv": "96d19aad4cbbefa5d96536f2154cdfb7a17cf8c04cad823171def21ac7a1842c",
+    "a1c_wide.csv": "21c343765c3b6131c9ebda7f201d66089f4d859b9a6aa8ff4b51ef8457825219",
 }
+# The patients whose rows the extracts hold, as the README and the notebook's first cell list them. They
+# cover a repeated registry row, the 9999 sentinel, messy gender and site spellings, a site sites.csv lacks,
+# a visit with no registry row, rechecked visits, SBP sentinels and limits, bad dates, blank weights,
+# unmapped visit labels, a missing week 12 visit, and blank A1c results.
+SAMPLE_IDS = ("P00001", "P00004", "P00088", "P00260", "P00446", "P00487", "P00631", "P00851", "P02354",
+              "P03836", "P05763", "P07510", "P14287", "P16486", "P17390", "P30001")
+# Every spelling in the files, stripped and lowercased, mapped to its code; `unknown` and blanks stay missing.
+GENDER_MAP = {"f": "F", "female": "F", "woman": "F", "m": "M", "male": "M", "man": "M",
+              "x": "X", "nb": "X", "nonbinary": "X", "non-binary": "X"}
+VISIT_MAP = {"baseline": "baseline", "bl": "baseline", "week12": "week12", "week 12": "week12", "wk12": "week12"}
+EXACT_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
+SBP_RANGE = (70, 250)
+# A mean written to two decimals is right within this of the exact mean.
+MEAN_TOLERANCE = 0.006
 PROFILE_COLUMNS = ("rows", "columns", "exact_duplicate_rows")
 PROFILE_HINTS = {
     "rows": "len(table) counts data rows; the header is not a row (wc -l counts it, so its numbers are one higher)",
@@ -66,18 +77,6 @@ PROFILE_HINTS = {
     "exact_duplicate_rows": "table.duplicated().sum() counts each repeat once, without keep=False",
 }
 
-ISSUE_AUDIT = (
-    ("patients: gender values that are not a code", 13),
-    ("patients: empty gender", 1),
-    ("patients: birth_year sentinel 9999", 1),
-    ("patients: site codes needing normalization", 3),
-    ("sites: rows with a repeated site_code", 2),
-    ("visits: visit labels that are not baseline or week12", 4),
-    ("visits: sbp sentinel 999", 2),
-    ("visits: sbp outside 70 through 250", 1),
-    ("visits: date parse failures", 2),
-    ("visits: rows in repeated patient_id and visit pairs", 4),
-)
 ISSUE_HINTS = {
     "patients: gender values that are not a code": "leave out empty values and count every other gender, as "
                                                    "written, that is not exactly F, M, or X",
@@ -100,128 +99,230 @@ ISSUE_HINTS = {
                                                            "on both visit files stacked",
 }
 
-# The expected cleaned tables, as the reference solution writes them (an empty cell is missing).
-_PATIENTS = """\
-P001,F,1991,N01
-P002,F,1984,N01
-P003,F,1949,N01
-P004,M,1966,N01
-P005,M,1943,N01
-P006,M,1955,N01
-P007,M,,N01
-P008,F,1954,N01
-P009,F,1985,N01
-P010,M,1991,N01
-P011,F,1964,N01
-P012,X,1965,N01
-P013,M,1946,S02
-P014,M,1944,S02
-P015,M,1944,S02
-P016,X,1963,S02
-P017,F,1948,S02
-P018,,1966,S02
-P019,F,1951,S02
-P020,,1953,S02
-P021,X,1971,S02
-P022,M,1993,S02
-P023,X,1958,E04
-P024,F,1981,S02
-"""
-_VISITS = """\
-P001,baseline,2026-01-28,134,72.3,north
-P001,week12,2026-04-21,131,69.7,north
-P002,baseline,2026-01-22,161,86.7,north
-P002,week12,2026-04-14,141,84.0,north
-P003,baseline,2026-02-22,161,101.4,north
-P003,week12,2026-05-16,160,101.3,north
-P004,baseline,2026-01-05,163,97.3,north
-P004,week12,2026-03-30,163,94.4,north
-P005,baseline,2026-02-25,135,101.0,north
-P006,baseline,2026-01-14,,72.1,north
-P006,week12,2026-04-09,132,71.3,north
-P007,baseline,2026-02-09,172,111.1,north
-P007,week12,2026-05-02,154,111.2,north
-P008,baseline,2026-01-27,133,94.6,north
-P008,week12,2026-04-21,128,93.5,north
-P009,baseline,2026-01-13,151,64.6,north
-P009,week12,2026-04-07,130,65.0,north
-P010,baseline,2026-02-12,147,69.0,north
-P010,week12,,151,68.6,north
-P011,baseline,2026-02-12,133,87.8,north
-P011,week12,2026-05-10,115,85.8,north
-P013,baseline,2026-02-27,144,95.6,south
-P013,week12,2026-05-23,130,94.0,south
-P014,baseline,2026-01-29,137,63.9,south
-P014,week12,2026-04-22,125,62.0,south
-P015,baseline,2026-01-16,152,59.8,south
-P015,week12,2026-04-10,151,58.3,south
-P016,baseline,2026-02-20,137,100.7,south
-P016,week12,2026-05-12,124,98.7,south
-P017,baseline,2026-01-14,142,61.7,south
-P017,week12,2026-04-11,,62.5,south
-P018,baseline,2026-02-24,149,55.5,south
-P019,baseline,,138,113.2,south
-P019,week12,2026-04-21,133,111.4,south
-P020,baseline,2026-02-01,172,106.7,south
-P020,week12,2026-04-29,173,104.9,south
-P021,baseline,2026-03-02,165,62.1,south
-P021,week12,2026-05-22,163,60.6,south
-P022,baseline,2026-01-11,,73.8,south
-P022,week12,2026-04-08,168,71.0,south
-P023,baseline,2026-01-11,137,101.3,south
-P023,week12,2026-04-04,134,101.5,south
-P024,baseline,2026-02-17,141,61.1,south
-P024,week12,2026-05-12,123,,south
-P030,baseline,2026-03-05,135,83.7,south
-P030,week12,2026-05-25,137,81.8,south
-"""
-_A1C = """\
-P001,7.7,7.2
-P002,10.4,9.9
-P003,9.4,8.5
-P004,9.8,9.5
-P005,8.6,7.3
-P006,7.2,6.1
-P007,6.1,5.2
-P008,6.5,5.4
-P009,8.7,8.9
-P010,6.6,6.0
-P011,9.4,8.4
-P013,7.7,8.0
-P014,6.4,6.3
-P015,9.1,8.4
-P016,5.6,4.2
-P017,7.3,6.6
-P018,9.7,
-P019,8.1,6.9
-P020,5.9,6.1
-P021,6.7,
-P022,6.0,5.2
-P023,6.5,6.8
-P024,10.3,9.7
-P099,9.8,9.2
-"""
+
+def generated_data() -> dict[str, bytes]:
+    """The data files the course copy of generate_data.py builds, in memory, checked against DATA_SHA256.
+
+    The generator is course-owned code beside these checks (06/assignment), never a submitted file. It runs
+    from its source text, so no bytecode cache is written next to it.
+    """
+    here = Path(__file__).resolve().parent
+    for script in (parent / "assignment" / "generate_data.py" for parent in (here, *here.parents)):
+        if not script.is_file():
+            continue
+        namespace = {"__name__": "generate_data", "__file__": str(script)}
+        exec(compile(script.read_text(encoding="utf-8"), str(script), "exec"), namespace)
+        built = namespace["files"]()
+        if all(name in built and hashlib.sha256(built[name]).hexdigest() == digest
+               for name, digest in DATA_SHA256.items()):
+            return built
+    raise FileNotFoundError("no assignment/generate_data.py above the checks builds the data files whose "
+                            "SHA-256 values DATA_SHA256 lists")
 
 
-def _cell(text: str, kind: Callable[[str], object]) -> object:
-    return kind(text) if text else None
+def read_data(data: bytes) -> list[dict[str, str]]:
+    """A data file's rows as text, every cell kept as written, as read_csv(dtype="string", keep_default_na=False)."""
+    header, *rows = csv.reader(io.StringIO(data.decode("utf-8")))
+    return [dict(zip(header, row)) for row in rows]
 
 
-PATIENTS = {pid: {"gender": _cell(gender, str), "birth_year": _cell(year, int), "site_code": site}
-            for pid, gender, year, site in (line.split(",") for line in _PATIENTS.splitlines())}
-VISITS = {(pid, visit): {"visit_date": _cell(day, date.fromisoformat), "sbp_mmhg": _cell(sbp, int),
-                         "weight_kg": _cell(weight, float), "source_file": source}
-          for pid, visit, day, sbp, weight, source in (line.split(",") for line in _VISITS.splitlines())}
-A1C = {(pid, visit): float(value)
-       for pid, *values in (line.split(",") for line in _A1C.splitlines())
-       for visit, value in zip(("baseline", "week12"), values) if value}
-CURRENT_SITES = {"N01": "North Clinic", "S02": "South Valley Clinic", "W03": "West Clinic"}
-RETIRED_SITES = {"S02": "Southgate Clinic"}
-SITE_CODES = frozenset(CURRENT_SITES)
+def whole_number(text: str) -> float | None:
+    try:
+        return float(text.strip())
+    except ValueError:
+        return None
+
+
+def exact_day(text: str) -> date | None:
+    """The date when the text is exact YYYY-MM-DD for a day on the calendar, else None."""
+    text = text.strip()
+    if not EXACT_DATE.fullmatch(text):
+        return None
+    try:
+        return date(int(text[:4]), int(text[5:7]), int(text[8:]))
+    except ValueError:
+        return None
+
+
+def repeats(keys: Sequence[object]) -> int:
+    """How many items share their value with another item: duplicated(keep=False).sum()."""
+    counts: dict[object, int] = {}
+    for key in keys:
+        counts[key] = counts.get(key, 0) + 1
+    return sum(count for count in counts.values() if count > 1)
+
+
+def exact_repeats(rows: Sequence[dict[str, str]]) -> int:
+    """Rows identical to an earlier row: duplicated().sum()."""
+    return len(rows) - len({tuple(row.values()) for row in rows})
+
+
+def site_code(text: str) -> str:
+    return text.upper().replace("-", "").replace(" ", "")
+
+
+def _first_copies(rows: Sequence[dict[str, str]]) -> list[dict[str, str]]:
+    """drop_duplicates(keep="first")."""
+    seen: set[tuple[str, ...]] = set()
+    kept = []
+    for row in rows:
+        if tuple(row.values()) not in seen:
+            seen.add(tuple(row.values()))
+            kept.append(row)
+    return kept
+
+
+_DATA = generated_data()
+RAW = {name: read_data(_DATA[name]) for name in DATA_FILES}
+# `wc -l data/*.csv` counts newline characters, so each count includes the header line.
+INVENTORY = {name: _DATA[name].count(b"\n") for name in DATA_FILES}
+# Each raw table's data rows, columns, and rows identical to an earlier row.
+TABLE_PROFILE = {name: (len(rows), len(rows[0]), exact_repeats(rows)) for name, rows in RAW.items()}
+
+_patients, _sites = RAW["patients.csv"], RAW["sites.csv"]
+_raw_visits = [{**row, "weight_kg": row.get("weight_kg", row.get("wt_kg", "")), "source_file": site}
+               for site in ("north", "south") for row in RAW[f"visits_{site}.csv"]]
+for _row in _raw_visits:
+    _row.pop("wt_kg", None)
+_sbp_raw = [whole_number(row["sbp_mmhg"]) for row in _raw_visits]
+ISSUE_AUDIT = (
+    ("patients: gender values that are not a code",
+     sum(row["gender"].strip() != "" and row["gender"] not in ("F", "M", "X") for row in _patients)),
+    ("patients: empty gender", sum(row["gender"].strip() == "" for row in _patients)),
+    ("patients: birth_year sentinel 9999", sum(row["birth_year"].strip() == "9999" for row in _patients)),
+    ("patients: site codes needing normalization",
+     sum(site_code(row["site_code"]) != row["site_code"] for row in _patients)),
+    ("sites: rows with a repeated site_code", repeats([row["site_code"] for row in _sites])),
+    ("visits: visit labels that are not baseline or week12",
+     sum(row["visit"] not in ("baseline", "week12") for row in _raw_visits)),
+    ("visits: sbp sentinel 999", sum(row["sbp_mmhg"].strip() == "999" for row in _raw_visits)),
+    ("visits: sbp outside 70 through 250",
+     sum(value is not None and value != 999 and not SBP_RANGE[0] <= value <= SBP_RANGE[1] for value in _sbp_raw)),
+    ("visits: date parse failures",
+     sum(row["visit_date"].strip() != "" and exact_day(row["visit_date"]) is None for row in _raw_visits)),
+    ("visits: rows in repeated patient_id and visit pairs",
+     repeats([(row["patient_id"], VISIT_MAP.get(row["visit"].strip().lower())) for row in _raw_visits])),
+)
+
+
+def _clean_patient(row: dict[str, str]) -> dict[str, object]:
+    year = whole_number(row["birth_year"])
+    return {"gender": GENDER_MAP.get(row["gender"].strip().lower()),
+            "birth_year": None if year in (None, 9999) else int(year), "site_code": site_code(row["site_code"])}
+
+
+# The expected cleaned patients, as the README's rules make them from the raw rows, and the same rows
+# cleaned without removing the exact repeats (a mistake the patients count charges once).
+PATIENTS = {row["patient_id"]: _clean_patient(row) for row in _first_copies(_patients)}
+_PATIENT_ROWS_KEPT = [_clean_patient(row) for row in _patients]
+# Each registry patient's raw values, which an extract may carry when an upstream rule was skipped.
+RAW_GENDER: dict[str, set[str]] = {}
+RAW_YEAR: dict[str, set[float]] = {}
+for _row in _patients:
+    RAW_GENDER.setdefault(_row["patient_id"], set()).add(_row["gender"])
+    RAW_YEAR.setdefault(_row["patient_id"], set()).add(whole_number(_row["birth_year"]))
+
+# A recheck keeps the later reading: the last row of each pair once sorted by visit_time.
+_latest: dict[tuple[str, str], dict[str, str]] = {}
+for _row in sorted(_first_copies(_raw_visits), key=lambda row: row["visit_time"]):
+    _latest[(_row["patient_id"], VISIT_MAP[_row["visit"].strip().lower()])] = _row
+# Pairs the raw files list more than once (rechecks and exact repeats), whose rows a skipped step repeats.
+REPEATED_PAIRS = frozenset(key for key, count in Counter(
+    (row["patient_id"], VISIT_MAP[row["visit"].strip().lower()]) for row in _raw_visits).items() if count > 1)
+
+# Pairs with a raw label other than exactly baseline or week12, which an unmapped label leaves without a visit.
+RELABELED_PAIRS = frozenset((row["patient_id"], VISIT_MAP[row["visit"].strip().lower()]) for row in _raw_visits
+                            if row["visit"] not in ("baseline", "week12"))
+# Registry patients listed more than once, whose joined rows repeat when the exact repeats are kept.
+REPEATED_PATIENTS = frozenset(pid for pid, count in Counter(row["patient_id"] for row in _patients).items()
+                              if count > 1)
+
+def _clean_visit(row: dict[str, str]) -> dict[str, object]:
+    sbp = whole_number(row["sbp_mmhg"])
+    return {"visit_date": exact_day(row["visit_date"]),
+            "sbp_mmhg": int(sbp) if sbp is not None and SBP_RANGE[0] <= sbp <= SBP_RANGE[1] else None,
+            "weight_kg": whole_number(row["weight_kg"]), "source_file": row["source_file"]}
+
+
+VISITS = {key: _clean_visit(_latest[key]) for key in sorted(_latest)}
+# The kept reading's SBP as written, which an extract carries when the 70 through 250 rule was skipped.
+RAW_SBP = {key: whole_number(_latest[key]["sbp_mmhg"]) for key in VISITS}
+# melt() puts every baseline before every week 12 result; rows with no result are dropped.
+A1C = {(row["patient_id"], visit): whole_number(row[f"a1c_{visit}"])
+       for visit in ("baseline", "week12") for row in RAW["a1c_wide.csv"]
+       if whole_number(row[f"a1c_{visit}"]) is not None}
+CURRENT_SITES = {row["site_code"]: row["site_name"] for row in _sites if row["record_status"] == "current"}
+SITE_CODES = frozenset(row["site_code"] for row in _sites)
 VISIT_LABELS = ("baseline", "week12")
 GENDER_CODES = ("F", "M", "X")
-# value_counts(dropna=False) of the categorical gender: each code's count, and the missing values' (None).
-GENDER_COUNTS = {code: sum(row["gender"] == code for row in PATIENTS.values()) for code in (*GENDER_CODES, None)}
+
+
+def _gender_counts(rows: Sequence[dict[str, object]]) -> dict[str | None, int]:
+    """value_counts(dropna=False) of the categorical gender: each code's count, and the missing values' (None)."""
+    return {code: sum(row["gender"] == code for row in rows) for code in (*GENDER_CODES, None)}
+
+
+GENDER_COUNTS = _gender_counts(list(PATIENTS.values()))
+GENDER_COUNTS_KEPT = _gender_counts(_PATIENT_ROWS_KEPT)
+
+
+def _patient_summary(rows: Sequence[dict[str, object]]) -> dict[str, float]:
+    years = [row["birth_year"] for row in rows if row["birth_year"] is not None]
+    summary = {"patients": len(rows), "birth_year missing": len(rows) - len(years), "birth_year min": min(years),
+               "birth_year max": max(years), "site_code values": len({row["site_code"] for row in rows})}
+    for code in ("N01", "S02", "E04"):
+        summary[f"patients at {code}"] = sum(row["site_code"] == code for row in rows)
+    return summary
+
+
+PATIENT_SUMMARY = _patient_summary(list(PATIENTS.values()))
+# The same summary with the exact repeats left in, accepted where the patients count already charged them.
+PATIENT_SUMMARY_KEPT = _patient_summary(_PATIENT_ROWS_KEPT)
+PATIENT_PARTS = {
+    "rows": ("patients",),
+    "birth_year": ("birth_year missing", "birth_year min", "birth_year max"),
+    "site_code": ("site_code values", "patients at N01", "patients at S02", "patients at E04"),
+}
+
+
+
+def _visit_summary(visits: dict[tuple[str, str], dict[str, object]]) -> dict[str, object]:
+    dates = [values["visit_date"] for values in visits.values() if values["visit_date"] is not None]
+    sbps = [values["sbp_mmhg"] for values in visits.values() if values["sbp_mmhg"] is not None]
+    weights = [values["weight_kg"] for values in visits.values() if values["weight_kg"] is not None]
+    return {
+        "visits": len(visits),
+        "baseline visits": sum(visit == "baseline" for _, visit in visits),
+        "week12 visits": sum(visit == "week12" for _, visit in visits),
+        "visit_date missing": len(visits) - len(dates), "visit_date min": min(dates), "visit_date max": max(dates),
+        "sbp_mmhg missing": len(visits) - len(sbps), "sbp_mmhg min": min(sbps), "sbp_mmhg max": max(sbps),
+        "weight_kg missing": len(visits) - len(weights), "weight_kg mean": sum(weights) / len(weights),
+        "visits from visits_north.csv": sum(values["source_file"] == "north" for values in visits.values()),
+        "visits from visits_south.csv": sum(values["source_file"] == "south" for values in visits.values()),
+    }
+
+
+VISIT_SUMMARY = _visit_summary(VISITS)
+# The same summary when each recheck keeps its earlier reading, a mistake sbp_wide_sample.csv charges once.
+_earlier: dict[tuple[str, str], dict[str, str]] = {}
+for _row in sorted(_first_copies(_raw_visits), key=lambda row: row["visit_time"]):
+    _earlier.setdefault((_row["patient_id"], VISIT_MAP[_row["visit"].strip().lower()]), _row)
+VISIT_SUMMARY_EARLIER = _visit_summary({key: _clean_visit(_earlier[key]) for key in sorted(_earlier)})
+VISIT_PARTS = {
+    "rows": ("visits", "baseline visits", "week12 visits"),
+    "visit_date": ("visit_date missing", "visit_date min", "visit_date max"),
+    "sbp_mmhg": ("sbp_mmhg missing", "sbp_mmhg min", "sbp_mmhg max"),
+    "weight_kg": ("weight_kg missing", "weight_kg mean"),
+    "source_file": ("visits from visits_north.csv", "visits from visits_south.csv"),
+}
+# The widest a weight can move a mean when one row is added or dropped, per row, in kg.
+WEIGHT_SPAN = 170.0 - 48.0
+
+# Each visit label's A1c results in a1c_long and their mean, as the per-visit summary of the melted table.
+A1C_SUMMARY = {visit: (sum(key[1] == visit for key in A1C),
+                       sum(value for key, value in A1C.items() if key[1] == visit) / sum(key[1] == visit
+                                                                                        for key in A1C))
+               for visit in VISIT_LABELS}
 
 # One row per clean visit, as the left merges onto visits_clean give it.
 ANALYSIS = {key: {"a1c_pct": A1C.get(key), **PATIENTS.get(key[0], {"gender": None, "birth_year": None,
@@ -232,15 +333,19 @@ for _row in ANALYSIS.values():
 
 SBP_WIDE = {pid: {visit: VISITS.get((pid, visit), {}).get("sbp_mmhg") for visit in VISIT_LABELS}
             for pid in dict.fromkeys(pid for pid, _ in VISITS)}
+SAMPLE_VISITS = [key for key in VISITS if key[0] in SAMPLE_IDS]
+SAMPLE_WIDE = [pid for pid in SBP_WIDE if pid in SAMPLE_IDS]
 
+_visit_patients = {pid for pid, _ in VISITS}
 MERGE_AUDIT = (
-    ("visits with an A1c result", 43),
-    ("visits without an A1c result", 3),
-    ("A1c results without a visit", 3),
-    ("visits whose patient is not in the registry", 2),
-    ("registry patients with no visit", 1),
-    ("registry patients whose site is not in the site list", 1),
-    ("site list rows removed by the current-record rule", 1),
+    ("visits with an A1c result", sum(key in A1C for key in VISITS)),
+    ("visits without an A1c result", sum(key not in A1C for key in VISITS)),
+    ("A1c results without a visit", sum(key not in VISITS for key in A1C)),
+    ("visits whose patient is not in the registry", sum(pid not in PATIENTS for pid, _ in VISITS)),
+    ("registry patients with no visit", sum(pid not in _visit_patients for pid in PATIENTS)),
+    ("registry patients whose site is not in the site list",
+     sum(row["site_code"] not in SITE_CODES for row in PATIENTS.values())),
+    ("site list rows removed by the current-record rule", len(_sites) - len(CURRENT_SITES)),
 )
 MERGE_HINTS = {
     "visits with an A1c result": "merge visits_clean and a1c_long on ['patient_id', 'visit'] with how='outer' "
@@ -256,7 +361,6 @@ MERGE_HINTS = {
                                                          "current",
 }
 
-DECISION_COLUMNS = ("table", "decision", "reason")
 DECISIONS = (
     ("patients", "remove the exact duplicate row, keeping the first"),
     ("patients", "map gender to F, M, or X with a dictionary and store it as a category"),
@@ -268,6 +372,7 @@ DECISIONS = (
     ("visits", "keep the later reading of a repeated patient_id and visit pair"),
     ("sites", "keep only current site records before joining"),
 )
+
 # Spellings of a missing cell. `NA` is left out for text columns, where it could be a value.
 TEXT_MISSING = frozenset({"", "nan", "<na>", "nat", "none", "null"})
 VALUE_MISSING = TEXT_MISSING | {"na", "n/a"}
@@ -294,7 +399,8 @@ DATE_FORMS = tuple(re.compile(pattern + TIME + "$", re.IGNORECASE) for pattern i
     r"^(?P<name>[a-z]+)\.?[\s-]+(?P<day>\d{1,2})(?:st|nd|rd|th)?,?[\s-]+(?P<year>\d{4})",  # Jan 15, 2026
     r"^(?P<year>\d{4})[\s-]+(?P<name>[a-z]+)\.?[\s-]+(?P<day>\d{1,2})",  # 2026-Jan-15
 ))
-DAY_OR_MONTH_FIRST = DATE_FORMS[2]
+DASHES = re.compile(r"[-_]")
+COMMA_SPACES = re.compile(r"\s*,\s*")
 UNNAMED_INDEX = re.compile(r"^(?:unnamed:_?0|index)?$")
 # A CSV may separate its cells with commas, semicolons, or tabs.
 DELIMITERS = (",", ";", "\t")
@@ -347,7 +453,8 @@ def read_text(root: Path, name: str) -> str:
     path = root / OUTPUT / name
     if path.is_symlink() or not path.is_file():
         raise ArtifactProblem(f"output/{name} is missing; expected it committed in the output/ folder on main "
-                              "(it was never saved there under this name, or it was saved but not committed and pushed)")
+                              "(it was never saved there under this name, it was saved but not committed and pushed, or the "
+                              "notebook stopped at an earlier error or failed assert; find the first red cell)")
     data = path.read_bytes()
     if data.startswith((b"\xff\xfe", b"\xfe\xff")):
         return data.decode("utf-16", errors="replace")
@@ -368,6 +475,8 @@ def column_name(text: str) -> str:
     return re.sub(r"[\s-]+", "_", text.strip().strip('"').strip().casefold())
 
 
+# Each artifact is parsed once per grading run: grade_submission clears these caches before it starts.
+@lru_cache(maxsize=None)
 def read_table(root: Path, name: str, index_name: str | None = None, value_name: str | None = None) -> Table:
     """Parse a CSV artifact, keyed by column name so column order never matters.
 
@@ -397,7 +506,7 @@ def read_table(root: Path, name: str, index_name: str | None = None, value_name:
         padded = len(labels) > 1 and all(cell[:1].isspace() for cell in labels[1:])
         # The spaces every header cell but the last ends with, which padded columns put before each separator.
         trailing = min(len(cell) - len(cell.rstrip()) for cell in labels[:-1]) if len(labels) > 1 else 0
-        rows = [[trim_end(cell, trailing) for cell in row]
+        rows = [[trim_end(cell, trailing) for cell in row] if trailing else row
                 for row in csv.reader(io.StringIO(text), delimiter=delimiter, skipinitialspace=padded)
                 if any(cell.strip() for cell in row)]
     except csv.Error as error:
@@ -452,10 +561,11 @@ def same_cell(left: str, right: str, column: str = "") -> bool:
             bool(calendar_dates(left) & calendar_dates(right)))
 
 
+@lru_cache(maxsize=None)
 def label(text: str) -> str:
     """A label for comparison: case, spacing, `-` or `_` for a space, and a final full stop are ignored."""
-    text = re.sub(r"[-_]", " ", text.casefold())
-    text = re.sub(r"\s*,\s*", ",", text)
+    text = DASHES.sub(" ", text.casefold())
+    text = COMMA_SPACES.sub(",", text)
     return " ".join(text.split()).strip(" .")
 
 
@@ -528,31 +638,15 @@ def is_missing(cell: str, spellings: frozenset[str] = VALUE_MISSING) -> bool:
     return cell.strip().casefold() in spellings
 
 
-def day_month_order(cells: Sequence[str]) -> str | None:
-    """Whether a column writes numeric dates day first ("dmy") or month first ("mdy").
-
-    A date such as 15/01/2026 can only be day first and 01/15/2026 only month
-    first; the column's unambiguous dates settle how its others, such as
-    03/01/2026, are read. None when the column never settles it.
-    """
-    day_first = month_first = False
-    for cell in cells:
-        match = DAY_OR_MONTH_FIRST.match(WEEKDAY.sub("", cell.strip()))
-        if match:
-            day_first |= int(match["first"]) > 12
-            month_first |= int(match["second_part"]) > 12
-    if day_first != month_first:
-        return "dmy" if day_first else "mdy"
-    return None
 
 
-def calendar_dates(cell: str, order: str | None = None) -> set[date]:
+def calendar_dates(cell: str) -> set[date]:
     """The day a written date or timestamp names, as written and, when zoned, in UTC.
 
     Any unambiguous way of writing the day is read: 2026-01-15, 2026/1/15,
     20260115, 15 January 2026, Jan 15, 2026, and 01/15/2026 or 15/01/2026
-    (a numeric date with the year last uses `order` from day_month_order when
-    its own parts do not settle it). `visit_date` is a calendar day, so either
+    (a numeric date with the year last only when its parts settle which is the
+    day). `visit_date` is a calendar day, so either
     reading of a zoned timestamp is accepted rather than guessing which one the
     student meant.
     """
@@ -566,9 +660,9 @@ def calendar_dates(cell: str, order: str | None = None) -> set[date]:
         day = int(parts["day"])
     elif parts.get("first") is not None:
         first, second = int(parts["first"]), int(parts["second_part"])
-        if first == second or first > 12 or (second <= 12 and order == "dmy"):
+        if first == second or first > 12:
             day, month = first, second
-        elif second > 12 or order == "mdy":
+        elif second > 12:
             month, day = first, second
         else:
             return set()
@@ -697,429 +791,591 @@ def number_right(expected: object, cell: str) -> bool:
     return value is not None and abs(value - float(expected)) < 1e-6
 
 
-def date_right(expected: object, cell: str) -> bool:
-    return is_missing(cell) if expected is None else expected in calendar_dates(cell)
 
 
-def source_right(expected: object, cell: str) -> bool:
-    """`visits_north.csv`, `data/visits_north.csv`, and `north` all name the north file."""
-    words = set(re.split(r"[^a-z]+", cell.casefold()))
-    other = "south" if expected == "north" else "north"
-    return expected in words and other not in words
 
 
-def read_keyed(root: Path, name: str, keys: Sequence[str],
-               exact: bool = False) -> tuple[Table, dict[Key, list[dict[str, str]]]]:
-    """A table's rows grouped by their normalized key cells, or by the cells as written with `exact`."""
-    table = read_table(root, name)
-    table.require(*keys)
-    if not table.rows:
-        raise ArtifactProblem(f"{table.path} has a header but no data rows")
-    grouped: dict[Key, list[dict[str, str]]] = {}
-    for row in table.rows:
-        grouped.setdefault(tuple(row[key] if exact else label(row[key]) for key in keys), []).append(row)
-    return table, grouped
 
 
-def own_rows(root: Path, name: str, keys: Sequence[str],
-             exact: bool = False) -> dict[Key, list[dict[str, str]]] | None:
-    """The student's own earlier table, grouped by key, or None when it cannot be read."""
-    try:
-        return read_keyed(root, name, keys, exact)[1]
-    except ArtifactProblem:
-        return None
 
 
 def normal_key(key: Key) -> Key:
     return tuple(label(part) for part in key)
 
 
-def score_rows(grouped: dict[Key, list[dict[str, str]]], expected: Sequence[Key],
-               ignore: Callable[[dict[str, str]], bool] = lambda row: False) -> Outcome:
-    """Each expected key present exactly once; a repeated or unexpected row cancels a matched one."""
-    wanted = {normal_key(key): key for key in expected}
+def score_rows(grouped: dict[Key, list[dict[str, str]]], expected: Sequence[Key], columns: Sequence[str],
+               ignore: Callable[[dict[str, str]], bool] = lambda row: False,
+               hints: dict[str, str] | None = None) -> Outcome:
+    """Each expected key present as often as `expected` lists it (once, or as often as the student's own earlier
+    table holds it); a repeated or unexpected row cancels a matched one. `hints` adds advice to the `missing`,
+    `repeated`, or `unexpected` problem."""
+    wanted: dict[Key, Key] = {}
+    times: dict[Key, int] = {}
+    for key in expected:
+        wanted.setdefault(normal_key(key), key)
+        times[normal_key(key)] = times.get(normal_key(key), 0) + 1
     missing = [key for norm, key in wanted.items() if norm not in grouped]
-    repeated = [key for norm, key in wanted.items() if len(grouped.get(norm, ())) > 1]
-    unexpected = [key for key, rows in grouped.items() if key not in wanted for row in rows if not ignore(row)]
+    repeated = [key for norm, key in wanted.items() if len(grouped.get(norm, ())) > times[norm]]
+    # Unexpected rows are listed by their key cells exactly as the file writes them.
+    unexpected = [tuple(row[column] for column in columns) for key, rows in grouped.items() if key not in wanted
+                  for row in rows if not ignore(row)]
     outcome = Outcome(total=len(wanted), right=max(0, len(wanted) - len(missing) - len(repeated) - len(unexpected)))
+    hints = hints or {}
 
     def listed(keys: Sequence[Key]) -> str:
-        names = [" ".join(key) for key in keys[:4]]
+        names = [" ".join(part if part.strip() else "(blank)" for part in key) for key in keys[:4]]
         return ", ".join(names) + (f" and {len(keys) - 4} more" if len(keys) > 4 else "")
 
-    if missing:
-        outcome.problems.append(f"{len(missing)} expected row(s) missing, first {listed(missing)}")
-    if repeated:
-        outcome.problems.append(f"{listed(repeated)} appear(s) more than once")
-    if unexpected:
-        outcome.problems.append(f"{len(unexpected)} row(s) not expected, first {listed(unexpected)}")
+    for kind, keys, text in (("missing", missing, f"{len(missing)} expected row(s) missing, first {listed(missing)}"),
+                             ("repeated", repeated, f"{listed(repeated)} appear(s) more than once"),
+                             ("unexpected", unexpected,
+                              f"{len(unexpected)} row(s) not expected, first {listed(unexpected)}")):
+        if keys:
+            outcome.problems.append(text + (f" ({hints[kind]})" if kind in hints else ""))
     return outcome
 
 
 def best_rows(grouped: dict[Key, list[dict[str, str]]], options: Sequence[Sequence[Key]],
-              hint: str, **kwargs) -> Outcome:
-    """The row score against whichever accepted key set (the expected one, or the student's own) fits best."""
-    outcomes = [score_rows(grouped, keys, **kwargs) for keys in options if keys]
+              hint: str | dict[str, str], columns: Sequence[str], **kwargs) -> Outcome:
+    """The row score against whichever accepted key set (the expected one, or the student's own) fits best.
+
+    A text `hint` follows the last problem; a dict gives each kind of problem its own (see score_rows).
+    """
+    hints = hint if isinstance(hint, dict) else None
+    outcomes = [score_rows(grouped, keys, columns, hints=hints, **kwargs) for keys in options if keys]
     best = max(outcomes, key=lambda outcome: (outcome.right / max(outcome.total, 1), -len(outcome.problems)))
-    if best.problems:
+    if best.problems and hints is None:
         best.problems[-1] += f" ({hint})"
     return best
 
 
-def score_column(table: Table, grouped: dict[Key, list[dict[str, str]]], column: str,
-                 expected: dict[Key, Sequence[object]], right: Callable[[object, str], bool], rule: str) -> Outcome:
-    """The share of expected records whose value in `column` is right.
 
-    `expected` maps each key to the values accepted for it (the reference value
-    and, where an earlier artifact feeds this one, the value the student's own
-    earlier artifact implies). A record the file lacks counts as right here,
-    because the row check charges it; among repeated rows any right one counts.
-    """
-    table.require(column)
-    outcome = Outcome(total=len(expected))
-    wrong: list[str] = []
-    first = ""
-    for key, accepted in expected.items():
-        rows = grouped.get(normal_key(key))
-        if not rows or any(right(value, row[column]) for row in rows for value in accepted):
+
+
+
+
+
+
+
+VISIT_KEYS = ("patient_id", "visit")
+
+
+# Labeled summaries: one row per metric, read by its label
+
+def read_metrics(root: Path, name: str, labels: Sequence[str]) -> dict[str, str]:
+    """Each expected metric's value cell, found by its label (see match_labels)."""
+    table = read_table(root, name, index_name="metric", value_name="value")
+    table.require("metric", "value")
+    return {wanted: row["value"] for wanted, row in match_labels(table.rows, "metric", labels).items()}
+
+
+def own_metrics(root: Path, name: str, labels: Sequence[str]) -> dict[str, float]:
+    """The student's own summary numbers, by label, or {} when the file cannot be read."""
+    try:
+        cells = read_metrics(root, name, labels)
+    except ArtifactProblem:
+        return {}
+    return {wanted: value for wanted, value in ((wanted, number(cell)) for wanted, cell in cells.items())
+            if value is not None}
+
+
+def score_metrics(cells: dict[str, str], labels: Sequence[str], right: Callable[[str, str], bool],
+                  expected: Callable[[str], object], hint: Callable[[str], str], task: str) -> Outcome:
+    outcome = Outcome(total=len(labels))
+    for wanted in labels:
+        cell = cells.get(wanted)
+        if cell is None:
+            outcome.problems.append(f"no row for '{wanted}' (copy each label from {task}'s block)")
+        elif right(wanted, cell):
             outcome.right += 1
-            continue
-        wrong.append(" ".join(key))
-        if not first:
-            want = accepted[0].isoformat() if isinstance(accepted[0], date) else accepted[0]
-            first = f"first {' '.join(key)}: expected {shown(want)}, found {shown(rows[0][column])}"
-    if wrong:
-        others = f" (also {', '.join(wrong[1:4])}{' and more' if len(wrong) > 4 else ''})" if len(wrong) > 1 else ""
-        outcome.problems.append(f"column {column}: {len(wrong)} of {len(expected)} records differ; {first}{others}; "
-                                f"the rule: {rule}")
+        else:
+            want = expected(wanted)
+            want = want.isoformat() if isinstance(want, date) else want
+            outcome.problems.append(f"'{wanted}' should be {want}, found {shown(cell)} ({hint(wanted)})")
     return outcome
 
 
-def value_of(rows: dict[Key, list[dict[str, str]]] | None, key: Key, column: str,
-             parse: Callable[[str], object], exact: bool = False) -> list[object]:
-    """The parsed value the student's own earlier table holds for `key`, as a one-item list, or []."""
-    found = (rows or {}).get(key if exact else normal_key(key))
-    if not found or column not in found[0]:
-        return []
-    cell = found[0][column]
-    if is_missing(cell, TEXT_MISSING if parse is str else VALUE_MISSING):
-        return [None]
-    value = parse(cell)
-    return [] if value is None else [value]
+def close(value: float | None, want: float, tolerance: float) -> bool:
+    return value is not None and abs(value - want) <= tolerance
 
 
-def parse_text(cell: str) -> str:
-    return cell.strip()
+# Task 3.1: patients_summary.csv and gender_categories.csv
 
-
-def parse_number(cell: str) -> float | None:
-    return number(cell)
-
-
-# Task 3.1: patients_clean.csv
-
-PATIENT_RULES = {
-    "gender": "the data dictionary code: F for every spelling of female, M for male, X for nonbinary; missing when "
-              "empty or unknown (strip and lowercase, then Series.map with a dictionary)",
-    "birth_year": "a whole year; the 9999 sentinel becomes missing",
-    "site_code": "the code as sites.csv writes it: uppercase, with no spaces or hyphens",
+PATIENT_HINTS = {
+    "patients": "len(patients_clean) after drop_duplicates() removes the exact repeats in patients.csv",
+    "birth_year missing": "patients_clean['birth_year'].isna().sum() once 9999 is missing",
+    "birth_year min": "patients_clean['birth_year'].min()",
+    "birth_year max": "patients_clean['birth_year'].max(); 9999 here means the sentinel was never made missing",
+    "site_code values": "patients_clean['site_code'].nunique(); every spelling left over, such as N-01, counts "
+                        "as its own code (uppercase, then remove every space and hyphen)",
+    "patients at N01": "(patients_clean['site_code'] == 'N01').sum() once every spelling is normalized",
+    "patients at S02": "(patients_clean['site_code'] == 'S02').sum() once every spelling is normalized",
+    "patients at E04": "(patients_clean['site_code'] == 'E04').sum() once every spelling is normalized",
 }
 
 
-def patients_rows(root: Path) -> Outcome:
-    _, grouped = read_keyed(root, "patients_clean.csv", ("patient_id",))
-    return best_rows(grouped, [[(pid,) for pid in PATIENTS]],
-                     "keep one row per patient: drop_duplicates() removes the exact repeat of P009")
-
-
-def patients_column(column: str, right: Callable[[object, str], bool]) -> Callable[[Path], Outcome]:
+def patients_summary(part: str) -> Callable[[Path], Outcome]:
     def check(root: Path) -> Outcome:
-        table, grouped = read_keyed(root, "patients_clean.csv", ("patient_id",))
-        expected = {(pid,): [values[column]] for pid, values in PATIENTS.items()}
-        return score_column(table, grouped, column, expected, right, PATIENT_RULES[column])
+        labels = PATIENT_PARTS[part]
+        cells = read_metrics(root, "patients_summary.csv", labels)
+
+        def right(wanted: str, cell: str) -> bool:
+            # Counted with the exact repeats left in is right too: the patients count charges that once.
+            accepted = {PATIENT_SUMMARY[wanted]} if part == "rows" else {PATIENT_SUMMARY[wanted],
+                                                                         PATIENT_SUMMARY_KEPT[wanted]}
+            return number(cell) in accepted
+
+        return score_metrics(cells, labels, right, PATIENT_SUMMARY.get, PATIENT_HINTS.get, "Task 3.1")
     return check
 
 
-def check_gender_categories(root: Path) -> Outcome:
-    """Each code's count and category code, the counts against the expected ones or the student's own patients_clean.
-
-    Only a categorical column has `.cat.codes`, so the `code` column shows the
-    category dtype: each code gets its own whole number from 0 (its position in
-    the categories) and missing gets -1.
-    """
+def gender_table(root: Path) -> Table:
     table = read_table(root, "gender_categories.csv", index_name="gender", value_name="count")
-    if "code" not in table.columns:
-        raise ArtifactProblem(f"{table.path} has no `code` column; its header reads `{table.header}` (convert gender "
-                              "with astype(\"category\"), then add gender_counts[\"code\"] = gender_counts[\"gender\"].cat.codes)")
     table.require("gender", "count")
+    return table
 
-    def code_of(cell: str) -> str | None:
-        return None if is_missing(cell, TEXT_MISSING) else label(cell)
 
-    patients = own_rows(root, "patients_clean.csv", ("patient_id",))
-    own = None
-    if patients is not None and all("gender" in rows[0] for rows in patients.values()):
-        own = [code_of(rows[0]["gender"]) for rows in patients.values()]
-    # The category code each label's rows carry, and how many labels use each code.
-    codes = {}
-    for row in table.rows:
-        codes.setdefault(code_of(row["gender"]), set()).add(number(row["code"]))
-    shared = [code for key, found in codes.items() if key is not None for code in found]
+def code_of(cell: str) -> str | None:
+    return None if is_missing(cell, TEXT_MISSING) else label(cell)
+
+
+def check_gender_counts(root: Path) -> Outcome:
+    """Each code's count, from the deduplicated registry or (charged once in the patients count) the full one."""
+    table = gender_table(root)
     outcome = Outcome(total=len(GENDER_COUNTS))
     for code, expected in GENDER_COUNTS.items():
         key = code_of(code or "")
         # Rows that differ only in case, such as F and f, are one code: their counts add up.
         found = [number(row["count"]) for row in table.rows if code_of(row["gender"]) == key]
         count = None if None in found else sum(found)
-        accepted = {expected} if own is None else {expected, own.count(key)}
-        name = code or "missing"
-        numbers = codes.get(key, set())
-        if key is None:
-            code_right = numbers <= {-1}
-        else:
-            code_right = all(n is not None and n >= 0 and n == int(n) and shared.count(n) == 1 for n in numbers)
-        if count not in accepted:
-            outcome.problems.append(
-                f"gender {name} should count {expected}, found {'no row' if not found else count} (save "
-                "value_counts(dropna=False) of the categorical gender column; dropna=False keeps the missing count)")
-        elif not code_right:
-            want = "-1" if key is None else "a whole number from 0 that no other code shares"
-            seen = ", ".join("blank" if n is None else f"{n:g}" for n in sorted(numbers, key=str))
-            outcome.problems.append(f"gender {name} should have code {want}, found {seen} (fill the code column "
-                                    "from .cat.codes of the categorical gender column)")
-        else:
+        if found and count in {expected, GENDER_COUNTS_KEPT[code]}:
             outcome.right += 1
+            continue
+        others = sorted({row["gender"].strip() for row in table.rows
+                         if code_of(row["gender"]) not in (*(label(c) for c in GENDER_CODES), None)})
+        cause = (f"; rows for {', '.join(repr(other) for other in others[:4])} mean some spellings never mapped "
+                 "to F, M, or X (strip and lowercase, then Series.map with a dictionary)" if others else
+                 "; a spelling left out of the dictionary becomes missing, so list every spelling with "
+                 "value_counts() first: female ones are F, male M, nonbinary X, and empty or unknown missing")
+        outcome.problems.append(
+            f"gender {code or 'missing'} should count {expected}, found "
+            f"{'no row' if not found else 'blank' if count is None else f'{count:g}'} "
+            f"(save value_counts(dropna=False) of the categorical gender column; dropna=False keeps the missing "
+            f"count{cause})")
     return outcome
 
 
-# Task 3.2: visits_clean.csv
+def check_gender_codes(root: Path) -> Outcome:
+    """Only a categorical column has `.cat.codes`: each code its own whole number from 0, missing -1."""
+    table = gender_table(root)
+    if "code" not in table.columns:
+        raise ArtifactProblem(f"{table.path} has no `code` column; its header reads `{table.header}` (convert gender "
+                              "with astype(\"category\"), then add gender_counts[\"code\"] = "
+                              "gender_counts[\"gender\"].cat.codes)")
+    codes: dict[str | None, set[float | None]] = {}
+    for row in table.rows:
+        codes.setdefault(code_of(row["gender"]), set()).add(number(row["code"]))
+    shared = [code for key, found in codes.items() if key is not None for code in found]
+    outcome = Outcome(total=len(GENDER_COUNTS))
+    for code in GENDER_COUNTS:
+        key = code_of(code or "")
+        numbers = codes.get(key, set())
+        if key is None:
+            right = numbers <= {-1}
+        else:
+            right = all(n is not None and n >= 0 and n == int(n) and shared.count(n) == 1 for n in numbers)
+        if right:
+            outcome.right += 1
+            continue
+        want = "-1" if key is None else "a whole number from 0 that no other code shares"
+        seen = ", ".join("blank" if n is None else f"{n:g}" for n in sorted(numbers, key=str))
+        outcome.problems.append(f"gender {code or 'missing'} should have code {want}, found {seen} (fill the code "
+                                "column from .cat.codes of the categorical gender column)")
+    return outcome
 
-VISIT_KEYS = ("patient_id", "visit")
-VISIT_RULES = {
-    "visit_date": "keep only exact YYYY-MM-DD text for a date on the calendar; anything else becomes missing",
-    "sbp_mmhg": "a whole number from 70 through 250; 999 and other values outside the range become missing, and "
-                "a repeated patient_id and visit pair keeps the later reading by visit_time",
-    "weight_kg": "the number from weight_kg in visits_north.csv or wt_kg in visits_south.csv; a blank stays missing",
-    "source_file": "the file each row came from, visits_north.csv or visits_south.csv, added before stacking",
+
+# Task 3.2: visits_summary.csv
+
+VISIT_HINTS = {
+    "visits": "len(visits_clean): drop the exact repeats, map every label, then keep one reading per patient_id "
+              "and visit pair with drop_duplicates(subset=['patient_id', 'visit'], keep='last')",
+    "baseline visits": "strip and lowercase each visit label, then map it to baseline or week12 with a dictionary; "
+                       "baseline visits + week12 visits equals visits when every label maps",
+    "week12 visits": "map every week 12 spelling, such as wk12 or ' week12', to week12",
+    "visit_date missing": "keep only exact YYYY-MM-DD text for a date on the calendar: .str.fullmatch() first, "
+                          "then to_datetime(..., format='%Y-%m-%d', errors='coerce')",
+    "visit_date min": "visits_clean['visit_date'].min() after parsing",
+    "visit_date max": "visits_clean['visit_date'].max() after parsing",
+    "sbp_mmhg missing": "values outside 70 through 250, 999 included, become missing",
+    "sbp_mmhg min": "70 is inside the range and stays",
+    "sbp_mmhg max": "250 is inside the range and stays",
+    "weight_kg missing": "rename wt_kg to weight_kg before concat, or every south weight is missing",
+    "weight_kg mean": "visits_clean['weight_kg'].mean() with both files' weights converted to numbers",
+    "visits from visits_north.csv": "(visits_clean['source_file'] == 'visits_north.csv').sum(), the column added "
+                                    "before stacking",
+    "visits from visits_south.csv": "(visits_clean['source_file'] == 'visits_south.csv').sum()",
 }
-VISIT_CHECKS = {"visit_date": date_right, "sbp_mmhg": number_right, "weight_kg": number_right,
-                "source_file": source_right}
+VISIT_TASKS = {"rows": "Task 2.2 (stacking) and Task 3.2 (cleaning)", "visit_date": "Task 3.2",
+               "sbp_mmhg": "Task 3.2", "weight_kg": "Task 2.2 (stacking) and Task 3.2",
+               "source_file": "Task 2.2 (stacking) and Task 3.2"}
 
 
-def visits_rows(root: Path) -> Outcome:
-    """One row per visit; a label left unmapped, such as wk12, is an unexpected row and its visit is missing."""
-    _, grouped = read_keyed(root, "visits_clean.csv", VISIT_KEYS)
-    return best_rows(grouped, [list(VISITS)],
-                     "stack both files, map every visit label to baseline or week12 with a dictionary, drop the "
-                     "exact repeat, then keep one row per patient_id and visit")
+def visit_row_gap(root: Path) -> float:
+    """How far the student's own `visits` count is from the expected one, 0 when it matches or is unreadable."""
+    own = own_metrics(root, "visits_summary.csv", ("visits",)).get("visits")
+    return 0 if own is None else abs(own - VISIT_SUMMARY["visits"])
 
 
-def visits_column(column: str) -> Callable[[Path], Outcome]:
+def visits_summary(part: str) -> Callable[[Path], Outcome]:
     def check(root: Path) -> Outcome:
-        table, grouped = read_keyed(root, "visits_clean.csv", VISIT_KEYS)
-        if column == "weight_kg" and "weight_kg" not in table.columns and "wt_kg" in table.columns:
-            raise ArtifactProblem("output/visits_clean.csv has wt_kg but no weight_kg column, so the south "
-                                  "weights never joined the north ones (rename wt_kg to weight_kg before concat)")
-        expected = {key: [values[column]] for key, values in VISITS.items()}
-        right = VISIT_CHECKS[column]
-        if column == "visit_date":
-            # A column's unambiguous dates settle whether its others, such as 03/01/2026, are day or month first.
-            order = day_month_order([row.get(column, "") for row in table.rows])
-            right = lambda want, cell: is_missing(cell) if want is None else want in calendar_dates(cell, order)  # noqa: E731
-        return score_column(table, grouped, column, expected, right, VISIT_RULES[column])
+        labels = VISIT_PARTS[part]
+        cells = read_metrics(root, "visits_summary.csv", labels)
+        # Rows the student kept or dropped by mistake are charged once, in the rows part: each one can move a
+        # later count by at most one and a mean by at most one row's share.
+        gap = 0 if part == "rows" else visit_row_gap(root)
+
+        def right(wanted: str, cell: str) -> bool:
+            if part == "rows":
+                return number(cell) == VISIT_SUMMARY[wanted]
+            return any(fits(wanted, cell, summary[wanted]) for summary in (VISIT_SUMMARY, VISIT_SUMMARY_EARLIER))
+
+        def fits(wanted: str, cell: str, want: object) -> bool:
+            if isinstance(want, date):
+                return want in calendar_dates(cell)
+            if wanted == "weight_kg mean":
+                return close(number(cell), want, MEAN_TOLERANCE + gap * WEIGHT_SPAN / VISIT_SUMMARY["visits"])
+            if wanted.endswith(("min", "max")):
+                return number(cell) == want
+            return close(number(cell), want, gap)
+
+        return score_metrics(cells, labels, right, VISIT_SUMMARY.get, VISIT_HINTS.get, "Task 3.2")
     return check
 
 
-# Task 4.1: a1c_long.csv
+# Task 4.1: a1c_summary.csv
 
-def a1c_rows(root: Path) -> Outcome:
-    table, grouped = read_keyed(root, "a1c_long.csv", VISIT_KEYS)
-    value = "a1c_pct" if "a1c_pct" in table.columns else None
-    # Rows melt() makes for a blank result may stay; they hold no value to check.
-    ignore = (lambda row: is_missing(row[value])) if value else (lambda row: False)
-    return best_rows(grouped, [list(A1C)],
-                     "melt a1c_baseline and a1c_week12, map the labels to baseline and week12, and drop the rows "
-                     "with no result", ignore=ignore)
+def a1c_summary_rows(root: Path) -> dict[str, dict[str, str]]:
+    """The summary row for each visit label, matched by the label itself: a1c_baseline is not baseline."""
+    table = read_table(root, "a1c_summary.csv", index_name="visit")
+    table.require("visit", "results", "a1c_pct_mean")
+    found: dict[str, dict[str, str]] = {}
+    for row in table.rows:
+        found.setdefault(label(row["visit"]), row)
+    return {visit: found[visit] for visit in VISIT_LABELS if visit in found}
 
 
-def a1c_values(root: Path) -> Outcome:
-    table, grouped = read_keyed(root, "a1c_long.csv", VISIT_KEYS)
-    return score_column(table, grouped, "a1c_pct", {key: [value] for key, value in A1C.items()}, number_right,
-                        "the A1c percentage from the matching a1c_wide.csv cell")
+def check_a1c_results(root: Path) -> Outcome:
+    rows = a1c_summary_rows(root)
+    outcome = Outcome(total=len(VISIT_LABELS))
+    for visit in VISIT_LABELS:
+        want = A1C_SUMMARY[visit][0]
+        row = rows.get(visit)
+        if row is None:
+            outcome.problems.append(f"no row for visit {visit} (melt a1c_baseline and a1c_week12, then map the "
+                                    "labels to baseline and week12)")
+        elif number(row["results"]) == want:
+            outcome.right += 1
+        else:
+            outcome.problems.append(f"{visit} should count {want} results, found {shown(row['results'])} (melt with "
+                                    "var_name='visit', map each label to its own visit, and drop the rows with no "
+                                    "result before counting)")
+    return outcome
+
+
+def check_a1c_means(root: Path) -> Outcome:
+    """Each visit's mean, or the mean of the results the row counts when the labels were swapped (charged once)."""
+    rows = a1c_summary_rows(root)
+    outcome = Outcome(total=len(VISIT_LABELS))
+    for visit in VISIT_LABELS:
+        row = rows.get(visit)
+        if row is None:
+            outcome.right += 1  # the results check charges a missing row
+            continue
+        mean = number(row["a1c_pct_mean"])
+        other = VISIT_LABELS[1 - VISIT_LABELS.index(visit)]
+        if close(mean, A1C_SUMMARY[visit][1], MEAN_TOLERANCE) or (
+                number(row["results"]) == A1C_SUMMARY[other][0]
+                and close(mean, A1C_SUMMARY[other][1], MEAN_TOLERANCE)):
+            outcome.right += 1
+        else:
+            outcome.problems.append(f"{visit} a1c_pct_mean should be {A1C_SUMMARY[visit][1]:.2f}, found "
+                                    f"{shown(row['a1c_pct_mean'])} (the mean of the {visit} a1c_pct values, "
+                                    "converted with pd.to_numeric, rounded to two decimals)")
+    return outcome
+
+
+def a1c_summary_differs(root: Path) -> bool:
+    """Whether the student's own A1c summary already shows a charged mistake."""
+    try:
+        rows = a1c_summary_rows(root)
+    except ArtifactProblem:
+        return False
+    return any(number(rows[visit]["results"]) != A1C_SUMMARY[visit][0] if visit in rows else True
+               for visit in VISIT_LABELS)
+
+
+def own_a1c_total(root: Path) -> float | None:
+    """Every result the student's own A1c summary counts, whatever its labels."""
+    try:
+        table = read_table(root, "a1c_summary.csv", index_name="visit")
+    except ArtifactProblem:
+        return None
+    values = [number(row.get("results", "")) for row in table.rows]
+    return None if not values or None in values else sum(values)
 
 
 # Task 4.2: merge_audit.csv
 
-def own_keys(rows: dict[Key, list[dict[str, str]]] | None, value: str | None = None) -> list[Key] | None:
-    """The student's own keys, one per row, leaving out rows whose `value` is missing."""
-    if rows is None:
-        return None
-    return [key for key, group in rows.items() for row in group
-            if value is None or not is_missing(row.get(value, ""))]
-
-
-def merge_counts(root: Path) -> dict[str, int]:
-    """The merge counts the student's own visits_clean, a1c_long, and patients_clean imply."""
-    # Keys and site codes compare exactly as written, as the student's own merge compared them.
-    visits = own_keys(own_rows(root, "visits_clean.csv", VISIT_KEYS, exact=True))
-    labs = own_keys(own_rows(root, "a1c_long.csv", VISIT_KEYS, exact=True), "a1c_pct")
-    patients = own_rows(root, "patients_clean.csv", ("patient_id",), exact=True)
-    counts: dict[str, int] = {}
-    if visits is not None and labs is not None:
-        lab_set, visit_set = set(labs), set(visits)
-        counts["visits with an A1c result"] = sum(key in lab_set for key in visits)
-        counts["visits without an A1c result"] = sum(key not in lab_set for key in visits)
-        counts["A1c results without a visit"] = sum(key not in visit_set for key in labs)
-    if visits is not None and patients is not None:
-        registry = {key[0] for key in patients}
-        counts["visits whose patient is not in the registry"] = sum(key[0] not in registry for key in visits)
-        counts["registry patients with no visit"] = len(registry - {key[0] for key in visits})
-    if patients is not None:
-        counts["registry patients whose site is not in the site list"] = sum(
-            row.get("site_code", "") not in SITE_CODES
-            for group in patients.values() for row in group)
-    return counts
-
-
 def check_merge_audit(root: Path) -> Outcome:
+    """Each count against the reference, or, where an earlier summary already shows a charged mistake, against
+    the student's own summaries: both + left_only is their visits, both + right_only their A1c results."""
     table = read_table(root, "merge_audit.csv", index_name="check", value_name="count")
     table.require("check", "count")
     rows = match_labels(table.rows, "check", tuple(name for name, _ in MERGE_AUDIT))
-    own = merge_counts(root)
+    found = {name: number(row["count"]) for name, row in rows.items()}
+    visits = own_metrics(root, "visits_summary.csv", VISIT_PARTS["rows"])
+    patients = own_metrics(root, "patients_summary.csv", ("patients", "patients at N01", "patients at S02"))
+    own_visits, own_labs = visits.get("visits"), own_a1c_total(root)
+    upstream = (any(visits.get(name) != VISIT_SUMMARY[name] for name in VISIT_PARTS["rows"])
+                or a1c_summary_differs(root)) and None not in (own_visits, own_labs)
+    both, left, right = (found.get(name) for name, _ in MERGE_AUDIT[:3])
+    visit_gap = abs(own_visits - VISIT_SUMMARY["visits"]) if own_visits is not None else 0
+    patient_gap = abs(patients["patients"] - PATIENT_SUMMARY["patients"]) if "patients" in patients else 0
+    own: dict[str, bool] = {}
+    if upstream:
+        own["visits with an A1c result"] = both is not None and None not in (left, right) and (
+            both + left == own_visits and both + right == own_labs)
+        own["visits without an A1c result"] = None not in (both, left) and both + left == own_visits
+        own["A1c results without a visit"] = None not in (both, right) and both + right == own_labs
+    reference = dict(MERGE_AUDIT)
+    value = found.get("visits whose patient is not in the registry")
+    own["visits whose patient is not in the registry"] = close(
+        value, reference["visits whose patient is not in the registry"], visit_gap)
+    value = found.get("registry patients with no visit")
+    own["registry patients with no visit"] = close(value, reference["registry patients with no visit"],
+                                                   visit_gap + patient_gap)
+    if all(name in patients for name in ("patients", "patients at N01", "patients at S02")):
+        own["registry patients whose site is not in the site list"] = found.get(
+            "registry patients whose site is not in the site list") == (
+            patients["patients"] - patients["patients at N01"] - patients["patients at S02"])
     outcome = Outcome(total=len(MERGE_AUDIT))
     for name, expected in MERGE_AUDIT:
         row = rows.get(name)
         if row is None:
             outcome.problems.append(f"no row for '{name}' (copy each label from Task 4.2's block)")
-        elif number(row["count"]) in {expected, own.get(name)}:
+        elif found[name] == expected or own.get(name):
             outcome.right += 1
         else:
-            yours = f" (or {own[name]} from your own saved tables)" if own.get(name, expected) != expected else ""
-            outcome.problems.append(f"'{name}' should count {expected}{yours}, found {shown(row['count'])} "
+            outcome.problems.append(f"'{name}' should count {expected}, found {shown(row['count'])} "
                                     f"({MERGE_HINTS[name]})")
     return outcome
 
 
-# Task 4.3: analysis_visits.csv
+# Task 5.2: analysis_sample.csv, the joined rows for SAMPLE_IDS
+
+def sample_key(row: dict[str, str]) -> Key:
+    """A joined row's key; a visit label left unmapped is read as its visit, charged once in visits_summary."""
+    visit = label(row["visit"])
+    return (label(row["patient_id"]), VISIT_MAP.get(visit, visit))
+
+
+@lru_cache(maxsize=None)
+def read_sample(root: Path, name: str, keys: Sequence[str]) -> tuple[Table, dict[Key, list[dict[str, str]]]]:
+    table = read_table(root, name)
+    table.require(*keys)
+    if not table.rows:
+        raise ArtifactProblem(f"{table.path} has a header but no data rows")
+    grouped: dict[Key, list[dict[str, str]]] = {}
+    for row in table.rows:
+        grouped.setdefault(sample_key(row) if len(keys) == 2 else (label(row[keys[0]]),), []).append(row)
+    return table, grouped
+
+
+def visit_rows_differ(root: Path) -> bool:
+    visits = own_metrics(root, "visits_summary.csv", VISIT_PARTS["rows"])
+    return bool(visits) and any(visits.get(name) != VISIT_SUMMARY[name] for name in VISIT_PARTS["rows"])
+
 
 def analysis_rows(root: Path) -> Outcome:
-    _, grouped = read_keyed(root, "analysis_visits.csv", VISIT_KEYS)
-    options = [list(VISITS), own_keys(own_rows(root, "visits_clean.csv", VISIT_KEYS)) or []]
-    return best_rows(grouped, options,
-                     "left-merge onto visits_clean so every clean visit keeps exactly one row; a repeated row "
-                     "usually means a lookup table still repeats a key, such as P009 in patients or S02 in sites")
+    _, grouped = read_sample(root, "analysis_sample.csv", VISIT_KEYS)
+    expected = SAMPLE_VISITS
+    ignore: Callable[[dict[str, str]], bool] = lambda row: False  # noqa: E731
+    if visit_rows_differ(root):
+        # A recheck or exact repeat kept in visits_clean is charged there; its pair may repeat here. A label
+        # left unmapped is charged there too: its row has no visit here, and its pair is not expected.
+        repeated = {normal_key(pair) for pair in REPEATED_PAIRS}
+        grouped = {key: rows[:1] if key in repeated else rows for key, rows in grouped.items()}
+        expected = [key for key in SAMPLE_VISITS if key not in RELABELED_PAIRS]
+        relabeled = {normal_key(pair) for pair in RELABELED_PAIRS}
+        ignore = lambda row: label(row["visit"]) not in VISIT_MAP or sample_key(row) in relabeled  # noqa: E731
+    if own_metrics(root, "patients_summary.csv", ("patients",)).get("patients", PATIENT_SUMMARY["patients"]) != \
+            PATIENT_SUMMARY["patients"]:
+        # Exact registry repeats kept are charged once in patients_summary.csv; their visits may repeat here.
+        repeated = {label(pid) for pid in REPEATED_PATIENTS}
+        grouped = {key: rows[:1] if key[0] in repeated else rows for key, rows in grouped.items()}
+    return best_rows(grouped, [expected], {
+        "missing": "keep every visit of the SAMPLE_IDS patients: an inner or right merge drops the visits with no "
+                   "match, so merge onto visits_clean with how='left', then filter with "
+                   "analysis['patient_id'].isin(SAMPLE_IDS)",
+        "repeated": "a lookup table still repeats a key, such as an exact repeat left in patients_clean or a "
+                    "site_code listed twice in sites.csv; keep only current sites and pass validate= to each merge",
+        "unexpected": "every row should be a visit of a SAMPLE_IDS patient from visits_clean; filter with "
+                      "analysis['patient_id'].isin(SAMPLE_IDS) and merge onto visits_clean with how='left'",
+    }, VISIT_KEYS, ignore=ignore)
 
 
-def analysis_expected(root: Path, column: str) -> dict[Key, list[object]]:
-    """Each clean visit's accepted values: the reference, and what the student's own tables imply."""
-    patients = own_rows(root, "patients_clean.csv", ("patient_id",))
-    # The A1c the student's own merge finds: their visit key, exactly as written, looked up in their a1c_long.
-    labs = own_rows(root, "a1c_long.csv", VISIT_KEYS, exact=True)
-    own_visits: dict[Key, list[Key]] = {}
-    for written in own_rows(root, "visits_clean.csv", VISIT_KEYS, exact=True) or {}:
-        own_visits.setdefault(normal_key(written), []).append(written)
-    expected: dict[Key, list[object]] = {}
-    for key, values in ANALYSIS.items():
-        accepted = [values[column]]
-        if column == "a1c_pct" and labs is not None:
-            for written in own_visits.get(normal_key(key), [key]):
-                accepted += value_of(labs, written, "a1c_pct", parse_number, exact=True) or [None]
-        if column in ("gender", "birth_year"):
-            accepted += value_of(patients, (key[0],), column, parse_text if column == "gender" else parse_number)
-        expected[key] = accepted
-    return expected
-
-
-def check_analysis_sites(root: Path) -> Outcome:
-    table, grouped = read_keyed(root, "analysis_visits.csv", VISIT_KEYS)
-    table.require("site_name")
-    expected = {key: [values["site_name"]] for key, values in ANALYSIS.items()}
-    if "site_code" in table.columns:
-        # The name the current site list gives the row's own site_code, exactly as written, is right too.
-        for key in expected:
-            for row in grouped.get(normal_key(key), ()):
-                expected[key].append(CURRENT_SITES.get(row["site_code"]))
-    return score_column(table, grouped, "site_name", expected, text_right,
-                        "the current site_name for the patient's site_code (keep record_status == 'current' "
-                        "before merging; Southgate Clinic is retired); missing when the patient or site is unknown")
-
-
-def check_analysis_a1c(root: Path) -> Outcome:
-    table, grouped = read_keyed(root, "analysis_visits.csv", VISIT_KEYS)
-    return score_column(table, grouped, "a1c_pct", analysis_expected(root, "a1c_pct"), number_right,
-                        "the a1c_long value for the same patient_id and visit, merged on both columns; missing "
-                        "when there is no result")
-
-
-def check_analysis_patient(root: Path) -> Outcome:
-    table, grouped = read_keyed(root, "analysis_visits.csv", VISIT_KEYS)
-    table.require("gender", "birth_year")
-    genders, years = analysis_expected(root, "gender"), analysis_expected(root, "birth_year")
-    outcome = Outcome(total=len(ANALYSIS))
-    wrong = []
-    for key in ANALYSIS:
+def score_sample(grouped: dict[Key, list[dict[str, str]]], column: str, keys: Sequence[Key],
+                 accepted: Callable[[Key, dict[str, str]], Sequence[object]], right: Callable[[object, str], bool],
+                 rule: str, total_label: str = "records") -> Outcome:
+    """The share of expected keys whose `column` holds an accepted value (a missing key is charged by rows)."""
+    outcome = Outcome(total=len(keys))
+    wrong: list[str] = []
+    first = ""
+    for key in keys:
         rows = grouped.get(normal_key(key))
-        if not rows or any(any(text_right(gender, row["gender"]) for gender in genders[key])
-                           and any(number_right(year, row["birth_year"]) for year in years[key]) for row in rows):
+        if not rows or any(right(value, row.get(column, "")) for row in rows for value in accepted(key, row)):
             outcome.right += 1
-        else:
-            wrong.append(" ".join(key))
+            continue
+        wrong.append(" ".join(key))
+        if not first:
+            want = accepted(key, rows[0])[0]
+            first = f"first {' '.join(key)}: expected {shown(want)}, found {shown(rows[0].get(column, ''))}"
     if wrong:
-        key = tuple(wrong[0].split(" "))
-        row = grouped[normal_key(key)][0]
-        outcome.problems.append(
-            f"gender and birth_year: {len(wrong)} of {len(ANALYSIS)} visits differ; first {wrong[0]}: expected "
-            f"{shown(genders[key][0])} and {shown(years[key][0])}, found {shown(row['gender'])} and "
-            f"{shown(row['birth_year'])}; the rule: the patient's values from patients_clean, merged on patient_id "
-            "with how='left' (missing for a patient not in the registry)")
+        others = f" (also {', '.join(wrong[1:4])}{' and more' if len(wrong) > 4 else ''})" if len(wrong) > 1 else ""
+        outcome.problems.append(f"column {column}: {len(wrong)} of {len(keys)} {total_label} differ; {first}{others}; "
+                                f"the rule: {rule}")
     return outcome
 
 
-# Task 4.4: sbp_wide.csv
+def check_analysis_sites(root: Path) -> Outcome:
+    table, grouped = read_sample(root, "analysis_sample.csv", VISIT_KEYS)
+    table.require("site_name")
+
+    def accepted(key: Key, row: dict[str, str]) -> list[object]:
+        # The name the current site list gives the row's own site_code, exactly as written, is right too.
+        return [ANALYSIS[key]["site_name"], CURRENT_SITES.get(row.get("site_code", ""))]
+
+    return score_sample(grouped, "site_name", SAMPLE_VISITS, accepted, text_right,
+                        "the current site_name for the patient's site_code (keep record_status == 'current' "
+                        "before merging, so a retired name never joins); missing when the patient or site is unknown",
+                        "visits")
+
+
+def check_analysis_a1c(root: Path) -> Outcome:
+    table, grouped = read_sample(root, "analysis_sample.csv", VISIT_KEYS)
+    table.require("a1c_pct")
+    upstream = a1c_summary_differs(root)
+
+    def accepted(key: Key, row: dict[str, str]) -> list[object]:
+        values: list[object] = [ANALYSIS[key]["a1c_pct"]]
+        if row.get("visit", "").strip() not in VISIT_LABELS:
+            values.append(None)  # an unmapped visit label finds no result; visits_summary charges it
+        if upstream:
+            # The A1c summary already charges mislabeled or unmapped results; the join may carry them.
+            other = (key[0], VISIT_LABELS[1 - VISIT_LABELS.index(key[1])])
+            values += [A1C.get(other), None]
+        return values
+
+    return score_sample(grouped, "a1c_pct", SAMPLE_VISITS, accepted, number_right,
+                        "the a1c_long value for the same patient_id and visit, merged on both columns; missing "
+                        "when there is no result", "visits")
+
+
+def check_analysis_patient(root: Path) -> Outcome:
+    table, grouped = read_sample(root, "analysis_sample.csv", VISIT_KEYS)
+    table.require("gender", "birth_year")
+    gender_off = own_rows_differ_gender(root)
+    years_off = bool(own_metrics(root, "patients_summary.csv", PATIENT_PARTS["birth_year"])) and any(
+        own_metrics(root, "patients_summary.csv", PATIENT_PARTS["birth_year"]).get(name) not in (
+            PATIENT_SUMMARY[name], PATIENT_SUMMARY_KEPT[name]) for name in PATIENT_PARTS["birth_year"])
+
+    def genders(key: Key) -> list[object]:
+        # A spelling left unmapped, or missing from the dictionary, is charged once in gender_categories.csv.
+        values: list[object] = [ANALYSIS[key]["gender"]]
+        if gender_off:
+            values += [*RAW_GENDER.get(key[0], ()), None]
+        return values
+
+    def years(key: Key) -> list[object]:
+        values: list[object] = [ANALYSIS[key]["birth_year"]]
+        if years_off:
+            values += [year for year in RAW_YEAR.get(key[0], ()) if year is not None]
+        return values
+
+    outcome = Outcome(total=len(SAMPLE_VISITS))
+    wrong = []
+    for key in SAMPLE_VISITS:
+        rows = grouped.get(normal_key(key))
+        if not rows or any(any(text_right(gender, row["gender"]) for gender in genders(key))
+                           and any(number_right(year, row["birth_year"]) for year in years(key)) for row in rows):
+            outcome.right += 1
+        else:
+            wrong.append(key)
+    if wrong:
+        key = wrong[0]
+        row = grouped[normal_key(key)][0]
+        outcome.problems.append(
+            f"gender and birth_year: {len(wrong)} of {len(SAMPLE_VISITS)} visits differ; first {' '.join(key)}: "
+            f"expected {shown(ANALYSIS[key]['gender'])} and {shown(ANALYSIS[key]['birth_year'])}, found "
+            f"{shown(row['gender'])} and {shown(row['birth_year'])}; the rule: the patient's values from "
+            "patients_clean, merged on patient_id with how='left' (missing for a patient not in the registry)")
+    return outcome
+
+
+def own_rows_differ_gender(root: Path) -> bool:
+    """Whether the student's own gender counts already show a charged mapping mistake."""
+    try:
+        return check_gender_counts(root).right < len(GENDER_COUNTS)
+    except ArtifactProblem:
+        return False
+
+
+# Task 4.3: sbp_wide_sample.csv, the pivoted rows for SAMPLE_IDS
 
 def sbp_wide_rows(root: Path) -> Outcome:
-    _, grouped = read_keyed(root, "sbp_wide.csv", ("patient_id",))
-    own = own_keys(own_rows(root, "visits_clean.csv", VISIT_KEYS))
-    options = [[(pid,) for pid in SBP_WIDE], list(dict.fromkeys((key[0],) for key in own or []))]
-    return best_rows(grouped, options,
-                     "pivot visits_clean with index='patient_id', so each patient with a visit gets one row")
-
-
-def sbp_expected(root: Path, visit: str) -> dict[Key, list[object]]:
-    """Each patient's accepted reading: the reference, and the one the student's own visits_clean holds."""
-    # pivot() makes a column per visit label exactly as written, so the reading comes from that exact key.
-    visits = own_rows(root, "visits_clean.csv", VISIT_KEYS, exact=True)
-    expected: dict[Key, list[object]] = {}
-    for pid, values in SBP_WIDE.items():
-        own = ([] if visits is None else
-               value_of(visits, (pid, visit), "sbp_mmhg", parse_number, exact=True) or [None])
-        expected[(pid,)] = [values[visit], *own]
-    return expected
+    _, grouped = read_sample(root, "sbp_wide_sample.csv", ("patient_id",))
+    return best_rows(grouped, [[(pid,) for pid in SAMPLE_WIDE]],
+                     "pivot visits_clean with index='patient_id', so each patient with a visit gets one row, then "
+                     "keep the rows whose patient_id is in SAMPLE_IDS", ("patient_id",))
 
 
 def sbp_wide_visit(visit: str) -> Callable[[Path], Outcome]:
     def check(root: Path) -> Outcome:
-        table, grouped = read_keyed(root, "sbp_wide.csv", ("patient_id",))
-        return score_column(table, grouped, visit, sbp_expected(root, visit), number_right,
-                            f"the {visit} sbp_mmhg from visits_clean; missing when that visit or reading is missing")
+        table, grouped = read_sample(root, "sbp_wide_sample.csv", ("patient_id",))
+        table.require(visit)
+        sbp_off = bool(own_metrics(root, "visits_summary.csv", VISIT_PARTS["sbp_mmhg"])) and any(
+            own_metrics(root, "visits_summary.csv", VISIT_PARTS["sbp_mmhg"]).get(name) != VISIT_SUMMARY[name]
+            for name in VISIT_PARTS["sbp_mmhg"])
+        rows_off = visit_rows_differ(root)
+
+        def accepted(key: Key, row: dict[str, str]) -> list[object]:
+            values: list[object] = [SBP_WIDE[key[0]][visit]]
+            if sbp_off:  # the 70 through 250 rule skipped is charged once in visits_summary.csv
+                values.append(RAW_SBP.get((key[0], visit)))
+            if rows_off:  # an unmapped label pivots into its own column, charged once in visits_summary.csv
+                values.append(None)
+            return values
+
+        return score_sample(grouped, visit, [(pid,) for pid in SAMPLE_WIDE], accepted, number_right,
+                            f"the {visit} sbp_mmhg from visits_clean, the later reading of a rechecked pair "
+                            "(sort_values('visit_time'), then drop_duplicates(subset=['patient_id', 'visit'], "
+                            "keep='last')); missing when that visit or reading is missing", "patients")
     return check
 
 
 def check_sbp_change(root: Path) -> Outcome:
-    table, grouped = read_keyed(root, "sbp_wide.csv", ("patient_id",))
+    table, grouped = read_sample(root, "sbp_wide_sample.csv", ("patient_id",))
     table.require("sbp_change")
-    expected: dict[Key, list[object]] = {}
-    for pid, values in SBP_WIDE.items():
-        reference = (None if None in values.values() else values["week12"] - values["baseline"])
-        accepted: list[object] = [reference]
-        for row in grouped.get(normal_key((pid,)), ()):
-            # The change computed from the file's own baseline and week12 columns is right too.
-            base, follow = (number(row.get(visit, "")) for visit in VISIT_LABELS)
-            accepted.append(None if base is None or follow is None else follow - base)
-        expected[(pid,)] = accepted
-    return score_column(table, grouped, "sbp_change", expected, number_right,
-                        "week12 minus baseline; missing when either is missing")
 
+    def accepted(key: Key, row: dict[str, str]) -> list[object]:
+        values = SBP_WIDE[key[0]]
+        reference = None if None in values.values() else values["week12"] - values["baseline"]
+        # The change computed from the file's own baseline and week12 columns is right too.
+        base, follow = (number(row.get(visit, "")) for visit in VISIT_LABELS)
+        return [reference, None if base is None or follow is None else follow - base]
+
+    return score_sample(grouped, "sbp_change", [(pid,) for pid in SAMPLE_WIDE], accepted, number_right,
+                        "week12 minus baseline; missing when either is missing", "patients")
 
 # Task 5.2: decision_log.csv
 
@@ -1162,36 +1418,36 @@ def check_reasons(root: Path) -> Outcome:
 
 
 T_PATIENTS = "Task 3.1"
-T_VISITS = "Task 2.2 (stacking) and Task 3.2 (cleaning)"
-T_ANALYSIS = "Task 4.3 (joining) and Task 5.2 (saving)"
-T_WIDE = "Task 4.4 (pivoting) and Task 5.2 (saving)"
-T_DECISIONS = "Task 3.3 (decisions) and Task 5.2 (saving)"
+T_A1C = "Task 4.1"
+T_ANALYSIS = "Task 4.4 (joining) and Task 5.2 (saving the extract)"
+T_WIDE = "Task 3.2 step 6 (rechecks) and Task 4.3 (pivoting and saving the extract)"
+T_DECISIONS = "Task 3.3"
 
 CHECKS = (
     Check("file_inventory.txt", 5, "Task 1.1", check_file_inventory),
     Check("table_profile.csv", 5, "Task 1.2", check_table_profile),
     Check("issue_audit.csv", 10, "Task 2.3", check_issue_audit),
-    Check("patients_clean.csv: rows", 2, T_PATIENTS, patients_rows),
-    Check("patients_clean.csv: gender", 2, T_PATIENTS, patients_column("gender", text_right)),
-    Check("patients_clean.csv: birth_year", 2, T_PATIENTS, patients_column("birth_year", number_right)),
-    Check("patients_clean.csv: site_code", 2, T_PATIENTS, patients_column("site_code", text_right)),
-    Check("gender_categories.csv", 2, T_PATIENTS, check_gender_categories),
-    Check("visits_clean.csv: rows", 4, T_VISITS, visits_rows),
-    Check("visits_clean.csv: visit_date", 3, T_VISITS, visits_column("visit_date")),
-    Check("visits_clean.csv: sbp_mmhg", 3, T_VISITS, visits_column("sbp_mmhg")),
-    Check("visits_clean.csv: weight_kg", 2, T_VISITS, visits_column("weight_kg")),
-    Check("visits_clean.csv: source_file", 2, T_VISITS, visits_column("source_file")),
-    Check("a1c_long.csv: rows", 2, "Task 4.1", a1c_rows),
-    Check("a1c_long.csv: a1c_pct", 3, "Task 4.1", a1c_values),
+    Check("patients_summary.csv: patients", 2, T_PATIENTS, patients_summary("rows")),
+    Check("patients_summary.csv: birth_year", 2, T_PATIENTS, patients_summary("birth_year")),
+    Check("patients_summary.csv: site_code", 2, T_PATIENTS, patients_summary("site_code")),
+    Check("gender_categories.csv: counts", 2, T_PATIENTS, check_gender_counts),
+    Check("gender_categories.csv: codes", 2, T_PATIENTS, check_gender_codes),
+    Check("visits_summary.csv: rows", 4, VISIT_TASKS["rows"], visits_summary("rows")),
+    Check("visits_summary.csv: visit_date", 3, VISIT_TASKS["visit_date"], visits_summary("visit_date")),
+    Check("visits_summary.csv: sbp_mmhg", 3, VISIT_TASKS["sbp_mmhg"], visits_summary("sbp_mmhg")),
+    Check("visits_summary.csv: weight_kg", 2, VISIT_TASKS["weight_kg"], visits_summary("weight_kg")),
+    Check("visits_summary.csv: source_file", 2, VISIT_TASKS["source_file"], visits_summary("source_file")),
+    Check("a1c_summary.csv: results", 2, T_A1C, check_a1c_results),
+    Check("a1c_summary.csv: a1c_pct_mean", 3, T_A1C, check_a1c_means),
     Check("merge_audit.csv", 7, "Task 4.2", check_merge_audit),
-    Check("analysis_visits.csv: rows", 3, T_ANALYSIS, analysis_rows),
-    Check("analysis_visits.csv: site_name", 2, T_ANALYSIS, check_analysis_sites),
-    Check("analysis_visits.csv: a1c_pct", 2, T_ANALYSIS, check_analysis_a1c),
-    Check("analysis_visits.csv: gender and birth_year", 2, T_ANALYSIS, check_analysis_patient),
-    Check("sbp_wide.csv: rows", 2, T_WIDE, sbp_wide_rows),
-    Check("sbp_wide.csv: baseline", 1, T_WIDE, sbp_wide_visit("baseline")),
-    Check("sbp_wide.csv: week12", 1, T_WIDE, sbp_wide_visit("week12")),
-    Check("sbp_wide.csv: sbp_change", 2, T_WIDE, check_sbp_change),
+    Check("analysis_sample.csv: rows", 3, T_ANALYSIS, analysis_rows),
+    Check("analysis_sample.csv: site_name", 2, T_ANALYSIS, check_analysis_sites),
+    Check("analysis_sample.csv: a1c_pct", 2, T_ANALYSIS, check_analysis_a1c),
+    Check("analysis_sample.csv: gender and birth_year", 2, T_ANALYSIS, check_analysis_patient),
+    Check("sbp_wide_sample.csv: rows", 2, T_WIDE, sbp_wide_rows),
+    Check("sbp_wide_sample.csv: baseline", 1, T_WIDE, sbp_wide_visit("baseline")),
+    Check("sbp_wide_sample.csv: week12", 1, T_WIDE, sbp_wide_visit("week12")),
+    Check("sbp_wide_sample.csv: sbp_change", 2, T_WIDE, check_sbp_change),
     Check("decision_log.csv: decisions", 3, T_DECISIONS, check_decisions),
     Check("decision_log.csv: reason", 1, T_DECISIONS, check_reasons),
 )
@@ -1224,6 +1480,9 @@ def run_check(check: Check, root: Path) -> dict:
 def grade_submission(submission_dir: str | Path) -> dict:
     """Grade the committed artifacts in `submission_dir` without running any submitted code."""
     root = Path(submission_dir).resolve()
+    for cache in (read_table, read_sample):
+        cache.cache_clear()
     tests = [run_check(check, root) for check in CHECKS]
     return {"schema": SCHEMA, "score": sum(test["score"] for test in tests), "max-score": MAX_SCORE,
             "tests": tests}
+

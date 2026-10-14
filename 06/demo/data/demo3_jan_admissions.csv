@@ -1,0 +1,4 @@
+admission_id,unit,age,diagnosis,los_days
+A101,ICU,67,sepsis,4
+A102,MED,45,pneumonia,2
+A103,SURG,72,appendicitis,6
