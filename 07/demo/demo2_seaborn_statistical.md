@@ -46,9 +46,11 @@ Expect `Ready: healthexp.parquet`.
 
 ## Core walkthrough
 
-### 1. seaborn on real data: health spending and life expectancy
+### 1. pandas `.plot()`: the index becomes the x-axis
 
-`healthexp` has one row per country per year: health spending per person in US dollars and life expectancy in years, for six countries from 1970 to 2020.
+One row per week of flu visits, one column per clinic. `df.plot()` draws the index on the x-axis and one line per numeric column.
+
+Make `week` the index with `set_index()` (Lecture 06), so each clinic becomes one line.
 
 ```python
 import matplotlib.pyplot as plt
@@ -57,6 +59,35 @@ import pandas as pd
 import seaborn as sns
 
 sns.set_style('whitegrid')
+weekly_raw = pd.DataFrame({
+    'week': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    'North': [12, 15, 21, 30, 42, 51, 47, 36, 24, 17],
+    'South': [10, 11, 14, 18, 23, 29, 34, 33, 27, 20],
+})
+display(weekly_raw.head())
+weekly = weekly_raw.set_index('week')
+ax = weekly.plot(marker='o', ylabel='Flu visits', title='Weekly flu visits by clinic')
+plt.show()
+print(ax.get_xlabel())
+```
+
+Expect two lines, North and South, over weeks 1 to 10, and `week` printed as the x-axis label.
+
+_Intentional mistake:_ compare that result with plotting the table before setting its index.
+
+```python
+ax = weekly_raw.plot(marker='o', ylabel='Flu visits', title='Wrong: row numbers on x')
+plt.show()
+print(weekly_raw.index.tolist())
+```
+
+Expect three lines, not two. The x-axis runs 0 to 9, and `week` is drawn as a third line climbing from 1 to 10. The `weekly` table above fixes both problems by making `week` the index.
+
+### 2. seaborn on real data: health spending and life expectancy
+
+`healthexp` has one row per country per year: health spending per person in US dollars and life expectancy in years, for six countries from 1970 to 2020.
+
+```python
 health = pd.read_parquet('healthexp.parquet')
 print(health.shape)
 display(health.head())
@@ -78,37 +109,6 @@ plt.show()
 ```
 
 Expect one point per country-year, with color and shape identifying the country. USA observations extend farthest right without having the highest life expectancy. Shared time trends and country differences prevent a causal claim from this comparison.
-
-### 2. pandas `.plot()`: the index becomes the x-axis
-
-One row per week of flu visits, one column per clinic. `df.plot()` draws the index on the x-axis and one line per numeric column.
-
-_Intentional mistake:_ plot the table before setting a meaningful index.
-
-```python
-weekly_raw = pd.DataFrame({
-    'week': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    'North': [12, 15, 21, 30, 42, 51, 47, 36, 24, 17],
-    'South': [10, 11, 14, 18, 23, 29, 34, 33, 27, 20],
-})
-display(weekly_raw.head())
-ax = weekly_raw.plot(marker='o', ylabel='Flu visits', title='Wrong: row numbers on x')
-plt.show()
-print(weekly_raw.index.tolist())
-```
-
-Expect three lines, not two. The x-axis runs 0 to 9, the row numbers printed above, and `week` is drawn as a third line climbing from 1 to 10, because it is a numeric column.
-
-**The fix:** make `week` the index with `set_index()` (Lecture 06), assigning the result to a new name.
-
-```python
-weekly = weekly_raw.set_index('week')
-ax = weekly.plot(marker='o', ylabel='Flu visits', title='Weekly flu visits by clinic')
-plt.show()
-print(ax.get_xlabel())
-```
-
-Expect two lines, North and South, over weeks 1 to 10, and `week` printed as the x-axis label.
 
 ### 3. Density plots: a distribution a mean would hide
 

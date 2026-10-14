@@ -23,7 +23,7 @@ import generate_data  # noqa: E402
 
 
 def main() -> None:
-    manifest = {"fixture_id": "a06-clinic-midterm-v5",
+    manifest = {"fixture_id": "a06-clinic-midterm-v6",
                 "provenance": "course-authored synthetic teaching data; no real patients",
                 "generator": "generate_data.py",
                 "sha256": "of each table as CSV text with \\n line endings, as to_csv(index=False) writes it",

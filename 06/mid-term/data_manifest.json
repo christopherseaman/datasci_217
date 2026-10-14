@@ -1,23 +1,23 @@
 {
-  "fixture_id": "a06-clinic-midterm-v5",
+  "fixture_id": "a06-clinic-midterm-v6",
   "provenance": "course-authored synthetic teaching data; no real patients",
   "generator": "generate_data.py",
   "sha256": "of each table as CSV text with \\n line endings, as to_csv(index=False) writes it",
   "files": {
     "patients.parquet": {
-      "sha256": "7ebbe818af63b951cc227d430d8dec83b90d944fbdfc6f24b2aa33ba7ca3b993"
+      "sha256": "aa795b05777565cce6af68602e3fc7c286a2483f53f9a6d99a44da410c1214dd"
     },
     "sites.csv": {
       "sha256": "daaa4f3fc475900db905590faf6524f34143e78b73633b1794de4c6cf4b56a77"
     },
     "visits_north.csv": {
-      "sha256": "9136d39ad6571e4ff6b21f1119dde6cd6a16d101bc7d9348b86e7ac15a0efbd2"
+      "sha256": "c4e866329e952f88a63d737cb7e68f752c2d1ab1a4167322ed766c649cce1473"
     },
     "visits_south.csv": {
-      "sha256": "96d19aad4cbbefa5d96536f2154cdfb7a17cf8c04cad823171def21ac7a1842c"
+      "sha256": "10b506822983fe0b955711a0af3314c0ee49bbdeff8078c2c8d16e2447d42641"
     },
     "a1c_wide.parquet": {
-      "sha256": "6dcf0c68ec017ebd5379cf5c775299391ba17528c5f4130b7de533a59575adc6"
+      "sha256": "934dc120b78d492666b7fbc7872d5fc4d0f20ab9a678bdb7559f00536a2cfa6a"
     }
   }
 }

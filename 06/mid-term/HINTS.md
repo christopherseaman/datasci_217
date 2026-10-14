@@ -14,14 +14,15 @@
 
 - After `map()`, `isna().sum()` should equal the empty and `unknown` entries, not more. A larger gap means a spelling is missing from the dictionary, or the values were not stripped and lowercased first (Lecture 05).
 - `patients_clean["site_code"].unique()` should hold only codes like `N01`, never `n-01`.
-- Repeated visit pairs: fewer than step 6's 240 rows means the `visit` labels were not mapped first, so `wk12` and `week12` looked different.
+- Repeated visit pairs: map the `visit` labels first, so `wk12` and `week12` identify the same visit. Remove exact repeats before looking for readings taken at different times.
 - After cleaning, `visits_clean.duplicated(subset=["patient_id", "visit"]).sum()` should be 0.
-- `visit_date`: compare `pd.to_datetime(values, format="%Y-%m-%d", errors="coerce")` with a text-length check (Lecture 05).
+- `visit_date`: combine a full `YYYY-MM-DD` text-pattern check with `pd.to_datetime(values, format="%Y-%m-%d", errors="coerce")` (Lecture 05); length alone also accepts slashes.
 
 ## Task 4: Reshape and join
 
 - Task 4.1: `a1c_long["visit"].unique()` shows only `baseline` and `week12`. Other labels mean the mapping step was skipped.
 - Task 4.2: `sites_current["site_code"].is_unique` should be `True`.
+- `E04` visits are exported by the south office. Keep the registry's site code; a missing directory entry leaves the site name missing after a left join.
 - Task 4.3: `pivot()` raises when a pair repeats, so `visits_clean` still holds a recheck. `sbp_wide["patient_id"].is_unique` should be `True`.
 - Task 4.4 `MergeError`: the error names the side that repeats.
     - `many_to_one` on `patients_clean` fails when a `patient_id` repeats there: exact registry repeats were not removed in Task 3.1.

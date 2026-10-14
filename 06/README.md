@@ -82,6 +82,26 @@ display(merged)
 | 1 | P001 | 1958 | LDL | 131.0 |
 | 2 | P002 | 1971 | A1c | 5.4 |
 
+### Code Snippet: Match differently named keys
+
+`referrals` calls its patient key `registry_id`; `patients` uses `patient_id`:
+
+```text
+referrals
+registry_id  service
+P002         cardiology
+```
+
+```python
+display(pd.merge(referrals, patients, left_on='registry_id', right_on='patient_id'))
+```
+
+|  | registry_id | service | patient_id | birth_year |
+| --- | --- | --- | --- | --- |
+| 0 | P002 | cardiology | P002 | 1971 |
+
+Both key columns remain because their names differ.
+
 ## Join Types: The Four Horsemen of Data Merging (Plus One)
 
 When a key appears in only one table, the join type decides whether that row survives. The fifth rider, `cross`, ignores keys and pairs every left row with every right row.
@@ -296,6 +316,20 @@ pd.merge(visits, clinics, on='clinic_id', how='left', validate='many_to_one')
 - Without `validate=`, four visits become six rows: V2 and V3 each match twice.
 - Fix: list the repeated keys, apply a documented lookup rule (here, keep `record_status == 'current'`), and merge again with `validate=` and `indicator=True`: four rows, with V4's K9 `left_only`.
 
+```python
+current = clinics[clinics['record_status'] == 'current']
+checked = pd.merge(visits, current, on='clinic_id', how='left',
+                   validate='many_to_one', indicator=True)
+display(checked[['visit_id', 'clinic_id', 'clinic_name', '_merge']])
+```
+
+|  | visit_id | clinic_id | clinic_name | _merge |
+| --- | --- | --- | --- | --- |
+| 0 | V1 | K1 | Mission Bay | both |
+| 1 | V2 | K2 | Parnassus Annex | both |
+| 2 | V3 | K2 | Parnassus Annex | both |
+| 3 | V4 | K9 | NaN | left_only |
+
 # LIVE DEMO!
 
 [Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo1_merge_operations.ipynb)
@@ -379,6 +413,13 @@ display(long)
 ### Code Snippet: Select a two-part row label
 
 `quarterly` has one `visits` count per clinic (North, South) and quarter (Q1, Q2):
+
+|  | clinic | quarter | visits |
+| --- | --- | --- | --- |
+| 0 | North | Q1 | 410 |
+| 1 | North | Q2 | 395 |
+| 2 | South | Q1 | 380 |
+| 3 | South | Q2 | 362 |
 
 ```python
 summary = quarterly.set_index(['clinic', 'quarter'])
@@ -511,6 +552,22 @@ display(rechecked[rechecked.duplicated(subset=['patient_id', 'visit'], keep=Fals
 - A recheck is a real repeated observation, so the fix is a documented rule, not a guess: to keep the later recheck, `sort_values('reading_time')`, then `drop_duplicates(subset=['patient_id', 'visit'], keep='last')`.
 - If both readings should count, `pivot_table()` aggregates them into one cell instead, and the choice of `sum`, `mean`, or another function changes the question being answered.
 
+### Code Snippet: Summarize repeated readings with `pivot_table()`
+
+**Aggregation** reduces several values to one summary. For just the two P002 rechecks shown above, stored in `repeat_readings`, the mean is `(148 + 136) / 2 = 142` mmHg.
+
+```python
+display(repeat_readings.pivot_table(index='patient_id', columns='visit',
+                                   values='sbp', aggfunc='mean'))
+```
+
+| visit | followup |
+| --- | --- |
+| **patient_id** |  |
+| P002 | 142.0 |
+
+`aggfunc='mean'` is the default; naming it records the decision. This answers “What was the average reading?”, while keeping the later recheck answers “What reading did the protocol record?”
+
 # LIVE DEMO!
 
 [Open Demo 2 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo2_pivot_melt.ipynb)
@@ -581,6 +638,14 @@ wc -l data/*_admissions.csv
 
 `jan` holds three January admissions and `feb` two February ones, with the same columns (`los_days` is the length of stay):
 
+```text
+jan                         feb
+admission_id  unit  los_days admission_id  unit  los_days
+A101          ICU   4        A201          Med   5
+A102          Med   2        A202          ICU   1
+A103          Surg  3
+```
+
 ```python
 jan['source_file'] = 'jan_admissions.csv'
 feb['source_file'] = 'feb_admissions.csv'
@@ -643,6 +708,8 @@ display(pd.concat([jan, feb], join='inner', ignore_index=True))
 | 3 | A202 | 1 |
 
 ## Horizontal Concatenation: Adding More Columns
+
+Separate systems can report different variables for the same patients. Put the patient identifier in each index first: `axis=1` uses those labels to line up measurements, even when the rows arrive in different orders.
 
 ### Reference Card: Horizontal `concat()`
 

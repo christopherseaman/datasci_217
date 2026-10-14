@@ -10,11 +10,15 @@ Profile five raw clinic tables, audit and clean them, recode gender as a categor
 | --- | --- | --- |
 | `patients.parquet` | One registered patient | `patient_id`; `gender`; `birth_year` (`9999` means not recorded); `site_code` |
 | `sites.csv` | One site record | `site_code`; `site_name`; `record_status` (`current` or `retired`) |
-| `visits_north.csv` | One clinic visit at the north site | `patient_id`; `visit`; `visit_date` (`YYYY-MM-DD`); `visit_time` (`HH:MM`); `sbp_mmhg` (systolic blood pressure in mmHg; `999` means not measured); `weight_kg` |
-| `visits_south.csv` | One clinic visit at the south site | The same columns, except the weight column is named `wt_kg` |
+| `visits_north.csv` | One clinic visit exported by the north office | `patient_id`; `visit`; `visit_date` (`YYYY-MM-DD`); `visit_time` (`HH:MM`); `sbp_mmhg` (systolic blood pressure in mmHg; `999` means not measured); `weight_kg` |
+| `visits_south.csv` | One clinic visit exported by the south office | The same columns, except the weight column is named `wt_kg` |
 | `a1c_wide.parquet` | One patient's central lab results | `patient_id`; `a1c_baseline` and `a1c_week12` (hemoglobin A1c in %, `float64`; missing means no result) |
 
 Every `patients.parquet` column is text, as staff typed it; the A1c columns are numbers. The CSV tables are read with every column as text.
+
+- **Export routing:** the south office also exports visits for satellite code `E04`; `source_file` records the exporting office. The missing site-directory entry is intentional.
+- **Boundary examples:** values of exactly 70 and 250 mmHg are planted for the inclusive range rule; they are not typical cohort readings.
+- **Patient trajectories:** age and body size influence measurements; follow-up changes depend on baseline and weight change, and rechecks stay close to the first reading.
 
 The coded columns must hold these values once cleaned:
 
@@ -24,7 +28,7 @@ The coded columns must hold these values once cleaned:
 | `gender` | `M` | Male |
 | `gender` | `X` | Nonbinary |
 | `gender` | missing | Empty or `unknown`: not recorded |
-| `site_code` | A code from `sites.csv`, such as `N01` | Uppercase, with no spaces or hyphens |
+| `site_code` | A normalized registry code, such as `N01` or `E04` | Uppercase, with no spaces or hyphens |
 | `visit` | `baseline` | The enrollment visit |
 | `visit` | `week12` | The follow-up visit 12 weeks later |
 
@@ -115,7 +119,7 @@ Build `visits_raw`, one table of every raw visit row from both sites:
 2. Add a `source_file` column to each table holding its file name, `visits_north.csv` or `visits_south.csv`, before stacking.
 3. Stack them with `pd.concat([...], ignore_index=True)`, north first.
 
-- Expect: 57321 rows and 7 columns, with no column of only missing values.
+- Expect: the two raw visit row counts added together and 7 columns, with no column of only missing values.
 
 ### 2.3 Audit the raw tables
 
@@ -255,7 +259,7 @@ Build `visits_clean` from `visits_raw`:
 6. Show the rows whose `patient_id` and `visit` pair still repeats, with `duplicated(subset=[...], keep=False)`. A repeat here is a recheck: keep the later reading with `sort_values("visit_time")`, then `drop_duplicates(subset=["patient_id", "visit"], keep="last")`.
 7. Sort by `patient_id` and `visit`, renumber with `reset_index(drop=True)`, and keep these columns in this order: `patient_id`, `visit`, `visit_date`, `sbp_mmhg`, `weight_kg`, `source_file`.
 
-- Expect: step 6 shows 240 rows: 120 `patient_id` and `visit` pairs, each read twice at different times.
+- Expect: step 6 shows pairs of readings at different times; each pair becomes one row after keeping its later reading.
 - Expect: `visits_clean["visit"].value_counts(dropna=False)` shows only `baseline` and `week12`, with no missing.
 
 Save the visits summary to `output/visits_summary.csv` with these metrics, in this order:
@@ -287,7 +291,7 @@ visits from visits_south.csv,<count>
 | `weight_kg mean` | `round(visits_clean["weight_kg"].mean(), 2)` |
 | `visits from visits_north.csv`, `visits from visits_south.csv` | The rows with that `source_file` |
 
-Self-checks: `baseline visits` plus `week12 visits` equals `visits`, and so do the two `visits from` counts; `visits` is below the 57321 rows of `visits_raw`; `sbp_mmhg min` is at least 70 and `max` at most 250; both dates fall in 2026 on clinic weekdays (Monday to Friday); each missing count is a small share of `visits`; `weight_kg mean` is an adult weight in kg.
+Self-checks: `baseline visits` plus `week12 visits` equals `visits`, and so do the two `visits from` counts; `visits` is below the row count of `visits_raw`; `sbp_mmhg min` is at least 70 and `max` at most 250; both dates fall in 2026 on clinic weekdays (Monday to Friday); each missing count is a small share of `visits`; `weight_kg mean` is an adult weight in kg.
 
 > **Checkpoint: `output/visits_summary.csv`**
 > 14 lines: the header `metric,value` and the 13 metrics in the order above.

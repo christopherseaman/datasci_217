@@ -129,6 +129,8 @@ display(labs.isna().sum(axis=1))  # missing per row
 | 2 | 1 |
 | 3 | 2 |
 
+_[Christopher Null](https://www.wired.com/2015/11/null/) has had forms reject his surname. Missing data should not include the patient._
+
 ![xkcd 892: Null Hypothesis. "Null" is easy to misread, in statistics and in data](media/xkcd_892.png)
 
 # When Data Go Bad

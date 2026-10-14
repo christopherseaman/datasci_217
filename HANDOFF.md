@@ -1,6 +1,6 @@
 # Handoff
 
-Updated 2026-10-01. Read [AGENTS.md](AGENTS.md) for the authoring and verification rules and [TODO.md](TODO.md) for open work. This brief describes the current course; older review reports record the state when their reviews ran.
+Updated 2026-10-14. Read [AGENTS.md](AGENTS.md) for the authoring and verification rules and [TODO.md](TODO.md) for open work. This brief describes the current course; older review reports record the state when their reviews ran.
 
 ## Overall goal
 
@@ -13,7 +13,7 @@ Each ordinary class has 90 minutes, aiming for 60 minutes of lecture and 30 minu
 - Reviewed sources were committed and pushed to `main` in [`e2b9227`](https://github.com/christopherseaman/datasci_217/commit/e2b9227ebcb546847094d325d96f19cabbb1630c). [`8d32b50`](https://github.com/christopherseaman/datasci_217/commit/8d32b50ca4cf25ec88d1dbd3e878de93dc913beb) records the release and removes completed work from TODO. Check `git status` and `git log` on arrival rather than assuming this is still HEAD.
 - The instructor-authorized September 30 release published all 25 lecture, BONUS, and 01–03 demo-guide pages to Notion using `scripts/notion_push.py`. Fresh reconciliation found no unrecognized live edits. Independent verification matched all pages' content, code, tables, headings, demo markers, and image captions/counts. All 128 images had usable source URLs; all 14 child pages, native titles, and Lecture 01's original synced block survived. This verifies content and image references, not downloaded image bytes or browser rendering.
 - The standard `scripts/notion_check_pages.py` audit covered all 29 mapped pages, including four unchanged supporting pages, and found zero broken images. GitHub Pages build/deployment succeeded. All eight 04–11 demo setup URLs returned 200 and byte-matched committed sources.
-- Assignment sources and course-owned graders are on `main`. The separate 04–11 student handout repositories have **not** received this release. Pushing the course does not update their handouts or existing student forks. Their publication remains an open task when requested.
+- Assignment sources and course-owned graders are on `main`. The separate 04–11 student handout repositories received the October 2 release; Assignment 05 was updated again on October 14. Pushing the course does not update handouts or existing student forks.
 
 ## Work completed and decisions to preserve
 
@@ -54,7 +54,17 @@ Still unverified: actual classroom timing, hosted Colab runtime/UI, native macOS
 
 ## Next work and publication boundaries
 
-[TODO.md](TODO.md) contains only two open tasks: publish the reviewed 04–11 handouts when requested, and rehearse the 90-minute classroom route. Completed work and context belong here or in review reports. Historical deferred demo bugs are resolved; do not revive them as new TODOs without reproducing a current defect.
+[TODO.md](TODO.md) tracks open work. Completed work and context belong here or in review reports. Historical deferred demo bugs are resolved; do not revive them as new TODOs without reproducing a current defect.
+
+### October 14 follow-through
+
+- Assignment 05 is regular homework. Its final cleaned table now refreshes HbA1c categories after invalid measurements are blanked; its earlier category-count artifact stays a stage-specific snapshot. Missing gender is an audit flag, allowed in the final table. These handout fixes were published to `UCSF-DataSci/ds217-26f-05`.
+- Lecture 06 gained explicit inputs and outputs for differently named merge keys, cardinality repair, indexed quarterly data, aggregation with `pivot_table()`, and concatenation. Demo 2 includes independent practice comparing an average with selecting the protocol's recheck. Its three core demo blocks and midterm prerequisites were reviewed together.
+- Lecture 07 retains matplotlib → pandas/seaborn → critique/Altair blocks. Data-Ink Ratio and Lie Factor use concise bullets; Demo 1's core now annotates and saves, and Demo 2 follows the lecture's pandas-first order. All six 06/07 demos ran from fresh directories on Python 3.13/pandas 3.0.5; actual Colab UI remains unverified.
+- Humor TODOs are placed: the Null surname in 05, xkcd 534 at scoring direction in 10, and xkcd 435 plus the no-yak-shaving image in 11. xkcd 2109 was already in 05; it was not duplicated.
+- The active midterm is `06/mid-term`, published to `UCSF-DataSci/ds217-26f-06`; `06/assignment` stays inactive. Its v6 dataset links patient characteristics, baseline measurements, treatment changes, and rechecks; uses plausible clinic slots and follow-up intervals; and rejects out-of-range draws rather than clipping them. `E04` remains an unmatched satellite code exported by the south office; 70/250 mmHg remain explicit teaching boundaries. These are synthetic teaching relationships, not a clinical prediction model.
+- Midterm verification: fresh complete and alternative submissions earn 75/75 automated points with identical grader JSON on Python 3.9 and 3.13; the other 25 points remain human review. All 30 single-mistake cases lose only their corresponding points, and generated hashes match across versions. Local evidence: `scratch/mt06-verification.txt` and `scratch/mt06-selftest-vp5tcwq6/`. Native macOS/WSL remain unverified.
+- Lecture changes in this follow-through were reconciled against live Notion before editing but have not been published to Notion. Publish only on request, with another fresh comparison.
 
 For an authorized handout release, fetch/reconcile the target first and use `scripts/publish_assignment.sh NN UCSF-DataSci/ds217-26f-NN`. It mirrors the handout, including removing obsolete files, and excludes `_grader_selftest/`; use the normal history-preserving path. The earlier instructor decision keeps already-distributed 01/02 handout repositories unchanged this term unless the instructor revises that instruction. Do not infer additional handout releases from a course push.
 

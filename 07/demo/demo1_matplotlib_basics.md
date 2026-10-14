@@ -96,6 +96,23 @@ print(len(north), 'North points and', len(south), 'South points')
 
 Expect blue circles and orange squares that both rise with age, a legend titled Clinic in the empty lower-right corner, and `20 North points and 20 South points`. At similar ages the orange squares tend to sit higher.
 
+### 3. Annotate, declutter, and save
+
+The first reading is patient 1001: age 34, systolic BP 114 mmHg. Add that context to the existing scatter, hide the unused frame lines, and save the whole Figure.
+
+```python
+from pathlib import Path
+
+ax.annotate('Patient 1001', xy=(34, 114), xytext=(40, 110),
+            arrowprops=dict(arrowstyle='->'))
+ax.spines[['top', 'right']].set_visible(False)
+fig.savefig('clinic_bp.png', dpi=150, bbox_inches='tight')
+display(fig)
+print(Path('clinic_bp.png').exists())
+```
+
+Expect an arrow pointing to the blue circle at (34, 114), no top or right frame line, and `True`. Open `clinic_bp.png` from the notebook's folder to see the same labeled chart; in Colab, use the folder icon in the left sidebar.
+
 ## Independent practice
 
 Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.

@@ -52,11 +52,11 @@ DATA_FILES = ("patients.parquet", "sites.csv", "visits_north.csv", "visits_south
 # The generated files' SHA-256 values, as the handout's data_manifest.json lists them. Every expected value
 # below is derived from tables with exactly this CSV text (built by 06/mid-term/generate_data.py).
 DATA_SHA256 = {
-    "patients.parquet": "7ebbe818af63b951cc227d430d8dec83b90d944fbdfc6f24b2aa33ba7ca3b993",
+    "patients.parquet": "aa795b05777565cce6af68602e3fc7c286a2483f53f9a6d99a44da410c1214dd",
     "sites.csv": "daaa4f3fc475900db905590faf6524f34143e78b73633b1794de4c6cf4b56a77",
-    "visits_north.csv": "9136d39ad6571e4ff6b21f1119dde6cd6a16d101bc7d9348b86e7ac15a0efbd2",
-    "visits_south.csv": "96d19aad4cbbefa5d96536f2154cdfb7a17cf8c04cad823171def21ac7a1842c",
-    "a1c_wide.parquet": "6dcf0c68ec017ebd5379cf5c775299391ba17528c5f4130b7de533a59575adc6",
+    "visits_north.csv": "c4e866329e952f88a63d737cb7e68f752c2d1ab1a4167322ed766c649cce1473",
+    "visits_south.csv": "10b506822983fe0b955711a0af3314c0ee49bbdeff8078c2c8d16e2447d42641",
+    "a1c_wide.parquet": "934dc120b78d492666b7fbc7872d5fc4d0f20ab9a678bdb7559f00536a2cfa6a",
 }
 # The patients whose rows the extracts hold, as the README and the notebook's first cell list them. They
 # cover a repeated registry row, the 9999 sentinel, messy gender and site spellings, a site sites.csv lacks,
@@ -321,7 +321,8 @@ VISIT_PARTS = {
     "source_file": ("visits from visits_north.csv", "visits from visits_south.csv"),
 }
 # The widest a weight can move a mean when one row is added or dropped, per row, in kg.
-WEIGHT_SPAN = 170.0 - 48.0
+_weights = [float(row["weight_kg"]) for row in _raw_visits if row["weight_kg"].strip()]
+WEIGHT_SPAN = max(_weights) - min(_weights)
 
 # Each visit label's A1c results in a1c_long and their mean, as the per-visit summary of the melted table.
 A1C_SUMMARY = {visit: (sum(key[1] == visit for key in A1C),

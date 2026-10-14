@@ -280,7 +280,7 @@ Expected result: `flu_visits.png` contains the whole Figure, including its label
 
 <callout icon="⚠️" color="yellow_bg">
 	## Save before `plt.show()`
-	`plt.show()` closes the figure, so a `plt.savefig()` after it saves a blank PNG.
+	In a script, a blocking `plt.show()` closes the current figure; a later `plt.savefig()` can save a blank PNG. Save first, or keep `fig` and use `fig.savefig()` to save that Figure explicitly.
 </callout>
 
 ![xkcd 833: Convincing. "I just think I can do better than someone who doesn't label her axes." Label your axes.](media/xkcd_833.png)
@@ -544,18 +544,17 @@ Expected result: sharper peaks and a deeper dip between them than with the defau
 
 ### Data-Ink Ratio
 
-The **data-ink ratio** is the share of ink (or pixels) that presents data rather than decoration.
+- **Data-ink ratio**: the share of ink (or pixels) that presents data rather than decoration.
 
-```
+```text
 Data-Ink Ratio = Data-Ink / Total Ink Used
 ```
 
 Raise it by removing ink that carries no data:
 
-- Remove unnecessary gridlines, or make them subtle
-- Use direct labeling instead of a legend when you can
-- Avoid 3D effects and shadows, which distort perception
-- Remove redundant labels and tick marks
+- **Gridlines**: remove unnecessary ones or make them subtle.
+- **Labels**: label series directly when space allows; remove repeated labels and ticks.
+- **Decoration**: remove 3D effects and shadows, which distort perception.
 
 ![Left: Low data-ink ratio with excessive decoration. Right: High data-ink ratio focusing on the data.](media/tufte_data_ink_ratio.png)
 
@@ -570,22 +569,25 @@ Raise it by removing ink that carries no data:
 
 ### Lie Factor
 
-The **lie factor** measures how much a visualization distorts the data:
+- **Lie factor**: how much a chart exaggerates or understates a relative change in the data.
 
-```
+```text
 Lie Factor = (Size of effect shown in graphic) / (Size of effect in data)
 ```
 
-A lie factor close to 1.0 means no distortion. In the hand-hygiene example, the April bar grows 100% (from 1 to 2 units above the 95% baseline) while compliance grows about 1% (96 → 97), so the lie factor is roughly 100 / 1.04 ≈ 96.
+- **No distortion**: a lie factor near 1 means the relative changes match.
+- **Graphic change**: above a 95% baseline, the bars for 96% and 97% have heights 1 and 2; the height grows 100%.
+- **Data change**: compliance rises by 1 percentage point, a relative increase of `100 × (97 - 96) / 96 ≈ 1.04%`.
+- **Result**: `100 / 1.04 ≈ 96`; the graphic exaggerates the relative increase about 96-fold.
 
 ![Hand-hygiene compliance of 96% and 97%: on a 95% baseline (left) April's bar is twice as tall; from zero (right) the bars differ by one point, as the data do.](media/tufte_lie_factor.png)
 
 Common distortions to avoid:
 
-- Axis limits that hide context or exaggerate differences. Bars need a zero baseline because length encodes magnitude; a line chart need not start at zero, but its range and any axis break must be clear and appropriate to the question.
-- 3D perspective that distorts area/volume comparisons
-- Inconsistent scales
-- Cherry-picked time ranges
+- **Axis limits**: bars need a zero baseline because length encodes magnitude. Lines need a clearly labeled range appropriate to the question, which need not start at zero.
+- **3D perspective**: distorts area and volume comparisons.
+- **Inconsistent scales**: make equal values look different across panels.
+- **Cherry-picked dates**: hide parts of a trend that change the conclusion.
 
 ![xkcd 1725: Linear Regression. Finding a dog-shaped constellation in the points does not make it evidence.](media/xkcd_1725.png)
 

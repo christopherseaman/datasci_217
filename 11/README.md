@@ -56,6 +56,8 @@ flowchart LR
 | Prediction | What is known at prediction time, and what is a fair comparison? | Target, baseline, split, measure, and held-out result |
 | Report | What does the evidence support, and what remains uncertain? | Result, claim, and material limitation |
 
+![No yak shaving! A detour to perfect the tools can become the whole project.](media/no_yak_shaving.png)
+
 # Start with a question and a candidate claim
 
 - **Answerable question**: names the unit, the outcome, and the time frame, including, for a forecast, when the answer must be known.
@@ -245,6 +247,8 @@ display(frame)
 | Aware UTC target times compared with a zoned local cutoff | Lecture 10, Splitting on Target Time | `03_model_prep.ipynb`: split boundaries; final Q5 and Q6: split boundaries |
 | Cyclic calendar features (sine and cosine) and recorded model settings (`get_params(deep=False)`) | Lecture 10, Cyclic Time Features; Freeze, Then Test Once | final Q4: calendar features; final Q7: model specification |
 | Candidate models, baselines, leakage boundaries, and evaluation | Lecture 10, Training, Validation, and Test Rows; Baselines and Pipelines; Measuring Prediction Error | `03_model_prep.ipynb`: freeze the split; `04_modeling.ipynb`: compare and evaluate |
+
+![xkcd 435: Purity. A health-data project needs domain knowledge as well as mathematics.](media/xkcd_435.png)
 
 # Transfer to the final project
 

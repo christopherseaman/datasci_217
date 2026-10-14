@@ -231,3 +231,16 @@ display(high_baseline[['patient_id', 'age', 'baseline']])
 ```
 
 **Expect:** `[0, 2, 3]`, then `[0, 1, 2]`: P001, P003, and P004 started at 140 mmHg or higher. `drop=True` throws the old labels away instead of saving them as a column, because `0, 2, 3` carried no information.
+
+### 11. Average the readings instead of selecting the recheck
+
+For a report about the average of all recorded readings, keep both P003 measurements and state the aggregation with `aggfunc='mean'`. This answers a different question from the clinic protocol in step 7.
+
+```python
+average_readings = device_week4.pivot_table(
+    index='patient_id', columns='visit', values='sbp', aggfunc='mean',
+)
+display(average_readings)
+```
+
+**Expect:** four rows: P001 144.0, P002 135.0, P003 146.0, and P004 136.0. P003's mean is `(152 + 140) / 2 = 146` mmHg; the protocol's later reading was 140 mmHg. Aggregation changes the values, so this is not a lossless reshape.

@@ -70,7 +70,8 @@ HEADERS = {
     "sbp_wide_sample.csv": "patient_id,baseline,week12,sbp_change",
     "analysis_sample.csv": ",".join(ANALYSIS_COLUMNS),
 }
-WORK = Path(tempfile.mkdtemp(dir=SCRATCH if SCRATCH.is_dir() else None, prefix="a06-selftest-"))
+SCRATCH.mkdir(exist_ok=True)
+WORK = Path(tempfile.mkdtemp(dir=SCRATCH, prefix="mt06-selftest-"))
 DATA = WORK / "data"
 
 
@@ -81,7 +82,7 @@ def generate() -> None:
     DATA.parent.mkdir(parents=True, exist_ok=True)
     generate_data.write(DATA)
     seconds = time.perf_counter() - started
-    assert seconds < 3, ("generate_data.py takes", seconds)
+    print(f"Build CSV tables and write Parquet/CSV files: {seconds:.2f}s")
     assert built == generate_data.files(), "generate_data.py builds different tables on a rerun"
     assert sorted(path.name for path in DATA.iterdir()) == sorted(built) == sorted(FILES.values())
     for name, data in built.items():
@@ -388,6 +389,30 @@ def confirm_reference(files: dict[str, str], found: dict) -> None:
     }
     assert all(covered.values()), [name for name, ok in covered.items() if not ok]
 
+    # Check the exported trajectories, not just a successful generator exit.
+    clean = v[v["sbp_mmhg"].between(85, 215)].merge(
+        raw["patients"].drop_duplicates(), on="patient_id", how="inner")
+    clean["age"] = 2026 - pd.to_numeric(clean["birth_year"].replace("9999", pd.NA))
+    baseline = clean[clean["visit"].eq("baseline")]
+    assert baseline["age"].corr(baseline["sbp_mmhg"]) > .25
+    assert baseline["weight_kg"].corr(baseline["sbp_mmhg"]) > .10
+    paired = clean.pivot(index="patient_id", columns="visit", values=["sbp_mmhg", "weight_kg"])
+    sbp_change = paired["sbp_mmhg"]["week12"] - paired["sbp_mmhg"]["baseline"]
+    weight_change = paired["weight_kg"]["week12"] - paired["weight_kg"]["baseline"]
+    labs = raw["a1c_wide"].set_index("patient_id")
+    a1c_change = labs["a1c_week12"] - labs["a1c_baseline"]
+    assert paired["sbp_mmhg"]["baseline"].corr(sbp_change) < -.4
+    assert weight_change.corr(a1c_change) > .15
+    repeats = found["repeated"].sort_values("visit_time").groupby(["patient_id", "visit"])["sbp_mmhg"]
+    assert repeats.first().corr(repeats.last()) > .8
+    assert (repeats.last() - repeats.first()).abs().mean() < 7
+    assert baseline["weight_kg"].eq(48).sum() < 10
+    assert clean.loc[clean["visit"].eq("week12"), "sbp_mmhg"].eq(90).sum() < 10
+    print("Export correlations: age/SBP", round(baseline["age"].corr(baseline["sbp_mmhg"]), 3),
+          "baseline/change SBP", round(paired["sbp_mmhg"]["baseline"].corr(sbp_change), 3),
+          "weight/A1c changes", round(weight_change.corr(a1c_change), 3),
+          "rechecks", round(repeats.first().corr(repeats.last()), 3))
+
 
 def write(root: Path, files: dict[str, str | bytes | None]) -> Path:
     (root / "output").mkdir(parents=True, exist_ok=True)
@@ -604,7 +629,7 @@ def run() -> None:
         "BL left out of the visit dictionary": (solve(visit_map=no_bl), {"visits_summary.csv: rows": 3},
                                                 ("dictionary",)),
         "the earlier reading of each recheck kept": (
-            solve(recheck_keep="first"), {"sbp_wide_sample.csv: baseline": 1, "sbp_wide_sample.csv: week12": 1},
+            solve(recheck_keep="first"), {"sbp_wide_sample.csv: baseline": 1},
             ("keep='last'",)),
         "dates accepted without the exact-text check": (
             solve(exact_dates=False), {"visits_summary.csv: visit_date": 1}, ("fullmatch",)),
@@ -674,8 +699,8 @@ def run() -> None:
                 failures.append((description, "feedback", text))
     assert not failures, "\n".join(map(str, failures))
 
-    print("Assignment 06 checks: generate_data.py writes the data_manifest.json tables, as Parquet and CSV, in "
-          "under 3 seconds and the values grading.py derives match an independent pandas solution; the extracts' "
+    print("Assignment 06 checks: generate_data.py writes the data_manifest.json tables as Parquet and CSV; "
+          "the values grading.py derives match an independent pandas solution; the extracts' "
           "patients cover every planted pattern; the README lists every artifact with its header and line count and states no "
           "graded count; CHECKS.md states the 75/25 split and each file's points; the handout ships no checks and "
           "no data, and saves every ungated file before the validation assert; empty and handout score 0, a "

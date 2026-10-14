@@ -527,6 +527,8 @@ print((-scores).round(1))
 [4.  0.7 9.6]
 ```
 
+![xkcd 534: Genetic Algorithms. Before optimizing a score, check whether larger or smaller is better.](media/xkcd_534.png)
+
 ### Code Snippet: Accuracy Hides Missed Readmissions
 
 When readmissions are rare, a model that always says "no" scores high accuracy while catching nobody, which is why screening cares about recall.
