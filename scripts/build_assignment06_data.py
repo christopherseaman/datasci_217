@@ -3,18 +3,15 @@
     python3 scripts/build_assignment06_data.py
 
 The handout ships `06/mid-term/generate_data.py`, never the data. This writes
-each generated file's row count, columns, and the SHA-256 of its table as CSV
-text into `06/mid-term/data_manifest.json`, which the notebook's first cell
-checks. Hashing the CSV text rather than the file covers the Parquet files too,
+the SHA-256 of each generated file's table as CSV text into
+`06/mid-term/data_manifest.json`, which the notebook's first cell checks. Hashing the CSV text rather than the file covers the Parquet files too,
 whose bytes vary with the pyarrow version. Copy the same SHA-256 values into
 `DATA_SHA256` in `06/mid-term_checks/grading.py`.
 """
 
 from __future__ import annotations
 
-import csv
 import hashlib
-import io
 import json
 from pathlib import Path
 import sys
@@ -32,9 +29,7 @@ def main() -> None:
                 "sha256": "of each table as CSV text with \\n line endings, as to_csv(index=False) writes it",
                 "files": {}}
     for name, data in generate_data.files().items():
-        header, *rows = csv.reader(io.StringIO(data.decode("utf-8")))
-        manifest["files"][name] = {"rows": len(rows), "columns": header,
-                                   "sha256": hashlib.sha256(data).hexdigest()}
+        manifest["files"][name] = {"sha256": hashlib.sha256(data).hexdigest()}
     path = HANDOUT / "data_manifest.json"
     path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print(f"Wrote {path}")

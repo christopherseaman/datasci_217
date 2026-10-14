@@ -71,13 +71,15 @@ Each task changes `labs`, so run the cells in order; after a mistake, **Restart*
 
 ### 1.1 Count the gaps
 
-The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)` and sets `rows_read = len(labs)`.
+Run the first Task 1 cell as it is; it sets `rows_read`.
 
 - Expect: `shape: (59447, 8)`. `age` is `str` (some ages are `unknown`); `weight_kg` is `float64`, with `-999` counted as a weight.
 
 1. Build `missing_report` with `pd.DataFrame()` from a dictionary of two Series, so it has one row per column of `labs`:
-    - `missing_count`: `isna()` on `labs`, then `.sum()`, counts each column's blanks;
-    - `missing_pct`: `isna()`, then `.mean()`, gives the share of blanks; multiply by 100 and `.round(1)`.
+    - `missing_count`: the number of blanks in each column;
+    - `missing_pct`: the percent of blanks in each column, rounded to 1 decimal.
+
+    Lecture 05's card "Finding missing values" has both.
 2. Name the index with `missing_report.index.name = "column"`.
     - Expect:
 
@@ -116,9 +118,9 @@ The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)` and se
     - Expect: `age` is `Int64` and `visit_date` is `datetime64[us]`.
 4. The cell selects the five converted columns as `typed`. Build `typed_profile` with `pd.DataFrame()`, one row per column of `typed`, from these five Series in this order:
     - `dtype`: `typed.dtypes`, turned to text with `.astype(str)`;
-    - `missing_count`: `isna()`, then `.sum()`;
-    - `min` and `max`: `typed.min()` and `typed.max()`;
-    - `mean`: `typed.mean(numeric_only=True)`, which skips the date column, rounded with `.round(2)`.
+    - `missing_count`: the blanks per column, as in Task 1.1;
+    - `min` and `max`: each column's smallest and largest value;
+    - `mean`: each column's mean, with `numeric_only=True` to skip the date column, rounded to 2 decimals.
 5. Name the index `column`, as in Task 1.1.
     - Expect:
 
@@ -154,9 +156,9 @@ The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)` and se
 
 ### 3.2 Bin HbA1c and count the categories
 
-HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more is diabetes.
+HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% to 20% is diabetes. A slip above 20, such as 64, gets no category.
 
-1. Add the column `a1c_category` to `labs` by binning `hba1c_pct` with `pd.cut()`. Pass the edges 0, 5.6, 6.4, and 20 as `bins` and the three band names as `labels`. Each bin includes its right edge, so 5.6 is normal and 5.7 prediabetes; a slip such as 64 gets no category.
+1. Add the column `a1c_category` to `labs` by binning `hba1c_pct` with `pd.cut()`. Choose `bins` edges that match the bands, and pass the three band names as `labels`. Each bin includes its right edge, and HbA1c is recorded to one decimal.
 2. Build `coded`, one 0/1 column per category of `clinic`, `gender`, and `a1c_category`, with `pd.get_dummies()` on those three columns and `dtype="int64"`. A blank gets 0 in every column.
 3. Set `category_counts` to the visits per indicator column of `coded`, with `.sum()`. Name its index `indicator` and the Series `visits`, through `.index.name` and `.name`.
     - Expect:
@@ -218,8 +220,8 @@ HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more
 ### 5.1 Apply the decisions and log them
 
 1. Set `clean` to a copy of `labs` with `.copy()`.
-2. Keep the visits with a valid ID and a real date: join `rules["patient_id_format"]` and `rules["visit_date_present"]` with `&`, and select those rows with `clean[mask]`. Assign the result back to `clean`.
-3. Before blanking, count the impossible values among the kept visits in `clean`. Set `hba1c_outside` to the number of `hba1c_pct` values below 4 or above 20: join the two comparisons with `|`, each in parentheses, wrap the whole expression in parentheses, then `.sum()`. Set `weight_outside` the same way with 30 and 250.
+2. Keep the visits that pass both the ID rule and the date rule from Task 4: join the two `rules` columns with `&` and select those rows. Assign the result back to `clean`.
+3. Before blanking, count the impossible values among the kept visits in `clean`. Set `hba1c_outside` to the number of `hba1c_pct` values below 4 or above 20, joining the two comparisons with `|` as in Task 4 step 2. Set `weight_outside` the same way with 30 and 250.
 4. Blank those values, keeping the visit: `.where()` keeps the values where its mask is `True` and turns the rest into `NaN`. Give it a mask of the 4 to 20 range, assign the result back to `clean["hba1c_pct"]`, and do the same for `weight_kg` with 30 and 250.
 5. Number the rows again with `reset_index()`, using `drop` so the old index does not become a column. Assign the result back to `clean`.
 6. Build `decision_log` with `pd.Series()` from a dictionary of six counts, in this order, and `name="rows"`:
@@ -227,7 +229,7 @@ HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more
     - `visits_dropped`: `len(labs)` minus `len(clean)`;
     - `hba1c_blanked` and `weight_blanked`: `hba1c_outside` and `weight_outside`.
 7. Name the index `decision`.
-    - Expect: `shape: (57618, 10)`; the three counts from Task 1.2, then `visits_dropped` 412 (2 visits fail both rules), `hba1c_blanked` 48, and `weight_blanked` 70.
+    - Expect: `shape: (57618, 10)`; `rows_read` 59447, `rows_with_labs` 58554, `rows_unique` 58030, then `visits_dropped` 412 (2 visits fail both rules), `hba1c_blanked` 48, and `weight_blanked` 70. `hba1c_blanked` is one fewer than Task 4's 49 because one bad HbA1c sits on a visit dropped in step 2.
 8. Save with `decision_log.to_csv(DECISION_PATH)`.
 
 > **Checkpoint: `output/decision_log.csv`**
@@ -235,14 +237,14 @@ HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more
 
 ### 5.2 Validate, then save the summary
 
-1. Build `checks` with `pd.Series()` from a dictionary of five `True`/`False` values, one per rule of the data contract, each tested on `clean`. Each one reduces a column test to one value with `.all()` or `.any()`, as in Lecture 05's validation invariants:
-    - `one row per visit`: no two visits share both `patient_id` and `visit_date`;
+1. Build `checks` with `pd.Series()` from a dictionary of five `True`/`False` values, one per rule of the data contract, each tested on `clean`. Each one reduces a column test to one value, as in Lecture 05's card "Validation checks":
+    - `one row per visit`: `duplicated()` with `subset` set to both key columns flags no row (`.sum()` is 0);
     - `patient IDs valid`: every ID matches `r"D[0-9]{5}"`;
     - `visit dates present`: no date is missing;
     - `hba1c in range`: every recorded HbA1c is from 4 to 20;
     - `weight in range`: every recorded weight is from 30 to 250.
-2. Stop if any check fails, with `assert` on `checks.all()`, and show the failing checks, `checks[~checks]`, as its message.
-    - Expect: no output. A failure names the check; fix that step and run the cells again.
+2. Stop if any check fails, with the `assert` line from Lecture 05's card "Validation checks".
+    - Expect: `checks` shows five `True` values, and the `assert` prints nothing. A failure names the check; fix that step and run the cells again.
 3. Set `clean_summary` to `describe()` of the four number columns of `clean` (`age`, `weight_kg`, `hba1c_pct`, `glucose_mg_dl`), rounded to 2 decimals, then turned with `.T` so each column is a row.
     - Expect:
 
@@ -268,7 +270,7 @@ Parquet keeps each column's dtype.
     - Expect: `age` is `Int64`, `visit_date` is `datetime64[us]`, `a1c_category` is `category`, `glucose_outlier` is `bool`, and `same as clean: True`.
 
 > **Checkpoint: `data/labs_clean.parquet`**
-> About 0.5 MB, with 57618 rows and the 10 columns of `clean`.
+> Not committed or checked; about 0.5 MB, with the 57618 rows and 10 columns of `clean`.
 
 ## Check your work
 

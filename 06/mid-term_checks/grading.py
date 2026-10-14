@@ -366,16 +366,17 @@ MERGE_HINTS = {
                                                          "current",
 }
 
-DECISIONS = (
-    ("patients", "remove the exact duplicate row, keeping the first"),
-    ("patients", "map gender to F, M, or X with a dictionary and store it as a category"),
-    ("patients", "uppercase site_code and remove its spaces and hyphens"),
-    ("patients", "convert the birth_year sentinel 9999 to missing"),
-    ("visits", "rename wt_kg to weight_kg before stacking"),
-    ("visits", "convert sbp_mmhg outside 70 through 250, including 999, to missing"),
-    ("visits", "keep only exact YYYY-MM-DD calendar dates"),
-    ("visits", "keep the later reading of a repeated patient_id and visit pair"),
-    ("sites", "keep only current site records before joining"),
+# The issues the decision log covers, one row each; students write each decision and reason themselves.
+DECISION_ISSUES = (
+    ("patients", "exact duplicate rows"),
+    ("patients", "gender spellings that are not a code"),
+    ("patients", "site codes needing normalization"),
+    ("patients", "birth_year sentinel 9999"),
+    ("visits", "weight column named wt_kg in visits_south.csv"),
+    ("visits", "sbp sentinel 999 and readings outside 70 through 250"),
+    ("visits", "impossible and loosely written visit dates"),
+    ("visits", "repeated patient_id and visit pairs"),
+    ("sites", "repeated site_code rows"),
 )
 
 # Spellings of a missing cell. `NA` is left out for text columns, where it could be a value.
@@ -1395,39 +1396,43 @@ def decision_table(root: Path) -> Table:
     return table
 
 
-def check_decisions(root: Path) -> Outcome:
+def check_issues(root: Path) -> Outcome:
     table = decision_table(root)
-    table.require("table", "decision")
-    outcome = Outcome(total=len(DECISIONS))
-    pairs = sorted(((similarity(" | ".join(wanted), " | ".join((row["table"], row["decision"]))), position, index)
-                    for position, wanted in enumerate(DECISIONS) for index, row in enumerate(table.rows)),
+    table.require("table", "issue")
+    outcome = Outcome(total=len(DECISION_ISSUES))
+    pairs = sorted(((similarity(" | ".join(wanted), " | ".join((row["table"], row["issue"]))), position, index)
+                    for position, wanted in enumerate(DECISION_ISSUES) for index, row in enumerate(table.rows)),
                    key=lambda pair: (-pair[0], pair[1], pair[2]))
     chosen: dict[int, int] = {}
     for ratio, position, index in pairs:
         if ratio >= SIMILAR and position not in chosen and index not in chosen.values():
             chosen[position] = index
-    for position, (table_name, decision) in enumerate(DECISIONS):
+    for position, (table_name, issue) in enumerate(DECISION_ISSUES):
         if position in chosen:
             outcome.right += 1
             continue
         closest = next((table.rows[index] for _, wanted, index in pairs
                         if wanted == position and index not in chosen.values()), None)
         found = "" if closest is None else (f"; the closest row has table {shown(closest['table'])} and "
-                                            f"decision {shown(closest['decision'])}")
-        outcome.problems.append(f"no row with table '{table_name}' and decision '{decision}'{found} (copy both "
-                                "from Task 3.3's table)")
+                                            f"issue {shown(closest['issue'])}")
+        outcome.problems.append(f"no row with table '{table_name}' and issue '{issue}'{found} (add one row per "
+                                "Task 3.3 issue, with table and issue copied)")
     return outcome
 
 
-def check_reasons(root: Path) -> Outcome:
-    table = decision_table(root)
-    table.require("reason")
-    blank = [position for position, row in enumerate(table.rows, start=1) if is_missing(row["reason"], TEXT_MISSING)]
-    outcome = Outcome(total=len(table.rows), right=len(table.rows) - len(blank))
-    if blank:
-        outcome.problems.append(f"{len(blank)} of {len(table.rows)} decision rows have no reason, first row "
-                                f"{blank[0]} (write one sentence for every decision)")
-    return outcome
+def filled_column(column: str, fix: str) -> Callable[[Path], Outcome]:
+    """Every decision row has text in `column`; judged over the rows written, so a missing row is not charged."""
+    def check(root: Path) -> Outcome:
+        table = decision_table(root)
+        table.require(column)
+        blank = [position for position, row in enumerate(table.rows, start=1)
+                 if is_missing(row[column], TEXT_MISSING)]
+        outcome = Outcome(total=len(table.rows), right=len(table.rows) - len(blank))
+        if blank:
+            outcome.problems.append(f"{len(blank)} of {len(table.rows)} decision rows have an empty {column}, "
+                                    f"first row {blank[0]} ({fix})")
+        return outcome
+    return check
 
 
 T_PATIENTS = "Task 3.1"
@@ -1461,8 +1466,11 @@ CHECKS = (
     Check("sbp_wide_sample.csv: baseline", 1, T_WIDE, sbp_wide_visit("baseline")),
     Check("sbp_wide_sample.csv: week12", 1, T_WIDE, sbp_wide_visit("week12")),
     Check("sbp_wide_sample.csv: sbp_change", 2, "Task 4.3", check_sbp_change),
-    Check("decision_log.csv: decisions", 3, T_DECISIONS, check_decisions),
-    Check("decision_log.csv: reason", 1, T_DECISIONS, check_reasons),
+    Check("decision_log.csv: issues", 2, T_DECISIONS, check_issues),
+    Check("decision_log.csv: decision", 1, T_DECISIONS,
+          filled_column("decision", "write what you did about the issue")),
+    Check("decision_log.csv: reason", 1, T_DECISIONS,
+          filled_column("reason", "write one sentence on why the decision fits")),
 )
 MAX_SCORE = sum(check.points for check in CHECKS)
 if MAX_SCORE != 75:

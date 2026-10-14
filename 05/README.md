@@ -562,6 +562,7 @@ Without `pyarrow`: `274132` and `5297` bytes.
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
 | `pd.get_dummies(series)` | Create one indicator column per category | Boolean `DataFrame` by default |
+| `pd.get_dummies(df[['site', 'smoking']])` | One set of indicators per listed column | Names prefixed with the column, such as `site_north` and `smoking_yes` |
 | `prefix='color'` | Prefix the output labels | Names such as `color_blue` |
 | `drop_first=True` | Omit the first category as the reference | `k - 1` columns for `k` categories |
 | `dtype='int64'` | Request integer indicators | Columns containing `0` and `1` |

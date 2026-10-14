@@ -7,7 +7,7 @@ python3 06/mid-term_checks/check_assignment.py path/to/submission
 python3 06/mid-term_checks/check_assignment.py path/to/submission --json
 ```
 
-The first prints a readable report; `--json` prints the `datasci217/grading-result/v1` report. The report covers the 75 points graded from files; the other 25 come from human review of the notebook, the decision reasons, and the commit history, five 5-point categories that the handout's CHECKS.md lists with the cell each one reads. The command exits 0 only when every check passes, so judge a run by its JSON, not its exit status.
+The first prints a readable report; `--json` prints the `datasci217/grading-result/v1` report. The report covers the 75 points graded from files; the other 25 come from human review of the notebook, the decisions and reasons, and the commit history, five 5-point categories that the handout's CHECKS.md lists with the cell each one reads. The command exits 0 only when every check passes, so judge a run by its JSON, not its exit status.
 
 The checks read only the eleven files in the submission's `output/`. They never import, run, or read submitted code, and the notebook is left to human review. The handout ships `generate_data.py` and `data_manifest.json`, never the data (Git ignores `data/`). When `grading.py` loads, it runs the course copy of `06/mid-term/generate_data.py` in memory, refuses to load unless each built table's SHA-256 (of its CSV text, which the two Parquet files hold as tables) matches `DATA_SHA256`, and derives every expected value from that text with the standard library, writing nothing to disk and never importing pandas; `_grader_selftest/run.py` recomputes every value with pandas. Loading takes about 2 seconds.
 
@@ -30,7 +30,7 @@ The outputs are analyst-sized, about 5 KB in all: audits (`issue_audit.csv`, `me
 | `sbp_wide_sample.csv: rows`, `baseline`, `week12`, `sbp_change` | 2, 1, 1, 2 | One row per sample patient with a visit; values in proportion |
 | `analysis_sample.csv: rows` | 3 | One row per visit of a sample patient, in proportion |
 | `analysis_sample.csv: site_name`, `a1c_pct`, `gender and birth_year` | 2 each | In proportion to the sample visits right |
-| `decision_log.csv: decisions`, `reason` | 3, 1 | In proportion to the 9 decisions matched by `table` and `decision`; a reason on every row |
+| `decision_log.csv: issues`, `decision`, `reason` | 2, 1, 1 | In proportion to the 9 issues matched by `table` and `issue`; a non-empty decision and reason on every row (their quality is human review) |
 
 Each check reads one artifact without requiring another check to pass, and each mistake is charged once, in the file that first shows it:
 

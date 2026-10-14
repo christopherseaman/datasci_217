@@ -4,7 +4,7 @@
 
 Profile five raw clinic tables, audit and clean them, recode gender as a category, stack the two site visit exports, reshape the lab results, join everything into one analysis table, and pivot blood pressure to one row per patient. You save audits, summaries, and small extracts in `output/`; the full cleaned tables stay in the notebook.
 
-`generate_data.py` writes the five files into `data/`, two as Parquet and three as CSV: a synthetic follow-up study of adults with high blood pressure and type 2 diabetes, with no real patients. The registry holds about 30,000 patients with about 57,000 visits, so every count comes from code. Two clinics, North Clinic (`N01`) and South Valley Clinic (`S02`), each export a visit file. `sites.csv` lists three site codes, `N01`, `S02`, and `W03` (a site with no patients yet), and some registry rows carry `E04`, a code `sites.csv` does not list.
+`generate_data.py` writes the five files into `data/`, two as Parquet and three as CSV: a synthetic follow-up study of adults with high blood pressure and type 2 diabetes, with no real patients. The registry holds tens of thousands of patients and visits, so every count comes from code. Two clinics, North Clinic (`N01`) and South Valley Clinic (`S02`), each export a visit file. `sites.csv` lists three site codes, `N01`, `S02`, and `W03` (a site with no patients yet), and some registry rows carry `E04`, a code `sites.csv` does not list.
 
 | File | One row is | Columns |
 | --- | --- | --- |
@@ -56,7 +56,7 @@ The first cell supplies `DATA_DIR`, `OUTPUT_DIR`, a path for each output file, `
 assignment/
 ├── assignment.ipynb            # notebook scaffold: complete every TODO, then run it top to bottom
 ├── generate_data.py            # supplied: writes the five data files into data/
-├── data_manifest.json          # supplied: each data file's row count, columns, and sha256 checksum
+├── data_manifest.json          # supplied: each data file's sha256 checksum
 ├── data/                       # made by generate_data.py; never edit it (Git ignores it)
 ├── pyproject.toml, uv.lock     # supplied: the packages and exact versions `uv sync` installs
 ├── .python-version             # supplied: Python 3.13
@@ -243,7 +243,7 @@ gender_counts.to_csv(GENDER_CATEGORIES_PATH, index=False)
 > 9 lines: the header `metric,value` and the 8 metrics in the order above.
 
 > **Checkpoint: `output/gender_categories.csv`**
-> 5 lines: the header `gender,count,code`, one row per code with its category code (`F` 0, `M` 1, `X` 2), and a row with an empty `gender` and code `-1` for the missing values.
+> 5 lines: the header `gender,count,code`, one row per category, and one row for the missing values.
 
 ### 3.2 Clean the visits
 
@@ -296,22 +296,22 @@ Self-checks: `baseline visits` plus `week12 visits` equals `visits`, and so do t
 
 ### 3.3 Record the decisions
 
-Build `decision_table`, a DataFrame with the columns `table`, `decision`, and `reason`: one row for each decision below, in this order, with `table` and `decision` copied exactly. Write each `reason` yourself: one sentence, on one line, about these files. Save it to `output/decision_log.csv` with `to_csv(path, index=False)`.
+Build `decision_table`, a DataFrame with the columns `table`, `issue`, `decision`, and `reason`: one row for each issue below, with `table` and `issue` copied. Write each `decision` (what you did about the issue) and each `reason` (one sentence on why it fits these files) yourself, each on one line. Save it to `output/decision_log.csv` with `to_csv(path, index=False)`.
 
-| `table` | `decision` |
+| `table` | `issue` |
 | --- | --- |
-| `patients` | `remove the exact duplicate row, keeping the first` |
-| `patients` | `map gender to F, M, or X with a dictionary and store it as a category` |
-| `patients` | `uppercase site_code and remove its spaces and hyphens` |
-| `patients` | `convert the birth_year sentinel 9999 to missing` |
-| `visits` | `rename wt_kg to weight_kg before stacking` |
-| `visits` | `convert sbp_mmhg outside 70 through 250, including 999, to missing` |
-| `visits` | `keep only exact YYYY-MM-DD calendar dates` |
-| `visits` | `keep the later reading of a repeated patient_id and visit pair` |
-| `sites` | `keep only current site records before joining` |
+| `patients` | `exact duplicate rows` |
+| `patients` | `gender spellings that are not a code` |
+| `patients` | `site codes needing normalization` |
+| `patients` | `birth_year sentinel 9999` |
+| `visits` | `weight column named wt_kg in visits_south.csv` |
+| `visits` | `sbp sentinel 999 and readings outside 70 through 250` |
+| `visits` | `impossible and loosely written visit dates` |
+| `visits` | `repeated patient_id and visit pairs` |
+| `sites` | `repeated site_code rows` |
 
 > **Checkpoint: `output/decision_log.csv`**
-> 10 lines: the header `table,decision,reason` and the nine decisions in the order above.
+> 10 lines: the header `table,issue,decision,reason` and nine issue rows.
 
 Commit your work so far with a message that says what it holds, such as `Clean patients and visits`.
 
@@ -466,7 +466,7 @@ Read `output/analysis_sample.csv` back with `dtype={...}` for every column but `
 | `output/patients_summary.csv` | Task 3.1 | `metric,value` | 9 |
 | `output/gender_categories.csv` | Task 3.1 | `gender,count,code` | 5 |
 | `output/visits_summary.csv` | Task 3.2 | `metric,value` | 14 |
-| `output/decision_log.csv` | Task 3.3 | `table,decision,reason` | 10 |
+| `output/decision_log.csv` | Task 3.3 | `table,issue,decision,reason` | 10 |
 | `output/a1c_summary.csv` | Task 4.1 | `visit,results,a1c_pct_mean` | 3 |
 | `output/merge_audit.csv` | Task 4.2 | `check,count` | 8 |
 | `output/sbp_wide_sample.csv` | Task 4.3 | `patient_id,baseline,week12,sbp_change` | 16 |

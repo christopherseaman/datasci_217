@@ -64,7 +64,7 @@ HEADERS = {
     "patients_summary.csv": "metric,value",
     "gender_categories.csv": "gender,count,code",
     "visits_summary.csv": "metric,value",
-    "decision_log.csv": "table,decision,reason",
+    "decision_log.csv": "table,issue,decision,reason",
     "a1c_summary.csv": "visit,results,a1c_pct_mean",
     "merge_audit.csv": "check,count",
     "sbp_wide_sample.csv": "patient_id,baseline,week12,sbp_change",
@@ -109,6 +109,20 @@ def readme_block_labels(header: str) -> list[str]:
     block = next((found for found in blocks if "<" in found), None)
     assert block, f"the README shows no block starting `{header}` with placeholders"
     return [line.rsplit(",", 1)[0] for line in block.splitlines()]
+
+
+# The solution's own decision wording; the README lists only the issues, so none of this text appears there.
+OWN_DECISIONS = (
+    "drop_duplicates() with keep='first'",
+    "lowercase the text and map each spelling to F, M, or X, then astype category",
+    "upper() and strip spaces and dashes",
+    "replace 9999 with NA",
+    "rename(columns=) to the north file's name",
+    "set both to NA with mask()",
+    "parse with format='%Y-%m-%d' and errors='coerce'",
+    "sort and drop_duplicates(keep='last')",
+    "filter record_status == 'current'",
+)
 
 
 def readme_decisions() -> list[tuple[str, str]]:
@@ -225,7 +239,8 @@ def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, si
 
     decisions = readme_decisions()
     files["decision_log.csv"] = pd.DataFrame({
-        "table": [table for table, _ in decisions], "decision": [decision for _, decision in decisions],
+        "table": [table for table, _ in decisions], "issue": [issue for _, issue in decisions],
+        "decision": OWN_DECISIONS,
         "reason": [f"Documented rule {number} for these synthetic clinic files." for number in
                    range(1, len(decisions) + 1)],
     }).to_csv(index=False)
@@ -300,7 +315,7 @@ def confirm_reference(files: dict[str, str], found: dict) -> None:
             assert grading.INVENTORY[FILES[name]] == len(frame) + 1
     assert tuple(found["audit"].items()) == grading.ISSUE_AUDIT, found["audit"]
     assert tuple(found["merge_audit"].items()) == grading.MERGE_AUDIT, found["merge_audit"]
-    assert tuple(found["decisions"]) == grading.DECISIONS, found["decisions"]
+    assert tuple(found["decisions"]) == grading.DECISION_ISSUES, found["decisions"]
     assert readme_block_labels("issue,count") == list(found["audit"]), "README issue labels differ"
     assert readme_block_labels("check,count") == list(found["merge_audit"]), "README merge labels differ"
     assert readme_block_labels("metric,value") in (PATIENT_METRICS, VISIT_METRICS), "README metric labels differ"
@@ -439,7 +454,8 @@ def loose(files: dict[str, str]) -> dict[str, str | bytes]:
             "", "NaN"))[["code", "count", "gender"]].to_csv(index=False),
         "visits_summary.csv": visits.set_index("metric")["value"].to_csv().replace(",", ", "),
         "decision_log.csv": edit(files["decision_log.csv"], lambda t: t.assign(
-            decision=t["decision"].str.upper() + ".", notes="extra column").iloc[::-1]),
+            issue=t["issue"].str.upper() + ".", table=" " + t["table"].str.title(), notes="extra column")
+            .iloc[::-1, ::-1]),
         "a1c_summary.csv": edit(files["a1c_summary.csv"], lambda t: t.assign(visit=t["visit"].str.title())
                                 .iloc[::-1, ::-1]).replace("\n", "  \n"),
         "merge_audit.csv": table(files["merge_audit.csv"]).set_index("check")["count"].to_csv(),
@@ -473,7 +489,8 @@ def check_handout(files: dict[str, str]) -> None:
     assert (f"{grading.MAX_SCORE} points graded from your committed files after the deadline, "
             f"{review} by human review") in checks_md, "CHECKS.md states a different point split"
     # The exam publishes no graded value: no output line, and no graded count written anywhere in the text.
-    shown = set(HEADERS.values()) | {f"{table},{decision}" for table, decision in grading.DECISIONS}
+    assert not [text for text in OWN_DECISIONS if text in readme + checks_md], "the README shows decision text"
+    shown = set(HEADERS.values())
     leaks = [line for name in files if name not in ("decision_log.csv", "file_inventory.txt")
              for line in files[name].splitlines() if line not in shown and line in readme + checks_md]
     assert not leaks, ("the README publishes expected values", leaks)
@@ -629,10 +646,13 @@ def run() -> None:
             {"decision_log.csv": edit(files["decision_log.csv"],
                                       lambda t: t.assign(reason=t["reason"].mask(t.index == 3, "")))},
             {"decision_log.csv: reason": 1}, ("row 4",)),
-        "one decision rewritten": (
-            {"decision_log.csv": edit(files["decision_log.csv"], lambda t: t.assign(
-                decision=t["decision"].mask(t.index == 8, "drop every site")))},
-            {"decision_log.csv: decisions": 1}, ("current site records",)),
+        "one decision left blank": (
+            {"decision_log.csv": edit(files["decision_log.csv"],
+                                      lambda t: t.assign(decision=t["decision"].mask(t.index == 5, "")))},
+            {"decision_log.csv: decision": 1}, ("row 6",)),
+        "one issue row missing": (
+            {"decision_log.csv": edit(files["decision_log.csv"], lambda t: t.drop(index=8))},
+            {"decision_log.csv: issues": 1}, ("repeated site_code rows",)),
         "a profile that counts the header as a row": (
             {"table_profile.csv": edit(files["table_profile.csv"],
                                        lambda t: t.assign(rows=(t["rows"].astype(int) + 1).astype(str)))},

@@ -5,55 +5,18 @@
   "sha256": "of each table as CSV text with \\n line endings, as to_csv(index=False) writes it",
   "files": {
     "patients.parquet": {
-      "rows": 30045,
-      "columns": [
-        "patient_id",
-        "gender",
-        "birth_year",
-        "site_code"
-      ],
       "sha256": "7ebbe818af63b951cc227d430d8dec83b90d944fbdfc6f24b2aa33ba7ca3b993"
     },
     "sites.csv": {
-      "rows": 5,
-      "columns": [
-        "site_code",
-        "site_name",
-        "record_status"
-      ],
       "sha256": "daaa4f3fc475900db905590faf6524f34143e78b73633b1794de4c6cf4b56a77"
     },
     "visits_north.csv": {
-      "rows": 26394,
-      "columns": [
-        "patient_id",
-        "visit",
-        "visit_date",
-        "visit_time",
-        "sbp_mmhg",
-        "weight_kg"
-      ],
       "sha256": "9136d39ad6571e4ff6b21f1119dde6cd6a16d101bc7d9348b86e7ac15a0efbd2"
     },
     "visits_south.csv": {
-      "rows": 30927,
-      "columns": [
-        "patient_id",
-        "visit",
-        "visit_date",
-        "visit_time",
-        "sbp_mmhg",
-        "wt_kg"
-      ],
       "sha256": "96d19aad4cbbefa5d96536f2154cdfb7a17cf8c04cad823171def21ac7a1842c"
     },
     "a1c_wide.parquet": {
-      "rows": 29469,
-      "columns": [
-        "patient_id",
-        "a1c_baseline",
-        "a1c_week12"
-      ],
       "sha256": "6dcf0c68ec017ebd5379cf5c775299391ba17528c5f4130b7de533a59575adc6"
     }
   }
