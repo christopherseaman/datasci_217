@@ -3,7 +3,7 @@ const markdownItAnchor = require("markdown-it-anchor");
 const path = require("path");
 
 const repositoryUrl = "https://github.com/christopherseaman/datasci_217";
-const excludedContent = /^(?:\d{2}\/assignment\/|\d{2}\/demo\/)/;
+const excludedContent = /^(?:\d{2}\/assignment\/|\d{2}\/mid-term\/|\d{2}\/demo\/)/;
 
 function markdownHeadingSlug(value) {
   return value

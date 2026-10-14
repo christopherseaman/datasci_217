@@ -97,15 +97,21 @@ def failing(report: dict) -> dict[str, str]:
     return {test["test-name"]: test["detail"] for test in report["tests"] if not test["passed"]}
 
 
+def local_assignments() -> list[dict]:
+    """This working tree's assignments.json, which the next commit puts on main."""
+    return json.loads((REPO / "assignments.json").read_text(encoding="utf-8"))["assignments"]
+
+
 def copy_tracked(number: str, destination: Path) -> Path:
     """The files a student's fork starts with: what the course repository tracks, with files added
     or deleted since the last commit counted, so the handout about to be committed is what is tested."""
-    listed = run(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", f"{number}/assignment"],
+    source = next(entry["source"] for entry in local_assignments() if entry["number"] == number)
+    listed = run(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", source],
                  REPO).split("\0")
     for name in dict.fromkeys(filter(None, listed)):
         if not (REPO / name).is_file():
             continue  # deleted in the working tree, so the next commit drops it
-        target = destination / Path(name).relative_to(f"{number}/assignment")
+        target = destination / Path(name).relative_to(source)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REPO / name, target)
     return destination
@@ -253,7 +259,8 @@ def test_fork_names_and_listing() -> None:
 
     # Grades come from the course-owned checks where they exist, as CI fetches them.
     for number in ("01", "02", "03"):
-        assert grade_submissions.trusted_checks_dir(number) == REPO / number / "assignment_checks"
+        assert grade_submissions.trusted_checks_dir(f"{number}/assignment") == REPO / number / "assignment_checks"
+    assert grade_submissions.trusted_checks_dir("06/mid-term") == REPO / "06" / "mid-term_checks"
     assert grade_submissions.load_assignment("01")["repository"] == "UCSF-DataSci/ds217-26f-01"
 
     listing = {login: {"owner": {"login": login}, "full_name": f"{login}/ds217-26f-01",
@@ -302,16 +309,17 @@ def test_fork_names_and_listing() -> None:
 
 def test_every_assignment_through_the_script(work: Path) -> None:
     """Each assignment's untouched handout, graded as a fork, gives a zero row and leaves its clone clean."""
-    for number in (f"{n:02}" for n in range(1, 12)):
-        url = publish_fork(work / "forks", f"handout{number}", copy_tracked(number, work / f"files-{number}"),
-                           repository=f"ds217-26f-{number}")
-        destination = work / f"submissions-{number}"
-        assert grade(destination, url, assignment=number) == 0, number
-        row = read_grades(destination)[f"handout{number}"]
-        assert row["status"] == "graded" and row["score"] == "0", (number, row)
-        assert row["max_score"] == ("75" if number in ("06", "11") else "100"), (number, row)
-        assert not re.search(r": failed( \||$)", row["details"]), (number, "a failing check gave no reason", row)
-        assert run(CLEAN, destination / f"handout{number}") == "", (number, "the checks wrote into the clone")
+    with patched(load_assignments=local_assignments):
+        for number in (entry["number"] for entry in local_assignments()):
+            url = publish_fork(work / "forks", f"handout{number}", copy_tracked(number, work / f"files-{number}"),
+                               repository=f"ds217-26f-{number}")
+            destination = work / f"submissions-{number}"
+            assert grade(destination, url, assignment=number) == 0, number
+            row = read_grades(destination)[f"handout{number}"]
+            assert row["status"] == "graded" and row["score"] == "0", (number, row)
+            assert row["max_score"] == ("75" if number in ("06", "11") else "100"), (number, row)
+            assert not re.search(r": failed( \||$)", row["details"]), (number, "a failing check gave no reason", row)
+            assert run(CLEAN, destination / f"handout{number}") == "", (number, "the checks wrote into the clone")
 
 
 def test_grading_forks(work: Path) -> None:

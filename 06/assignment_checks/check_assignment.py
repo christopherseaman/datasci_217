@@ -1,13 +1,4 @@
-"""Grade one Assignment 06 (midterm) submission from its committed files.
-
-    python3 06/assignment_checks/check_assignment.py <submission_dir> [--json]
-
-Course-side only: the midterm handout ships no checks. Only the files in the
-submission's `output/` are read; no submitted code runs. Exits 0 when every
-check passes and 1 otherwise. By default the latest `grading.py` is fetched from
-the course repository; `--local-checks` or DS217_LOCAL_CHECKS=1 uses this folder's
-copy, and DS217_CHECKS_URL points the fetch elsewhere.
-"""
+"""Run the Assignment 06 checks against the saved CSV files and say what to fix."""
 
 from __future__ import annotations
 
@@ -21,18 +12,18 @@ import urllib.request
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-LATEST_FILES = ("grading.py",)
+# The course-owned files that decide the grade; the pytest entrypoint and this script are not needed to grade.
+LATEST_FILES = ("_value_checks.py", "grading.py")
 LATEST_URL = os.environ.get(
     "DS217_CHECKS_URL", "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/assignment_checks"
 )
 LATEST_FOLDER = HERE / ".checks"
 
-HUMAN_REVIEW_POINTS = 25
-
 
 def _import_grader(folder: Path):
     """Import `grading` from `folder`, forgetting any earlier copy, and return the module."""
-    sys.modules.pop("grading", None)
+    for name in ("grading", "_value_checks"):
+        sys.modules.pop(name, None)
     sys.path.insert(0, str(folder))
     try:
         return importlib.import_module("grading")
@@ -63,29 +54,70 @@ def load_grader(use_latest: bool = True):
     return _import_grader(HERE).grade_submission, note
 
 
+def left_to_fix(tests: list[dict]) -> str:
+    """The failing checks, grouped by the part of their name before the colon.
+
+    A group whose checks all fail reads "merge audit (all 5 checks)"; otherwise its
+    failing checks are named, as in "SBP long: columns and sbp values".
+    """
+    groups: dict[str, list[dict]] = {}
+    for test in tests:
+        groups.setdefault(test["test-name"].partition(": ")[0], []).append(test)
+    parts = []
+    for group, members in groups.items():
+        failing = [test for test in members if not test["passed"]]
+        if len(failing) == 1:
+            parts.append(failing[0]["test-name"])
+        elif failing and len(failing) == len(members):
+            parts.append(f"{group} (all {len(members)} checks)")
+        elif failing:
+            names = [test["test-name"].partition(": ")[2] for test in failing]
+            if len(names) > 4:
+                names = names[:3] + [f"{len(names) - 3} more"]
+            parts.append(f"{group}: {', '.join(names[:-1])} and {names[-1]}")
+    return "; ".join(parts)
+
+
+def run_checks(submission_dir=".") -> dict:
+    """Grade the submission, print the human-readable report, and return the report dict."""
+    grade_submission, note = load_grader()
+    print(note)
+    result = grade_submission(Path(submission_dir))
+    # A fix shared by the checks right after it, such as a missing file, is printed once.
+    previous = None
+    for test in result["tests"]:
+        status = "PASS" if test["passed"] else "FIX "
+        line = f"[{status}] {test['score']:>2}/{test['max-score']:<2} {test['test-name']}"
+        if test["detail"] and test["detail"] == previous:
+            print(f"{line}  (same fix as above)")
+        else:
+            print(line)
+            if test["detail"]:
+                print(f"         {test['detail']}")
+        previous = test["detail"] or None
+    print(f"\nScore: {result['score']}/{result['max-score']}")
+    if result["score"] == result["max-score"]:
+        print("All checks passed.")
+    else:
+        lost = result["max-score"] - result["score"]
+        print(f"Left to fix ({lost} point{'' if lost == 1 else 's'}): {left_to_fix(result['tests'])}.")
+    return result
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("submission_dir", nargs="?", type=Path, default=Path.cwd(),
-                        help="the submission's assignment directory (default: the current directory)")
-    parser.add_argument("--json", action="store_true", help="print the datasci217/grading-result/v1 report")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("submission_dir", nargs="?", type=Path, default=Path(__file__).resolve().parent)
+    parser.add_argument("--json", action="store_true")
     parser.add_argument("--local-checks", action="store_true", help="grade with the bundled checks, without downloading")
     args = parser.parse_args()
     if args.local_checks:
         os.environ["DS217_LOCAL_CHECKS"] = "1"
-    grade_submission, note = load_grader()
-    result = grade_submission(args.submission_dir)
     if args.json:
-        print(json.dumps(result, ensure_ascii=False))
+        grade_submission, _ = load_grader()
+        result = grade_submission(args.submission_dir)
+        print(json.dumps(result))
     else:
-        print(note)
-        print(f"Assignment 06 midterm: {result['max-score']} points from the committed files "
-              f"({HUMAN_REVIEW_POINTS} more come from human review)\n")
-        for test in result["tests"]:
-            status = "PASS" if test["passed"] else "PART" if test["score"] else "FIX "
-            print(f"[{status}] {test['score']:>3}/{test['max-score']:<3} {test['test-name']}")
-            if test["detail"]:
-                print(f"         {test['detail']}")
-        print(f"\nScore: {result['score']}/{result['max-score']}")
+        result = run_checks(args.submission_dir)
     return 0 if all(test["passed"] for test in result["tests"]) else 1
 
 

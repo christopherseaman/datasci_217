@@ -24,8 +24,10 @@ row stays. A fork that cannot be regraded keeps its last score, marked with
 the error, and the `checks` column records which version of the checks
 produced each score.
 
-Grades come from this repository's copy of the checks (NN/assignment_checks/
-when it exists, otherwise NN/assignment/), never from the copy inside the
+Grades come from this repository's copy of the checks (the assignment's
+`source` folder in assignments.json with a `_checks` suffix, such as
+NN/assignment_checks/ or 06/mid-term_checks/, when it exists, otherwise the
+source folder itself), never from the copy inside the
 student's fork, and grading reads committed files only: no student code runs.
 Committed symlinks are checked out as plain files, so a fork cannot point the
 checks at files outside itself. A clone with local changes is reported and
@@ -100,7 +102,7 @@ def github_get(url: str, token: str | None):
         return response.read()
 
 
-def download_checks(number: str, cache: Path, token: str | None) -> tuple[Path, str]:
+def download_checks(source: str, cache: Path, token: str | None) -> tuple[Path, str]:
     """The course-owned checks (and supplied data they read) from one commit of GitHub's main.
 
     Used when the script runs from a URL rather than a clone, so it grades with the
@@ -110,7 +112,8 @@ def download_checks(number: str, cache: Path, token: str | None) -> tuple[Path, 
         commit = json.loads(github_get(f"https://api.github.com/repos/{COURSE_REPO}/commits/main", token))["sha"]
         tree = json.loads(github_get(f"https://api.github.com/repos/{COURSE_REPO}/git/trees/{commit}?recursive=1", token))
         wanted = [item["path"] for item in tree["tree"] if item["type"] == "blob"
-                  and item["path"].startswith((f"{number}/assignment_checks/", f"{number}/assignment/data/"))
+                  and (item["path"].startswith((f"{source}_checks/", f"{source}/data/"))
+                       or item["path"] == f"{source}/generate_data.py")
                   and "_grader_selftest" not in item["path"] and "__pycache__" not in item["path"]]
         root = cache / commit[:12]
         for path in wanted:
@@ -122,18 +125,18 @@ def download_checks(number: str, cache: Path, token: str | None) -> tuple[Path, 
         raise SystemExit(fork_listing_error(COURSE_REPO, error)) from None
     except urllib.error.URLError as error:
         raise SystemExit(f"Could not reach GitHub to download the checks: {error.reason}") from None
-    checks = root / number / "assignment_checks"
+    checks = root / f"{source}_checks"
     if not (checks / "check_assignment.py").is_file():
-        raise SystemExit(f"{COURSE_REPO} has no {number}/assignment_checks/check_assignment.py on main.")
+        raise SystemExit(f"{COURSE_REPO} has no {source}_checks/check_assignment.py on main.")
     return checks, commit[:7]
 
 
-def trusted_checks_dir(number: str) -> Path:
-    """The course-owned checks CI fetches when present, else the handout's copy."""
-    course_owned = REPO / number / "assignment_checks"
+def trusted_checks_dir(source: str) -> Path:
+    """The course-owned checks beside the handout folder `source` when present, else the handout's copy."""
+    course_owned = REPO / f"{source}_checks"
     if (course_owned / "check_assignment.py").is_file():
         return course_owned
-    return REPO / number / "assignment"
+    return REPO / source
 
 
 def course_repo_warnings(repo: Path = REPO) -> list[str]:
@@ -379,10 +382,10 @@ def main(argv: list[str] | None = None) -> int:
     destination = (args.dest or default_root / assignment["repository"].rsplit("/", 1)[-1]).resolve()
     destination.mkdir(parents=True, exist_ok=True)
     if local:
-        checks = trusted_checks_dir(number)
+        checks = trusted_checks_dir(assignment["source"])
         version = checks_version(checks)
     else:
-        checks, version = download_checks(number, destination.parent / ".checks", github_token())
+        checks, version = download_checks(assignment["source"], destination.parent / ".checks", github_token())
     grades = destination / "grades.csv"
 
     if args.fork:

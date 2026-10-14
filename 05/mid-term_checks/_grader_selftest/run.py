@@ -1,11 +1,11 @@
 """Development self-test for the Assignment 05 (midterm) checks.
 
 Course-side QA, not a second grading mode. It answers the midterm with pandas
-and NumPy from `05/assignment/data/people_raw.csv` the way the README asks,
+and NumPy from `05/mid-term/data/people_raw.csv` the way the README asks,
 writes submissions in ignored `scratch/`, and confirms what each one scores:
 
     uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 \
-        python 05/assignment_checks/_grader_selftest/run.py
+        python 05/mid-term_checks/_grader_selftest/run.py
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ import pandas as pd
 os.environ["DS217_LOCAL_CHECKS"] = "1"
 
 CHECKS = Path(__file__).resolve().parents[1]
-HANDOUT = CHECKS.parent / "assignment"
+HANDOUT = CHECKS.parent / "mid-term"
 SCRATCH = CHECKS.parents[1] / "scratch"
 sys.path.insert(0, str(CHECKS))
 import check_assignment  # noqa: E402

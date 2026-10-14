@@ -5,11 +5,15 @@
 """Check every grader's empty/scaffold contract without executing submissions.
 
 Runs each assignment's handout checker and, where it exists, its course-owned
-NN/assignment_checks/ checker, against an empty submission and the scaffold.
-Where the handout ships a byte-identical copy of every file the workflow
-downloads from NN/assignment_checks/, as homework handouts do so students can
-test locally, both copies must print the same report. Exam handouts (06 and 11)
-ship no checker and no workflow, so only their course-owned checks run.
+checker, against an empty submission and the scaffold. The handout is the
+`source` folder in assignments.json (NN/assignment/, or 06/mid-term/ for the
+midterm) and its checks sit beside it with a `_checks` suffix. Inactive
+folders that assignments.json does not list, such as 05/mid-term/ and
+06/assignment/, are not tested. Where the handout ships a byte-identical copy
+of every file the workflow downloads from its checks folder, as homework
+handouts do so students can test locally, both copies must print the same
+report. Exam handouts (06 and 11) ship no checker and no workflow, so only
+their course-owned checks run.
 
 Run it with the pinned dependencies above:
     uv run scripts/test_assignment_grading.py [NN ...]
@@ -42,6 +46,8 @@ def ships_course_checks(assignment: Path, course_owned: Path) -> bool:
 
 def main():
     repo = Path(__file__).resolve().parents[1]
+    sources = {int(entry["number"]): entry["source"]
+               for entry in json.loads((repo / "assignments.json").read_text(encoding="utf-8"))["assignments"]}
     scratch = repo / "scratch"
     scratch.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=scratch, prefix="grading-contract-") as directory:
@@ -49,9 +55,9 @@ def main():
         for name in ("grading.py", "check_assignment.py", "_assignment_checks.py", "_public_checks.py",
                      "_shape_checks.py", "_value_checks.py"):
             (target / name).write_text("raise RuntimeError('submission code must not run')\n")
-        for number in [int(argument) for argument in sys.argv[1:]] or range(1, 12):
-            assignment = repo / f"{number:02}" / "assignment"
-            course_owned = repo / f"{number:02}" / "assignment_checks"
+        for number in [int(argument) for argument in sys.argv[1:]] or sorted(sources):
+            assignment = repo / sources[number]
+            course_owned = repo / (sources[number] + "_checks")
             if number in EXAMS:
                 shipped = [name for name in ("check_assignment.py", "grading.py", ".github") if (assignment / name).exists()]
                 assert not shipped, (number, "exam handouts ship no automated checks", shipped)
@@ -82,7 +88,7 @@ def main():
                       "point total and trusted CLI pass")
                 continue
             identical = len(checkers) == 2 and ships_course_checks(assignment, course_owned)
-            assert identical, (number, "homework handouts ship a byte-identical copy of NN/assignment_checks/")
+            assert identical, (number, "homework handouts ship a byte-identical copy of their course checks")
             if identical:
                 for submission in (target, assignment):
                     assert reports[assignment, submission] == reports[course_owned, submission], (number, submission)

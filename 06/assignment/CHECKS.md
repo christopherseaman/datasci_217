@@ -1,47 +1,57 @@
 # Assignment 06 checks
 
+The report prints one `PASS` or `FIX` line per check with its points. Before Task 1, for example, the first check reports:
+
+```text
+[FIX ]  0/8  merge audit: columns
+         output/specimen_merge_audit.csv is missing; run the Task 1.2 cell to write it, then commit it.
+```
+
+A clean run ends with:
+
+```text
+[PASS]  4/4  SBP round trip: followup values
+
+Score: 100/100
+All checks passed.
+```
+
+How the files are read:
+
+- Each check is scored on its own, so one mistake costs only that check's points. The round trip also accepts the pivot of your own long table, so a mistake in Task 3.1 is not charged again in Task 3.2.
+- Any two nonempty source labels that distinguish batch A from batch B count.
+- Spacing, line endings, quoting, column order, and row order never cost points.
+- Numbers are compared as numbers, so `5`, `5.0`, and `5.00` are the same value.
+- IDs, labels, and column names are compared in any letter case.
+- An empty cell may be written empty or as `NaN`.
+- A leading column of row numbers, which `to_csv()` writes when `index=False` is left out, is ignored.
+- A first column with no header that holds the IDs, which `to_csv()` writes for an index without a name, counts as the ID column.
+
 ## Completion contract
 
-The midterm totals 100 points: 75 points graded from your committed files after the deadline, 25 by human review. Each file is graded on its own, against the tables `generate_data.py` writes.
+Grading totals 100 points and reads these files relative to the assignment root.
 
-| File | What earns the points | Points |
-| --- | --- | ---: |
-| `output/file_inventory.txt` | The line counts of the three CSV files, in proportion (rounded down) | 5 |
-| `output/table_profile.csv` | 1 for each table with its right `rows`, `columns`, and `exact_duplicate_rows` | 5 |
-| `output/issue_audit.csv` | 1 for each issue's count | 10 |
-| `output/patients_summary.csv` | 2 for `patients`; 2 for the three `birth_year` metrics and 2 for the four site metrics, each in proportion (rounded down) | 6 |
-| `output/gender_categories.csv` | 2 for the counts of `F`, `M`, `X`, and missing, and 2 for their category codes (each code its own whole number from 0, missing `-1`), each in proportion | 4 |
-| `output/visits_summary.csv` | 4 for the three visit counts; 3 for the `visit_date` metrics and 3 for the `sbp_mmhg` metrics; 2 for the `weight_kg` metrics and 2 for the `source_file` counts; each in proportion (rounded down) | 14 |
-| `output/decision_log.csv` | 3 for the nine decisions' `table` and `decision`, in proportion; 1 for a reason on every row | 4 |
-| `output/a1c_summary.csv` | 2 for each visit's `results` and 3 for each visit's `a1c_pct_mean`, in proportion | 5 |
-| `output/merge_audit.csv` | 1 for each check's count | 7 |
-| `output/sbp_wide_sample.csv` | 2 for one row per sample patient with a visit; 1 each for `baseline` and `week12`; 2 for `sbp_change`, in proportion to the right patients | 6 |
-| `output/analysis_sample.csv` | 3 for one row per visit of a sample patient; 2 each for `site_name`, `a1c_pct`, and `gender` with `birth_year`, in proportion to the right visits | 9 |
+| Artifact | Complete when | Check | Points |
+| --- | --- | --- | ---: |
+| `output/specimen_merge_audit.csv` | Its columns are the nine in the Task 1.2 header line; `record_status` may be there too. | merge audit: columns | 8 |
+| `output/specimen_merge_audit.csv` | It holds SP101 to SP107, once each. | merge audit: one row per specimen | 8 |
+| `output/specimen_merge_audit.csv` | Each specimen's own columns match `data/specimens.csv`. | merge audit: specimen values | 8 |
+| `output/specimen_merge_audit.csv` | Each specimen has its clinic's current `clinic_name` and `region`, and SP106's are empty. | merge audit: current clinic names and regions | 8 |
+| `output/specimen_merge_audit.csv` | `_merge` is `left_only` for SP106 and `both` for the other six. | merge audit: _merge indicator | 8 |
+| `output/combined_specimens.csv` | Its columns are the seven in the Task 2.1 header line. | combined specimens: columns | 3 |
+| `output/combined_specimens.csv` | It holds SP101 to SP107, once each. | combined specimens: one row per specimen | 4 |
+| `output/combined_specimens.csv` | Each row's values match its batch file. | combined specimens: specimen values | 4 |
+| `output/combined_specimens.csv` | `source_partition` consistently distinguishes SP101 to SP104 from SP105 to SP107 with two nonempty labels, such as `batch_a` and `batch_b`. | combined specimens: source_partition labels | 4 |
+| `output/aligned_features.csv` | Its columns are `specimen_id`, `volume_ml`, and `transit_min`. | aligned features: columns | 3 |
+| `output/aligned_features.csv` | It holds SP101 to SP104 and SP108, once each. | aligned features: one row per specimen | 4 |
+| `output/aligned_features.csv` | `volume_ml` matches batch A, and SP108's is empty. | aligned features: volume_ml values | 4 |
+| `output/aligned_features.csv` | `transit_min` matches `data/transit_times.csv`, and SP101's and SP104's are empty. | aligned features: transit_min values | 4 |
+| `output/sbp_long.csv` | Its columns are `patient_id`, `visit`, and `sbp`. | SBP long: columns | 5 |
+| `output/sbp_long.csv` | It holds each of the eight patient and visit pairs once. | SBP long: one row per patient and visit | 5 |
+| `output/sbp_long.csv` | Each `sbp` matches that patient's reading at that visit in `data/sbp_wide.csv`. | SBP long: sbp values | 5 |
+| `output/sbp_round_trip.csv` | Its columns are `patient_id`, `baseline`, and `followup`. | SBP round trip: columns | 3 |
+| `output/sbp_round_trip.csv` | It holds P201 to P204, once each. | SBP round trip: one row per patient | 4 |
+| `output/sbp_round_trip.csv` | Each `baseline` matches `data/sbp_wide.csv`. | SBP round trip: baseline values | 4 |
+| `output/sbp_round_trip.csv` | Each `followup` matches `data/sbp_wide.csv`. | SBP round trip: followup values | 4 |
 
-## How the files are read
-
-- Line endings, blank lines, spaces at the end of a line or around a header name, a comma, semicolon, or tab between cells, column order, extra columns, a leading column of row numbers, and number format (`6`, `6.0`) do not matter. Letter case and surrounding spaces in labels, codes, IDs, and text values do not cost points: `f` reads as `F`. A spelling that still needs its dictionary, such as `woman`, `N-01`, or `wk12`, does.
-- An empty field, `NaN`, and `<NA>` all read as missing; a date written year first may carry a `00:00:00` time after it or use `/` in place of `-`, while a date with the year last, such as `01/05/2026`, can be read as May 1 or January 5 and costs its point; a mean rounded to two decimals (within 0.006 of the exact one) is right.
-- A file missing from `output/` earns 0 points. A file a stopped notebook never writes costs its points on top of the earlier file that shows the mistake:
-    - A Task 4.3 `pivot()` `ValueError`, raised when the Task 3.2 step 6 rechecks are left in, leaves `sbp_wide_sample.csv` and `analysis_sample.csv` unwritten (15 points).
-    - A `MergeError` in the Task 4.4 join or a failed Task 5.1 check leaves `analysis_sample.csv` unwritten (9 points).
-- One mistake is charged once, in the file that first shows it. A later file is also right when it follows from your own earlier ones:
-    - `patients_summary.csv` and `gender_categories.csv` counts made with the exact registry repeats left in cost only `patients`.
-    - When `visits` in `visits_summary.csv` is off by some rows, its other counts may be off by at most that many; counts made with the earlier reading of each recheck cost only `sbp_wide_sample.csv`.
-    - An `a1c_pct_mean` is right for the results its row counts, so swapped labels cost only `results`.
-    - The first three `merge_audit.csv` counts are judged against your own `visits` and A1c `results` when those differ from the expected ones (`both` plus `left_only` equals your visits, `both` plus `right_only` your results, or every A1c result when your summary counts none); the patient counts against your own `patients_summary.csv`.
-    - The extracts carry what an earlier mistake left without a second charge: an unmapped gender or visit label, `9999`, a raw SBP, a mislabeled A1c result, and the current `site_name` for your own `site_code`. `sbp_change` is judged against your own `baseline` and `week12` columns.
-
-## Human review
-
-5 points for each category:
-
-| Category | What it reads | Full credit (5) | Partial credit |
-| --- | --- | --- | --- |
-| Lecture 01 to 06 evidence map | The "Cumulative midterm checkpoint" cell | One entry for each of Lectures 01 to 06, each naming a concrete technique or file from that lecture and saying in one sentence where this notebook uses it | 2 to 4 for four or five lectures, or for entries that name a tool without saying where it is used here |
-| Data contract | The Task 2.1 cell | States each table's grain and key (single or composite) and the cardinality of each Task 4.4 join, each fitting these files | 2 to 4 when one or two parts are missing or do not fit these files |
-| Decision reasons | The `reason` column of `output/decision_log.csv` | Each of the nine reasons names the problem in these files, such as the rows or values it affects, and why its decision fits | 2 to 4 when some reasons are generic, such as "to clean the data", or do not match their decision |
-| Join and reshape safeguards | The Task 3.2 step 6 cell and the Task 4.2 and 4.4 cells | Shows the repeated visit pair before keeping the later reading, the caught `MergeError` and the repeated site rows, the `_merge` counts, and a `validate=` on each Task 4.4 merge | 2 to 4 when a part is missing or unclear |
-| Validation, read-back, and reproducibility | The Task 1.1 command, the Task 5.1 and 5.3 cells, the notebook as a whole, and the commit history | The Task 1.1 cell shows the command that made `file_inventory.txt`; the checks are named and stop the analysis extract from being saved; the read-back prints `True`; the notebook runs top to bottom with its outputs saved; at least two commits with messages that say what changed; no credentials or personal information appear | 2 to 4 when a part is missing or unclear |
-
-A category whose cell still holds its **TODO** text earns 0.
+Extra files are ignored.

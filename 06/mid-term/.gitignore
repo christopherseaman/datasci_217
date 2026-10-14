@@ -1,6 +1,6 @@
 .venv/
+data/
 .ipynb_checkpoints/
 __pycache__/
 *.py[cod]
 .pytest_cache/
-.checks/

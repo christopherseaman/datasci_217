@@ -1,6 +1,6 @@
 """Grade one Assignment 05 (midterm) submission from its committed files.
 
-    python3 05/assignment_checks/check_assignment.py <submission_dir> [--json]
+    python3 05/mid-term_checks/check_assignment.py <submission_dir> [--json]
 
 Course-side only: the midterm handout ships no checks. Only the files in the
 submission's `output/` are read; no submitted code runs. Exits 0 when every
@@ -23,7 +23,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 LATEST_FILES = ("grading.py",)
 LATEST_URL = os.environ.get(
-    "DS217_CHECKS_URL", "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/05/assignment_checks"
+    "DS217_CHECKS_URL", "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/05/mid-term_checks"
 )
 LATEST_FOLDER = HERE / ".checks"
 

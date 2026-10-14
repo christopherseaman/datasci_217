@@ -3,8 +3,9 @@
 #
 #   scripts/publish_assignment.sh 02 UCSF-DataSci/ds217-26f-02 [--dry-run] [--replace-history]
 #
-# The repository gets exactly what is in NN/assignment/: the README, scaffolds, data and
-# .github/ workflow a student forks. NN/assignment_checks/ is course-side and never goes.
+# The repository gets exactly what is in the assignment's source folder in assignments.json
+# (NN/assignment/, or 06/mid-term/ for the midterm): the README, scaffolds, data and .github/
+# workflow a student forks. The matching *_checks/ folder is course-side and never goes.
 # Files the target has and this folder does not are deleted, so the repository ends up
 # matching the source folder rather than accumulating leftovers.
 #
@@ -14,7 +15,7 @@
 # breaks existing forks and clones, so it is opt-in.
 set -euo pipefail
 
-usage() { sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 
 [ $# -ge 2 ] || usage
 NUMBER="$1"; TARGET="$2"; shift 2
@@ -28,7 +29,14 @@ for argument in "$@"; do
 done
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SOURCE="$ROOT/$NUMBER/assignment"
+# The source folder comes from assignments.json; an assignment it does not list uses NN/assignment.
+SOURCE_REL="$(python3 -c "
+import json, sys
+entries = json.load(open(sys.argv[1]))['assignments']
+print(next((entry['source'] for entry in entries if entry['number'] == sys.argv[2]), sys.argv[2] + '/assignment'))
+" "$ROOT/assignments.json" "$NUMBER")"
+case "$SOURCE_REL" in /*|*..*|'') echo "unsafe source folder in assignments.json: $SOURCE_REL" >&2; exit 1 ;; esac
+SOURCE="$ROOT/$SOURCE_REL"
 [ -d "$SOURCE" ] || { echo "no such assignment folder: $SOURCE" >&2; exit 1; }
 case "$TARGET" in
   */datasci_217|*/datasci_217.git) echo "refusing to publish into the course repository" >&2; exit 1 ;;
@@ -57,6 +65,7 @@ print(f\"  checker: {len(report['tests'])} checks, {report['max-score']} points,
 " || { echo "the assignment's own checker does not run; fix that before publishing" >&2; exit 1; }
 
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
+echo "  source: $SOURCE_REL"
 echo "  cloning $URL"
 git clone --quiet "$URL" "$WORK/repo" 2>/dev/null || { echo "cannot clone $URL (does it exist, and do you have access?)" >&2; exit 1; }
 
@@ -71,7 +80,7 @@ cd "$WORK/repo"
 git add -A
 # Matching content still needs a push when the point is to discard the old history.
 if git diff --cached --quiet && [ "$REPLACE_HISTORY" = no ]; then
-  echo "  no change: $TARGET already matches $NUMBER/assignment"; exit 0
+  echo "  no change: $TARGET already matches $SOURCE_REL"; exit 0
 fi
 
 if git diff --cached --quiet; then
@@ -99,4 +108,4 @@ else
   git commit --quiet -m "$MESSAGE"
   git push --quiet origin HEAD
 fi
-echo "  published $NUMBER/assignment to $TARGET"
+echo "  published $SOURCE_REL to $TARGET"

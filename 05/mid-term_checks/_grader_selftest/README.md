@@ -1,6 +1,6 @@
 # Assignment 05 grading development self-test
 
-Course-side QA for the midterm checks, not a second grading mode. `run.py` answers the midterm with pandas and NumPy from `05/assignment/data/people_raw.csv` the way the handout README asks, builds submissions in ignored `scratch/`, and confirms that:
+Course-side QA for the midterm checks, not a second grading mode. `run.py` answers the midterm with pandas and NumPy from `05/mid-term/data/people_raw.csv` the way the handout README asks, builds submissions in ignored `scratch/`, and confirms that:
 
 - every constant in `grading.py` matches the independent answer, and the README's issue labels and decision table match the ones graded;
 - the handout README lists all seven output files in its file tree and in its checklist, each with the first line and line count the answer produces, and prints none of the expected values;
@@ -11,5 +11,5 @@ Course-side QA for the midterm checks, not a second grading mode. `run.py` answe
 - each single mistake, from a blank age to a dropped column, costs exactly its own points, and its feedback names the fix.
 
 ```bash
-uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 python 05/assignment_checks/_grader_selftest/run.py
+uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 python 05/mid-term_checks/_grader_selftest/run.py
 ```

@@ -1,17 +1,40 @@
-# Assignment 06 grading development self-test
+# Assignment 06 checks self-test
 
-Course-side QA for the midterm checks, not a second grading mode. `run.py` generates the data with the handout's `generate_data.py`, answers the midterm with pandas the way the handout README asks, builds submissions in ignored `scratch/`, and confirms that:
+Course-side QA for the checks, not a second grading mode. It answers the
+assignment with pandas from `06/assignment/data/`, the way the lecture does,
+builds submissions in ignored `scratch/`, and confirms that:
 
-- `generate_data.py` writes the same bytes twice, in under 3 seconds, with `\n` line endings, 2 to 8 MB in all, matching `data_manifest.json` and `grading.DATA_SHA256`;
-- every value `grading.py` derives matches the independent answer, every valid date falls on a weekday, most baseline A1c results are at or above 6.5%, SBP rows sit exactly on 70 and 250, each recheck pair has two readings, an exact patient repeat changes an audit count, the `SAMPLE_IDS` patients cover every planted pattern, and the README's issue, metric, merge-check, and decision labels match the ones graded;
-- the handout README lists all eleven output files in its file tree and in its checklist, each with the first line and line count the answer produces, lists `SAMPLE_IDS` in order, and states no graded count; the complete `output/` stays under 8 KB per file and 200 KB in all;
-- the handout ships no checks (no `check_assignment.py`, `grading.py`, `.github/`, or self-test) and no data (`data/` ignored), has a notebook with cleared outputs whose first cell runs the generator and checks the manifest, saves every file but `analysis_sample.csv` before the validation assert, has an empty `output/`, and no checker or handout file reads the Python version;
-- an empty directory and the untouched handout score 0 of 75, Task 1's two files alone score 10, a correct submission scores 75, and so does one written with CRLF or CR-only line endings, a byte-order mark, trailing spaces, semicolons or tabs, a space after every comma, reversed columns and rows, index columns, labels, codes, and IDs in another case, `6.0` for `6`, `<NA>` and `NaN` for missing, and dates with a time or slashes;
-- no submitted file runs, even when named like the checks, the generator, or a standard-library module;
-- each of 29 single mistakes, from a gender spelling left out of the dictionary or swapped melt labels to a recheck's earlier reading kept, carried through every later file as the student's own pipeline would carry it, costs exactly its own points, and the feedback names the fix.
+- a correct submission scores 100, and so does one written differently: columns
+  and rows in another order, CRLF, a byte-order mark, quoted or padded cells,
+  labels and headers in another letter case, `148.0` or `5.00` for a number,
+  `NaN` for an empty cell, a leading row-number column, IDs in an index column
+  with no header, the round trip saved straight from `pivot()`, and the
+  `record_status` column the lecture's merge keeps, and every file separated
+  by semicolons (with decimal commas) or by tabs, where one wrong value still
+  costs only its own check;
+- an empty directory and the untouched handout score 0;
+- each of 20 single mistakes, one per check, costs exactly that check, including
+  a misnamed column such as melt's default `variable` and `value`; a missing
+  file costs only its own artifact's checks; an unfiltered or inner merge costs
+  only the checks it gets wrong; a file saved without its ID column costs its
+  columns check, not its rows or values; and the feedback says what to fix
+  and names the cause it found, such as a right or inner merge, tables put side
+  by side with `axis=1` (repeated column names or rows lined up by position,
+  each charged once), round-trip columns renamed by
+  position, or a file saved outside `output/`;
+- a changed value, dropped patient or visit, or renamed visit in the long table
+  costs only its own check when the round trip correctly pivots that table; a
+  new wrong pivot value still costs its own check;
+- the checks read only `output/`: poisoned data and code in a submission change
+  nothing;
+- the copies of the supplied data in `_value_checks.py` match
+  `06/assignment/data/`, and the handout README's checkpoint header lines and
+  completion contract match the checks and `POINTS`;
+- every file the workflow lists in `CHECKS_FILES` is byte-identical in
+  `06/assignment/` and here, the handout has no other Python file, and its
+  notebook ships with outputs cleared; both `check_assignment.py` copies and
+  pytest report the same result.
 
 ```bash
-uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with pyarrow==25.0.0 python 06/assignment_checks/_grader_selftest/run.py
+uv run --python 3.13 --with pandas==3.0.5 --with 'pytest>=8,<9' python 06/assignment_checks/_grader_selftest/run.py
 ```
-
-It takes about two minutes.

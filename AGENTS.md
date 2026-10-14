@@ -207,6 +207,15 @@ Organization first, styling last. Fix substance (add the missing explanation, vi
 - Setup follows Lecture 03 (`uv venv --seed`, activate, `uv sync` on the supplied `pyproject.toml` and `uv.lock`). Terminal and git-identity setup appear only in Assignment 01, git identity as a fallback for when a commit or push asks for it. No Windows or troubleshooting paragraphs.
 - Check your work is very brief. Homework notebooks list both the manual `python3 check_assignment.py` run and the notebook's final `run_checks()` cell (GitHub runs the latest checks on push), then commit the outputs. Exams: list the expected files, then commit and push; no separate Submit section. The positive, artifact-based completion contract lives in a linked `CHECKS.md`. Say "checks," not "public checks."
 - Checks run on every push; a new fork may need Actions enabled once.
+- Size: homework stays near Assignment 04 (about 9 subtasks, 6 artifacts); the midterm is the larger, cumulative task.
+- Exams withhold graded counts; give worked examples on tiny samples, self-check invariants, and a `HINTS.md` for diagnosis instead.
+
+### Data and artifacts
+
+- Generated data (05 and 06): the handout ships a seeded stdlib `generate_data.py` and `data_manifest.json`; `data/` is gitignored, and the notebook's first cell builds and verifies it. Several MB, so students must use code; identical bytes on every platform and Python 3.9 to 3.13.
+- Graded outputs are small CSV summaries an analyst would hand over (audits, counts, logs, fixed small extracts), never copies of the cleaned data; a complete `output/` stays well under 200 KB.
+- Parquet is the default for generated datasets and saved demo tables from Lecture 05 on; graded artifacts stay CSV.
+- Files that do not depend on a validation gate save before its `assert`.
 
 ### Checks and grading
 
@@ -215,11 +224,12 @@ Organization first, styling last. Fix substance (add the missing explanation, vi
 - Grade generously: accept any artifact that shows the skill, whatever its case, whitespace, final newline, number or date format, column order, or equivalent approach. Charge each mistake once, judging a later artifact against the student's own earlier one.
 - A failure message states what was found beside what was expected, and the likely cause and fix (an empty timestamp, `>` overwriting a file, the wrong axis, positions used for labels).
 - Checker code runs on any Python 3, including macOS's system 3.9: no `zip(strict=True)`, `match`, or other 3.10+ features.
+- Each assignment's handout folder is the `source` in `assignments.json`, with its course-owned checks beside it under the same name plus `_checks`: `NN/assignment/` and `NN/assignment_checks/`, except the 06 midterm in `06/mid-term/` and `06/mid-term_checks/`. `05/mid-term/` and `06/assignment/` (with their `_checks`) are inactive earlier versions; tooling neither publishes, tests, nor grades them.
 - Homework is pass/fail and self-tested: the handout ships a byte-identical copy of its course-owned checks (`NN/assignment/` and `NN/assignment_checks/`); correct both.
 - `check_assignment.py` downloads the latest course checks from `main` (falling back to the bundled copy offline or on failure). Assignments 02–05 and 07–10 also expose `run_checks()` for a notebook's last cell; 01, 06, and 11 do not. `DS217_LOCAL_CHECKS` (or `--local-checks`) skips the download; CI sets it.
 - The CI workflow (`NN/assignment/.github/workflows/tests.yml`: `CHECKS_REPO: christopherseaman/datasci_217`, `CHECKS_REF`, `CHECKS_PATH: NN/assignment_checks`, `CHECKS_FILES`) downloads the current checks each run, so fixes reach forks on their next push. Fetch the set named by `CHECKS_FILES` whole (`grading.py` pairs checks with `POINTS` and raises on a mismatch), validate and smoke-test it, and fall back to the vendored copy; a run that can use neither fails. Never fetch or overwrite student work.
 - Judge a checker by its JSON, never its exit status (it exits non-zero on any incomplete submission).
-- Exams (Assignment 06, the midterm, and Assignment 11, the final) ship no checker or `.github/` workflow, so their instructions name every path, header, and row count; the course grades them with `NN/assignment_checks/` after the deadline.
+- Exams (Assignment 06, the midterm, and Assignment 11, the final) ship no checker or `.github/` workflow, so their instructions name every path, header, and row count; the course grades them with `06/mid-term_checks/` and `11/assignment_checks/` after the deadline.
 
 ## Verification
 
