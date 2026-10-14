@@ -62,6 +62,7 @@ GRADE_TIMEOUT_SECONDS = 300
 GIT_TIMEOUT_SECONDS = 600
 GIT_ENVIRONMENT = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
 LEADING_COLUMNS = ["github_user", "repository", "commit", "commit_date", "status", "score", "max_score", "checks"]
+IDENTITY_COLUMNS = ["email", "first_name", "last_name"]
 
 
 class SubmissionError(Exception):
@@ -328,7 +329,38 @@ def grade_fork(fork: dict, checks: Path, destination: Path, version: str) -> dic
     }
 
 
-def write_grades(row: dict, path: Path) -> dict:
+def load_roster(path: Path) -> dict[str, dict]:
+    """Read a private TSV mapping GitHub logins to LMS identities; blank logins are unmatched."""
+    roster, emails = {}, set()
+    try:
+        with path.open(newline="", encoding="utf-8-sig") as handle:
+            reader = csv.DictReader(handle, delimiter="\t")
+            if not {"github_user", *IDENTITY_COLUMNS}.issubset(reader.fieldnames or []):
+                raise ValueError("expected TSV columns github_user, email, first_name, last_name")
+            for line, row in enumerate(reader, 2):
+                if None in row or any(row.get(key) is None for key in reader.fieldnames):
+                    raise ValueError(f"row {line} has the wrong number of fields")
+                identity = {key: row[key].strip() for key in IDENTITY_COLUMNS}
+                email = identity["email"].casefold()
+                user = row["github_user"].strip().casefold()
+                if not identity["first_name"] or not identity["last_name"]:
+                    raise ValueError(f"row {line} needs both names")
+                if email and (email.count("@") != 1 or any(c.isspace() for c in email)):
+                    raise ValueError(f"row {line} has an invalid email")
+                if email and email in emails:
+                    raise ValueError(f"row {line} repeats an email")
+                if email:
+                    emails.add(email)
+                if user:
+                    if user in roster:
+                        raise ValueError(f"row {line} repeats a GitHub login")
+                    roster[user] = identity
+    except (OSError, UnicodeError, ValueError, csv.Error) as error:
+        raise SystemExit(f"Could not read private roster {path}: {error}") from None
+    return roster
+
+
+def write_grades(row: dict, path: Path, roster: dict | None = None) -> dict:
     """Put one fork's result into grades.csv without disturbing any other row; return what was saved."""
     latest = {}
     if path.exists():
@@ -345,14 +377,18 @@ def write_grades(row: dict, path: Path) -> dict:
                  if key not in LEADING_COLUMNS and key != "details" and not key.startswith("test: ")}
         row = added | row
     latest[row["github_user"].casefold()] = row
+    if roster is not None:
+        for user, saved in latest.items():
+            saved.update(roster.get(user, dict.fromkeys(IDENTITY_COLUMNS, "")))
 
     rows = sorted(latest.values(), key=lambda saved: saved["github_user"].casefold())
     keys = list(dict.fromkeys(key for saved in rows for key in saved))
     tests = [key for key in keys if key.startswith("test: ")]
-    others = [key for key in keys if key not in LEADING_COLUMNS and key not in tests and key != "details"]
+    others = [key for key in keys if key not in LEADING_COLUMNS + IDENTITY_COLUMNS and key not in tests and key != "details"]
     temporary = path.with_name(path.name + ".tmp")
     with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=LEADING_COLUMNS + tests + ["details"] + others)
+        os.fchmod(handle.fileno(), 0o600)
+        writer = csv.DictWriter(handle, fieldnames=LEADING_COLUMNS + tests + ["details"] + IDENTITY_COLUMNS + others)
         writer.writeheader()
         writer.writerows(rows)
     os.replace(temporary, path)
@@ -373,8 +409,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--fork", action="append", default=[], metavar="USER/REPO",
                         help="grade only this fork; repeat for several")
     parser.add_argument("--dest", type=Path, help="where clones and grades.csv go (default scratch/ds217-26f-NN in a course clone, else ./ds217-26f-NN)")
+    parser.add_argument("--roster", type=Path, help="private roster TSV (default ./roster.tsv in the directory where grading is invoked)")
     args = parser.parse_args(argv)
 
+    roster_path = args.roster or Path("roster.tsv")
+    roster = load_roster(roster_path) if args.roster or roster_path.exists() else None
+    if roster is None:
+        print("Warning: no private roster found; LMS identity columns will be blank for new rows. Use --roster PATH.")
     number = args.assignment.zfill(2)
     assignment = load_assignment(number)
     local = in_course_clone()
@@ -403,7 +444,11 @@ def main(argv: list[str] | None = None) -> int:
 
     errors = 0
     for fork in forks:
-        row = write_grades(grade_fork(fork, checks, destination, version), grades)
+        row = write_grades(grade_fork(fork, checks, destination, version), grades, roster)
+        if roster is not None and fork["user"].casefold() not in roster:
+            print(f"Warning: {fork['user']} is not mapped in the private roster; LMS identity columns are blank.")
+        elif roster is not None and not row.get("email"):
+            print(f"Warning: {fork['user']} has no email in the private roster; fill it in for LMS import.")
         label, details = row["github_user"], row.get("details", "")
         if row["status"] == "graded":
             print(f"{label:<24} {row['score']:>3}/{row['max_score']:<3} {row['commit'][:7]}  "

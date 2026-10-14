@@ -67,3 +67,7 @@ scratch/
 # Reference books kept locally; not for redistribution
 work/tufte/
 .checks/
+
+# Private student identities and LMS roster exports
+/roster.tsv
+/ds217-f26-roster.xlsx

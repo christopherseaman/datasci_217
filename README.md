@@ -49,6 +49,24 @@ Points are awarded only for documented student grading materials, not supplied n
 
 For grading another submission, run the trusted assignment's `check_assignment.py /path/to/submission --json`. Use the published assignment version and its dependencies, not checker code supplied by the submission. The JSON report contains the same milestone results and automated score shown to students; batch collection and reporting do not change grading criteria.
 
+For TA batch grading, run `uv run scripts/grade_submissions.py 02`. To prepare LMS identities, build the private roster once from the class spreadsheet and the collected Assignment 01 clones:
+
+```bash
+python3 scripts/build_roster.py ds217-f26-roster.xlsx --submissions scratch/submissions/01
+```
+
+This creates `roster.tsv` in the current directory, with `github_user`, `email`, `first_name`, `last_name`, `identity_hash`, `course`, and `semester` columns. The semester comes from `assignments.json`; keep one roster per course and semester. Matching uses committed Assignment 01 identity hashes with the same email normalization as `process_email.py`. Unmatched or ambiguous students keep a blank `github_user`; fill missing logins or emails manually in the TSV. The builder refuses to overwrite an existing map, preserving manual corrections. Blank email/hash fields remain available for roster rows that lack an email.
+
+Share the TSV with TAs through an access-restricted channel. The workbook and repo-root `roster.tsv` are Git-ignored; neither belongs in a public repository. The grader expects `roster.tsv` in the directory where grading is invoked, or accepts `--roster /path/to/roster.tsv`. It reads that edited file directly and appends `email`, `first_name`, and `last_name` after the grading columns in `grades.csv`. Missing mappings produce blank identity fields and a warning. Existing rows also get refreshed identities when any fork is graded. Grade exports contain personal information and must also stay private.
+
+TAs can also run the grader without cloning this repository. In the directory containing their privately shared `roster.tsv`, run:
+
+```bash
+uv run https://raw.githubusercontent.com/christopherseaman/datasci_217/main/scripts/grade_submissions.py 02
+```
+
+This downloads the current course checks and saves submission clones and `grades.csv` under `./ds217-26f-02/`.
+
 Assignments 01–05 and 07–10 have 100 automated points. Both exams, Assignments 06 and 11, have 75 automated points plus 25 human-review points. Exam handouts ship no checks: after the deadline the course grades each exam's committed files with the course-owned checks in `06/mid-term_checks/` and `11/assignment_checks/`, and each exam README gives the full rubric, including the human-review criteria. Passing automated checks does not award human-review points.
 
 ## Lectures

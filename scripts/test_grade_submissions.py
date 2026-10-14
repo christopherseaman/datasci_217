@@ -582,6 +582,62 @@ def test_course_repo_warnings(work: Path) -> None:
     assert grade_submissions.local_time("not a date") == "not a date"
 
 
+def test_private_roster(work: Path) -> None:
+    path = work / "roster.tsv"
+    path.write_text("github_user\temail\tfirst_name\tlast_name\tidentity_hash\n"
+                    "ALICE\talice@example.com\tAlice\tExample\tunused\n"
+                    "\tpending@example.com\tPending\tExample\tunused\n"
+                    "\t\tMissing\tEmail\t\n"
+                    "noemail\t\tKnown\tStudent\t\n")
+    roster = grade_submissions.load_roster(path)
+    assert list(roster) == ["alice", "noemail"]
+    assert roster["noemail"]["email"] == ""
+    destination = work / "roster-grades"
+    url = publish_fork(work / "roster-forks", "alice", copy_tracked("01", work / "roster-alice"))
+    assert grade_submissions.main(["01", "--dest", str(destination), "--fork", url, "--roster", str(path)]) == 0
+    saved = read_grades(destination)["alice"]
+    assert (destination / "grades.csv").stat().st_mode & 0o777 == 0o600
+    assert [saved[key] for key in grade_submissions.IDENTITY_COLUMNS] == ["alice@example.com", "Alice", "Example"]
+    columns = list(saved)
+    assert columns[columns.index("details") + 1:] == grade_submissions.IDENTITY_COLUMNS
+    previous_cwd = Path.cwd()
+    try:
+        os.chdir(work)
+        assert grade_submissions.main(["01", "--dest", str(destination), "--fork", url]) == 0
+        remote_destination = work / "remote-roster-grades"
+        with patched(in_course_clone=lambda: False,
+                     download_checks=lambda source, cache, token: (COURSE_CHECKS, "test-remote")):
+            assert grade_submissions.main(["01", "--dest", str(remote_destination), "--fork", url]) == 0
+        remote_saved = read_grades(remote_destination)["alice"]
+        assert remote_saved["email"] == "alice@example.com" and remote_saved["checks"] == "test-remote"
+    finally:
+        os.chdir(previous_cwd)
+    assert read_grades(destination)["alice"]["email"] == "alice@example.com"
+    # A changed roster refreshes saved identities even when fetching a fork fails.
+    roster["alice"]["first_name"] = "Alicia"
+    row = grade_submissions.write_grades({"github_user": "alice", "status": "error", "details": "offline"},
+                                        destination / "grades.csv", roster)
+    assert row["first_name"] == "Alicia" and row["score"] == saved["score"]
+    row = grade_submissions.write_grades({"github_user": "outsider", "status": "error", "details": "offline"},
+                                        destination / "grades.csv", roster)
+    assert all(row[key] == "" for key in grade_submissions.IDENTITY_COLUMNS)
+    assert read_grades(destination)["alice"]["first_name"] == "Alicia"
+    original = path.read_text()
+    for invalid in (
+        "github_user,email,first_name,last_name\n",
+        original + "alice\tother@example.com\tOther\tExample\tunused\n",
+        original + "bob\talice@example.com\tOther\tExample\tunused\n",
+        original + "bob\tother@example.com\tOther\n",
+    ):
+        path.write_text(invalid)
+        try:
+            grade_submissions.load_roster(path)
+        except SystemExit as error:
+            assert "Could not read private roster" in str(error)
+        else:
+            raise AssertionError("invalid roster was accepted")
+
+
 def main() -> None:
     assert sys.version_info[:2] == (3, 13), (
         f"The checks pin Python 3.13 and exact dependency versions; this is {sys.version.split()[0]}. "
@@ -598,6 +654,7 @@ def main() -> None:
         test_grades_file(work)
         test_course_repo_warnings(work)
         test_every_assignment_through_the_script(work)
+        test_private_roster(work)
     print("grade_submissions: Assignment 01 completed as written scores 100/100 from 01/assignment_checks and "
           "from its own local run; partial, untouched, forged, plausible-but-wrong, running-total, other-Python "
           "and symlinked forks score as intended from the course checks; TA edits, renamed URLs, "
