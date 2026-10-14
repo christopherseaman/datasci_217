@@ -2,9 +2,9 @@
 
 ## Overview
 
-Clean a diabetes clinic network's lab export and save a small summary at each stage, such as a missing-value report, row counts, or category counts.
+Clean a diabetes clinic network's lab export and save a small summary of each stage for the checks.
 
-`generate_data.py` writes `data/lab_visits.csv`, a synthetic export of about 59,000 visits by 18,000 patients. Each row is one clinic visit: `patient_id` (`D` and five digits), `visit_date`, `clinic`, `gender`, `age` in years, `weight_kg`, `hba1c_pct` (**HbA1c**, the percent of hemoglobin carrying glucose, a three-month average of blood sugar), and `glucose_mg_dl` (fasting glucose in mg/dL). Most patients come back about every three months. It has blanks, rows sent twice, `-999` for a measurement not taken, ages typed as `unknown`, dates that do not exist, IDs and labels spelled several ways, and dropped decimal points (`64` for 6.4).
+`generate_data.py` writes `data/lab_visits.csv`, a synthetic export of about 59,000 visits by 18,000 patients, most seen about every three months. It has blanks, rows sent twice, `-999` for a measurement not taken, ages typed as `unknown`, dates that do not exist, IDs and labels spelled several ways, and dropped decimal points (`64` for 6.4).
 
 ```text
 patient_id,visit_date,clinic,gender,age,weight_kg,hba1c_pct,glucose_mg_dl
@@ -13,23 +13,23 @@ D10720,2024-01-02,Sunset,F,46,96.0,5.9,106
 D11156,2024-01-02,Excelsior,M,71,89.6,5.2,62
 ```
 
-The cleaned table follows this data contract. One row is one visit; `patient_id` and `visit_date` together identify it, because a patient visits more than once.
+The cleaned table follows this data contract. One row is one visit, identified by `patient_id` and `visit_date` together.
 
 | Column | Meaning | dtype | Rule |
 | --- | --- | --- | --- |
 | `patient_id` | study patient | `str` | `D` + five digits |
 | `visit_date` | visit day | `datetime64` | a real calendar date; never blank |
 | `clinic` | clinic name | `str` | one spelling per clinic; `Unknown` when the export left it blank |
-| `gender` | gender code | `str` | `F`, `M`, or `X` (nonbinary); blank when the export's code is none of these |
+| `gender` | gender code | `str` | `F`, `M`, or `X` (nonbinary); otherwise blank |
 | `age` | age at visit (years) | `Int64` | blank allowed |
 | `weight_kg` | weight (kg) | `float64` | 30 to 250 when present |
-| `hba1c_pct` | HbA1c (%) | `float64` | 4 to 20 when present |
-| `glucose_mg_dl` | fasting glucose (mg/dL) | `float64` | blank allowed; flagged, never deleted, when unusual |
+| `hba1c_pct` | **HbA1c** (%), a three-month average of blood sugar | `float64` | 4 to 20 when present |
+| `glucose_mg_dl` | fasting glucose (mg/dL) | `float64` | blank allowed; unusual values flagged, not deleted |
 
 ## Setup
 
-1. Fork the assignment repository on GitHub and clone your fork as in Lecture 01: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open the cloned folder itself, not a folder above it.
-2. In the integrated terminal, create the environment, activate it, and install the packages `pyproject.toml` and `uv.lock` list. Do not run `uv init`: the project files already exist.
+1. Fork the assignment repository on GitHub and clone your fork as in Lecture 01 (Command Palette → **Git: Clone**). Open the cloned folder itself.
+2. In the integrated terminal, create the environment and install the supplied packages. Do not run `uv init`.
 
     ```bash
     uv venv --seed
@@ -37,9 +37,9 @@ The cleaned table follows this data contract. One row is one visit; `patient_id`
     uv sync
     ```
 
-    - Expect: `uv venv` prints `Using CPython 3.13.x`, and `uv sync` lists `+ pandas==3.0.5` and `+ pyarrow==25.0.0` among the packages it installs.
+    - Expect: `uv sync` lists `+ pandas==3.0.5` and `+ pyarrow==25.0.0`.
 3. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`.
-4. Run the notebook's first code cell. It runs `generate_data.py` when `data/` is missing, then checks the file against `data_manifest.json`.
+4. Run the first code cell. It runs `generate_data.py` when `data/` is missing and checks the file against `data_manifest.json`.
     - Expect: `NumPy: 2.3.3`, `pandas: 3.0.5`, and `data/lab_visits.csv matches data_manifest.json`.
 
 ## Files
@@ -47,41 +47,33 @@ The cleaned table follows this data contract. One row is one visit; `patient_id`
 ```text
 assignment/
 ├── assignment.ipynb        # the notebook you complete
-├── generate_data.py        # supplied: writes data/lab_visits.csv; keep unchanged
-├── data_manifest.json      # supplied: the checksum of the data generate_data.py writes
+├── generate_data.py        # supplied: writes data/lab_visits.csv
+├── data_manifest.json      # supplied: that file's checksum
 ├── data/
 │   ├── lab_visits.csv      # written by the first cell; not committed
 │   └── labs_clean.parquet  # you generate in Task 5.3; not committed
-├── pyproject.toml          # supplied: the project's packages, numpy, pandas, pyarrow, and ipykernel
-├── uv.lock                 # supplied: the exact versions `uv sync` installs
-├── .python-version         # supplied: tells uv to use Python 3.13
+├── pyproject.toml, uv.lock, .python-version  # supplied: packages and Python 3.13
 ├── CHECKS.md               # supplied: what each check looks for
-├── check_assignment.py     # supplied: run it to check your work; keep unchanged
-├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
-├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
+├── check_assignment.py     # supplied: run it to check your work
+├── grading.py, _value_checks.py, test_assignment.py, .github/  # supplied: the checks; keep unchanged
 └── output/
     ├── missing_report.csv      # you generate in Task 1.1
-    ├── row_counts.csv          # you generate in Task 2.1
-    ├── typed_profile.csv       # you generate in Task 2.3
-    ├── clinic_counts.csv       # you generate in Task 3.1
-    ├── gender_counts.csv       # you generate in Task 3.1
-    ├── a1c_counts.csv          # you generate in Task 3.2
-    ├── coded_sample.csv        # you generate in Task 3.3
-    ├── validation_report.csv   # you generate in Task 4.1
-    ├── glucose_fences.csv      # you generate in Task 4.2
+    ├── typed_profile.csv       # you generate in Task 2
+    ├── category_counts.csv     # you generate in Task 3.2
+    ├── validation_report.csv   # you generate in Task 4
     ├── decision_log.csv        # you generate in Task 5.1
     └── clean_summary.csv       # you generate in Task 5.2
 ```
 
-Each task changes `labs`, so run the cells in order; after a mistake, click **Restart**, then **Run All**.
+Each task changes `labs`, so run the cells in order; after a mistake, **Restart** and **Run All**.
 
-## Task 1: Find and drop missing values
+## Task 1: Find missing values and repeats
 
 ### 1.1 Count the gaps
 
-The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)`, sets `rows_read = len(labs)`, and shows the first rows and dtypes.
+The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)` and sets `rows_read = len(labs)`.
 
-- Expect: `shape: (59447, 8)`. `age` is `str`, because some ages are the word `unknown`, and `weight_kg` is `float64`, with `-999` counted as a weight.
+- Expect: `shape: (59447, 8)`. `age` is `str` (some ages are `unknown`); `weight_kg` is `float64`, with `-999` counted as a weight.
 
 1. Build a table with one row per column of `labs`:
 
@@ -93,8 +85,7 @@ The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)`, sets 
     ```
 
 2. Name the index with `missing_report.index.name = "column"`.
-3. Set `rows_with_gap` to the number of rows with at least one missing value: `labs.isna().any(axis=1).sum()`.
-    - Expect: `rows with a gap: 7792`, and:
+    - Expect:
 
     ```text
                    missing_count  missing_pct
@@ -109,39 +100,21 @@ The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)`, sets 
     glucose_mg_dl           3484          5.9
     ```
 
-4. Save with `missing_report.to_csv(MISSING_PATH)`.
+3. Save with `missing_report.to_csv(MISSING_PATH)`.
 
 > **Checkpoint: `output/missing_report.csv`**
-> The header line `column,missing_count,missing_pct`, then the eight rows above.
+> Header `column,missing_count,missing_pct` and the eight rows above.
 
-### 1.2 Drop visits with no lab results
+### 1.2 Drop no-lab visits and exact repeats
 
-1. Drop visits with neither lab result, which are no-shows: `labs = labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="all")`. The cell then sets `rows_with_labs = len(labs)`.
+1. Drop the no-shows, visits with neither lab result: `labs = labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="all")`. The cell then sets `rows_with_labs = len(labs)`.
     - Expect: `rows with labs: 58554`.
-
-## Task 2: Remove repeats, sentinels, and wrong types
-
-### 2.1 Remove exact repeats and save the row counts
-
-1. Set `exact_repeats` to `labs.duplicated().sum()`, the rows identical to an earlier row.
+2. Set `exact_repeats` to `labs.duplicated().sum()`, the rows identical to an earlier row.
     - Expect: `exact repeats: 524`.
-2. Display the first rows whose `patient_id` and `visit_date` appear more than once: `labs[labs.duplicated(subset=["patient_id", "visit_date"], keep=False)].head(6)`.
-    - Expect: pairs of identical rows, such as D15568 on 2024-01-05 twice.
-3. Keep the first copy of each repeat: `labs = labs.drop_duplicates()`.
-4. Record the three row counts in one Series:
+3. Keep the first copy of each repeat: `labs = labs.drop_duplicates()`. The cell then sets `rows_unique = len(labs)`.
+    - Expect: `unique rows: 58030`.
 
-    ```python
-    row_counts = pd.Series({"read": rows_read, "with_labs": rows_with_labs, "unique": len(labs)}, name="rows")
-    row_counts.index.name = "step"
-    ```
-
-    - Expect: `read 59447`, `with_labs 58554`, `unique 58030`.
-5. Save with `row_counts.to_csv(ROWS_PATH)`.
-
-> **Checkpoint: `output/row_counts.csv`**
-> The header line `step,rows`, then `read`, `with_labs`, and `unique` with their counts.
-
-### 2.2 Replace the `-999` code
+## Task 2: Replace codes and convert types
 
 1. Replace `-999` with a missing value in `weight_kg` and `glucose_mg_dl` only:
 
@@ -149,14 +122,10 @@ The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)`, sets 
     labs = labs.replace({"weight_kg": {-999: np.nan}, "glucose_mg_dl": {-999: np.nan}})
     ```
 
-    - Expect: `weight_kg` now has 946 missing values and `glucose_mg_dl` 3079, and `labs["weight_kg"].min()` is 29.9.
-
-### 2.3 Convert types and save a profile
-
-1. Convert `age`: `labs["age"] = pd.to_numeric(labs["age"], errors="coerce").astype("Int64")`.
-2. Convert `visit_date`: `labs["visit_date"] = pd.to_datetime(labs["visit_date"], format="%Y-%m-%d", errors="coerce")`.
+2. Convert `age`: `labs["age"] = pd.to_numeric(labs["age"], errors="coerce").astype("Int64")`.
+3. Convert `visit_date`: `labs["visit_date"] = pd.to_datetime(labs["visit_date"], format="%Y-%m-%d", errors="coerce")`.
     - Expect: `age` is `Int64` and `visit_date` is `datetime64[us]`.
-3. Profile the five converted columns, one row per column:
+4. Profile the five converted columns, one row per column:
 
     ```python
     typed = labs[["visit_date", "age", "weight_kg", "hba1c_pct", "glucose_mg_dl"]]
@@ -182,18 +151,18 @@ The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)`, sets 
     weight_kg             float64            946                 29.9               1295.0   86.84
     ```
 
-    Keep the decimal slips (`max` 103.0 and 1295.0) for now; Task 5 blanks them.
-4. Save with `typed_profile.to_csv(PROFILE_PATH)`.
+    The `max` values 103.0 and 1295.0 are decimal slips; Task 5 blanks them.
+5. Save with `typed_profile.to_csv(PROFILE_PATH)`.
 
 > **Checkpoint: `output/typed_profile.csv`**
-> The header line `column,dtype,missing_count,min,max,mean`, then the five rows above.
+> Header `column,dtype,missing_count,min,max,mean` and the five rows above.
 
 ## Task 3: Standardize text and encode categories
 
-### 3.1 Clean the text columns and count them
+### 3.1 Clean the text columns
 
 1. Display `labs["clinic"].value_counts(dropna=False)`.
-    - Expect: 21 spellings of four clinics, such as `Mission`, `mission`, `MISSION`, ` Mission` with a leading space, and `Mission ` with a trailing one, plus `NaN`.
+    - Expect: 21 spellings of four clinics, such as `mission`, ` Mission`, and `Mission `, plus `NaN`.
 2. Clean the IDs: `labs["patient_id"] = labs["patient_id"].str.strip().str.upper()`.
 3. Clean the clinic names with `labs["clinic"].str.strip().str.title()`, then fill the blanks with `.fillna("Unknown")`, and assign the result back to `labs["clinic"]`.
 4. Map every spelling of gender to one code. A label the dictionary does not list, such as `U`, `unknown`, or `?`, becomes `NaN`:
@@ -203,48 +172,42 @@ The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)`, sets 
     labs["gender"] = labs["gender"].str.strip().str.lower().map(gender_codes)
     ```
 
-5. Count the cleaned columns, blanks included, and save both counts with their index:
-
-    ```python
-    clinic_counts = labs["clinic"].value_counts(dropna=False)
-    gender_counts = labs["gender"].value_counts(dropna=False)
-    clinic_counts.to_csv(CLINIC_PATH)
-    gender_counts.to_csv(GENDER_PATH)
-    ```
-
-    - Expect: `clinic_counts` shows `Mission` 20225, `Sunset` 15923, `Excelsior` 12952, `Bayview` 8698, and `Unknown` 232; `gender_counts` shows `F` 29012, `M` 26876, `X` 1765, and `NaN` 377.
-
-> **Checkpoint: `output/clinic_counts.csv` and `output/gender_counts.csv`**
-> The header lines `clinic,count` and `gender,count`. The gender file's last row has a blank label: those are the `NaN` codes.
-
-### 3.2 Bin HbA1c
+### 3.2 Bin HbA1c and count the categories
 
 HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more is diabetes.
 
-1. Add `a1c_category` with `pd.cut(labs["hba1c_pct"], bins=[0, 5.6, 6.4, 20], labels=["normal", "prediabetes", "diabetes"])`. Each bin includes its right edge, so 5.6 is normal and 5.7 prediabetes. A value outside every bin, such as a slip of 64, gets no category.
-2. Count it with `a1c_counts = labs["a1c_category"].value_counts(dropna=False)` and save with `a1c_counts.to_csv(A1C_PATH)`.
-    - Expect: `diabetes` 25763, `prediabetes` 14827, `normal` 14045, and `NaN` 3395: the 3347 blank HbA1c values plus the 48 above 20.
+1. Add `a1c_category` with `pd.cut(labs["hba1c_pct"], bins=[0, 5.6, 6.4, 20], labels=["normal", "prediabetes", "diabetes"])`. Each bin includes its right edge, so 5.6 is normal; a slip such as 64 gets no category.
+2. Build one 0/1 column per category: `coded = pd.get_dummies(labs[["clinic", "gender", "a1c_category"]], dtype="int64")`. A blank gets 0 in every column.
+3. Count each indicator's visits with `category_counts = coded.sum()`, then name it: `category_counts.index.name = "indicator"` and `category_counts.name = "visits"`.
+    - Expect:
 
-> **Checkpoint: `output/a1c_counts.csv`**
-> The header line `a1c_category,count`, then the four rows above.
+    ```text
+    indicator
+    clinic_Bayview               8698
+    clinic_Excelsior            12952
+    clinic_Mission              20225
+    clinic_Sunset               15923
+    clinic_Unknown                232
+    gender_F                    29012
+    gender_M                    26876
+    gender_X                     1765
+    a1c_category_normal         14045
+    a1c_category_prediabetes    14827
+    a1c_category_diabetes       25763
+    Name: visits, dtype: int64
+    ```
 
-### 3.3 Add clinic indicators and save the sample
+4. Save with `category_counts.to_csv(CATEGORY_PATH)`.
 
-1. Build one 0/1 column per clinic: `clinic_dummies = pd.get_dummies(labs["clinic"], prefix="clinic", dtype="int64")`.
-2. Add them with `labs = labs.join(clinic_dummies)`.
-    - Expect: `shape: (58030, 14)`, with the new columns `clinic_Bayview`, `clinic_Excelsior`, `clinic_Mission`, `clinic_Sunset`, and `clinic_Unknown`; each row has one 1.
-3. Take the visits of the twelve sample patients the first cell lists in `SAMPLE_IDS`, in order: `coded_sample = labs[labs["patient_id"].isin(SAMPLE_IDS)].sort_values(["patient_id", "visit_date"])`.
-4. Save with `coded_sample.to_csv(SAMPLE_PATH, index=False)`.
-    - Expect: 56 rows and 14 columns. Fewer rows means Task 3.1's ID cleaning missed some IDs.
+> **Checkpoint: `output/category_counts.csv`**
+> Header `indicator,visits` and the eleven rows above.
 
-> **Checkpoint: `output/coded_sample.csv`**
-> 56 visits with 14 columns: the eight from Task 2, `a1c_category`, and the five indicators. Every ID is upper case without spaces, and every gender is `F`, `M`, `X`, or blank.
+## Task 4: Flag outliers and count rule failures
 
-## Task 4: Validate the visits
-
-### 4.1 Count rule failures
-
-1. Build one column of `True`/`False` per rule; the range rules let a missing value pass:
+1. Compute the quartiles of `labs["glucose_mg_dl"]` with `quantile(0.25)` and `quantile(0.75)`, then `iqr = q3 - q1`, `lower = q1 - 1.5 * iqr`, and `upper = q3 + 1.5 * iqr`.
+    - Expect: `Q1 102.0, Q3 153.0, fences 25.5 to 229.5`.
+2. Flag the unusual values, keeping them in the table: `labs["glucose_outlier"] = (labs["glucose_mg_dl"] < lower) | (labs["glucose_mg_dl"] > upper)`.
+3. Build one `True`/`False` column per rule, `True` where the visit passes; a missing value passes the range rules:
 
     ```python
     rules = pd.DataFrame({
@@ -253,71 +216,53 @@ HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more
         "gender_valid": labs["gender"].isin(["F", "M", "X"]),
         "hba1c_in_range": labs["hba1c_pct"].between(4, 20) | labs["hba1c_pct"].isna(),
         "weight_in_range": labs["weight_kg"].between(30, 250) | labs["weight_kg"].isna(),
+        "glucose_within_fences": ~labs["glucose_outlier"],
     })
     ```
 
-2. Count the failures per rule with `validation_report = (~rules).sum()`, then name it: `validation_report.index.name = "rule"` and `validation_report.name = "failing_rows"`.
+4. Count the failures per rule with `validation_report = (~rules).sum()`, then name it: `validation_report.index.name = "rule"` and `validation_report.name = "failing_rows"`.
     - Expect:
 
     ```text
     rule
-    patient_id_format     119
-    visit_date_present    295
-    gender_valid          377
-    hba1c_in_range         49
-    weight_in_range        70
+    patient_id_format        119
+    visit_date_present       295
+    gender_valid             377
+    hba1c_in_range            49
+    weight_in_range           70
+    glucose_within_fences    486
     Name: failing_rows, dtype: int64
     ```
 
-3. Display the first failing rows with `labs[~rules.all(axis=1)].head(10)`.
-4. Save with `validation_report.to_csv(VALIDATION_PATH)`.
+5. Save with `validation_report.to_csv(VALIDATION_PATH)`.
 
 > **Checkpoint: `output/validation_report.csv`**
-> The header line `rule,failing_rows`, then the five rows above.
-
-### 4.2 Flag unusual glucose values
-
-Keep the flagged values in the table.
-
-1. Compute the quartiles of `labs["glucose_mg_dl"]` with `quantile(0.25)` and `quantile(0.75)`, then `iqr = q3 - q1`, `lower = q1 - 1.5 * iqr`, and `upper = q3 + 1.5 * iqr`.
-    - Expect: `Q1 102.0, Q3 153.0, fences 25.5 to 229.5`.
-2. Add the flag: `labs["glucose_outlier"] = (labs["glucose_mg_dl"] < lower) | (labs["glucose_mg_dl"] > upper)`.
-3. Collect the fences and the number of flagged visits:
-
-    ```python
-    glucose_fences = pd.Series({"q1": q1, "q3": q3, "lower": lower, "upper": upper,
-                                "outliers": labs["glucose_outlier"].sum()}, name="value")
-    glucose_fences.index.name = "measure"
-    ```
-
-    - Expect: `outliers` 486.0, all above `upper`.
-4. Save with `glucose_fences.to_csv(FENCES_PATH)`.
-
-> **Checkpoint: `output/glucose_fences.csv`**
-> The header line `measure,value`, then `q1`, `q3`, `lower`, `upper`, and `outliers`.
+> Header `rule,failing_rows` and the six rows above.
 
 ## Task 5: Clean and summarize
 
 ### 5.1 Apply the decisions and log them
 
 1. Work on a copy: `clean = labs.copy()`.
-2. Keep only the visits that can be identified, a valid ID and a real date: `clean = clean[rules["patient_id_format"] & rules["visit_date_present"]]`.
+2. Keep the visits with a valid ID and a real date: `clean = clean[rules["patient_id_format"] & rules["visit_date_present"]]`.
 3. Before blanking, count the impossible values among the kept visits: `hba1c_outside = ((clean["hba1c_pct"] < 4) | (clean["hba1c_pct"] > 20)).sum()`, and `weight_outside` the same way with 30 and 250.
-4. Blank the impossible values, keeping the visit: `clean["hba1c_pct"] = clean["hba1c_pct"].where(clean["hba1c_pct"].between(4, 20))`, and the same for `weight_kg` with 30 and 250. Leave other blanks as they are. Blanking an out-of-range HbA1c, such as 3.9, leaves its `a1c_category` from Task 3.2 as is.
+4. Blank those values, keeping the visit: `clean["hba1c_pct"] = clean["hba1c_pct"].where(clean["hba1c_pct"].between(4, 20))`, and the same for `weight_kg` with 30 and 250.
 5. Number the rows again with `clean = clean.reset_index(drop=True)`.
-6. Log the three decisions:
+6. Log the row counts and the decisions:
 
     ```python
-    decision_log = pd.Series({"visits_dropped": len(labs) - len(clean), "hba1c_blanked": hba1c_outside,
-                              "weight_blanked": weight_outside}, name="rows")
+    decision_log = pd.Series({
+        "rows_read": rows_read, "rows_with_labs": rows_with_labs, "rows_unique": rows_unique,
+        "visits_dropped": len(labs) - len(clean), "hba1c_blanked": hba1c_outside, "weight_blanked": weight_outside,
+    }, name="rows")
     decision_log.index.name = "decision"
     ```
 
-    - Expect: `shape: (57618, 15)`, and `visits_dropped` 412, `hba1c_blanked` 48, `weight_blanked` 70. 412, not 414: 2 visits fail both rules.
+    - Expect: `shape: (57618, 10)`; the three counts from Task 1.2, then `visits_dropped` 412 (2 visits fail both rules), `hba1c_blanked` 48, and `weight_blanked` 70.
 7. Save with `decision_log.to_csv(DECISION_PATH)`.
 
 > **Checkpoint: `output/decision_log.csv`**
-> The header line `decision,rows`, then the three rows above.
+> Header `decision,rows` and the six counts above.
 
 ### 5.2 Validate, then save the summary
 
@@ -334,8 +279,8 @@ Keep the flagged values in the table.
     ```
 
 2. Stop if any fails: `assert checks.all(), checks[~checks]`.
-    - Expect: the `assert` prints nothing. If it stops, the message names the failing check; fix that step and run the cells again.
-3. Summarize the cleaned number columns: `clean_summary = clean[["age", "weight_kg", "hba1c_pct", "glucose_mg_dl"]].describe().round(2).T`. `.T` turns each column of `clean` into a row.
+    - Expect: no output. A failure names the check; fix that step and run the cells again.
+3. Summarize the cleaned number columns: `clean_summary = clean[["age", "weight_kg", "hba1c_pct", "glucose_mg_dl"]].describe().round(2).T`. `.T` makes each column a row.
     - Expect:
 
     ```text
@@ -349,7 +294,7 @@ Keep the flagged values in the table.
 4. Save with `clean_summary.to_csv(SUMMARY_PATH)`.
 
 > **Checkpoint: `output/clean_summary.csv`**
-> The header line `,count,mean,std,min,25%,50%,75%,max`, then the four rows above.
+> Header `,count,mean,std,min,25%,50%,75%,max` and the four rows above.
 
 ### 5.3 Save the cleaned table as Parquet
 
@@ -360,13 +305,13 @@ Parquet keeps each column's dtype.
     - Expect: `age` is `Int64`, `visit_date` is `datetime64[us]`, `a1c_category` is `category`, `glucose_outlier` is `bool`, and `same as clean: True`.
 
 > **Checkpoint: `data/labs_clean.parquet`**
-> About 0.5 MB, with 57618 rows and the 15 columns of `clean`.
+> About 0.5 MB, with 57618 rows and the 10 columns of `clean`.
 
 ## Check your work
 
-- Run the checks any time, even partway through: `python3 check_assignment.py` in the terminal (with the environment active) prints your score and what to fix.
-- When **Restart** and **Run All** finish without errors, the notebook's last cell runs the same checks.
-- Both use the latest checks from the course repository, the same checks GitHub runs on each push. Commit `assignment.ipynb` and the `output/` files, then push; `data/` stays out of Git.
-- Expect: a passing run ends with `Score: 100/100`.
+- Run `python3 check_assignment.py` in the terminal any time; it prints your score and what to fix.
+- The notebook's last cell, `run_checks()`, runs the same checks after **Restart** and **Run All**.
+- GitHub runs the latest checks on each push. Commit `assignment.ipynb` and the `output/` files, then push.
+- Expect: `Score: 100/100`.
 
 What each check looks for: [CHECKS.md](CHECKS.md)

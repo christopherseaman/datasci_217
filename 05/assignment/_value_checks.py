@@ -2,21 +2,20 @@
 
 The course keeps these checks in 05/assignment_checks/, which the assignment workflow downloads on every
 push, and the handout ships a byte-identical copy so a local run reports exactly what GitHub will. They
-read the eleven small summaries a submission saves in output/ and compare them with values recomputed from
+read the six small summaries a submission saves in output/ and compare them with values recomputed from
 the export that generate_data.py writes: generate_data.generate_rows() rebuilds the same rows in memory, so
 the checks need neither the data folder nor pandas.
 
 Each check scores one thing, so one mistake costs only the checks it gets wrong. Values are compared after
 parsing: line endings, quoting, column order, row order, a leading row-number column, number formatting
-(54 == 54.0), date formatting (2024-01-02 == 2024-01-02 00:00:00), the letter case of labels and headers,
-and a placeholder for a missing value (-, NA, NaN, missing) never cost points, and cells may be separated by
-commas, semicolons, or tabs. Spaces around a label cost points only in the clinic counts and the coded
-sample's patient_id, where removing them is the skill being checked.
+(54 == 54.0), date formatting (2024-01-02 == 2024-01-02 00:00:00), the letter case and surrounding spaces of
+labels and headers, and a placeholder for a missing value (-, NA, NaN, missing) never cost points, and cells
+may be separated by commas, semicolons, or tabs.
 
-A later summary is judged against the student's own earlier ones too: the checks read which mistake an
-earlier file shows (no-lab visits kept, -999 kept, dates left as text, and so on), rebuild the pipeline
-with that mistake, and accept a later file that is right for the student's own data, so a mistake is
-charged in the file where it was made and not again downstream.
+A summary is judged against the student's other files too: the checks read which mistake a file shows
+(no-lab visits kept, -999 kept, dates left as text, IDs not cleaned, and so on), rebuild the pipeline with
+that mistake, and accept a later file that is right for the student's own data, so a mistake is charged in
+the file where it shows and not again elsewhere.
 
 Nothing here imports, runs, or inspects student code.
 """
@@ -39,33 +38,22 @@ import generate_data
 
 
 MISSING_FILE = "output/missing_report.csv"
-ROWS_FILE = "output/row_counts.csv"
 PROFILE_FILE = "output/typed_profile.csv"
-CLINIC_FILE = "output/clinic_counts.csv"
-GENDER_FILE = "output/gender_counts.csv"
-A1C_FILE = "output/a1c_counts.csv"
-SAMPLE_FILE = "output/coded_sample.csv"
+CATEGORY_FILE = "output/category_counts.csv"
 VALIDATION_FILE = "output/validation_report.csv"
-FENCES_FILE = "output/glucose_fences.csv"
 DECISION_FILE = "output/decision_log.csv"
 SUMMARY_FILE = "output/clean_summary.csv"
 # The notebook step and the call that save each artifact.
 SAVED_BY = {
     MISSING_FILE: ("Task 1.1", "missing_report.to_csv(MISSING_PATH)"),
-    ROWS_FILE: ("Task 2.1", "row_counts.to_csv(ROWS_PATH)"),
-    PROFILE_FILE: ("Task 2.3", "typed_profile.to_csv(PROFILE_PATH)"),
-    CLINIC_FILE: ("Task 3.1", "clinic_counts.to_csv(CLINIC_PATH)"),
-    GENDER_FILE: ("Task 3.1", "gender_counts.to_csv(GENDER_PATH)"),
-    A1C_FILE: ("Task 3.2", "a1c_counts.to_csv(A1C_PATH)"),
-    SAMPLE_FILE: ("Task 3.3", "coded_sample.to_csv(SAMPLE_PATH, index=False)"),
-    VALIDATION_FILE: ("Task 4.1", "validation_report.to_csv(VALIDATION_PATH)"),
-    FENCES_FILE: ("Task 4.2", "glucose_fences.to_csv(FENCES_PATH)"),
+    PROFILE_FILE: ("Task 2", "typed_profile.to_csv(PROFILE_PATH)"),
+    CATEGORY_FILE: ("Task 3.2", "category_counts.to_csv(CATEGORY_PATH)"),
+    VALIDATION_FILE: ("Task 4", "validation_report.to_csv(VALIDATION_PATH)"),
     DECISION_FILE: ("Task 5.1", "decision_log.to_csv(DECISION_PATH)"),
     SUMMARY_FILE: ("Task 5.2", "clean_summary.to_csv(SUMMARY_PATH)"),
 }
 
 RAW_COLUMNS = generate_data.COLUMNS
-SAMPLE_IDS = generate_data.SAMPLE_IDS
 SENTINEL = -999.0
 GENDER_CODES = {"f": "F", "female": "F", "m": "M", "male": "M", "x": "X", "nb": "X", "nonbinary": "X"}
 UNKNOWN_CLINIC = "Unknown"
@@ -77,10 +65,14 @@ ID_PATTERN = re.compile(r"D[0-9]{5}")
 DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
 HBA1C_RANGE = (4.0, 20.0)
 WEIGHT_RANGE = (30.0, 250.0)
-RULES = ("patient_id_format", "visit_date_present", "gender_valid", "hba1c_in_range", "weight_in_range")
+RULES = ("patient_id_format", "visit_date_present", "gender_valid", "hba1c_in_range", "weight_in_range",
+         "glucose_within_fences")
 # A rule saved under another name is recognized by a word in it.
 RULE_WORDS = {"patient_id_format": ("patient", "id"), "visit_date_present": ("date",), "gender_valid": ("gender",),
-              "hba1c_in_range": ("hba1c", "a1c"), "weight_in_range": ("weight",)}
+              "hba1c_in_range": ("hba1c", "a1c"), "weight_in_range": ("weight",),
+              "glucose_within_fences": ("glucose", "fence", "outlier")}
+# The rules the failing-rows check judges; the ID and glucose rules have checks of their own.
+PLAIN_RULES = ("visit_date_present", "gender_valid", "hba1c_in_range", "weight_in_range")
 PROFILE_COLUMNS = ("visit_date", "age", "weight_kg", "hba1c_pct", "glucose_mg_dl")
 NUMBER_COLUMNS = ("age", "weight_kg", "hba1c_pct", "glucose_mg_dl")
 STATS = ("count", "mean", "std", "min", "25%", "50%", "75%", "max")
@@ -88,7 +80,7 @@ STATS = ("count", "mean", "std", "min", "25%", "50%", "75%", "max")
 # Supplied values have at most one decimal; a percent may be saved rounded to one decimal or a whole number.
 TOLERANCE = 0.051
 PCT_TOLERANCE = 0.51
-# A multiplier other than Task 4.2's 1.5 that wrong fences may follow.
+# A multiplier other than Task 4's 1.5 that wrong fences may follow.
 OTHER_MULTIPLIERS = (1.0, 2.0, 3.0)
 
 
@@ -106,12 +98,12 @@ class Flags:
     """One way to run Tasks 1 to 5: each field is the README's step or a mistake an earlier file shows."""
 
     dropna: str = "all"  # Task 1.2: "all", "any" (how="any"), or "none" (not dropped)
-    # Task 2.1: "exact", "none", "keep_false", "patient" (subset=["patient_id"]), or "visit"
+    # Task 1.2: "exact", "none", "keep_false", "patient" (subset=["patient_id"]), or "visit"
     # (subset=["patient_id", "visit_date"], which treats two blank dates as equal)
     dedupe: str = "exact"
-    sentinel: str = "nan"  # Task 2.2: "nan" or "kept"
-    age: str = "coerce"  # Task 2.3: "coerce", "text" (not converted), or "zero" (filled with 0)
-    dates: str = "parsed"  # Task 2.3: "parsed" or "text"
+    sentinel: str = "nan"  # Task 2: "nan" or "kept"
+    age: str = "coerce"  # Task 2: "coerce", "text" (not converted), or "zero" (filled with 0)
+    dates: str = "parsed"  # Task 2: "parsed" or "text"
     undated: str = "kept"  # "kept", or "dropped" with dropna(subset=["visit_date"]) before Task 5
     ids: str = "clean"  # Task 3.1: "clean", "unstripped" (upper only), "cased" (stripped only), or "raw"
     # Task 5.1: a name in KEEP_RULES, or the rules a kept visit passes joined by "+"
@@ -151,7 +143,7 @@ def _real_date(cell: str) -> str | None:
 
 @dataclass(frozen=True)
 class Parsed:
-    """Each column of data/lab_visits.csv as read_csv and Task 2 read it, one value per row."""
+    """Each column of data/lab_visits.csv as read_csv, Task 2, and Task 3.1 leave it, one value per row."""
 
     weight: tuple
     hba1c: tuple
@@ -179,7 +171,7 @@ def parsed() -> Parsed:
 
 
 def _date(i: int, flags: Flags) -> str | None:
-    """visit_date as Task 2.3 leaves it: an ISO date or None, or the text itself when it was not converted."""
+    """visit_date as Task 2 leaves it: an ISO date or None, or the text itself when it was not converted."""
     if flags.dates == "text":
         return raw_rows()[i][1] or None
     return parsed().real_date[i]
@@ -193,7 +185,7 @@ def _patient_id(cell: str, flags: Flags) -> str:
 
 @functools.lru_cache(maxsize=None)
 def _with_labs(dropna: str) -> tuple[int, ...]:
-    """The rows left after Task 1.2."""
+    """The rows left after Task 1.2's dropna()."""
     rows = raw_rows()
     if dropna == "none":
         return tuple(range(len(rows)))
@@ -204,7 +196,7 @@ def _with_labs(dropna: str) -> tuple[int, ...]:
 
 @functools.lru_cache(maxsize=None)
 def _unique(dropna: str, dedupe: str) -> tuple[int, ...]:
-    """The rows left after Task 1.2 and Task 2.1."""
+    """The rows left after Task 1.2's dropna() and drop_duplicates()."""
     rows = raw_rows()
     kept = _with_labs(dropna)
     if dedupe == "none":
@@ -226,7 +218,7 @@ def _unique(dropna: str, dedupe: str) -> tuple[int, ...]:
 
 @functools.lru_cache(maxsize=None)
 def labs_rows(flags: Flags) -> tuple[int, ...]:
-    """The rows of labs through Task 4: after Tasks 1.2 and 2.1, and any undated visits dropped early."""
+    """The rows of labs through Task 4: after Task 1.2, and any undated visits dropped early."""
     kept = _unique(flags.dropna, flags.dedupe)
     if flags.undated == "dropped":
         kept = tuple(i for i in kept if _date(i, flags) is not None)
@@ -261,7 +253,7 @@ def describe(values: list[float]) -> dict[str, float]:
 
 @dataclass(frozen=True)
 class Labs:
-    """labs at the end of Task 4.2, one list per column, for the rows labs_rows() keeps."""
+    """labs at the end of Task 4, one list per column, for the rows labs_rows() keeps."""
 
     rows: tuple
     patient_id: list
@@ -295,13 +287,18 @@ def labs_table(flags: Flags) -> Labs:
         glucose=measure(columns.glucose, True), clinic=[columns.clinic[i] for i in kept],
         gender=[columns.gender[i] for i in kept], passes=[],
     )
-    for pid, date, gender, hba1c, weight in zip(table.patient_id, table.date, table.gender, table.hba1c, table.weight):
+    present = [value for value in table.glucose if value is not None]
+    q1, q3 = quantile(present, 0.25), quantile(present, 0.75)
+    lower, upper = q1 - 1.5 * (q3 - q1), q3 + 1.5 * (q3 - q1)
+    for pid, date, gender, hba1c, weight, glucose in zip(table.patient_id, table.date, table.gender, table.hba1c,
+                                                         table.weight, table.glucose):
         table.passes.append({
             "patient_id_format": ID_PATTERN.fullmatch(pid) is not None,
             "visit_date_present": date is not None,
             "gender_valid": gender is not None,
             "hba1c_in_range": hba1c is None or HBA1C_RANGE[0] <= hba1c <= HBA1C_RANGE[1],
             "weight_in_range": weight is None or WEIGHT_RANGE[0] <= weight <= WEIGHT_RANGE[1],
+            "glucose_within_fences": glucose is None or lower <= glucose <= upper,
         })
     return table
 
@@ -328,11 +325,11 @@ class Reference:
     q3: float
     glucose: tuple  # the glucose values present in labs
     glucose_blank: int
+    labs_rows: int  # the visits in labs during Tasks 3 and 4
     dropped: int
     outside: dict  # "hba1c" or "weight" -> values outside the range among the kept visits
     clean: dict  # column -> describe() of the cleaned column
     clean_rows: int
-    sample: tuple  # ((patient_id, iso date or None), ...) for the sample patients' visits
 
 
 def _bin(value: float | None, bins: tuple[float, ...], right_edge: bool = True) -> str | None:
@@ -367,8 +364,6 @@ def _labs_values(flags: Flags) -> dict:
             missing[column] = sum(1 for i in labs.rows if not rows[i][4])
         low[column], high[column], mean[column] = min(found), max(found), sum(found) / len(found)
     glucose = tuple(value for value in labs.glucose if value is not None)
-    sample = sorted(((pid, date) for pid, date in zip(labs.patient_id, labs.date) if pid in SAMPLE_IDS),
-                    key=lambda visit: (visit[0], visit[1] is None, visit[1] or ""))
     return dict(
         rows_read=len(rows), rows_with_labs=len(_with_labs(flags.dropna)),
         rows_unique=len(_unique(flags.dropna, flags.dedupe)), missing=missing, low=low, high=high, mean=mean,
@@ -380,7 +375,7 @@ def _labs_values(flags: Flags) -> dict:
         blank_lab={"hba1c_in_range": sum(1 for value in labs.hba1c if value is None),
                    "weight_in_range": sum(1 for value in labs.weight if value is None)},
         q1=quantile(list(glucose), 0.25), q3=quantile(list(glucose), 0.75), glucose=glucose,
-        glucose_blank=len(labs.glucose) - len(glucose), sample=tuple(sample),
+        glucose_blank=len(labs.glucose) - len(glucose), labs_rows=len(labs.rows),
     )
 
 
@@ -532,16 +527,6 @@ def _blank(cell: str) -> bool:
     return cell.strip().casefold() in ("", "nan", "na", "n/a", "<na>", "nat", "none", "null", "missing", "-", ".")
 
 
-def _flag(cell: str) -> bool | None:
-    """A True/False flag as pandas, a spreadsheet, or a 0/1 column writes it; None for anything else."""
-    text = cell.strip().casefold()
-    if text in ("true", "1", "1.0", "yes"):
-        return True
-    if text in ("false", "0", "0.0", "no"):
-        return False
-    return None
-
-
 def _show(value) -> str:
     if value is None:
         return "blank (missing)"
@@ -650,13 +635,6 @@ def read_table(root: Path, name: str) -> Table:
     return Table(name=name, columns=tuple(dict.fromkeys(header)), rows=rows, raw=raw, copies=copies)
 
 
-def _try_read(root: Path, name: str) -> Table | None:
-    try:
-        return read_table(root, name)
-    except (AssertionError, OSError, csv.Error, UnicodeDecodeError):
-        return None
-
-
 def _written_again(table: Table) -> str:
     step, call = SAVED_BY[table.name]
     return (
@@ -726,35 +704,47 @@ def _value(cells: dict[str, str], *words: str) -> str | None:
     return numbers[0] if len(cells) == 1 and numbers else None
 
 
-# Detecting the student's own earlier mistakes.
+# Detecting the student's own mistakes from their other files.
 
 
-def _row_counts(root: Path) -> Report | None:
-    try:
-        return _report(root, ROWS_FILE, _row_label, ("read", "with_labs", "unique"))
-    except (AssertionError, OSError, csv.Error, UnicodeDecodeError):
-        return None
-
-
-def _row_label(cell: str) -> str | None:
+def _step_label(cell: str) -> str | None:
+    """The Task 5.1 decision-log entry a label names: a row count or a decision."""
     name = _header(cell)
+    if "hba1c" in name or "a1c" in name:
+        return "hba1c"
+    if "weight" in name:
+        return "weight"
     if any(word in name for word in ("dup", "uniq", "repeat")):
         return "unique"
     if any(word in name for word in ("lab", "dropna", "result")):
         return "with_labs"
     if any(word in name for word in ("read", "raw", "load", "start", "original", "export")):
         return "read"
+    if any(word in name for word in ("drop", "visit", "remov", "id", "date")):
+        return "dropped"
     return None
+
+
+DECISION_LABELS = ("read", "with_labs", "unique", "dropped", "hba1c", "weight")
+DECISION_NAMES = {"read": "rows_read", "with_labs": "rows_with_labs", "unique": "rows_unique",
+                  "dropped": "visits_dropped", "hba1c": "hba1c_blanked", "weight": "weight_blanked"}
+
+
+def _decision_report(root: Path) -> Report | None:
+    try:
+        return _report(root, DECISION_FILE, _step_label, DECISION_LABELS)
+    except (AssertionError, OSError, csv.Error, UnicodeDecodeError):
+        return None
 
 
 def _count_cell(report: Report, label: str) -> float | None:
     cells = report.cells.get(label)
-    return None if cells is None else _number(_value(cells, "rows", "count", "n") or "")
+    return None if cells is None else _number(_value(cells, "rows", "count", "value", "n") or "")
 
 
 def _detected_rows(root: Path) -> tuple[str, str]:
-    """(dropna, dedupe) as row_counts.csv shows them, the README's steps when it cannot tell."""
-    report = _row_counts(root)
+    """(dropna, dedupe) as decision_log.csv's row counts show them, the README's steps when it cannot tell."""
+    report = _decision_report(root)
     if report is None:
         return CORRECT.dropna, CORRECT.dedupe
     with_labs, unique = _count_cell(report, "with_labs"), _count_cell(report, "unique")
@@ -790,7 +780,7 @@ def _numeric_dtype(cells: dict[str, str]) -> bool:
 
 
 def _detected_typed(root: Path, dropna: str, dedupe: str) -> dict[str, str]:
-    """The Task 2.2 and 2.3 choices typed_profile.csv shows, the README's steps when it cannot tell."""
+    """The Task 2 choices typed_profile.csv shows, the README's steps when it cannot tell."""
     found = {"sentinel": CORRECT.sentinel, "age": CORRECT.age, "dates": CORRECT.dates, "undated": CORRECT.undated}
     report = _profile(root)
     if report is None:
@@ -814,36 +804,38 @@ def _detected_typed(root: Path, dropna: str, dedupe: str) -> dict[str, str]:
     return found
 
 
-def _sample(root: Path) -> Table | None:
-    table = _try_read(root, SAMPLE_FILE)
-    return table if table is not None and "patient_id" in table.columns else None
+ID_CLEANING = ("clean", "unstripped", "cased", "raw")
 
 
-def _detected_ids(root: Path) -> tuple[str, ...]:
-    """The Task 3.1 ID cleaning the coded sample shows; every way when the sample cannot tell."""
-    table = _sample(root)
-    if table is None:
-        return ("clean", "unstripped", "cased", "raw")
-    cells = [raw["patient_id"] for raw in table.raw]
-    padded = any(cell != cell.strip() for cell in cells)
-    lower = any(cell != cell.upper() for cell in cells)
-    if padded or lower:
-        return ({(True, True): "raw", (True, False): "unstripped", (False, True): "cased"}[(padded, lower)],)
-    expected = len(reference().sample)
-    return ("clean",) if len(table.rows) >= expected else ("clean", "unstripped", "cased", "raw")
+def _id_failures(root: Path) -> float | None:
+    """The patient_id_format count validation_report.csv saves, or None."""
+    try:
+        report = _validation(root)
+    except (AssertionError, OSError, csv.Error, UnicodeDecodeError):
+        return None
+    cells = report.cells.get("patient_id_format")
+    return _number(_failing_cell(cells)) if cells else None
+
+
+def _detected_ids(root: Path, own: dict) -> tuple[str, ...]:
+    """The Task 3.1 ID cleaning the validation report's ID rule shows; every way when it cannot tell."""
+    failures = _id_failures(root)
+    found = tuple(ids for ids in ID_CLEANING if failures is not None
+                  and _near(failures, reference(Flags(**own, ids=ids)).failing["patient_id_format"]))
+    return found or ID_CLEANING
 
 
 def upstream(root: Path, stage: int) -> list[Flags]:
-    """The README's pipeline, then the student's own: the mistakes the files before `stage` show.
+    """The README's pipeline, then the student's own: the mistakes the student's other files show.
 
-    Stage 2 is typed_profile.csv, 3 the Task 3 files, 4 the Task 4 files, and 5 the Task 5 files.
+    Stage 2 is typed_profile.csv, 3 category_counts.csv, 4 validation_report.csv, and 5 the Task 5 files.
     """
     dropna, dedupe = _detected_rows(root)
     own = {"dropna": dropna, "dedupe": dedupe}
     if stage >= 3:
         own.update(_detected_typed(root, dropna, dedupe))
     options = [CORRECT]
-    for ids in (_detected_ids(root) if stage >= 4 else ("clean",)):
+    for ids in (_detected_ids(root, own) if stage >= 5 else ("clean",)):
         flags = Flags(**own, ids=ids)
         if flags not in options:
             options.append(flags)
@@ -940,84 +932,7 @@ def check_missing_pct(root: Path) -> None:
     raise AssertionError(f"{MISSING_FILE}, missing_pct: {_first(wrong, 3)}. {cause}")
 
 
-# Task 2.1: output/row_counts.csv
-
-
-def _rows_report(root: Path) -> Report:
-    report = _report(root, ROWS_FILE, _row_label, ("read", "with_labs", "unique"))
-    absent = [label for label in ("read", "with_labs", "unique") if _count_cell(report, label) is None]
-    _assert(
-        not absent,
-        f"{ROWS_FILE} has no row count for {_join(absent)} (its rows are "
-        f"{_join(raw or 'blank' for raw in report.raw_labels) or 'none'}). In Task 2.1, build row_counts = "
-        'pd.Series({"read": rows_read, "with_labs": rows_with_labs, "unique": len(labs)}, name="rows").',
-    )
-    if report.table.copies > 1:
-        raise AssertionError(_written_again(report.table))
-    return report
-
-
-def check_rows_no_lab(root: Path) -> None:
-    report = _rows_report(root)
-    expected = reference()
-    read, with_labs = _count_cell(report, "read"), _count_cell(report, "with_labs")
-    _assert(read == expected.rows_read,
-            f"{ROWS_FILE}: read is {_show(read)}, expected {expected.rows_read}, the rows of data/lab_visits.csv. "
-            "Set rows_read = len(labs) right after pd.read_csv(DATA_PATH), and keep the data file as "
-            "generate_data.py wrote it.")
-    if with_labs == expected.rows_with_labs:
-        return
-    if with_labs == expected.rows_read:
-        cause = ('nothing was dropped. In Task 1.2, drop the no-show visits with labs = labs.dropna(subset=["hba1c_pct", '
-                 '"glucose_mg_dl"], how="all"), then set rows_with_labs = len(labs).')
-    elif with_labs == len(_with_labs("any")):
-        cause = ('that is how="any", which also drops every visit with one of the two results. how="all" drops a '
-                 "visit only when both are missing.")
-    else:
-        cause = ('In Task 1.2, drop with labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="all"); a plain '
-                 "dropna() drops every row with any gap.")
-    raise AssertionError(f"{ROWS_FILE}: with_labs is {_show(with_labs)}, expected {expected.rows_with_labs}; {cause}")
-
-
-def check_rows_repeats(root: Path) -> None:
-    report = _rows_report(root)
-    dropna, _ = _detected_rows(root)
-    unique = _count_cell(report, "unique")
-    expected = len(_unique(dropna, "exact"))
-    if unique == expected or unique == reference().rows_unique:
-        return
-    if unique is not None and unique <= len(_unique(dropna, "patient")):
-        return  # Visits collapsed to one per patient are charged once, by the repeat-visit check.
-    with_labs = len(_with_labs(dropna))
-    if unique == with_labs:
-        cause = "nothing was removed. In Task 2.1, remove the exact repeats with labs = labs.drop_duplicates()."
-    elif unique == len(_unique(dropna, "visit")):
-        cause = (f'subset=["patient_id", "visit_date"] also drops {_show(expected - unique)} visits that differ but '
-                 "share a patient and a blank date, since drop_duplicates() treats two blanks as equal. drop_duplicates() "
-                 "with no arguments removes only rows identical in every column.")
-    elif unique == len(_unique(dropna, "keep_false")):
-        cause = ("keep=False drops every copy of a repeated row, the first one too. drop_duplicates() with no "
-                 "arguments keeps the first copy.")
-    else:
-        cause = "In Task 2.1, remove the exact repeats with labs = labs.drop_duplicates(), then save len(labs)."
-    raise AssertionError(f"{ROWS_FILE}: unique is {_show(unique)}, expected {expected} ({with_labs - expected} exact "
-                         f"repeats removed); {cause}")
-
-
-def check_rows_repeat_visits(root: Path) -> None:
-    report = _rows_report(root)
-    dropna, _ = _detected_rows(root)
-    unique = _count_cell(report, "unique")
-    patients = len(_unique(dropna, "patient"))
-    _assert(
-        unique is None or unique > patients,
-        f"{ROWS_FILE}: unique is {_show(unique)}, but the export has {patients} patient IDs and most patients came "
-        f"back several times, so about {len(_unique(dropna, 'exact'))} visits should stay. drop_duplicates() with no "
-        'subset removes only rows identical in every column; subset=["patient_id"] keeps one visit per patient.',
-    )
-
-
-# Task 2.3: output/typed_profile.csv
+# Task 2: output/typed_profile.csv
 
 
 def _typed_report(root: Path) -> Report:
@@ -1025,7 +940,7 @@ def _typed_report(root: Path) -> Report:
     absent = [column for column in PROFILE_COLUMNS if column not in report.cells]
     _assert(
         not absent,
-        f"{PROFILE_FILE} has no row for {_join(absent)}. In Task 2.3, profile "
+        f"{PROFILE_FILE} has no row for {_join(absent)}. In Task 2, profile "
         'typed = labs[["visit_date", "age", "weight_kg", "hba1c_pct", "glucose_mg_dl"]], one row per column.',
     )
     return report
@@ -1052,7 +967,7 @@ def check_typed_sentinel(root: Path) -> None:
             if _same(_stat(report, column, "min"), SENTINEL)]
     _assert(
         not kept,
-        f"{PROFILE_FILE}: {_join(kept)}, so -999, the export's code for not measured, is still a value. In Task 2.2, "
+        f"{PROFILE_FILE}: {_join(kept)}, so -999, the export's code for not measured, is still a value. In Task 2, "
         'replace it with labs.replace({"weight_kg": {-999: np.nan}, "glucose_mg_dl": {-999: np.nan}}) and assign '
         "the result back to labs.",
     )
@@ -1066,7 +981,7 @@ def check_typed_sentinel(root: Path) -> None:
              f"{expected.missing[column]}" for column in ("weight_kg", "glucose_mg_dl")]
     raise AssertionError(
         f"{PROFILE_FILE}: {_join(wrong)}: the blanks of the export plus every -999. Replace -999 in weight_kg and "
-        "glucose_mg_dl only, after Task 2.1, and count with typed.isna().sum()."
+        "glucose_mg_dl only, after Task 1.2, and count with typed.isna().sum()."
     )
 
 
@@ -1076,7 +991,7 @@ def check_typed_age(root: Path) -> None:
     _assert(
         _numeric_dtype(cells),
         f"{PROFILE_FILE}: age has dtype {_dtype(cells) or 'blank'} and runs from {_stat(report, 'age', 'min') or 'blank'} "
-        f"to {_stat(report, 'age', 'max') or 'blank'}, so it is still text; expected Int64. In Task 2.3, convert with "
+        f"to {_stat(report, 'age', 'max') or 'blank'}, so it is still text; expected Int64. In Task 2, convert with "
         'pd.to_numeric(labs["age"], errors="coerce").astype("Int64"), which turns text that is not a number into <NA>.',
     )
 
@@ -1107,7 +1022,7 @@ def check_typed_dates(root: Path) -> None:
     low, high = _stat(report, "visit_date", "min"), _stat(report, "visit_date", "max")
     _assert(
         "date" in dtype or (not dtype and _dates(low) and _dates(high)),
-        f"{PROFILE_FILE}: visit_date has dtype {dtype or 'blank'}, expected datetime64. In Task 2.3, convert with "
+        f"{PROFILE_FILE}: visit_date has dtype {dtype or 'blank'}, expected datetime64. In Task 2, convert with "
         'pd.to_datetime(labs["visit_date"], format="%Y-%m-%d", errors="coerce"), which turns a date that does not '
         "exist into NaT.",
     )
@@ -1132,7 +1047,7 @@ def check_typed_undated(root: Path) -> None:
     _assert(
         found["undated"] == "kept",
         f"{PROFILE_FILE}: visit_date has 0 missing, but about {reference().missing['visit_date']} visits have no real "
-        "date. Keep them through Task 4: Task 4.1's visit_date_present rule counts them, and Task 5.1 drops them. "
+        "date. Keep them through Task 4: its visit_date_present rule counts them, and Task 5.1 drops them. "
         'Leave out dropna(subset=["visit_date"]) before Task 5.',
     )
 
@@ -1162,241 +1077,236 @@ def check_typed_values(root: Path) -> None:
     )
 
 
-# Task 3: the counts and the coded sample
+# Task 3.2: output/category_counts.csv
 
 
-def _counts(root: Path, name: str) -> Report:
-    table = read_table(root, name)
-    step, call = SAVED_BY[name]
-    _assert(len(table.columns) >= 2,
-            f"{name} has one column ({_columns(table)}), so the labels are gone: value_counts() keeps them in the "
-            f"index, and index=False leaves them out. In {step}, save with {call}, keeping the index.")
-    # The labels are the column holding text; the counts, the column named count, or else a column of numbers.
-    key = next((c for c in table.columns if any(_number(row[c]) is None and not _blank(row[c]) for row in table.rows)),
-               table.columns[0])
-    others = [c for c in table.columns if c != key]
-    count = next((c for c in others if c in ("count", "visits", "n", "rows")),
-                 next((c for c in others if any(_number(row[c]) is not None for row in table.rows)), None))
-    _assert(count is not None, f"{name} has no counts beside its labels (its columns are {_columns(table)}); "
-                               f"save {call.split('.to_csv')[0]}, a value_counts(dropna=False).")
-    cells = {}
-    for row in table.rows:
-        cells.setdefault(row[key], {"count": row[count]})
+# A get_dummies() column name: the column it encodes, a separator, and the category.
+INDICATOR = re.compile(r"^(clinic|gender|(?:hb)?a1c(?:[_\s-]?(?:category|cat|band|group|bin))?|category)"
+                       r"[_\s.:-]?(.*)$", re.IGNORECASE | re.DOTALL)
+
+
+def _fold(value: str) -> str:
+    """A category compared without letter case or spaces, so ' Mission' and 'MISSION' are one spelling."""
+    return "".join(value.split()).casefold()
+
+
+@dataclass(frozen=True)
+class Indicator:
+    group: str  # "clinic", "gender", or "a1c"
+    value: str  # the category as the file spells it, spaces kept
+    prefixed: bool  # named as get_dummies() names a column, such as clinic_Mission
+    label: str
+    count: float | None
+
+
+def _indicator(label: str, count: float | None) -> Indicator:
+    # Spaces inside the label are kept to show them, such as the one in clinic_ Mission.
+    text = label.lstrip()
+    match = INDICATOR.match(text)
+    if match:
+        head = match.group(1).casefold()
+        group = head if head in ("clinic", "gender") else "a1c"
+        return Indicator(group, match.group(2), True, text.strip(), count)
+    fold = _fold(text)
+    if fold in (name.casefold() for name in A1C_LABELS):
+        group = "a1c"
+    elif fold in (name.casefold() for name in reference().clinics):
+        group = "clinic"
+    else:
+        group = "gender"
+    return Indicator(group, text, False, text.strip(), count)
+
+
+def expected_indicators() -> tuple[str, ...]:
+    """The index of Task 3.2's category_counts, in get_dummies() order."""
+    genders = sorted(code for code in reference().genders if code is not None)
+    return (tuple(f"clinic_{name}" for name in sorted(reference().clinics)) + tuple(f"gender_{c}" for c in genders)
+            + tuple(f"a1c_category_{name}" for name in A1C_LABELS))
+
+
+@dataclass(frozen=True)
+class Categories:
+    table: Table
+    entries: tuple
+    problem: str | None = None
+
+
+def _categories(root: Path) -> Categories:
+    table = read_table(root, CATEGORY_FILE)
+    step, call = SAVED_BY[CATEGORY_FILE]
     if table.copies > 1:
         raise AssertionError(_written_again(table))
-    return Report(table, cells, tuple(row[key] for row in table.rows), tuple(raw[key] for raw in table.raw), key)
+    _assert(len(table.rows) <= 1000,
+            f"{CATEGORY_FILE} has {len(table.rows)} rows, one per visit, so it holds the indicator table itself. In "
+            f"{step}, save category_counts = coded.sum(), one row per indicator column.")
+    if len(table.columns) == 1:
+        problem = (f"{CATEGORY_FILE} has one column ({_columns(table)}), so the indicator names are gone: sum() keeps "
+                   f"them in the index, and index=False leaves them out. In {step}, save with {call}, keeping the "
+                   "index.")
+        expected = expected_indicators()
+        _assert(len(table.rows) == len(expected), problem)
+        column = table.columns[0]
+        entries = tuple(_indicator(label, _number(row[column])) for label, row in zip(expected, table.rows))
+        return Categories(table, entries, problem)
+    # The labels are the column holding text; the counts, the column named for them, or else a column of numbers.
+    key = next((c for c in table.columns if any(_number(row[c]) is None and not _blank(row[c]) for row in table.rows)),
+               None)
+    if key is None and len(table.rows) == 1 and any(INDICATOR.match(c) for c in table.columns):
+        # Saved on its side, one column per indicator.
+        raw_header = table.raw[0]
+        entries = tuple(_indicator(c, _number(table.rows[0][c])) for c in raw_header if INDICATOR.match(c))
+        return Categories(table, tuple(reversed(entries)))
+    key = key or table.columns[0]
+    others = [c for c in table.columns if c != key]
+    count = next((c for c in others if c in ("count", "visits", "n", "rows", "sum", "0")),
+                 next((c for c in others if any(_number(row[c]) is not None for row in table.rows)), None))
+    _assert(count is not None, f"{CATEGORY_FILE} has no counts beside its labels (its columns are "
+                               f"{_columns(table)}); save category_counts = coded.sum().")
+    entries = tuple(_indicator(raw[key], _number(row[count])) for raw, row in zip(table.raw, table.rows)
+                    if not _blank(row[key]))
+    return Categories(table, entries)
 
 
-def _counted(report: Report) -> dict[str | None, float]:
-    """{label: count}, a blank label (NaN) as None and labels compared in lower case."""
-    found: dict[str | None, float] = {}
-    for label, cells in report.cells.items():
-        name = None if _blank(label) else label.casefold()
-        found[name] = found.get(name, 0.0) + (_number(cells["count"]) or 0.0)
+def _group(categories: Categories, group: str) -> dict[str, float]:
+    """{folded category: visits} for one group of indicators."""
+    found: dict[str, float] = {}
+    for entry in categories.entries:
+        if entry.group == group:
+            found[_fold(entry.value)] = found.get(_fold(entry.value), 0.0) + (entry.count or 0.0)
     return found
 
 
+def _spellings(categories: Categories, group: str) -> dict[str, str]:
+    return {_fold(entry.value): entry.value.strip() for entry in categories.entries if entry.group == group}
+
+
 def _counts_match(found: dict, expected: dict) -> bool:
-    wanted = {(None if key is None else key.casefold()): value for key, value in expected.items() if value}
+    wanted = {_fold(key): value for key, value in expected.items() if key is not None and value}
     return set(found) == set(wanted) and all(abs(found[key] - wanted[key]) < 0.5 for key in wanted)
-
-
-def _spellings(report: Report) -> dict[str, str]:
-    """{casefolded label: the label as the file spells it}, for showing a student's own counts."""
-    return {label.casefold(): label for label in reversed(report.labels) if not _blank(label)}
 
 
 def _show_counts(counts: dict, spellings: dict | None = None) -> str:
     spellings = spellings or {}
-    return ", ".join(f"{'blank' if key is None else spellings.get(key, key)} {_show(value)}"
-                     for key, value in sorted(counts.items(), key=lambda item: -item[1]))
+    return ", ".join(f"{spellings.get(key, key)} {_show(value)}"
+                     for key, value in sorted(counts.items(), key=lambda item: -item[1]) if key is not None)
 
 
 def _proportions(found: dict) -> bool:
     return bool(found) and all(value <= 1 for value in found.values()) and abs(sum(found.values()) - 1) < 0.02
 
 
-def check_clinic_clean(root: Path) -> None:
-    report = _counts(root, CLINIC_FILE)
-    padded = [repr(raw) for raw in report.raw_labels if raw != raw.strip()]
-    _assert(not padded,
-            f"{CLINIC_FILE} lists clinic names with spaces around them ({_first(padded)}), which value_counts() and "
-            "get_dummies() count as other clinics. In Task 3.1, clean the column with "
-            'labs["clinic"].str.strip().str.title().')
+def _labels(categories: Categories) -> str:
+    return _first([entry.label or "blank" for entry in categories.entries], 5) or "none"
+
+
+def check_category_clinic(root: Path) -> None:
+    categories = _categories(root)
+    clinics = [entry.value for entry in categories.entries if entry.group == "clinic"]
+    _assert(bool(clinics),
+            f"{CATEGORY_FILE} has no clinic indicators (its labels are {_labels(categories)}). In Task 3.2, build "
+            'coded = pd.get_dummies(labs[["clinic", "gender", "a1c_category"]], dtype="int64").')
     spelled: dict[str, list[str]] = {}
-    for label in report.labels:
-        if not _blank(label):
-            spelled.setdefault(label.casefold(), []).append(label)
+    for value in clinics:
+        spelled.setdefault(_fold(value), []).append(repr(value))
     mixed = {key: names for key, names in spelled.items() if len(names) > 1}
     _assert(not mixed,
-            f"{CLINIC_FILE} spells " + "; ".join(f"{key} as {_join(names)}" for key, names in mixed.items())
-            + '. In Task 3.1, give each clinic one spelling with labs["clinic"].str.strip().str.title().')
-    found = {key: value for key, value in _counted(report).items()
-             if key is not None and key != UNKNOWN_CLINIC.casefold()}
+            f"{CATEGORY_FILE} spells " + "; ".join(f"{key} as {_join(names)}" for key, names in mixed.items())
+            + ', which get_dummies() makes into separate clinics. In Task 3.1, give each clinic one spelling with '
+            'labs["clinic"].str.strip().str.title().')
+    unknown = UNKNOWN_CLINIC.casefold()
+    found = {key: value for key, value in _group(categories, "clinic").items() if key != unknown}
     _assert(not _proportions(found),
-            f"{CLINIC_FILE} holds shares, not counts; use value_counts(dropna=False) without normalize=True.")
+            f"{CATEGORY_FILE} holds shares, not counts: mean() gives the share of visits, and sum() the visits.")
     for flags in upstream(root, 3):
         expected = {key: value for key, value in reference(flags).clinics.items() if key != UNKNOWN_CLINIC}
         if _counts_match(found, expected):
             return
-    expected = {key: value for key, value in reference().clinics.items() if key != UNKNOWN_CLINIC}
-    raise AssertionError(f"{CLINIC_FILE} counts {_show_counts(found, _spellings(report))}, expected "
-                         f"{_show_counts(expected)}. Count the "
-                         'cleaned column with labs["clinic"].value_counts(dropna=False) after Task 3.1.')
+    expected = {key.casefold(): value for key, value in reference().clinics.items() if key != UNKNOWN_CLINIC}
+    raise AssertionError(f"{CATEGORY_FILE} counts {_show_counts(found, _spellings(categories, 'clinic'))}, expected "
+                         f"{_show_counts(expected, {k.casefold(): k for k in reference().clinics})}. Sum the indicators "
+                         "of the cleaned clinic column, built after Task 3.1.")
 
 
-def check_clinic_filled(root: Path) -> None:
-    report = _counts(root, CLINIC_FILE)
-    found = _counted(report)
-    unknown = found.get(UNKNOWN_CLINIC.casefold())
+def check_category_unknown(root: Path) -> None:
+    categories = _categories(root)
+    unknown = _group(categories, "clinic").get(UNKNOWN_CLINIC.casefold())
     options = [reference(flags).clinics.get(UNKNOWN_CLINIC, 0) for flags in upstream(root, 3)]
-    if None not in found and unknown is not None and any(abs(unknown - value) < 0.5 for value in options):
+    if unknown is not None and any(abs(unknown - value) < 0.5 for value in options):
         return
-    if None in found:
-        cause = f"it has {_show(found[None])} visits with a blank clinic"
-    elif unknown is None:
-        cause = "it has no Unknown row"
+    if unknown is None:
+        cause = "it has no clinic_Unknown, because get_dummies() gives a blank clinic 0 in every clinic column"
     else:
-        cause = f"Unknown has {_show(unknown)} visits"
+        cause = f"clinic_Unknown has {_show(unknown)} visits"
     raise AssertionError(
-        f"{CLINIC_FILE}: {cause}, expected Unknown with {options[0]} visits, the visits the export left without a "
-        f'clinic. In Task 3.1, fill them with .fillna("{UNKNOWN_CLINIC}") after strip() and title(), and count with '
-        "value_counts(dropna=False) so a blank would show."
+        f"{CATEGORY_FILE}: {cause}; expected clinic_Unknown with {options[0]} visits, the visits the export left "
+        f'without a clinic. In Task 3.1, fill them with .fillna("{UNKNOWN_CLINIC}") after strip() and title().'
     )
 
 
-def check_gender(root: Path) -> None:
-    report = _counts(root, GENDER_FILE)
-    found = _counted(report)
+def check_category_gender(root: Path) -> None:
+    categories = _categories(root)
+    found = _group(categories, "gender")
     options = [reference(flags).genders for flags in upstream(root, 3)]
     if any(_counts_match(found, expected) for expected in options):
         return
-    expected = options[0]
-    spellings = _spellings(report)
-    others = sorted(spellings.get(key, key) for key in found if key is not None and key not in ("f", "m", "x"))
+    expected = {_fold(key): value for key, value in options[0].items() if key is not None}
+    spellings = _spellings(categories, "gender")
+    others = sorted(spellings.get(key, key) for key in found if key not in ("f", "m", "x"))
     if others:
-        cause = (f"it lists {_first(others)}, which are spellings, not codes. Map every spelling with "
+        cause = (f"it has indicators for {_first(others)}, which are spellings, not codes. Map every spelling with "
                  'labs["gender"].str.strip().str.lower().map(gender_codes); map() turns a spelling the dictionary '
                  "does not list into NaN, while replace() leaves it.")
     elif "x" not in found:
-        cause = 'there is no X: the dictionary also maps "x", "nb", and "nonbinary" to X.'
-    elif found.get(None, 0) > expected.get(None, 0) and found.get("x", 0) < expected.get("X", 0):
-        cause = ('there are too many blanks and too few X: a spelling is missing from gender_codes (nb, nonbinary), '
-                 "so map() turns it into NaN.")
+        cause = 'there is no gender_X: the dictionary also maps "x", "nb", and "nonbinary" to X.'
+    elif all(found.get(code, 0) < expected.get(code, 0) for code in ("f", "m", "x")):
+        cause = ('F, M, and X are all low: the labels were not lower-cased before map(), so "Female" and "MALE" '
+                 'miss the lowercase keys. Use labs["gender"].str.strip().str.lower().map(gender_codes).')
+    elif found.get("x", 0) < expected.get("x", 0):
+        cause = ("there are too few X: a spelling is missing from gender_codes (nb, nonbinary), so map() turns it "
+                 "into NaN.")
     else:
-        cause = ("count after mapping, with labs[\"gender\"].value_counts(dropna=False), so the blank codes show "
-                 "too.")
-    raise AssertionError(f"{GENDER_FILE} counts {_show_counts(found, spellings)}, expected {_show_counts(expected)}; "
-                         f"{cause}")
+        cause = 'map every spelling with labs["gender"].str.strip().str.lower().map(gender_codes).'
+    raise AssertionError(f"{CATEGORY_FILE} counts {_show_counts(found, spellings)} for gender, expected "
+                         f"{_show_counts(expected, {'f': 'F', 'm': 'M', 'x': 'X'})}; {cause}")
 
 
-def check_a1c(root: Path) -> None:
-    report = _counts(root, A1C_FILE)
-    found = _counted(report)
+def check_category_a1c(root: Path) -> None:
+    categories = _categories(root)
+    found = _group(categories, "a1c")
     options = [reference(flags) for flags in upstream(root, 3)]
     if any(_counts_match(found, expected.a1c) for expected in options):
         return
-    expected = options[0].a1c
-    labels = {None if key is None else key.casefold() for key in expected}
-    blanks_equal = set(found) == labels and any(abs(found.get(None, 0) - option.a1c.get(None, 0)) < 0.5
-                                                for option in options)
+    expected = {_fold(key): value for key, value in options[0].a1c.items() if key is not None}
     if any(_counts_match(found, option.a1c_wrong_edges) for option in options):
         cause = ("these follow the edges 5.7 and 6.5. Each pd.cut() bin includes its right edge, so "
                  "bins=[0, 5.6, 6.4, 20] puts 5.6 in normal, 5.7 to 6.4 in prediabetes, and 6.5 or more in diabetes.")
-    elif None not in found:
-        cause = "there is no blank row: count with value_counts(dropna=False), so the visits with no category show."
-    elif blanks_equal or any(_counts_match(found, option.a1c_left_closed) for option in options):
+    elif any(_counts_match(found, option.a1c_left_closed) for option in options):
         cause = ("each bin includes its right edge; do not pass right=False. bins=[0, 5.6, 6.4, 20] puts 5.6 in "
                  "normal and 6.4 in prediabetes.")
     else:
         cause = ('bin with pd.cut(labs["hba1c_pct"], bins=[0, 5.6, 6.4, 20], labels=["normal", "prediabetes", '
                  '"diabetes"]); a blank HbA1c, or one above 20, gets no category.')
-    raise AssertionError(f"{A1C_FILE} counts {_show_counts(found, _spellings(report))}, expected "
-                         f"{_show_counts(expected)}; {cause}")
+    raise AssertionError(f"{CATEGORY_FILE} counts {_show_counts(found, _spellings(categories, 'a1c'))} for "
+                         f"a1c_category, expected {_show_counts(expected)}; {cause}")
 
 
-def _sample_rows(root: Path) -> Table:
-    table = read_table(root, SAMPLE_FILE)
-    _assert("patient_id" in table.columns,
-            f"{SAMPLE_FILE} has no patient_id column (its columns are {_columns(table)}). In Task 3.3, save "
-            'coded_sample = labs[labs["patient_id"].isin(SAMPLE_IDS)] with index=False.')
-    if table.copies > 1:
-        raise AssertionError(_written_again(table))
-    return table
-
-
-def check_sample_ids(root: Path) -> None:
-    table = _sample_rows(root)
-    cells = [raw["patient_id"] for raw in table.raw]
-    padded = [repr(cell) for cell in cells if cell != cell.strip()]
-    _assert(not padded, f"{SAMPLE_FILE} has patient IDs with spaces around them ({_first(padded)}). In Task 3.1, "
-                        'clean them with labs["patient_id"].str.strip().str.upper().')
-    lower = [cell for cell in cells if cell != cell.upper()]
-    _assert(not lower, f"{SAMPLE_FILE} has lower-case patient IDs ({_first(lower)}), so one patient appears under two "
-                       "IDs. In Task 3.1, add .str.upper() after .str.strip().")
-    found: dict[str, int] = {}
-    for cell in cells:
-        found[cell.strip().upper()] = found.get(cell.strip().upper(), 0) + 1
-    for flags in upstream(root, 3):
-        expected: dict[str, int] = {}
-        for visit in reference(flags).sample:
-            expected[visit[0]] = expected.get(visit[0], 0) + 1
-        if found == expected:
-            return
-        if flags == CORRECT:
-            wanted = expected
-    wrong = [f"{pid} has {found.get(pid, 0)} visits, expected {n}" for pid, n in wanted.items() if found.get(pid, 0) != n]
-    wrong += [f"{pid} is not a sample patient" for pid in found if pid not in wanted]
-    raise AssertionError(
-        f"{SAMPLE_FILE}: {_first(wrong, 3)}. A visit whose ID was saved as 'd10007' or ' D11126' matches isin() only "
-        'after labs["patient_id"].str.strip().str.upper() in Task 3.1; select with '
-        'labs[labs["patient_id"].isin(SAMPLE_IDS)].'
-    )
-
-
-def check_sample_dummies(root: Path) -> None:
-    table = _sample_rows(root)
-    try:
-        clinics = _counts(root, CLINIC_FILE)
-    except (AssertionError, OSError, csv.Error, UnicodeDecodeError):
-        clinics = None
-    labels = sorted(reference().clinics)
-    if clinics is not None:
-        own = [raw for raw in clinics.raw_labels if not _blank(raw)]
-        if any(cell != cell.strip() for cell in own) or len({c.casefold() for c in own}) != len(own):
-            return  # Unclean clinic names are charged once, by the clinic names check.
-        labels = own
-    expected = {_header(f"clinic_{label}"): label.casefold() for label in labels}
-    saved = [c for c in table.columns if c.startswith("clinic_")]
-    missing = [column for column in expected if column not in saved]
-    extra = [column for column in saved if column not in expected]
+def check_category_indicators(root: Path) -> None:
+    categories = _categories(root)
+    _assert(categories.problem is None, categories.problem or "")
+    plain = [entry.label for entry in categories.entries if not entry.prefixed]
     _assert(
-        not missing and not extra,
-        f"{SAMPLE_FILE} has the indicator columns {_join(saved) or 'none'}, expected one per clinic: "
-        f"{_join(expected)}" + (f"; extra {_join(extra)}" if extra else "") + ". In Task 3.3, build them with "
-        'pd.get_dummies(labs["clinic"], prefix="clinic", dtype="int64"), add them with labs = labs.join(...), '
-        "and then take the sample.",
-    )
-    _assert("clinic" in table.columns, f"{SAMPLE_FILE} has no clinic column; save every column of labs.")
-    wrong = []
-    for row in table.rows:
-        for column, label in expected.items():
-            flag = _flag(row[column])
-            if flag is None or flag != (row["clinic"].casefold() == label):
-                wrong.append(f"{row.get('patient_id') or 'a row'} at {row['clinic'] or 'no clinic'} has "
-                             f"{column} {row[column] or 'blank'}")
-    _assert(
-        not wrong,
-        f"{SAMPLE_FILE}: {_first(wrong, 3)}; each row should have 1 in its own clinic's column and 0 in the others. "
-        "Join the get_dummies() result to the same labs it was built from.",
+        not plain,
+        f"{CATEGORY_FILE} has the labels {_first(plain, 3)}, without the column name get_dummies() puts first, as in "
+        "clinic_Mission and gender_F. In Task 3.2, build coded = pd.get_dummies(labs[[\"clinic\", \"gender\", "
+        '"a1c_category"]], dtype="int64"), then save category_counts = coded.sum().',
     )
 
 
-# Task 4.1: output/validation_report.csv
+# Task 4: output/validation_report.csv
 
 
 def _rule_label(cell: str) -> str | None:
-    """The Task 4.1 rule a label names: its own name, or the one rule whose words it contains."""
+    """The Task 4 rule a label names: its own name, or the one rule whose words it contains."""
     name = _header(cell)
     if name in RULES:
         return name
@@ -1410,12 +1320,12 @@ def _validation(root: Path) -> Report:
     table = read_table(root, VALIDATION_FILE)
     if len(table.rows) > 1000:
         problem = (f"{VALIDATION_FILE} has {len(table.rows)} rows, one per visit: sum(axis=1) adds up each visit's "
-                   "rules. In Task 4.1, save validation_report = (~rules).sum() without axis=1, one row per rule.")
+                   "rules. In Task 4, save validation_report = (~rules).sum() without axis=1, one row per rule.")
         return Report(table, {}, problem=problem)
     report = _report(root, VALIDATION_FILE, _rule_label, RULES)
     if report.key is None and report.problem is None:
         problem = (f"{VALIDATION_FILE} has the rules across the top ({_first(list(report.raw_labels), 3)}), so it "
-                   "holds the rules table itself or a sideways report. In Task 4.1, save validation_report = "
+                   "holds the rules table itself or a sideways report. In Task 4, save validation_report = "
                    "(~rules).sum(), one row per rule.")
         _assert(len(report.table.rows) == 1, problem)
         return dataclasses.replace(report, problem=problem)
@@ -1424,6 +1334,20 @@ def _validation(root: Path) -> Report:
 
 def _failing_cell(cells: dict[str, str]) -> str:
     return _value(cells, "failing_rows", "fail", "count", "rows") or next(iter(cells.values()), "")
+
+
+def _failing(root: Path) -> dict[str, str] | None:
+    """{rule: saved count}, or None when the report has no counts by rule, which the one-row-per-rule check charges."""
+    report = _validation(root)
+    if report.problem is not None and not report.cells:
+        return None
+    return {rule: _failing_cell(row) for rule, row in report.cells.items()}
+
+
+def _passes_counted(cells: dict[str, str], options: list[Reference]) -> bool:
+    """Whether every count is of the visits that pass, rules.sum() in place of (~rules).sum()."""
+    return any(all(_same(cell, option.labs_rows - option.failing[rule]) for rule, cell in cells.items())
+               for option in options)
 
 
 def check_validation_rows(root: Path) -> None:
@@ -1438,8 +1362,8 @@ def check_validation_rows(root: Path) -> None:
         raise AssertionError(_written_again(report.table))
     _assert(
         not problems,
-        f"{VALIDATION_FILE} should have one row for each of the {len(RULES)} rules in Task 4.1, but "
-        + "; ".join(problems) + ". Build rules = pd.DataFrame({...}) with those five column names, then "
+        f"{VALIDATION_FILE} should have one row for each of the {len(RULES)} rules in Task 4, but "
+        + "; ".join(problems) + ". Build rules = pd.DataFrame({...}) with those six column names, then "
         "validation_report = (~rules).sum().",
     )
 
@@ -1452,151 +1376,179 @@ def check_validation_names(root: Path) -> None:
                if rule is not None and _header(raw) != rule]
     _assert(
         not renamed,
-        f"{VALIDATION_FILE} names a rule differently from Task 4.1: it has {_join(renamed)}. Keep the five column "
+        f"{VALIDATION_FILE} names a rule differently from Task 4: it has {_join(renamed)}. Keep the six column "
         f"names of rules, {_join(RULES)}, so the report reads the same as the data contract.",
     )
 
 
+def check_validation_ids(root: Path) -> None:
+    cells = _failing(root)
+    options = [reference(flags) for flags in upstream(root, 4)]
+    if cells is None or "patient_id_format" not in cells or _passes_counted(cells, options):
+        return  # Charged once, by the one-row-per-rule or failing-rows check.
+    cell = cells["patient_id_format"]
+    if any(_same(cell, option.failing["patient_id_format"]) for option in options):
+        return
+    own = dataclasses.replace(upstream(root, 4)[-1], ids="clean")
+    hints = {"unstripped": "' D11126' still has its space: add .str.strip() before .str.upper()",
+             "cased": "'d10007' is still lower case: add .str.upper() after .str.strip()",
+             "raw": "IDs such as ' D11126' and 'd10007' are not cleaned: use .str.strip().str.upper()"}
+    cause = next((hint for ids, hint in hints.items()
+                  if _same(cell, reference(dataclasses.replace(own, ids=ids)).failing["patient_id_format"])),
+                 'clean the IDs in Task 3.1 with labs["patient_id"].str.strip().str.upper(), then test them with '
+                 'labs["patient_id"].str.fullmatch(r"D[0-9]{5}", na=False)')
+    raise AssertionError(f"{VALIDATION_FILE}: patient_id_format has {cell or 'blank'} failing rows, expected "
+                         f"{options[0].failing['patient_id_format']}, the IDs that are not D and five digits after "
+                         f"Task 3.1; {cause}.")
+
+
 def check_validation_counts(root: Path) -> None:
-    report = _validation(root)
-    if report.problem is not None and not report.cells:
+    cells = _failing(root)
+    if cells is None:
         return  # A report with one row per visit is charged once, by the one-row-per-rule check.
-    cells = {rule: _failing_cell(row) for rule, row in report.cells.items()}
     _assert(bool(cells), f"{VALIDATION_FILE} has no failing_rows values beside its rules; save (~rules).sum().")
     options = [reference(flags) for flags in upstream(root, 4)]
-    own_gender = None
-    genders = _try_read(root, GENDER_FILE)
-    if genders is not None:
-        try:
-            counted = _counted(_counts(root, GENDER_FILE))
-            own_gender = sum(value for key, value in counted.items() if key not in ("f", "m", "x"))
-        except AssertionError:
-            pass
+    own_codes = None
+    try:
+        counted = _group(_categories(root), "gender")
+        own_codes = sum(value for key, value in counted.items() if key in ("f", "m", "x"))
+    except (AssertionError, OSError, csv.Error, UnicodeDecodeError):
+        pass
     wrong = []
-    for rule, cell in cells.items():
+    for rule in PLAIN_RULES:
+        if rule not in cells:
+            continue  # A missing rule is charged by the one-row-per-rule check.
         accepted = [expected.failing[rule] for expected in options] + (
-            [own_gender] if rule == "gender_valid" and own_gender is not None else [])
-        if not any(_same(cell, value) for value in accepted):
-            wrong.append(f"{rule} has {cell or 'blank'}, expected {options[0].failing[rule]}")
+            [expected.labs_rows - own_codes for expected in options]
+            if rule == "gender_valid" and own_codes is not None else [])
+        if not any(_same(cells[rule], value) for value in accepted):
+            wrong.append(f"{rule} has {cells[rule] or 'blank'}, expected {options[0].failing[rule]}")
     if not wrong:
         return
     truth = options[0]
-    rows = len(labs_rows(CORRECT))
-    if all(_same(cell, rows - truth.failing[rule]) for rule, cell in cells.items()):
+    if _passes_counted(cells, options):
         cause = "These count the rows that pass: rules.sum() counts True, so count the failures with (~rules).sum()."
     elif any(rule in cells and _same(cells[rule], truth.failing[rule] + truth.blank_lab[rule])
              for rule in ("hba1c_in_range", "weight_in_range")):
         cause = ("A blank result counts as a failure: between() is False for NaN, so the range rules add "
                  '| labs["hba1c_pct"].isna() (and the same for weight_kg) to let a missing value pass.')
     else:
-        cause = ("Run the rules on the Task 3 table: patient_id with .str.fullmatch(r\"D[0-9]{5}\", na=False), "
-                 'visit_date with notna(), gender with isin(["F", "M", "X"]), and the two ranges with between(low, high).')
+        cause = ('Run the rules on the Task 3 table: visit_date with notna(), gender with isin(["F", "M", "X"]), and '
+                 "the two ranges with between(low, high).")
     raise AssertionError(f"{VALIDATION_FILE}, failing_rows: {_first(wrong, 3)}. {cause}")
 
 
-# Task 4.2: output/glucose_fences.csv
-
-
-def _fence_label(cell: str) -> str | None:
-    name = _header(cell)
-    for label, words in (("outliers", ("outlier", "flag")), ("lower", ("lower", "low")),
-                         ("upper", ("upper", "high")), ("q1", ("q1", "25", "first")), ("q3", ("q3", "75", "third")),
-                         ("iqr", ("iqr",))):
-        if any(word in name for word in words):
-            return label
-    return None
-
-
-def _fences(root: Path, *needed: str) -> dict[str, float | None]:
-    report = _report(root, FENCES_FILE, _fence_label, ("q1", "q3", "lower", "upper", "outliers"))
-    if report.table.copies > 1:
-        raise AssertionError(_written_again(report.table))
-    values = {label: _number(_value(cells, "value", "glucose") or next(iter(cells.values()), ""))
-              for label, cells in report.cells.items()}
-    absent = [label for label in needed if values.get(label) is None]
-    _assert(not absent, f"{FENCES_FILE} has no value for {_join(absent)}. In Task 4.2, save glucose_fences = "
-                        'pd.Series({"q1": q1, "q3": q3, "lower": lower, "upper": upper, "outliers": '
-                        'labs["glucose_outlier"].sum()}, name="value").')
-    return values
-
-
-def check_fences(root: Path) -> None:
-    values = _fences(root, "q1", "q3", "lower", "upper")
-    options = [reference(flags) for flags in upstream(root, 4)]
-    for expected in options:
-        iqr = expected.q3 - expected.q1
-        if all(_near(values[label], value, 0.01) for label, value in (
-                ("q1", expected.q1), ("q3", expected.q3), ("lower", expected.q1 - 1.5 * iqr),
-                ("upper", expected.q3 + 1.5 * iqr))):
-            return
-    expected = options[0]
+def _outside(expected: Reference, k: float) -> int:
     iqr = expected.q3 - expected.q1
-    cause = ('Compute q1 = labs["glucose_mg_dl"].quantile(0.25) and q3 = .quantile(0.75) after Task 2.2 blanks -999, '
-             "then iqr = q3 - q1, lower = q1 - 1.5 * iqr, and upper = q3 + 1.5 * iqr.")
-    for k in OTHER_MULTIPLIERS:
-        if _near(values["lower"], values["q1"] - k * (values["q3"] - values["q1"]), 0.01) and _near(
-                values["upper"], values["q3"] + k * (values["q3"] - values["q1"]), 0.01):
-            cause = f"These fences are {k:g} * IQR from the quartiles; Task 4.2 multiplies the IQR by 1.5."
-            break
-    raise AssertionError(
-        f"{FENCES_FILE}: q1 {_show(values['q1'])}, q3 {_show(values['q3'])}, fences {_show(values['lower'])} to "
-        f"{_show(values['upper'])}; expected q1 {_show(expected.q1)}, q3 {_show(expected.q3)}, fences "
-        f"{_show(expected.q1 - 1.5 * iqr)} to {_show(expected.q3 + 1.5 * iqr)} mg/dL. {cause}"
-    )
+    return sum(1 for g in expected.glucose if g < expected.q1 - k * iqr or g > expected.q3 + k * iqr)
 
 
-def check_outliers(root: Path) -> None:
-    values = _fences(root, "outliers")
+def check_validation_glucose(root: Path) -> None:
+    cells = _failing(root)
     options = [reference(flags) for flags in upstream(root, 4)]
-    counts = []
-    for expected in options:
-        iqr = expected.q3 - expected.q1
-        if values.get("lower") is None or values.get("upper") is None:
-            values["lower"], values["upper"] = expected.q1 - 1.5 * iqr, expected.q3 + 1.5 * iqr
-        own = sum(1 for g in expected.glucose if g < values["lower"] or g > values["upper"])
-        iqr = expected.q3 - expected.q1
-        truth = sum(1 for g in expected.glucose if g < expected.q1 - 1.5 * iqr or g > expected.q3 + 1.5 * iqr)
-        counts.append((own, truth, expected.glucose_blank))
-    if any(values["outliers"] in (own, truth) for own, truth, _ in counts):
+    rule = "glucose_within_fences"
+    if cells is None or rule not in cells or _passes_counted(cells, options):
+        return  # Charged once, by the one-row-per-rule or failing-rows check.
+    cell = cells[rule]
+    if any(_same(cell, option.failing[rule]) for option in options):
         return
-    own, truth, blanks = counts[0]
-    if any(values["outliers"] in (o + b, t + b) for o, t, b in counts):
-        cause = (f"that adds the {blanks} blank glucose values: ~between() is True for NaN. Flag with "
+    truth = options[0]
+    iqr = truth.q3 - truth.q1
+    if any(_same(cell, option.failing[rule] + option.glucose_blank) for option in options):
+        cause = (f"that adds the {truth.glucose_blank} blank glucose values: ~between() is True for NaN. Flag with "
                  '(labs["glucose_mg_dl"] < lower) | (labs["glucose_mg_dl"] > upper), which is False for a blank.')
-    elif values["outliers"] < 2 or values["outliers"] < truth / 50:
-        cause = 'save the number of flagged visits, labs["glucose_outlier"].sum().'
+    elif any(_same(cell, option.labs_rows - option.failing[rule]) for option in options):
+        cause = ('that counts the visits inside the fences: the rule is True for a visit that passes, so use '
+                 '~labs["glucose_outlier"].')
     else:
-        cause = ('flag with (labs["glucose_mg_dl"] < lower) | (labs["glucose_mg_dl"] > upper) and save '
-                 'labs["glucose_outlier"].sum().')
-    raise AssertionError(f"{FENCES_FILE}: outliers is {_show(values['outliers'])}, expected {own}, the glucose values "
-                         f"outside the saved fences {_show(values['lower'])} to {_show(values['upper'])}; {cause}")
+        cause = next((f"that follows fences {k:g} * IQR from the quartiles; Task 4 multiplies the IQR by 1.5."
+                      for k in OTHER_MULTIPLIERS if any(_same(cell, _outside(option, k)) for option in options)),
+                     'compute q1 and q3 with quantile(0.25) and quantile(0.75), lower = q1 - 1.5 * iqr and upper = '
+                     'q3 + 1.5 * iqr, flag with (labs["glucose_mg_dl"] < lower) | (labs["glucose_mg_dl"] > upper), '
+                     'and add "glucose_within_fences": ~labs["glucose_outlier"] to rules.')
+    raise AssertionError(
+        f"{VALIDATION_FILE}: glucose_within_fences has {cell or 'blank'} failing rows, expected "
+        f"{truth.failing[rule]}, the glucose values outside {_show(truth.q1 - 1.5 * iqr)} to "
+        f"{_show(truth.q3 + 1.5 * iqr)} mg/dL (Q1 {_show(truth.q1)}, Q3 {_show(truth.q3)}); {cause}"
+    )
 
 
 # Task 5.1: output/decision_log.csv
 
 
-def _decision_label(cell: str) -> str | None:
-    name = _header(cell)
-    if "hba1c" in name or "a1c" in name:
-        return "hba1c"
-    if "weight" in name:
-        return "weight"
-    if any(word in name for word in ("drop", "visit", "remov", "id", "date")):
-        return "dropped"
-    return None
-
-
-def _decisions(root: Path) -> dict[str, float | None]:
-    report = _report(root, DECISION_FILE, _decision_label, ("dropped", "hba1c", "weight"))
+def _decisions(root: Path, *needed: str) -> dict[str, float | None]:
+    report = _report(root, DECISION_FILE, _step_label, DECISION_LABELS)
     if report.table.copies > 1:
         raise AssertionError(_written_again(report.table))
-    values = {label: _number(_value(cells, "rows", "count", "value") or next(iter(cells.values()), ""))
-              for label, cells in report.cells.items()}
-    absent = [name for label, name in (("dropped", "visits_dropped"), ("hba1c", "hba1c_blanked"),
-                                       ("weight", "weight_blanked")) if values.get(label) is None]
-    _assert(not absent, f"{DECISION_FILE} has no count for {_join(absent)}. In Task 5.1, save decision_log = "
-                        'pd.Series({"visits_dropped": ..., "hba1c_blanked": ..., "weight_blanked": ...}, name="rows").')
+    values = {label: _count_cell(report, label) for label in DECISION_LABELS}
+    absent = [DECISION_NAMES[label] for label in needed if values.get(label) is None]
+    _assert(
+        not absent,
+        f"{DECISION_FILE} has no count for {_join(absent)} (its rows are "
+        f"{_join(raw or 'blank' for raw in report.raw_labels) or 'none'}). In Task 5.1, save decision_log = "
+        'pd.Series({"rows_read": rows_read, "rows_with_labs": rows_with_labs, "rows_unique": rows_unique, '
+        '"visits_dropped": ..., "hba1c_blanked": ..., "weight_blanked": ...}, name="rows").',
+    )
     return values
+
+
+def check_decision_no_lab(root: Path) -> None:
+    values = _decisions(root, "read", "with_labs")
+    expected = reference()
+    read, with_labs = values["read"], values["with_labs"]
+    _assert(read == expected.rows_read,
+            f"{DECISION_FILE}: rows_read is {_show(read)}, expected {expected.rows_read}, the rows of "
+            "data/lab_visits.csv. Set rows_read = len(labs) right after pd.read_csv(DATA_PATH), and keep the data "
+            "file as generate_data.py wrote it.")
+    if with_labs == expected.rows_with_labs:
+        return
+    if with_labs == expected.rows_read:
+        cause = ('nothing was dropped. In Task 1.2, drop the no-show visits with labs = labs.dropna(subset=["hba1c_pct", '
+                 '"glucose_mg_dl"], how="all"), then set rows_with_labs = len(labs).')
+    elif with_labs == len(_with_labs("any")):
+        cause = ('that is how="any", which also drops every visit with one of the two results. how="all" drops a '
+                 "visit only when both are missing.")
+    else:
+        cause = ('In Task 1.2, drop with labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="all"); a plain '
+                 "dropna() drops every row with any gap.")
+    raise AssertionError(f"{DECISION_FILE}: rows_with_labs is {_show(with_labs)}, expected {expected.rows_with_labs}; "
+                         f"{cause}")
+
+
+def check_decision_repeats(root: Path) -> None:
+    unique = _decisions(root, "unique")["unique"]
+    dropna, _ = _detected_rows(root)
+    expected = len(_unique(dropna, "exact"))
+    if unique == expected or unique == reference().rows_unique:
+        return
+    if unique is not None and unique <= len(_unique(dropna, "patient")):
+        return  # Visits collapsed to one per patient are charged once, by the repeat-visit check.
+    with_labs = len(_with_labs(dropna))
+    if unique == with_labs:
+        cause = "nothing was removed. In Task 1.2, remove the exact repeats with labs = labs.drop_duplicates()."
+    elif unique == len(_unique(dropna, "visit")):
+        cause = (f'subset=["patient_id", "visit_date"] also drops {_show(expected - unique)} visits that differ but '
+                 "share a patient and a blank date, since drop_duplicates() treats two blanks as equal. drop_duplicates() "
+                 "with no arguments removes only rows identical in every column.")
+    elif unique == len(_unique(dropna, "keep_false")):
+        cause = ("keep=False drops every copy of a repeated row, the first one too. drop_duplicates() with no "
+                 "arguments keeps the first copy.")
+    else:
+        cause = "In Task 1.2, remove the exact repeats with labs = labs.drop_duplicates(), then set rows_unique = len(labs)."
+    raise AssertionError(f"{DECISION_FILE}: rows_unique is {_show(unique)}, expected {expected} ({with_labs - expected} "
+                         f"exact repeats removed); {cause}")
+
+
+def check_decision_repeat_visits(root: Path) -> None:
+    unique = _decisions(root, "unique")["unique"]
+    dropna, _ = _detected_rows(root)
+    patients = len(_unique(dropna, "patient"))
+    _assert(
+        unique is None or unique > patients,
+        f"{DECISION_FILE}: rows_unique is {_show(unique)}, one row per patient; expected about "
+        f"{len(_unique(dropna, 'exact'))}, one row per visit. Call labs.drop_duplicates() with no subset, so only "
+        "rows identical in every column are removed.",
+    )
 
 
 def _task5_options(root: Path):
@@ -1617,15 +1569,15 @@ def _task5_options(root: Path):
 
 
 def check_decision_dropped(root: Path) -> None:
-    values = _decisions(root)
+    values = _decisions(root, "dropped")
     options = upstream(root, 5)
     if any(_near(values["dropped"], reference(flags).dropped) for flags in options):
         return
     expected = reference().dropped
     if any(_near(values["dropped"], reference(dataclasses.replace(flags, keep="all_rules")).dropped)
            for flags in options):
-        cause = ("that drops every visit that fails any rule. Keep a visit that breaks only a range or gender rule; "
-                 'Task 5.1 keeps clean[rules["patient_id_format"] & rules["visit_date_present"]].')
+        cause = ("that drops every visit that fails any rule. Keep a visit that breaks only a range, gender, or "
+                 'glucose rule; Task 5.1 keeps clean[rules["patient_id_format"] & rules["visit_date_present"]].')
     elif any(_near(values["dropped"], reference(dataclasses.replace(flags, keep="dated")).dropped) for flags in options):
         cause = ('that drops only the undated visits; also drop the visits whose patient_id fails r"D[0-9]{5}", with '
                  'clean[rules["patient_id_format"] & rules["visit_date_present"]].')
@@ -1637,7 +1589,7 @@ def check_decision_dropped(root: Path) -> None:
 
 
 def check_decision_outside(root: Path) -> None:
-    values = _decisions(root)
+    values = _decisions(root, "hba1c", "weight")
     if any(_near(values["hba1c"], reference(flags).outside["hba1c"])
            and _near(values["weight"], reference(flags).outside["weight"]) for flags in _task5_options(root)):
         return
@@ -1791,26 +1743,25 @@ CHECKS = (
     Check("missing report: one row per column", check_missing_rows),
     Check("missing report: missing_count", check_missing_count),
     Check("missing report: missing_pct", check_missing_pct),
-    Check("row counts: no-lab visits dropped", check_rows_no_lab),
-    Check("row counts: exact repeats removed", check_rows_repeats),
-    Check("row counts: repeat visits kept", check_rows_repeat_visits),
     Check("typed profile: -999 read as missing", check_typed_sentinel),
     Check("typed profile: age as numbers", check_typed_age),
     Check("typed profile: unreadable ages left blank", check_typed_age_blank),
     Check("typed profile: visit dates parsed", check_typed_dates),
     Check("typed profile: undated visits kept", check_typed_undated),
     Check("typed profile: other values unchanged", check_typed_values),
-    Check("clinic counts: clinic names cleaned", check_clinic_clean),
-    Check("clinic counts: missing clinic filled", check_clinic_filled),
-    Check("gender counts: gender codes mapped", check_gender),
-    Check("a1c counts: a1c_category", check_a1c),
-    Check("coded sample: patient IDs cleaned", check_sample_ids),
-    Check("coded sample: clinic indicators", check_sample_dummies),
+    Check("category counts: clinic names cleaned", check_category_clinic),
+    Check("category counts: missing clinic filled", check_category_unknown),
+    Check("category counts: gender codes mapped", check_category_gender),
+    Check("category counts: a1c_category", check_category_a1c),
+    Check("category counts: indicator columns", check_category_indicators),
     Check("validation report: one row per rule", check_validation_rows),
     Check("validation report: rule names", check_validation_names),
+    Check("validation report: patient IDs cleaned", check_validation_ids),
     Check("validation report: failing rows", check_validation_counts),
-    Check("glucose fences: quartiles and fences", check_fences),
-    Check("glucose fences: outliers flagged", check_outliers),
+    Check("validation report: glucose outliers flagged", check_validation_glucose),
+    Check("decision log: no-lab visits dropped", check_decision_no_lab),
+    Check("decision log: exact repeats removed", check_decision_repeats),
+    Check("decision log: repeat visits kept", check_decision_repeat_visits),
     Check("decision log: failing visits dropped", check_decision_dropped),
     Check("decision log: out-of-range values counted", check_decision_outside),
     Check("clean summary: impossible values blanked", check_summary_blanked),

@@ -40,7 +40,7 @@ SPELLINGS = {
 UNMAPPED_GENDERS = ("U", "unknown", "?")
 VISITS = ((1, 0.15), (2, 0.20), (3, 0.20), (4, 0.18), (5, 0.14), (6, 0.08), (7, 0.05))
 
-# The patients whose visits Task 3.3 saves; their planted problems are listed in PLANTED.
+# Patients that carry one planted problem of each kind, listed in PLANTED.
 SAMPLE_IDS = ("D10007", "D10112", "D10245", "D10391", "D10533", "D10678",
               "D10804", "D10950", "D11126", "D11307", "D11489", "D11652")
 # (patient, visit number from 1, column, raw cell); "duplicate" sends the visit twice and "no labs" blanks both labs.

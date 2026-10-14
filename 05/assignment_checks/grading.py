@@ -11,18 +11,16 @@ from pathlib import Path
 from _value_checks import run_checks
 
 
-# One value per check in _value_checks.CHECKS, in the same order: the missing report (Task 1.1), the row
-# counts (Task 2.1), the typed profile (Task 2.3), the Task 3 counts and coded sample, the validation report
-# and glucose fences (Task 4), and the decision log and clean summary (Task 5).
+# One value per check in _value_checks.CHECKS, in the same order: the missing report (Task 1.1), the typed
+# profile (Task 2), the category counts (Task 3.2), the validation report (Task 4), and the decision log and
+# clean summary (Task 5).
 POINTS = (
-    4, 5, 5,
-    4, 5, 3,
-    4, 3, 2, 3, 2, 3,
-    4, 3, 4, 5, 4, 4,
-    3, 2, 5,
-    3, 2,
-    5, 2,
-    5, 3, 3,
+    4, 5, 4,
+    4, 4, 3, 3, 2, 3,
+    4, 3, 4, 5, 3,
+    3, 2, 4, 5, 3,
+    4, 5, 3, 5, 3,
+    5, 3, 4,
 )
 
 

@@ -1,6 +1,6 @@
 # Assignment 05 checks (course-owned)
 
-These are the checks that decide the Assignment 05 grade. They read the eleven
+These are the checks that decide the Assignment 05 grade. They read the six
 small summaries a submission saves in `output/` and compare them with values
 recomputed from the lab export: `generate_data.py` rebuilds the export's rows in
 memory, and `_value_checks.py` runs the README's pipeline on them without pandas,
