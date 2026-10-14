@@ -767,8 +767,11 @@ Labels 1 and 2 are P002's double entry, so this draw surfaces the repeat. A samp
 graph LR
     A[Define the data contract] --> B[Load source and preserve raw table] --> C[Audit and detect]
     C --> D[Decide and record rationale] --> E[Update cleaning code, rerun from raw] --> F{Check validation rules}
-    F -->|Failed| C
     F -->|Passed| G[Save cleaned table]
+    C ~~~ E
+    C ~~~ F
+    D ~~~ F
+    F -->|Failed| C
 ```
 
 - **Provenance**: where the file came from. Record it with each decision, one row per rule with the field, issue, action, and reason, so someone else can repeat your steps.
