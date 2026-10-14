@@ -62,7 +62,7 @@ GRADE_TIMEOUT_SECONDS = 300
 GIT_TIMEOUT_SECONDS = 600
 GIT_ENVIRONMENT = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
 LEADING_COLUMNS = ["github_user", "repository", "commit", "commit_date", "status", "score", "max_score", "checks"]
-IDENTITY_COLUMNS = ["email", "first_name", "last_name"]
+IDENTITY_COLUMNS = ["email", "last_name", "first_name"]
 
 
 class SubmissionError(Exception):
@@ -440,11 +440,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Checks: {COURSE_REPO} main at {version}")
     print(f"Clones: {destination}")
 
+    identity_widths = [max([len(key)] + [len(student[key]) for student in (roster or {}).values()])
+                       for key in IDENTITY_COLUMNS]
     errors = 0
     for fork in forks:
         row = write_grades(grade_fork(fork, checks, destination, version), grades, roster)
         label, details = row["github_user"], row.get("details", "")
-        identity = " ".join(str(row.get(key, "")) for key in IDENTITY_COLUMNS).strip()
+        identity = "  ".join(f"{row.get(key, ''):<{width}}"
+                             for key, width in zip(IDENTITY_COLUMNS, identity_widths)).rstrip()
         identity = f"  {printable(identity)}" if identity else ""
         if row["status"] == "graded":
             print(f"{label:<24} {row['score']:>3}/{row['max_score']:<3} {row['commit'][:7]}  "

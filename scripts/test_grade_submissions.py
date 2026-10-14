@@ -598,10 +598,13 @@ def test_private_roster(work: Path) -> None:
     output = io.StringIO()
     with redirect_stdout(output):
         assert grade_submissions.main(["01", "--dest", str(destination), "--fork", url, "--roster", str(path)]) == 0
-    assert "alice@example.com Alice Example" in output.getvalue()
+    line = next(line for line in output.getvalue().splitlines() if line.startswith("alice "))
+    assert re.search(r"alice@example.com\s+Example\s+Alice$", line), line
+    assert line.index("Example") - line.index("alice@example.com") == len("alice@example.com") + 2
+    assert line.index("Alice") - line.index("Example") == len("last_name") + 2
     saved = read_grades(destination)["alice"]
     assert (destination / "grades.csv").stat().st_mode & 0o777 == 0o600
-    assert [saved[key] for key in grade_submissions.IDENTITY_COLUMNS] == ["alice@example.com", "Alice", "Example"]
+    assert [saved[key] for key in grade_submissions.IDENTITY_COLUMNS] == ["alice@example.com", "Example", "Alice"]
     columns = list(saved)
     assert columns[columns.index("details") + 1:] == grade_submissions.IDENTITY_COLUMNS
     previous_cwd = Path.cwd()
