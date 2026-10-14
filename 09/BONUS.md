@@ -367,7 +367,7 @@ The lecture sets repeated (fall-back) and skipped (spring-forward) clock times t
 
 | Argument | Effect |
 |----------|--------|
-| `ambiguous='infer'` | For a sorted run of readings that passes through the repeated hour, assign the first pass to daylight time and the second to standard time |
+| `ambiguous='infer'` | For readings in recording order that pass through the repeated hour, assign the first pass to daylight time and the second to standard time |
 | `ambiguous=[True, False, ...]` | State for each reading whether it is daylight time (`True`) or standard time (`False`) |
 | `nonexistent='shift_forward'` | Move a skipped time to the first valid time after the gap |
 
@@ -376,7 +376,7 @@ The lecture sets repeated (fall-back) and skipped (spring-forward) clock times t
 ```python
 import pandas as pd
 
-# A sorted run of readings that passes through 01:00-01:59 twice
+# Recording order preserves both passes through 01:00-01:59
 fall_back = pd.DatetimeIndex(['2024-11-03 00:30', '2024-11-03 01:00', '2024-11-03 01:30',
                               '2024-11-03 01:00', '2024-11-03 01:30', '2024-11-03 02:00'])
 print(fall_back.tz_localize('America/New_York', ambiguous='infer'))
@@ -394,7 +394,7 @@ DatetimeIndex(['2024-11-03 00:30:00-04:00', '2024-11-03 01:00:00-04:00',
 DatetimeIndex(['2024-03-10 03:00:00-04:00'], dtype='datetime64[us, America/New_York]', freq=None)
 ```
 
-`'infer'` relies on the readings being in recording order: it raises `ValueError` when it cannot see the clock repeat, and it can guess wrong if the rows were shuffled. `ambiguous='NaT'` from the lecture is the safer default.
+`'infer'` relies on the readings being in recording order: it raises `ValueError` when it cannot see the clock repeat, and it can guess wrong if the rows were shuffled. Do not sort the naive wall-clock times first: that loses the order of the two passes through the repeated hour. `ambiguous='NaT'` from the lecture is the safer default.
 
 ## Operations Between Different Time Zones
 

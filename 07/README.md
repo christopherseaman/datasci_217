@@ -44,7 +44,7 @@ This lecture covers:
 ## State the unit and grain shown
 
 - **Unit displayed**: what one mark in the chart represents, as a table's grain (Lecture 06) is what one row represents.
-- **Plotting table**: a table whose rows match the marks you want to draw.
+- **Plotting table**: the table supplying a chart's values. Record its row grain separately from the displayed mark: one row of weekly North and South counts supplies two line points; many readings combine into one histogram bar.
 
 | Plotting table | One row is | One mark is | Question it can answer |
 | --- | --- | --- | --- |
@@ -81,7 +81,7 @@ This lecture covers:
 | :--- | :--- | :--- |
 | **Question** | The comparison or pattern the reader should inspect | One-sentence chart claim |
 | **Audience and claim** | Who reads it and the one descriptive conclusion it supports; a visible pattern does not show why it occurred | Appropriate labels, title, and annotation |
-| **Unit and grain** | What one mark and one plotting-table row represent | A defensible aggregation level |
+| **Unit and grain** | What one source row and one displayed mark represent; note any grouping or aggregation between them | A defensible aggregation level |
 | **Variable role** | Type plus role: measure, group, time, or identifier | Candidate x, y, color, or shape encoding |
 | **Accessibility** | A redundant cue and text alternative (a caption stating chart type, axes, and main pattern) for the main comparison | A chart usable without color or hover |
 

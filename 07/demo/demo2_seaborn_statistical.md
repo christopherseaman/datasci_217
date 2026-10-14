@@ -194,7 +194,7 @@ Continue comparing the same country-year table with line and box plots.
 
 ```python
 fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
-sns.lineplot(data=health, x='Year', y='Spending_USD', hue='Country', legend=False, ax=axes[0])
+sns.lineplot(data=health, x='Year', y='Spending_USD', hue='Country', style='Country', ax=axes[0])
 axes[0].set(ylabel='Health spending per person (USD)')
 
 sns.boxplot(data=health, x='Life_Expectancy', y='Country', ax=axes[1])
@@ -203,7 +203,7 @@ fig.tight_layout()
 plt.show()
 ```
 
-Expect two panels: health spending rises over the years at all six countries, steepest in the USA; the life-expectancy boxes compare the country-year distributions. These summaries describe observations, not a spending effect.
+Expect two panels: the legend identifies each country's line by color and dash pattern; health spending rises over the years at all six countries, steepest in the USA. The life-expectancy boxes compare the country-year distributions. These summaries describe observations, not a spending effect.
 
 ### 4. A correlation matrix, its heatmap, and a CSV
 

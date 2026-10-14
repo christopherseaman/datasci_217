@@ -145,7 +145,7 @@ Write the selection rule down now, before any candidate is scored, so the compar
 
 - The lowest validation MAE wins.
 - With only 89 validation patients, candidates within 1 point of the best MAE count as tied.
-- A tie goes to the candidate that uses the fewest features, because every feature is a measurement someone must collect for each new patient.
+- A tie goes to the candidate with the fewest nonzero coefficients, giving a simpler fitted equation.
 
 Every candidate is scored by the same function, so the comparison is fair.
 
@@ -260,7 +260,7 @@ Ridge pulls `tc` from -51.1 to -11.7 and `ldl` from 27.5 to -2.9: the penalty st
 
 ## 7. Compare the candidates and apply the rule
 
-One table, one metric set, one validation set.
+One table, one metric set, one validation set. `features_used` counts nonzero coefficients; the fitted pipeline still requires all ten input columns, even when some coefficients are zero.
 
 ```python
 comparison = pd.DataFrame(results)
@@ -279,7 +279,7 @@ ridge (alpha=10)      42.620      51.160     0.522             10
 lasso (alpha=2)       42.451      51.034     0.525              7
 ```
 
-Apply Part 4's rule. The Lasso has the lowest MAE, 42.451. Linear regression (42.939) and Ridge (42.620) are within 1 point of it, so all three count as tied: the predeclared 1-point tolerance treats these small gaps as ties, without claiming a statistical test of equal performance. The tie goes to the fewest features, which is the Lasso with 7 of 10. **Selected: the Lasso pipeline with `alpha=2`.** All three cut the baseline's typical miss by about a third.
+Apply Part 4's rule. The Lasso has the lowest MAE, 42.451. Linear regression (42.939) and Ridge (42.620) are within 1 point of it, so all three count as tied: the predeclared 1-point tolerance treats these small gaps as ties, without claiming a statistical test of equal performance. The tie goes to the fewest nonzero coefficients, which is the Lasso with 7 of 10. **Selected: the Lasso pipeline with `alpha=2`.** All three cut the baseline's typical miss by about a third.
 
 ## 8. Look at the validation predictions
 

@@ -248,7 +248,7 @@ display(total_wait)
 
 <callout icon="⚠️" color="yellow_bg">
 	## `fill_value=0` only where zero is real
-	An absent cell means no rows had that combination. For a count or a sum that is 0, as East's total new-patient wait above. For a mean or any other measurement it is not: leave it `NaN`.
+	Here, East had no new-patient visits, so its total wait is 0. A mean stays `NaN` when there are no rows or when every measurement is missing; neither means a zero-minute wait. Fill only when zero is the correct answer.
 </callout>
 
 # LIVE DEMO!

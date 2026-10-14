@@ -133,7 +133,7 @@ display(labs[['patient_id', 'test', 'resulted_at', 'available']])
 
 **Expect:** lactate and troponin are `True`; the blood culture (resulted the next day) and the creatinine (drawn at 07:30, resulted at 08:20) are `False`, even though both were collected before 08:00.
 
-The same test applies to features. For P01's reading at 08:00 UTC, each candidate reads rows up to some latest timestamp: the lag reads the 04:30 row, while a lead or a centered window reads the 09:00 row, which did not exist yet.
+The same test applies to features. Here, monitor readings are available immediately at `recorded_at`. For P01's reading at 08:00 UTC, each candidate reads rows up to some latest timestamp: the lag reads the 04:30 row, while a lead or a centered window reads the 09:00 row, which did not exist yet.
 
 ```python
 audit = pd.DataFrame({

@@ -286,7 +286,7 @@ Daylight saving time began March 10, so the two 9 AM local visits are 14:00 and 
 
 <callout icon="⚠️" color="yellow_bg">
 	## Localize in the recording zone
-	Localizing these New York readings as `'UTC'` raises no error but shifts each instant by 4 or 5 hours. Localize with the recording zone, convert to UTC to store and order, and convert back only for display.
+	Localizing these New York readings as `'UTC'` raises no error but shifts each instant by 4 or 5 hours. Localize with the recording zone and convert to UTC to store and order. Convert to the reporting zone before grouping by local calendar days or weeks, or displaying local times.
 </callout>
 
 ![xkcd 1799: Bad Map Projection: Time Zones. Each country is redrawn where its clocks say it should be; a wall-clock reading alone does not pin down where, or when, something happened.](media/xkcd_time_zones.png)
@@ -759,7 +759,7 @@ At P1's 11:30 reading, the previous two readings average 76, but no reading fall
 ## Availability at Prediction Time
 
 - A timestamp says when something happened, not when anyone could know it: a lab is resulted after collection, and a monthly case count is published weeks after the month ends.
-- **Available**: a feature whose latest timestamp read is at or before the prediction time.
+- **Available**: a feature whose inputs were all reported or otherwise accessible at or before the prediction time; use their availability times, not just when they were measured.
 - **Chronological holdout**: build a method on rows before a cutoff and test it on rows from the cutoff onward, the way it would meet future patients.
 
 ### Reference Card: Availability and Chronological Blocks

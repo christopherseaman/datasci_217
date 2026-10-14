@@ -262,7 +262,7 @@ Keep a candidate feature only if it is known by prediction time: `candidates['re
 | `np.sin(2 * np.pi * df['hour'] / 24)` | The hour's height on the clock face; `np.pi` is the constant π, and `np.sin()` works column-wise like Lecture 03's `np.sqrt()`. | Float Series, -1 to 1 |
 | `np.cos(2 * np.pi * df['hour'] / 24)` | Its side-to-side position. Pair it with the sine: either column alone gives two different hours the same value. | Float Series, -1 to 1 |
 | `2 * np.pi * df['wind_direction_deg'] / 360` | Angle for wind direction: pair its sine and cosine so 359° and 0° are neighbors. | Float Series |
-| `2 * np.pi * (df['dayofyear'] - 1) / 366` | The same angle for any other cycle. Subtract 1 when the count starts at 1, so the first day sits at angle 0 (`.dt.hour` already starts at 0, `.dt.dayofyear` at 1). Divide by the cycle's length: 7 for day of the week, 366 for day of the year. Keeping 366 every year, leap or not, spaces every day one equal step apart and leaves day 366 one step short of a full turn. | Float Series |
+| `2 * np.pi * (df['dayofyear'] - 1) / 366` | Subtract 1 when the count starts at 1, so the first day sits at angle 0. Divide by the cycle's length: 7 for day of the week; a fixed 366 for the year is an approximation, leaving a two-step gap from December 31 to January 1 in non-leap years. | Float Series |
 
 ### Code Snippet: Hours on a Clock Face
 

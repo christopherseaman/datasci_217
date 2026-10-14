@@ -16,7 +16,7 @@ The lecture's main path uses linear models, random forests, and gradient boostin
 - Classification: `SVC`, a support vector classifier that looks for the widest possible boundary between classes, beside the lecture's `LogisticRegression`.
 - Unsupervised work: `KMeans` for clustering and `PCA` for dimensionality reduction. Neither uses a target column.
 - Selection: `GridSearchCV` for hyperparameter tuning within the training data (examples under Hyperparameter Tuning Strategies below).
-- Independent rows: `cv=5` uses plain k-fold cross-validation, where every fold takes a turn as the scored block whatever its order, instead of `TimeSeriesSplit`.
+- Independent rows: `cv=5` uses `StratifiedKFold` for classifiers with binary or multiclass targets, and `KFold` otherwise. Each fold takes a turn as the scored block; neither protects time order like `TimeSeriesSplit`.
 - Delayed targets: `TimeSeriesSplit(gap=n)` leaves `n` rows out between each training block and the block it scores, so training labels not yet known at the fold's first prediction cutoff stay out.
 
 _Let validation evidence decide, not a favorite algorithm. Blue steel is a style, not a model-selection rule._
@@ -290,18 +290,21 @@ for i in range(X_train.shape[1]):
 - `model = VGG16(weights='imagenet', include_top=False)`: Load pre-trained
 - `model.trainable = False`: Freeze layers
 
-### Code Snippet: Fine-Tuning a Pretrained VGG16 Model
+### Code Snippet: Training a Classifier on Frozen VGG16 Features
+
+Only the added classifier learns; **fine-tuning** would also update pretrained weights. These random images demonstrate the API, not useful image classification. VGG16 expects RGB pixels on a 0–255 scale passed through its own `preprocess_input`, which changes channel order and subtracts the ImageNet channel means.
 
 ```python
 from tensorflow.keras.applications import VGG16
+from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras import layers, models
 import numpy as np
 
 # Small stand-in image batches (real projects load actual images)
 rng = np.random.default_rng(42)
-X_train = rng.random(size=(20, 224, 224, 3)).astype('float32')
+X_train = preprocess_input(rng.uniform(0, 255, size=(20, 224, 224, 3)).astype('float32'))
 y_train = np.eye(10)[rng.integers(0, 10, size=20)]
-X_val = rng.random(size=(5, 224, 224, 3)).astype('float32')
+X_val = preprocess_input(rng.uniform(0, 255, size=(5, 224, 224, 3)).astype('float32'))
 y_val = np.eye(10)[rng.integers(0, 10, size=5)]
 
 # Load pre-trained model
@@ -774,7 +777,9 @@ for batch in data_batches:
         # against the current model before any deployment decision.
 ```
 
-## A/B Testing for Models
+## Paired Model Comparison
+
+**McNemar's test** compares two classifiers' mistakes on the same cases. It needs both predictions for each case; a randomized A/B deployment instead assigns different cases to each model.
 
 ### Reference Card: Model Comparison Approach
 

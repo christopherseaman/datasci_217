@@ -169,7 +169,9 @@ pivot = weighted['weighted_value'].unstack('region').div(weight_totals)
 
 ### Reference Card: Missing Cells in Pivot Tables
 
-A `NaN` cell means no rows had that combination. In a mean table, leave it `NaN`: nothing was measured, and 0 would report a measurement that never happened. Use `fill_value=0` only for counts and sums, where an absent combination really is zero rows. Print a count table beside the mean table so readers can see which cells are empty or rest on only a few rows.
+- **Missing mean:** `NaN` can mean no rows had that combination, or that all its measurements were missing. Leave it `NaN`; neither means a measured zero.
+- **Row count:** `pd.crosstab(df['category'], df['region'])` counts rows, while a pivot with `aggfunc='count'` counts non-missing measurements. For one visit with a missing wait, these counts are 1 and 0, and the mean is `NaN`.
+- **Zero fill:** use `fill_value=0` only when zero is the correct answer, such as a count of visits for an absent combination. Compare row and measurement counts beside a mean to distinguish no visits from visits with no recorded measurements.
 
 In pandas 3, categorical groupers default to `observed=True`. Use `observed=False` only when a table must include every defined category or category combination. In a mean table, an unused category is an all-`NaN` row, which the default `dropna=True` removes, so also pass `dropna=False`. That also keeps rows with a missing key as a `NaN` row.
 
@@ -1255,6 +1257,7 @@ from typing import Dict, List, Callable, Any
 import pandas as pd
 import numpy as np
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 
 class ValidationSeverity(Enum):
