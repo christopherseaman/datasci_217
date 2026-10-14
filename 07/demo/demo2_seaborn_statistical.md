@@ -23,13 +23,13 @@ jupyter:
 - A check on what a seaborn line actually averages.
 - Density plots of fasting glucose.
 
-The clinic tables and glucose values are synthetic; `healthexp` is real OECD data, supplied as a CSV for this demo.
+The clinic tables and glucose values are synthetic; `healthexp` is real OECD data, supplied as a Parquet file for this demo.
 
 Run the cells from top to bottom.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
 ```
 
 ```python
@@ -37,12 +37,12 @@ from pathlib import Path
 from urllib.request import urlretrieve
 
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/07/demo"
-if not Path("healthexp.csv").exists():
-    urlretrieve(f"{REPO_RAW}/healthexp.csv", "healthexp.csv")
-print("Ready: healthexp.csv")
+if not Path("healthexp.parquet").exists():
+    urlretrieve(f"{REPO_RAW}/healthexp.parquet", "healthexp.parquet")
+print("Ready: healthexp.parquet")
 ```
 
-Expect `Ready: healthexp.csv`.
+Expect `Ready: healthexp.parquet`.
 
 ## Core walkthrough
 
@@ -57,7 +57,7 @@ import pandas as pd
 import seaborn as sns
 
 sns.set_style('whitegrid')
-health = pd.read_csv('healthexp.csv')
+health = pd.read_parquet('healthexp.parquet')
 print(health.shape)
 display(health.head())
 print(health['Country'].nunique(), 'countries,', health['Year'].min(), 'to', health['Year'].max())

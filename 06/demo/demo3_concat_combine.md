@@ -28,7 +28,7 @@ Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
 ```
 
 ## Core walkthrough
@@ -46,24 +46,24 @@ import pandas as pd
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/data"
 data_dir = Path("data")
 data_dir.mkdir(exist_ok=True)
-for filename in ["demo3_jan_admissions.csv", "demo3_feb_admissions.csv",
-                 "demo3_mar_admissions.csv", "demo3_census.csv", "demo3_audits.csv",
-                 "demo3_adt_census.csv", "demo3_finance_census.csv",
-                 "demo3_staffing.csv", "demo3_experience.csv", "demo3_units.csv",
-                 "demo3_q1_2025.csv", "demo3_q1_2026.csv"]:
+for filename in ["demo3_jan_admissions.parquet", "demo3_feb_admissions.parquet",
+                 "demo3_mar_admissions.parquet", "demo3_census.parquet", "demo3_audits.parquet",
+                 "demo3_adt_census.parquet", "demo3_finance_census.parquet",
+                 "demo3_staffing.parquet", "demo3_experience.parquet", "demo3_units.parquet",
+                 "demo3_q1_2025.parquet", "demo3_q1_2026.parquet"]:
     path = data_dir / filename
     if not path.exists():
         urlretrieve(f"{REPO_RAW}/{filename}", path)
-print(len(sorted(data_dir.glob("demo3_*.csv"))))
+print(len(sorted(data_dir.glob("demo3_*.parquet"))))
 ```
 
-**Expect:** `12`, the number of `demo3_*.csv` files in `data/`.
+**Expect:** `12`, the number of `demo3_*.parquet` files in `data/`.
 
 Each admission file has one row per admission. `los_days` is the length of stay in days.
 
 ```python
-jan = pd.read_csv(data_dir / "demo3_jan_admissions.csv")
-feb = pd.read_csv(data_dir / "demo3_feb_admissions.csv")
+jan = pd.read_parquet(data_dir / "demo3_jan_admissions.parquet")
+feb = pd.read_parquet(data_dir / "demo3_feb_admissions.parquet")
 display(jan)
 display(feb)
 print(list(jan.columns) == list(feb.columns))
@@ -93,23 +93,23 @@ print(list(stacked.index))
 Once stacked, nothing says which file a row came from. Add a label column to each piece **before** stacking; it is an ordinary column, so it survives saving to CSV and later merges.
 
 ```python
-jan['source_file'] = 'demo3_jan_admissions.csv'
-feb['source_file'] = 'demo3_feb_admissions.csv'
+jan['source_file'] = 'demo3_jan_admissions'
+feb['source_file'] = 'demo3_feb_admissions'
 
 stacked = pd.concat([jan, feb], ignore_index=True)
 display(stacked['source_file'].value_counts())
 display(stacked)
 ```
 
-**Expect:** `demo3_jan_admissions.csv` 3 and `demo3_feb_admissions.csv` 3, and a `source_file` column as the last column of the 6-row table.
+**Expect:** `demo3_jan_admissions` 3 and `demo3_feb_admissions` 3, and a `source_file` column as the last column of the 6-row table.
 
 ### 4. March changed its columns
 
 The March extract comes from an updated report: it no longer includes `age`, and it adds `payer`.
 
 ```python
-mar = pd.read_csv(data_dir / "demo3_mar_admissions.csv")
-mar['source_file'] = 'demo3_mar_admissions.csv'
+mar = pd.read_parquet(data_dir / "demo3_mar_admissions.parquet")
+mar['source_file'] = 'demo3_mar_admissions'
 display(mar)
 ```
 
@@ -141,8 +141,8 @@ print(list(shared_only.columns))
 ADT (the admission-discharge-transfer feed) reports a census every month. Infection control audits hand hygiene only in some months, and its file already includes July. Put `month` in the index of each so that `concat(axis=1)` lines rows up by label.
 
 ```python
-census = pd.read_csv(data_dir / "demo3_census.csv").set_index('month')
-audits = pd.read_csv(data_dir / "demo3_audits.csv").set_index('month')
+census = pd.read_parquet(data_dir / "demo3_census.parquet").set_index('month')
+audits = pd.read_parquet(data_dir / "demo3_audits.parquet").set_index('month')
 display(census)
 display(audits)
 ```
@@ -169,8 +169,8 @@ display(audited_months)
 The live ADT export failed to report February and April and has not reported June yet. Finance keeps its own estimate for every month.
 
 ```python
-primary = pd.read_csv(data_dir / "demo3_adt_census.csv").set_index('month')
-finance = pd.read_csv(data_dir / "demo3_finance_census.csv").set_index('month')
+primary = pd.read_parquet(data_dir / "demo3_adt_census.parquet").set_index('month')
+finance = pd.read_parquet(data_dir / "demo3_finance_census.parquet").set_index('month')
 display(primary)
 display(finance)
 ```
@@ -222,7 +222,7 @@ Continue on your own after class. These cells reuse the core results; if the run
 Stacking made one admissions table. Unit names and bed counts live in a separate lookup table, so they are joined by key with `merge()`. Each admission should find exactly one unit: many-to-one.
 
 ```python
-units = pd.read_csv(data_dir / "demo3_units.csv")
+units = pd.read_parquet(data_dir / "demo3_units.parquet")
 display(units)
 
 enriched = pd.merge(admissions, units, left_on='unit', right_on='unit_code',
@@ -252,8 +252,8 @@ display(enriched.sort_values('los_days', ascending=False)[
 Staffing and patient experience each report one row per month, for the same 6 months as the census.
 
 ```python
-staffing = pd.read_csv(data_dir / "demo3_staffing.csv").set_index('month')
-experience = pd.read_csv(data_dir / "demo3_experience.csv").set_index('month')
+staffing = pd.read_parquet(data_dir / "demo3_staffing.parquet").set_index('month')
+experience = pd.read_parquet(data_dir / "demo3_experience.parquet").set_index('month')
 display(staffing)
 display(experience)
 print(census.index.is_unique, staffing.index.is_unique, experience.index.is_unique)
@@ -277,8 +277,8 @@ If the identifiers were in ordinary columns rather than the index, this would be
 Compare the first quarter's admissions with the same months last year. Stack the two years with a `year` label column, then pivot to put the years side by side.
 
 ```python
-q1_2025 = pd.read_csv(data_dir / "demo3_q1_2025.csv")
-q1_2026 = pd.read_csv(data_dir / "demo3_q1_2026.csv")
+q1_2025 = pd.read_parquet(data_dir / "demo3_q1_2025.parquet")
+q1_2026 = pd.read_parquet(data_dir / "demo3_q1_2026.parquet")
 q1_2025['year'] = 2025
 q1_2026['year'] = 2026
 

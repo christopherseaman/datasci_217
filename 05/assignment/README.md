@@ -50,7 +50,8 @@ assignment/
 ├── generate_data.py        # supplied: writes data/lab_visits.csv; keep unchanged
 ├── data_manifest.json      # supplied: the checksum of the data generate_data.py writes
 ├── data/
-│   └── lab_visits.csv      # written by the first cell; not committed
+│   ├── lab_visits.csv      # written by the first cell; not committed
+│   └── labs_clean.parquet  # you generate in Task 5.3; not committed
 ├── pyproject.toml          # supplied: the project's packages, numpy, pandas, pyarrow, and ipykernel
 ├── uv.lock                 # supplied: the exact versions `uv sync` installs
 ├── .python-version         # supplied: tells uv to use Python 3.13
@@ -356,10 +357,21 @@ Flag unusual values rather than deleting them: a fasting glucose of 412 mg/dL is
     ```
 
     Sanity checks: every `count` is below 57618, the rows of `clean`, because blanks stay blank; every `min` and `max` is inside the contract's range.
-4. Save with `clean_summary.to_csv(SUMMARY_PATH)`. It is the only file saved after the `assert`, because it describes the validated table.
+4. Save with `clean_summary.to_csv(SUMMARY_PATH)`. It is the only `output/` file saved after the `assert`, because it describes the validated table.
 
 > **Checkpoint: `output/clean_summary.csv`**
 > The header line `,count,mean,std,min,25%,50%,75%,max`, then the four rows above.
+
+### 5.3 Save the cleaned table as Parquet
+
+The summaries are CSV files for people to read. The cleaned table goes to Parquet, which stores each column's dtype, so the next analysis starts from the types Tasks 2 and 3 built. The file goes in `data/`, so it is not committed or checked.
+
+1. The cell sets `parquet_path = Path("data") / "labs_clean.parquet"`. Save with `clean.to_parquet(parquet_path)`.
+2. Read it back with `clean_back = pd.read_parquet(parquet_path)`, then print `clean_back.dtypes` and `clean_back.equals(clean)`.
+    - Expect: `age` is `Int64`, `visit_date` is `datetime64[us]`, `a1c_category` is `category`, `glucose_outlier` is `bool`, and `same as clean: True`. A CSV round trip of the same table reads `age` as `float64` and `visit_date` and `a1c_category` as `str`.
+
+> **Checkpoint: `data/labs_clean.parquet`**
+> About 0.5 MB, with 57618 rows and the 15 columns of `clean`.
 
 ## Check your work
 

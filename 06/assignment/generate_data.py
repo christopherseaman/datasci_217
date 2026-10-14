@@ -2,9 +2,13 @@
 
     python3 generate_data.py
 
-Standard library only and seeded, so every run on every computer writes the
-same bytes; the notebook's first cell checks each file against
-data_manifest.json. The data is course-authored and synthetic: no real patients.
+The rows come from the standard library, seeded, so every run on every computer
+builds the same tables. The registry and the A1c results are saved as Parquet
+with pandas and pyarrow (Lecture 04); the site list and the two visit exports
+stay CSV, as clinic systems export them. The notebook's first cell checks each
+table against data_manifest.json by the SHA-256 of its CSV text, which does not
+depend on the pyarrow version. The data is course-authored and synthetic: no
+real patients.
 """
 
 from __future__ import annotations
@@ -21,6 +25,11 @@ SEED = 2026_06
 PATIENTS = 30_000
 VISIT_ONLY_IDS = range(30_001, 30_041)
 LAB_ONLY_IDS = range(90_001, 90_031)
+
+# Parquet keeps every registry column as text, so the messy spellings and the 9999 sentinel stay as
+# written; the A1c results are numbers, with an empty cell stored as missing.
+PARQUET_FILES = ("patients.parquet", "a1c_wide.parquet")
+A1C_COLUMNS = ("a1c_baseline", "a1c_week12")
 
 # Each spelling as staff typed it, the code it stands for, and its weight in the draw.
 GENDER_SPELLINGS = (
@@ -141,11 +150,11 @@ def build(rng: random.Random) -> dict[str, list[list[str]]]:
 
     header = ["patient_id", "visit", "visit_date", "visit_time", "sbp_mmhg"]
     return {
-        "patients.csv": [["patient_id", "gender", "birth_year", "site_code"], *patients],
+        "patients.parquet": [["patient_id", "gender", "birth_year", "site_code"], *patients],
         "sites.csv": [["site_code", "site_name", "record_status"], *map(list, SITES)],
         "visits_north.csv": [[*header, "weight_kg"], *files["north"]],
         "visits_south.csv": [[*header, "wt_kg"], *files["south"]],
-        "a1c_wide.csv": [["patient_id", "a1c_baseline", "a1c_week12"], *a1c],
+        "a1c_wide.parquet": [["patient_id", "a1c_baseline", "a1c_week12"], *a1c],
     }
 
 
@@ -157,14 +166,33 @@ def to_csv(rows: list[list[str]]) -> bytes:
 
 
 def files() -> dict[str, bytes]:
-    """Each data file's name and exact bytes."""
+    """Each data file's name and its table as CSV text, the bytes data_manifest.json hashes.
+
+    A CSV file holds exactly these bytes; a Parquet file holds the same table, which
+    `pd.read_parquet(path).to_csv(index=False, lineterminator="\\n")` turns back into them.
+    """
     return {name: to_csv(rows) for name, rows in build(random.Random(SEED)).items()}
 
 
+def write(data_dir: Path) -> None:
+    """Write every table into `data_dir`; only this step needs pandas and pyarrow."""
+    import pandas as pd
+
+    data_dir.mkdir(exist_ok=True)
+    for name, rows in build(random.Random(SEED)).items():
+        if name not in PARQUET_FILES:
+            (data_dir / name).write_bytes(to_csv(rows))
+            continue
+        header, *body = rows
+        table = pd.DataFrame(body, columns=header, dtype="string")
+        for column in A1C_COLUMNS:
+            if column in table:
+                table[column] = table[column].replace("", pd.NA).astype("float64")
+        table.to_parquet(data_dir / name, index=False)
+
+
 def main() -> None:
-    DATA_DIR.mkdir(exist_ok=True)
-    for name, data in files().items():
-        (DATA_DIR / name).write_bytes(data)
+    write(DATA_DIR)
     print(f"Wrote 5 data files to {DATA_DIR}")
 
 

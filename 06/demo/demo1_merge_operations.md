@@ -27,7 +27,7 @@ Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
 ```
 
 ## Core walkthrough
@@ -45,22 +45,22 @@ import pandas as pd
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/data"
 data_dir = Path("data")
 data_dir.mkdir(exist_ok=True)
-for filename in ["demo1_patients.csv", "demo1_labs.csv", "demo1_registry.csv",
-                 "demo1_visits.csv", "demo1_targets.csv",
-                 "demo1_central_a1c.csv", "demo1_poc_a1c.csv"]:
+for filename in ["demo1_patients.parquet", "demo1_labs.parquet", "demo1_registry.parquet",
+                 "demo1_visits.parquet", "demo1_targets.parquet",
+                 "demo1_central_a1c.parquet", "demo1_poc_a1c.parquet"]:
     path = data_dir / filename
     if not path.exists():
         urlretrieve(f"{REPO_RAW}/{filename}", path)
-print(sorted(p.name for p in data_dir.glob("demo1_*.csv")))
+print(sorted(p.name for p in data_dir.glob("demo1_*.parquet")))
 ```
 
-**Expect:** a list of the 7 `demo1_*.csv` file names.
+**Expect:** a list of the 7 `demo1_*.parquet` file names.
 
 The registry has one row per patient, so `patient_id` is its primary key. The lab table has one row per test; its `patient_id` is a foreign key that can repeat.
 
 ```python
-patients = pd.read_csv(data_dir / "demo1_patients.csv")
-labs = pd.read_csv(data_dir / "demo1_labs.csv")
+patients = pd.read_parquet(data_dir / "demo1_patients.parquet")
+labs = pd.read_parquet(data_dir / "demo1_labs.parquet")
 display(patients)
 display(labs)
 print(patients['patient_id'].is_unique, labs['patient_id'].is_unique)
@@ -105,8 +105,8 @@ display(audit[audit['_merge'] != 'both'][['patient_id', 'clinic', 'lab_id', '_me
 Clinic operations tracks monthly visits by clinic and service. Targets are set per clinic, month, and service, so a visit count matches a target only when **all three** keys agree.
 
 ```python
-visits = pd.read_csv(data_dir / "demo1_visits.csv")
-targets = pd.read_csv(data_dir / "demo1_targets.csv")
+visits = pd.read_parquet(data_dir / "demo1_visits.parquet")
+targets = pd.read_parquet(data_dir / "demo1_targets.parquet")
 display(visits)
 display(targets)
 
@@ -123,7 +123,7 @@ display(vs_target)
 Next month's registry export arrives. Looking up each lab's patient is a **many-to-one** merge (many lab rows, one registry row per patient). Watch the row count.
 
 ```python
-registry = pd.read_csv(data_dir / "demo1_registry.csv")
+registry = pd.read_parquet(data_dir / "demo1_registry.parquet")
 print('missing keys:', labs['patient_id'].isna().sum(), registry['patient_id'].isna().sum())
 unchecked = pd.merge(labs, registry, on='patient_id', how='left')
 print('lab rows before:', len(labs), 'after:', len(unchecked))
@@ -228,8 +228,8 @@ display(coverage[coverage['_merge'] == 'left_only'][['clinic', 'service']])
 The central lab and a point-of-care (POC) device both report A1c in a column named `a1c`. `a1c` is not the key, so pandas must rename one of them.
 
 ```python
-central = pd.read_csv(data_dir / "demo1_central_a1c.csv")
-poc = pd.read_csv(data_dir / "demo1_poc_a1c.csv")
+central = pd.read_parquet(data_dir / "demo1_central_a1c.parquet")
+poc = pd.read_parquet(data_dir / "demo1_poc_a1c.parquet")
 display(pd.merge(central, poc, on='patient_id', validate='one_to_one'))
 ```
 

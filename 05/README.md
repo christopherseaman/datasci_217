@@ -25,8 +25,6 @@ uv sync
 
 → Then open the `05-demo` folder in VS Code.
 
-_Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis (yes, that's 120%; data science is just that intense!)_
-
 This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 
 - 3.2 (anonymous `lambda` functions)
@@ -34,6 +32,8 @@ This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 - Chapter 7 (data cleaning and preparation)
 
 # What Clean Means: The Data Contract
+
+_Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis._
 
 - **Data contract**: a written description of what a clean table looks like. Clean does not mean perfect; it means the table matches its contract, so write the contract first and make every cleaning step check or satisfy one of its rules.
 - **Row meaning**: what one row represents. Below, one row is one clinic visit, not one patient.
@@ -183,6 +183,17 @@ print(readings.ffill(limit=1).tolist())  # [10.0, 10.0, nan, 15.0]: only the fir
 	## `ffill()` copies across patients!
 	Forward and backward fill copy whatever row sits above or below. Use them only on rows in time order for one patient or one sensor.
 </callout>
+
+### Code Snippet: Fill within each patient
+
+`visits` lists P001 (SBP 120, then missing) and P002 (missing, then 130), in time order:
+
+```python
+print(visits['sbp'].ffill().tolist())                         # [120.0, 120.0, 120.0, 130.0]: P002 got P001's 120
+print(visits.groupby('patient_id')['sbp'].ffill().tolist())   # [120.0, 120.0, nan, 130.0]
+```
+
+`groupby('patient_id')` runs the fill separately for each patient, so a value never crosses to the next patient; group by site or period the same way.
 
 ![xkcd 1827: Survivorship Bias. Dropping incomplete records can leave a convincing but biased sample](media/xkcd_1827.png)
 
@@ -533,7 +544,7 @@ display(tests.str.contains('fasting'))
 
 - **Categorical variable**: a column whose values come from a short, fixed list of labels, such as smoking status (`never`, `former`, `current`), blood type, or study site.
 - **Categorical dtype** (`category`): stores each label once and gives every row a small integer **code** that points to it.
-- **Indicator variables**: one 0/1 column per label, for a regression or machine-learning model, which computes only with numbers.
+- **Indicator variables** (also called **dummy variables** or **one-hot encoding**): one 0/1 column per label, for a regression or machine-learning model, which computes only with numbers.
 
 | Smoking label | Category code | `smoking_current` | `smoking_former` | `smoking_never` |
 | --- | ---: | ---: | ---: | ---: |
@@ -754,13 +765,19 @@ Labels 1 and 2 are P002's double entry, so this draw surfaces the repeat. A samp
 
 ```mermaid
 graph TD
-    A[Define the data contract] --> B[Load source and preserve raw table]
-    B --> C[Audit and detect]
-    C --> D[Decide and record rationale]
-    D --> E[Transform the working copy]
-    E --> F{Check validation rules}
-    F -->|Failed| C
-    F -->|Passed| G[Save cleaned table]
+    subgraph plan[" "]
+        direction LR
+        A[Define the data contract] --> B[Load source and preserve raw table] --> C[Audit and detect]
+    end
+    subgraph clean[" "]
+        direction LR
+        D[Decide and record rationale] --> E[Update cleaning code, rerun from raw] --> F{Check validation rules}
+        F -.->|Failed| D
+    end
+    plan --> clean
+    clean -->|Passed| G[Save cleaned table]
+    style plan fill:none,stroke:none
+    style clean fill:none,stroke:none
 ```
 
 - **Provenance**: where the file came from. Record it with each decision, one row per rule with the field, issue, action, and reason, so someone else can repeat your steps.
@@ -874,6 +891,8 @@ print(round_trip.equals(clean))  # same values, dtypes, and row labels
 ```text
 True
 ```
+
+![Work Chronicles: a 210-slide deck read word for word. A lecture page is reference material to come back to, not a script](media/workchronicles_210_slides.png)
 
 # LIVE DEMO!
 

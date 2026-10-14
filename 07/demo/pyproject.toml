@@ -11,4 +11,5 @@ dependencies = [
     "jupyterlab==4.4.10",
     "jupytext==1.18.1",
     "altair==5.5.0",
+    "pyarrow==25.0.0",
 ]

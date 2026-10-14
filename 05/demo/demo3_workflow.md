@@ -23,8 +23,8 @@ This demo runs the whole cleaning pipeline from Lecture 05 on a clinic visit exp
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
 ```python
-# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5
+# Installs the course's pandas and pyarrow (for Parquet) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
 ```
 
 ## Core walkthrough
@@ -286,3 +286,16 @@ print('Rows:', len(raw), 'raw,', len(clean), 'clean')
 ```
 
 **Expect:** the same dtypes as in step 6, `Round trip equals clean: True`, `Raw table unchanged: True`, `Raw file unchanged: True`, and `Rows: 13 raw, 12 clean`. The checks show the table matches its contract; the decision log shows why each value changed and which file it came from.
+
+### 9. Save the clean table as Parquet
+
+CSV stores text, so step 8 had to restate every dtype. **Parquet** stores the dtypes with the data (Lecture 04). `to_parquet()` needs the `pyarrow` package.
+
+```python
+clean.to_parquet(output_dir / 'clinic_visits_clean.parquet', index=False)
+parquet_trip = pd.read_parquet(output_dir / 'clinic_visits_clean.parquet')
+display(parquet_trip.dtypes)
+print('Parquet round trip equals clean:', parquet_trip.equals(clean))
+```
+
+**Expect:** `visit_date` is `datetime64[us]`, `visit_id`, `patient_id` and `site` are `string`, `age`, `sbp` and `heart_rate` are `Int64`, `needs_review` is `boolean`, and `Parquet round trip equals clean: True`, with no `dtype=` or `parse_dates=`.

@@ -6,7 +6,7 @@ README asks (and again with single mistakes carried through every later file,
 as a student's own pipeline would carry them), writes submissions in ignored
 `scratch/`, and confirms what each one scores:
 
-    uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 \
+    uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with pyarrow==25.0.0 \
         python 06/assignment_checks/_grader_selftest/run.py
 """
 
@@ -47,7 +47,8 @@ EXACT_DATE = r"[0-9]{4}-[0-9]{2}-[0-9]{2}"
 GENDER_MAP = {"f": "F", "female": "F", "woman": "F", "m": "M", "male": "M", "man": "M",
               "x": "X", "nb": "X", "nonbinary": "X", "non-binary": "X"}
 VISIT_MAP = {"baseline": "baseline", "bl": "baseline", "week12": "week12", "week 12": "week12", "wk12": "week12"}
-TABLES = ("patients", "sites", "visits_north", "visits_south", "a1c_wide")
+FILES = {"patients": "patients.parquet", "sites": "sites.csv", "visits_north": "visits_north.csv",
+         "visits_south": "visits_south.csv", "a1c_wide": "a1c_wide.parquet"}
 VISIT_COLUMNS = ["patient_id", "visit", "visit_date", "sbp_mmhg", "weight_kg", "source_file"]
 ANALYSIS_COLUMNS = ["patient_id", "visit", "visit_date", "sbp_mmhg", "weight_kg", "a1c_pct", "gender", "birth_year",
                     "site_code", "site_name", "source_file"]
@@ -57,7 +58,7 @@ VISIT_METRICS = ["visits", "baseline visits", "week12 visits", "visit_date missi
                  "visit_date max", "sbp_mmhg missing", "sbp_mmhg min", "sbp_mmhg max", "weight_kg missing",
                  "weight_kg mean", "visits from visits_north.csv", "visits from visits_south.csv"]
 HEADERS = {
-    "file_inventory.txt": "<count> data/a1c_wide.csv",
+    "file_inventory.txt": "<count> data/sites.csv",
     "table_profile.csv": "table,rows,columns,exact_duplicate_rows",
     "issue_audit.csv": "issue,count",
     "patients_summary.csv": "metric,value",
@@ -77,13 +78,22 @@ def generate() -> None:
     """Write the generated data into the self-test folder, as the notebook's first cell does, and time it."""
     started = time.perf_counter()
     built = generate_data.files()
+    DATA.parent.mkdir(parents=True, exist_ok=True)
+    generate_data.write(DATA)
     seconds = time.perf_counter() - started
     assert seconds < 3, ("generate_data.py takes", seconds)
-    assert built == generate_data.files(), "generate_data.py writes different bytes on a rerun"
-    DATA.mkdir(parents=True)
+    assert built == generate_data.files(), "generate_data.py builds different tables on a rerun"
+    assert sorted(path.name for path in DATA.iterdir()) == sorted(built) == sorted(FILES.values())
     for name, data in built.items():
         assert b"\r" not in data, (name, "carriage return in the data")
-        (DATA / name).write_bytes(data)
+        if name.endswith(".csv"):
+            assert (DATA / name).read_bytes() == data, (name, "the CSV file differs from its table")
+        else:
+            # The notebook's first cell hashes this text, never the Parquet bytes.
+            frame = pd.read_parquet(DATA / name)
+            assert frame.to_csv(index=False, lineterminator="\n").encode("utf-8") == data, name
+            assert {str(dtype) for column, dtype in frame.dtypes.items() if not column.startswith("a1c_")} == \
+                {"string"}, (name, frame.dtypes)
     manifest = json.loads((HANDOUT / "data_manifest.json").read_text(encoding="utf-8"))
     assert {name: entry["sha256"] for name, entry in manifest["files"].items()} == grading.DATA_SHA256, \
         "grading.DATA_SHA256 differs from data_manifest.json"
@@ -138,10 +148,11 @@ def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, si
           melt_map=None, melt_dropna=True, a1c_how="left", site_table="current", reverse_change=False,
           references: dict | None = None) -> dict[str, str]:
     """Answer the midterm with lecture methods, with any one mistake carried through; return each file's text."""
-    raw = {name: pd.read_csv(DATA / f"{name}.csv", dtype="string", keep_default_na=False) for name in TABLES}
+    raw = {name: pd.read_parquet(DATA / file) if file.endswith(".parquet")
+           else pd.read_csv(DATA / file, dtype="string", keep_default_na=False) for name, file in FILES.items()}
     files = {"file_inventory.txt": subprocess.run("wc -l data/*.csv", shell=True, cwd=WORK, check=True,
                                                   capture_output=True, text=True).stdout}
-    profile = pd.DataFrame([{"table": f"{name}.csv", "rows": len(table), "columns": table.shape[1],
+    profile = pd.DataFrame([{"table": FILES[name], "rows": len(table), "columns": table.shape[1],
                              "exact_duplicate_rows": int(table.duplicated().sum())} for name, table in raw.items()])
     files["table_profile.csv"] = profile.to_csv(index=False)
 
@@ -284,8 +295,9 @@ def confirm_reference(files: dict[str, str], found: dict) -> None:
     raw, pc, v, a1c, analysis, wide = (found[name] for name in ("raw", "patients", "visits", "a1c", "analysis",
                                                                   "wide"))
     for name, frame in raw.items():
-        assert grading.TABLE_PROFILE[f"{name}.csv"] == (len(frame), frame.shape[1], int(frame.duplicated().sum()))
-        assert grading.INVENTORY[f"{name}.csv"] == len(frame) + 1
+        assert grading.TABLE_PROFILE[FILES[name]] == (len(frame), frame.shape[1], int(frame.duplicated().sum()))
+        if FILES[name].endswith(".csv"):
+            assert grading.INVENTORY[FILES[name]] == len(frame) + 1
     assert tuple(found["audit"].items()) == grading.ISSUE_AUDIT, found["audit"]
     assert tuple(found["merge_audit"].items()) == grading.MERGE_AUDIT, found["merge_audit"]
     assert tuple(found["decisions"]) == grading.DECISIONS, found["decisions"]
@@ -357,7 +369,7 @@ def confirm_reference(files: dict[str, str], found: dict) -> None:
         "three rechecks with different readings":
             sample_pairs.groupby(["patient_id", "visit"])["sbp_mmhg"].nunique().eq(2).sum() >= 3,
         "a missing week12 visit": wide[wide["patient_id"].isin(ids)]["week12"].isna().any(),
-        "a blank A1c result": lab[["a1c_baseline", "a1c_week12"]].eq("").any().any(),
+        "a blank A1c result": lab[["a1c_baseline", "a1c_week12"]].isna().any().any(),
     }
     assert all(covered.values()), [name for name, ok in covered.items() if not ok]
 
@@ -447,7 +459,7 @@ def check_handout(files: dict[str, str]) -> None:
         assert header == HEADERS[name], (name, header)
         assert len(text.splitlines()) == count, (name, count, len(text.splitlines()))
         assert re.search(rf"── {re.escape(name)} +# you make in Task", tree), (name, "missing from the file tree")
-    assert re.fullmatch(r"\s*\d+ data/a1c_wide\.csv", files["file_inventory.txt"].splitlines()[0])
+    assert re.fullmatch(r"\s*\d+ data/sites\.csv", files["file_inventory.txt"].splitlines()[0])
     # Analyst-sized outputs: a few KB each, well under 200 KB in all.
     sizes = {name: len(text.encode("utf-8")) for name, text in files.items()}
     assert max(sizes.values()) < 8_000 and sum(sizes.values()) < 200_000, sizes
@@ -642,9 +654,9 @@ def run() -> None:
                 failures.append((description, "feedback", text))
     assert not failures, "\n".join(map(str, failures))
 
-    print("Assignment 06 checks: generate_data.py writes the data_manifest.json bytes in under 3 seconds and "
-          "the values grading.py derives match an independent pandas solution; the extracts' patients cover "
-          "every planted pattern; the README lists every artifact with its header and line count and states no "
+    print("Assignment 06 checks: generate_data.py writes the data_manifest.json tables, as Parquet and CSV, in "
+          "under 3 seconds and the values grading.py derives match an independent pandas solution; the extracts' "
+          "patients cover every planted pattern; the README lists every artifact with its header and line count and states no "
           "graded count; CHECKS.md states the 75/25 split and each file's points; the handout ships no checks and "
           "no data, and saves every ungated file before the validation assert; empty and handout score 0, a "
           "partial submission 10; complete and loosely formatted submissions score 75; no submitted file runs; "

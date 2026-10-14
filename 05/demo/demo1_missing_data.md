@@ -203,9 +203,9 @@ Continue on your own after class, outside the live route. These cells reuse the 
 **What not to do:** forward fill copies the previous row down. The row above is usually another patient.
 
 ```python
-wrong = analysis[['patient_id', 'sbp']].copy()
+wrong = analysis[['patient_id', 'sbp', 'needs_review']].copy()
 wrong['sbp_ffill'] = analysis['sbp'].ffill()
 display(wrong)
 ```
 
-**Expect:** P003, P004, and P005 all receive `135`, P002's reading. Leave those gaps missing; `needs_review` already marks them.
+**Expect:** P003, P004, and P005 all receive `135`, P002's reading, from a different patient. Those rows show `needs_review` as `True`, so leave `sbp` missing and let the flag send them for review.

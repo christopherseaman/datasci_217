@@ -23,8 +23,8 @@ A clinic's intake form exports column names with spaces and units, smoking statu
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
 ```python
-# Installs the course's pandas and thefuzz (for the optional last practice) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 thefuzz==0.22.1
+# Installs the course's pandas, pyarrow, and thefuzz (for the optional last practice) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 thefuzz==0.22.1
 ```
 
 ## Core walkthrough
@@ -234,7 +234,7 @@ print('site as str:', intake['site_text'].memory_usage(deep=True), 'bytes')
 print('site as category:', intake['site'].memory_usage(deep=True), 'bytes')
 ```
 
-**Expect:** fewer bytes as a category. About `616` then `302` bytes in the local environment; Colab, which has `pyarrow`, shows about `247` then `180`.
+**Expect:** fewer bytes as a category. About `247` then `180` bytes with `pyarrow` installed, as the install cell and `uv sync` provide.
 
 ### Practice 3: Normalize multiword clinic labels
 

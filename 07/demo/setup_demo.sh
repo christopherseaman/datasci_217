@@ -18,7 +18,7 @@ curl -fsSL "$base_url/setup_demo.sh" -o setup_demo.sh
 curl -fsSL "$base_url/.python-version" -o .python-version
 curl -fsSL "$base_url/pyproject.toml" -o pyproject.toml
 curl -fsSL "$base_url/uv.lock" -o uv.lock
-curl -fsSL "$base_url/healthexp.csv" -o healthexp.csv
+curl -fsSL "$base_url/healthexp.parquet" -o healthexp.parquet
 curl -fsSL "$base_url/demo1_matplotlib_basics.ipynb" -o demo1_matplotlib_basics.ipynb
 curl -fsSL "$base_url/demo2_seaborn_statistical.ipynb" -o demo2_seaborn_statistical.ipynb
 curl -fsSL "$base_url/demo3_pandas_altair.ipynb" -o demo3_pandas_altair.ipynb

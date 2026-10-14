@@ -1,9 +1,10 @@
 {
-  "fixture_id": "a06-clinic-midterm-v3",
+  "fixture_id": "a06-clinic-midterm-v4",
   "provenance": "course-authored synthetic teaching data; no real patients",
   "generator": "generate_data.py",
+  "sha256": "of each table as CSV text with \\n line endings, as to_csv(index=False) writes it",
   "files": {
-    "patients.csv": {
+    "patients.parquet": {
       "rows": 30045,
       "columns": [
         "patient_id",
@@ -46,7 +47,7 @@
       ],
       "sha256": "96d19aad4cbbefa5d96536f2154cdfb7a17cf8c04cad823171def21ac7a1842c"
     },
-    "a1c_wide.csv": {
+    "a1c_wide.parquet": {
       "rows": 29469,
       "columns": [
         "patient_id",

@@ -5,6 +5,7 @@ requires-python = ">=3.13"
 dependencies = [
     "numpy==2.3.3",
     "pandas==3.0.5",
+    "pyarrow==25.0.0",
     "ipykernel==6.29.5",
     "jupyterlab==4.4.10",
     "jupytext==1.18.1",

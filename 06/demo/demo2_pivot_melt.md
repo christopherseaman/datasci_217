@@ -27,7 +27,7 @@ Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
 ```
 
 ## Core walkthrough
@@ -45,19 +45,19 @@ import pandas as pd
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/data"
 data_dir = Path("data")
 data_dir.mkdir(exist_ok=True)
-for filename in ["demo2_bp_wide.csv", "demo2_device_week4.csv"]:
+for filename in ["demo2_bp_wide.parquet", "demo2_device_week4.parquet"]:
     path = data_dir / filename
     if not path.exists():
         urlretrieve(f"{REPO_RAW}/{filename}", path)
-print(sorted(p.name for p in data_dir.glob("demo2_*.csv")))
+print(sorted(p.name for p in data_dir.glob("demo2_*.parquet")))
 ```
 
-**Expect:** `['demo2_bp_wide.csv', 'demo2_device_week4.csv']`.
+**Expect:** `['demo2_bp_wide.parquet', 'demo2_device_week4.parquet']`.
 
 One row per patient, one SBP column per visit. `ids` lists the columns that describe a patient and do not change between visits.
 
 ```python
-bp_wide = pd.read_csv(data_dir / "demo2_bp_wide.csv")
+bp_wide = pd.read_parquet(data_dir / "demo2_bp_wide.parquet")
 ids = ['patient_id', 'age', 'sex', 'clinic']
 print(bp_wide.shape)
 display(bp_wide)
@@ -149,7 +149,7 @@ display(bp_wide_again)
 The BP cuff's own export for the week 4 visit arrives.
 
 ```python
-device_week4 = pd.read_csv(data_dir / "demo2_device_week4.csv")
+device_week4 = pd.read_parquet(data_dir / "demo2_device_week4.parquet")
 display(device_week4)
 ```
 

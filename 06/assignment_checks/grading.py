@@ -8,8 +8,10 @@ imported, executed, or read, and the notebook is left to human review.
 The handout ships `generate_data.py`, never the data. Every expected value is
 derived, when this module loads, from the bytes the course copy of that
 generator (`06/assignment/generate_data.py`, found above these checks) builds
-in memory, accepted only when each file's SHA-256 matches `DATA_SHA256` (the
-values the handout's `data_manifest.json` lists). Nothing is written to disk.
+in memory as CSV text with the standard library, accepted only when each table's
+SHA-256 matches `DATA_SHA256` (the values the handout's `data_manifest.json`
+lists). Nothing is written to disk, and pandas is never imported: the Parquet
+files hold the same tables, which only the handout's copy writes.
 `_grader_selftest/run.py` recomputes each value with pandas.
 
 The outputs are analyst-sized: audits and summaries of the whole tables, plus
@@ -46,15 +48,15 @@ import re
 SCHEMA = "datasci217/grading-result/v1"
 OUTPUT = Path("output")
 
-DATA_FILES = ("patients.csv", "sites.csv", "visits_north.csv", "visits_south.csv", "a1c_wide.csv")
+DATA_FILES = ("patients.parquet", "sites.csv", "visits_north.csv", "visits_south.csv", "a1c_wide.parquet")
 # The generated files' SHA-256 values, as the handout's data_manifest.json lists them. Every expected value
-# below is derived from files with exactly these bytes (built by 06/assignment/generate_data.py).
+# below is derived from tables with exactly this CSV text (built by 06/assignment/generate_data.py).
 DATA_SHA256 = {
-    "patients.csv": "7ebbe818af63b951cc227d430d8dec83b90d944fbdfc6f24b2aa33ba7ca3b993",
+    "patients.parquet": "7ebbe818af63b951cc227d430d8dec83b90d944fbdfc6f24b2aa33ba7ca3b993",
     "sites.csv": "daaa4f3fc475900db905590faf6524f34143e78b73633b1794de4c6cf4b56a77",
     "visits_north.csv": "9136d39ad6571e4ff6b21f1119dde6cd6a16d101bc7d9348b86e7ac15a0efbd2",
     "visits_south.csv": "96d19aad4cbbefa5d96536f2154cdfb7a17cf8c04cad823171def21ac7a1842c",
-    "a1c_wide.csv": "21c343765c3b6131c9ebda7f201d66089f4d859b9a6aa8ff4b51ef8457825219",
+    "a1c_wide.parquet": "21c343765c3b6131c9ebda7f201d66089f4d859b9a6aa8ff4b51ef8457825219",
 }
 # The patients whose rows the extracts hold, as the README and the notebook's first cell list them. They
 # cover a repeated registry row, the 9999 sentinel, messy gender and site spellings, a site sites.csv lacks,
@@ -101,7 +103,7 @@ ISSUE_HINTS = {
 
 
 def generated_data() -> dict[str, bytes]:
-    """The data files the course copy of generate_data.py builds, in memory, checked against DATA_SHA256.
+    """Each data table as the CSV text the course copy of generate_data.py builds, checked against DATA_SHA256.
 
     The generator is course-owned code beside these checks (06/assignment), never a submitted file. It runs
     from its source text, so no bytecode cache is written next to it.
@@ -116,12 +118,12 @@ def generated_data() -> dict[str, bytes]:
         if all(name in built and hashlib.sha256(built[name]).hexdigest() == digest
                for name, digest in DATA_SHA256.items()):
             return built
-    raise FileNotFoundError("no assignment/generate_data.py above the checks builds the data files whose "
+    raise FileNotFoundError("no assignment/generate_data.py above the checks builds the data tables whose "
                             "SHA-256 values DATA_SHA256 lists")
 
 
 def read_data(data: bytes) -> list[dict[str, str]]:
-    """A data file's rows as text, every cell kept as written, as read_csv(dtype="string", keep_default_na=False)."""
+    """A table's rows as text, every cell kept as written, as read_csv(dtype="string", keep_default_na=False)."""
     header, *rows = csv.reader(io.StringIO(data.decode("utf-8")))
     return [dict(zip(header, row)) for row in rows]
 
@@ -174,12 +176,13 @@ def _first_copies(rows: Sequence[dict[str, str]]) -> list[dict[str, str]]:
 
 _DATA = generated_data()
 RAW = {name: read_data(_DATA[name]) for name in DATA_FILES}
-# `wc -l data/*.csv` counts newline characters, so each count includes the header line.
-INVENTORY = {name: _DATA[name].count(b"\n") for name in DATA_FILES}
+# `wc -l data/*.csv` counts newline characters, so each count includes the header line. Parquet is
+# binary, so the inventory lists only the CSV files.
+INVENTORY = {name: _DATA[name].count(b"\n") for name in DATA_FILES if name.endswith(".csv")}
 # Each raw table's data rows, columns, and rows identical to an earlier row.
 TABLE_PROFILE = {name: (len(rows), len(rows[0]), exact_repeats(rows)) for name, rows in RAW.items()}
 
-_patients, _sites = RAW["patients.csv"], RAW["sites.csv"]
+_patients, _sites = RAW["patients.parquet"], RAW["sites.csv"]
 _raw_visits = [{**row, "weight_kg": row.get("weight_kg", row.get("wt_kg", "")), "source_file": site}
                for site in ("north", "south") for row in RAW[f"visits_{site}.csv"]]
 for _row in _raw_visits:
@@ -249,7 +252,7 @@ VISITS = {key: _clean_visit(_latest[key]) for key in sorted(_latest)}
 RAW_SBP = {key: whole_number(_latest[key]["sbp_mmhg"]) for key in VISITS}
 # melt() puts every baseline before every week 12 result; rows with no result are dropped.
 A1C = {(row["patient_id"], visit): whole_number(row[f"a1c_{visit}"])
-       for visit in ("baseline", "week12") for row in RAW["a1c_wide.csv"]
+       for visit in ("baseline", "week12") for row in RAW["a1c_wide.parquet"]
        if whole_number(row[f"a1c_{visit}"]) is not None}
 CURRENT_SITES = {row["site_code"]: row["site_name"] for row in _sites if row["record_status"] == "current"}
 SITE_CODES = frozenset(row["site_code"] for row in _sites)
@@ -698,9 +701,9 @@ def shown(value: object) -> str:
 # Task 1: the file inventory and the table profile
 
 def file_key(text: str) -> str:
-    """A data file's name for comparison: `data/patients.csv`, `patients.csv`, and `Patients` are the same."""
+    """A data file's name for comparison: `data/patients.parquet`, `patients.csv`, and `Patients` are the same."""
     name = label(text).replace("\\", "/").rsplit("/", 1)[-1]
-    return name[:-4] if name.endswith(".csv") else name
+    return re.sub(r"\.(csv|parquet)$", "", name)
 
 
 def check_file_inventory(root: Path) -> Outcome:
@@ -902,7 +905,7 @@ def close(value: float | None, want: float, tolerance: float) -> bool:
 # Task 3.1: patients_summary.csv and gender_categories.csv
 
 PATIENT_HINTS = {
-    "patients": "len(patients_clean) after drop_duplicates() removes the exact repeats in patients.csv",
+    "patients": "len(patients_clean) after drop_duplicates() removes the exact repeats in patients.parquet",
     "birth_year missing": "patients_clean['birth_year'].isna().sum() once 9999 is missing",
     "birth_year min": "patients_clean['birth_year'].min()",
     "birth_year max": "patients_clean['birth_year'].max(); 9999 here means the sentinel was never made missing",

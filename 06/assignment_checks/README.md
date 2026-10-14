@@ -9,7 +9,7 @@ python3 06/assignment_checks/check_assignment.py path/to/submission --json
 
 The first prints a readable report; `--json` prints the `datasci217/grading-result/v1` report. The report covers the 75 points graded from files; the other 25 come from human review of the notebook, the decision reasons, and the commit history, five 5-point categories that the handout's CHECKS.md lists with the cell each one reads. The command exits 0 only when every check passes, so judge a run by its JSON, not its exit status.
 
-The checks read only the eleven files in the submission's `output/`. They never import, run, or read submitted code, and the notebook is left to human review. The handout ships `generate_data.py` and `data_manifest.json`, never the data (Git ignores `data/`). When `grading.py` loads, it runs the course copy of `06/assignment/generate_data.py` in memory, refuses to load unless each built file's SHA-256 matches `DATA_SHA256`, and derives every expected value from those bytes with the standard library, writing nothing to disk; `_grader_selftest/run.py` recomputes every value with pandas. Loading takes about 2 seconds.
+The checks read only the eleven files in the submission's `output/`. They never import, run, or read submitted code, and the notebook is left to human review. The handout ships `generate_data.py` and `data_manifest.json`, never the data (Git ignores `data/`). When `grading.py` loads, it runs the course copy of `06/assignment/generate_data.py` in memory, refuses to load unless each built table's SHA-256 (of its CSV text, which the two Parquet files hold as tables) matches `DATA_SHA256`, and derives every expected value from that text with the standard library, writing nothing to disk and never importing pandas; `_grader_selftest/run.py` recomputes every value with pandas. Loading takes about 2 seconds.
 
 The outputs are analyst-sized, about 5 KB in all: audits (`issue_audit.csv`, `merge_audit.csv`), summaries (`patients_summary.csv`, `gender_categories.csv`, `visits_summary.csv`, `a1c_summary.csv`), the decision log, and two extracts holding only the rows of the 16 patients in `SAMPLE_IDS` (`sbp_wide_sample.csv`, `analysis_sample.csv`). The sample patients cover every planted pattern: a repeated registry row, `9999`, messy gender and site spellings, site `E04`, a visit with no registry row, a registry patient with no visit, rechecks with different readings, SBP `999`, out of range, and exactly 70 and 250, impossible and loosely written dates, blank weights, unmapped visit labels, a missing week 12 visit, and blank A1c results. `SAMPLE_IDS` appears in `grading.py`, the notebook's first cell, and the README; the self-test keeps the three in agreement.
 
@@ -17,7 +17,7 @@ The outputs are analyst-sized, about 5 KB in all: audits (`issue_audit.csv`, `me
 
 | Check | Points | Unit scored |
 | --- | ---: | --- |
-| `file_inventory.txt` | 5 | 1 per data file whose `wc -l` count is right |
+| `file_inventory.txt` | 5 | The three CSV files' `wc -l` counts, in proportion, rounded down |
 | `table_profile.csv` | 5 | 1 per table with right `rows`, `columns`, and `exact_duplicate_rows` |
 | `issue_audit.csv` | 10 | 1 per issue |
 | `patients_summary.csv: patients`, `birth_year`, `site_code` | 2 each | `patients` (30,000 once the repeats are dropped); the three `birth_year` metrics and the four site metrics, each in proportion, rounded down |
@@ -42,14 +42,14 @@ Each check reads one artifact without requiring another check to pass, and each 
 
 Every failure says what was expected, what was found, the rule or likely cause, and which task to fix. The checks use only the standard library and run on Python 3.9 or later.
 
-What never costs points: line endings, blank lines, a byte-order mark, spaces at the end of a line or around a header name, a missing final newline, commas, semicolons (with decimal commas), or tabs between cells, column order, extra columns, a leading unnamed index column (or one holding the labels of a summary, as a Series saved with `to_csv` writes it), number format (`6`, `6.0`, `np.int64(6)`), the letter case and spacing of labels, codes, IDs, and text values (`f` reads as `F`; a spelling that still needs its dictionary, such as `woman`, `N-01`, or `wk12`, does cost points), missing-value spellings (empty, `NaN`, `<NA>`), table names written with or without `data/` and `.csv`, and any unambiguous date form with or without a time.
+What never costs points: line endings, blank lines, a byte-order mark, spaces at the end of a line or around a header name, a missing final newline, commas, semicolons (with decimal commas), or tabs between cells, column order, extra columns, a leading unnamed index column (or one holding the labels of a summary, as a Series saved with `to_csv` writes it), number format (`6`, `6.0`, `np.int64(6)`), the letter case and spacing of labels, codes, IDs, and text values (`f` reads as `F`; a spelling that still needs its dictionary, such as `woman`, `N-01`, or `wk12`, does cost points), missing-value spellings (empty, `NaN`, `<NA>`), table names written with or without `data/` and `.csv` or `.parquet`, and any unambiguous date form with or without a time.
 
 ## Changing a check
 
 Edit `grading.py`, keep the handout's CHECKS.md contract and the README file checklist in agreement with it, and rerun both tests:
 
 ```bash
-uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 python 06/assignment_checks/_grader_selftest/run.py
+uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with pyarrow==25.0.0 python 06/assignment_checks/_grader_selftest/run.py
 uv run scripts/test_assignment_grading.py 6
 ```
 

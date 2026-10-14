@@ -11,8 +11,8 @@ Use these after trying the task yourself. Each names the lecture that taught the
 
 ## Task 1: Inventory the files
 
-- Each `rows` in `table_profile.csv` is the `wc -l` count minus 1 for the header (Lecture 03).
-- `wc -l data/*.csv > output/file_inventory.txt` sorts by file name and ends with a `total` line.
+- Each CSV file's `rows` in `table_profile.csv` is its `wc -l` count minus 1 for the header (Lecture 03).
+- `wc -l data/*.csv > output/file_inventory.txt` lists only the CSV files, sorted by name, and ends with a `total` line. The Parquet files are binary, so `wc -l` does not apply to them.
 
 ## Task 2: Contract, stack, and audit
 

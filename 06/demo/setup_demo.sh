@@ -22,9 +22,9 @@ curl -fsSL "$base_url/demo1_merge_operations.ipynb" -o demo1_merge_operations.ip
 curl -fsSL "$base_url/demo2_pivot_melt.ipynb" -o demo2_pivot_melt.ipynb
 curl -fsSL "$base_url/demo3_concat_combine.ipynb" -o demo3_concat_combine.ipynb
 
-# The CSV files the notebooks read go in data/.
+# The Parquet files the notebooks read go in data/.
 mkdir data
-for file in demo1_central_a1c.csv demo1_labs.csv demo1_patients.csv demo1_poc_a1c.csv demo1_registry.csv demo1_targets.csv demo1_visits.csv demo2_bp_wide.csv demo2_device_week4.csv demo3_adt_census.csv demo3_audits.csv demo3_census.csv demo3_experience.csv demo3_feb_admissions.csv demo3_finance_census.csv demo3_jan_admissions.csv demo3_mar_admissions.csv demo3_q1_2025.csv demo3_q1_2026.csv demo3_staffing.csv demo3_units.csv; do
+for file in demo1_central_a1c.parquet demo1_labs.parquet demo1_patients.parquet demo1_poc_a1c.parquet demo1_registry.parquet demo1_targets.parquet demo1_visits.parquet demo2_bp_wide.parquet demo2_device_week4.parquet demo3_adt_census.parquet demo3_audits.parquet demo3_census.parquet demo3_experience.parquet demo3_feb_admissions.parquet demo3_finance_census.parquet demo3_jan_admissions.parquet demo3_mar_admissions.parquet demo3_q1_2025.parquet demo3_q1_2026.parquet demo3_staffing.parquet demo3_units.parquet; do
   curl -fsSL "$base_url/data/$file" -o "data/$file"
 done
 
