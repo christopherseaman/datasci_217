@@ -130,7 +130,7 @@ clean['sbp'] = clean['sbp'].astype('Int64')
 display(clean[['patient_id', 'age_text', 'age', 'sbp']])
 ```
 
-**Expect:** `age` is `<NA>` for P002 (`'unknown'`) and P005 (`'forty'`), and `sbp` shows whole numbers such as `120` with `<NA>` in the gaps. Every parsed age is within 0 to 120, and every `patient_id` is `P` plus three digits.
+**Expect:** `age` is `<NA>` for P002 (`'unknown'`) and P005 (`'forty'`), and `sbp` shows whole numbers such as `120` with `<NA>` in the gaps. Read the `age` column: every parsed age falls between 0 and 120.
 
 `errors='coerce'` turns a date that does not exist into `NaT`, and `format=` states the expected layout. Separate a blank date (never recorded) from a date that failed to parse (recorded but wrong).
 

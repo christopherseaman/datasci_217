@@ -64,7 +64,8 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
     """Write every artifact with Lecture 05's pandas methods, as the README asks; `wrong` names mistakes to make."""
     output = root / "output"
     output.mkdir(parents=True, exist_ok=True)
-    labs = pd.read_csv(data)
+    # A valid route: read -999 as missing at once, which Task 2's replace() then leaves unchanged.
+    labs = pd.read_csv(data, na_values=[-999]) if "na-values-read" in wrong else pd.read_csv(data)
 
     # Task 1
     gaps = labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="all") if "count-after-dropna" in wrong else labs
@@ -75,6 +76,8 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
     missing_report.index.name = "column"
     missing_report.to_csv(output / "missing_report.csv")
     rows_read = len(labs)
+    if "sentinel-before-dropna" in wrong:
+        labs = labs.replace({"weight_kg": {-999: np.nan}, "glucose_mg_dl": {-999: np.nan}})
     if "dropna-any" in wrong:
         labs = labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="any")
     elif "bare-dropna" in wrong:
@@ -227,7 +230,12 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
     if not checks.all() and "no-gate" not in wrong:
         raise GateStopped(checks[~checks].index.tolist())
     columns = [c for c in ("age", "weight_kg", "hba1c_pct", "glucose_mg_dl") if c in clean.columns]
-    clean_summary = clean[columns].describe().round(2).T
+    if "summary-of-labs" in wrong:
+        clean_summary = labs[columns].describe().round(2).T
+    elif "summary-fill-zero" in wrong:
+        clean_summary = clean[columns].fillna(0).describe().round(2).T
+    else:
+        clean_summary = clean[columns].describe().round(2).T
     clean_summary.to_csv(output / "clean_summary.csv")
 
 
@@ -400,6 +408,11 @@ def run() -> None:
 
         full_marks("index-false", without_index)
 
+        def describe_untransposed_index_false(root: Path) -> None:
+            pd.read_csv(root / SUMMARY_FILE, index_col=0).T.to_csv(root / SUMMARY_FILE, index=False)
+
+        full_marks("describe-untransposed-index-false", describe_untransposed_index_false)
+
         def one_decimal_means(root: Path) -> None:
             for name in (PROFILE_FILE, SUMMARY_FILE):
                 frame = pd.read_csv(root / name, index_col=0)
@@ -413,6 +426,15 @@ def run() -> None:
             solve(root, data, frozenset({"cut-left-closed-right-edges"}))
 
         full_marks("cut-left-closed-right-edges", right_false_edges)
+
+        # -999 made missing before Task 1.2's dropna(), at read or just after Task 1.1, is a valid route: later
+        # files are judged against the rows it leaves.
+        for route in ("na-values-read", "sentinel-before-dropna"):
+            def early_sentinel(root: Path, route: str = route) -> None:
+                shutil.rmtree(root / "output")
+                solve(root, data, frozenset({route}))
+
+            full_marks(route, early_sentinel)
 
         # Each mistake costs only the checks it gets wrong.
         mistakes = []
@@ -481,6 +503,23 @@ def run() -> None:
 
         mistake("summary-mean-off", {"clean summary: statistics"}, "changes only the out-of-range", mean_off)
 
+        def count_dropped_means_off(root: Path) -> None:
+            summary = pd.read_csv(root / SUMMARY_FILE, index_col=0).drop(columns="count")
+            summary["mean"] = 999
+            summary.to_csv(root / SUMMARY_FILE)
+
+        # Without counts, the statistics are still compared.
+        mistake("summary-count-dropped", {"clean summary: blanks kept", "clean summary: statistics"}, "mean is 999",
+                count_dropped_means_off)
+        # One Task 5.2 mistake costs one check.
+        mistake("summary-fill-zero", {"clean summary: blanks kept"}, "the blanks were filled in")
+        mistake("summary-of-labs", {"clean summary: impossible values blanked"}, "the Task 5.2 cell summarized labs")
+        mistake("counts-header-only", group("category counts"), "header but no indicator rows",
+                lambda root: (root / CATEGORY_FILE).write_text("indicator,visits\n", encoding="utf-8"))
+        mistake("a1c-other-labels", {"category counts: a1c_category"}, "labels should be normal, prediabetes",
+                lambda root: edit(root / CATEGORY_FILE, lambda text: text.replace("_normal", "_low")
+                                  .replace("_prediabetes", "_mid").replace("_diabetes", "_high")))
+
         def profile_mean_off(root: Path) -> None:
             profile = pd.read_csv(root / PROFILE_FILE, index_col=0)
             profile.loc["hba1c_pct", "mean"] += 0.021
@@ -541,7 +580,8 @@ def run() -> None:
             (root / SUMMARY_FILE).write_text(text + text, encoding="utf-8")
 
         mistake("summary-written-twice", {"clean summary: statistics"}, "holds the same table 2 times", summary_twice)
-        mistake("profile-missing", group("typed profile"), "is missing; run the Task 2 cell",
+        mistake("profile-missing", group("typed profile"), "is missing; run the Task 2 cell to write it with "
+                "typed_profile.to_csv(PROFILE_PATH), then commit it. If an earlier cell stopped with an error",
                 lambda root: (root / PROFILE_FILE).unlink())
         mistake("counts-in-root", group("category counts"), "the assignment folder itself has category_counts.csv",
                 lambda root: (root / CATEGORY_FILE).rename(root / "category_counts.csv"))

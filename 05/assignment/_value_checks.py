@@ -109,6 +109,8 @@ class Flags:
     # Task 1.2: "", or another dropna() after drop_duplicates(): a raw column whose blank rows it drops, or "every"
     extra: str = ""
     sentinel: str = "nan"  # Task 2: "nan" or "kept"
+    # -999 already missing at Task 1.2's dropna(): read_csv(na_values=[-999]), or replace() moved before it
+    early: bool = False
     age: str = "coerce"  # Task 2: "coerce", "text" (not converted), or "zero" (filled with 0)
     dates: str = "parsed"  # Task 2: "parsed" or "text"
     undated: str = "kept"  # "kept", or "dropped" with dropna(subset=["visit_date"]) before Task 5
@@ -122,7 +124,7 @@ class Flags:
 CORRECT = Flags()
 # The rules a visit must pass to stay in Task 5.1's clean: the README's, every rule, or the date alone.
 KEEP_RULES = {"identified": ("patient_id_format", "visit_date_present"), "all_rules": RULES,
-              "dated": ("visit_date_present",)}
+              "dated": ("visit_date_present",), "every_visit": ()}
 
 
 @functools.lru_cache(maxsize=None)
@@ -191,10 +193,15 @@ def _patient_id(cell: str, flags: Flags) -> str:
     return cell.upper() if flags.ids in ("clean", "unstripped") else cell
 
 
+def _cells(row: tuple[str, ...], early: bool) -> tuple[str, ...]:
+    """A raw row as pandas holds it in Task 1.2: a blank stays blank, and -999 too when it was read as missing."""
+    return tuple("" if early and cell == "-999" else cell for cell in row) if early else row
+
+
 @functools.lru_cache(maxsize=None)
-def _with_labs(dropna: str) -> tuple[int, ...]:
+def _with_labs(dropna: str, early: bool = False) -> tuple[int, ...]:
     """The rows left after Task 1.2's dropna()."""
-    rows = raw_rows()
+    rows = [_cells(row, early) for row in raw_rows()]
     if dropna == "none":
         return tuple(range(len(rows)))
     if dropna == "any":
@@ -205,10 +212,10 @@ def _with_labs(dropna: str) -> tuple[int, ...]:
 
 
 @functools.lru_cache(maxsize=None)
-def _unique(dropna: str, dedupe: str) -> tuple[int, ...]:
+def _unique(dropna: str, dedupe: str, early: bool = False) -> tuple[int, ...]:
     """The rows left after Task 1.2's dropna() and drop_duplicates()."""
-    rows = raw_rows()
-    kept = _with_labs(dropna)
+    rows = [_cells(row, early) for row in raw_rows()]
+    kept = _with_labs(dropna, early)
     if dedupe == "none":
         return tuple(kept)
     if dedupe == "keep_false":
@@ -229,10 +236,11 @@ def _unique(dropna: str, dedupe: str) -> tuple[int, ...]:
 @functools.lru_cache(maxsize=None)
 def labs_rows(flags: Flags) -> tuple[int, ...]:
     """The rows of labs through Task 4: after Task 1.2, and any undated visits dropped early."""
-    kept = _unique(flags.dropna, flags.dedupe)
+    kept = _unique(flags.dropna, flags.dedupe, flags.early)
     if flags.extra:
         column = None if flags.extra == "every" else RAW_COLUMNS.index(flags.extra)
-        kept = tuple(i for i in kept if (all(raw_rows()[i]) if column is None else raw_rows()[i][column]))
+        cells = [_cells(raw_rows()[i], flags.early) for i in kept]
+        kept = tuple(i for i, row in zip(kept, cells) if (all(row) if column is None else row[column]))
     if flags.undated == "dropped":
         kept = tuple(i for i in kept if _date(i, flags) is not None)
     return kept
@@ -287,7 +295,7 @@ def labs_table(flags: Flags) -> Labs:
 
     def measure(values: tuple, sentinel: bool) -> list:
         found = [values[i] for i in kept]
-        if sentinel and flags.sentinel == "nan":
+        if sentinel and (flags.sentinel == "nan" or flags.early):
             found = [None if value == SENTINEL else value for value in found]
         return found
 
@@ -381,8 +389,8 @@ def _labs_values(flags: Flags) -> dict:
         low[column], high[column], mean[column] = min(found), max(found), sum(found) / len(found)
     glucose = tuple(value for value in labs.glucose if value is not None)
     return dict(
-        rows_read=len(rows), rows_with_labs=len(_with_labs(flags.dropna)),
-        rows_unique=len(_unique(flags.dropna, flags.dedupe)), missing=missing, low=low, high=high, mean=mean,
+        rows_read=len(rows), rows_with_labs=len(_with_labs(flags.dropna, flags.early)),
+        rows_unique=len(_unique(flags.dropna, flags.dedupe, flags.early)), missing=missing, low=low, high=high, mean=mean,
         clinics=_tally(labs.clinic), genders=_tally(labs.gender),
         a1c=_tally(_bin(value, A1C_BINS) for value in labs.hba1c),
         a1c_wrong_edges=_tally(_bin(value, WRONG_A1C_BINS) for value in labs.hba1c),
@@ -402,7 +410,7 @@ def _kept(labs: Labs, keep: str) -> list[bool]:
     """Whether Task 5.1 keeps each visit of labs under the keep rule `keep`."""
     if "|" in keep:
         return [any(p[rule] for rule in keep.split("|")) for p in labs.passes]
-    rules = KEEP_RULES.get(keep) or tuple(keep.split("+"))
+    rules = KEEP_RULES[keep] if keep in KEEP_RULES else tuple(keep.split("+"))
     return [all(p[rule] for rule in rules) for p in labs.passes]
 
 
@@ -427,10 +435,15 @@ def reference(flags: Flags = CORRECT) -> Reference:
 
 
 @functools.lru_cache(maxsize=None)
-def missing_counts() -> dict[str, int]:
-    """isna().sum() of the table as read: read_csv makes an empty cell missing, and -999 or 'unknown' are values."""
+def missing_counts(also: tuple[str, ...] = ()) -> dict[str, int]:
+    """isna().sum() of the table as read: read_csv makes an empty cell missing, and -999 or 'unknown' are values,
+    unless na_values names them in `also`."""
     rows = raw_rows()
-    return {column: sum(1 for row in rows if not row[i]) for i, column in enumerate(RAW_COLUMNS)}
+    return {column: sum(1 for row in rows if not row[i] or row[i] in also) for i, column in enumerate(RAW_COLUMNS)}
+
+
+# Valid reads for Task 1.1: as written, or with na_values naming -999, 'unknown', or both, which Task 2 does anyway.
+NA_VALUES = ((), ("-999",), ("unknown",), ("-999", "unknown"))
 
 
 # Reading saved CSV files.
@@ -520,7 +533,8 @@ def _missing(root: Path, name: str) -> str:
             f"before {call}. Read that cell's output: it names the check that failed. Fix that step, run the cell "
             "again, then commit the file."
         )
-    return f"{name} is missing; run the {step} cell to write it with {call}, then commit it."
+    return (f"{name} is missing; run the {step} cell to write it with {call}, then commit it. If an earlier cell "
+            "stopped with an error, fix that one first.")
 
 
 def _clean(cell: str) -> str:
@@ -693,12 +707,13 @@ class Report:
 
 
 def _report(root: Path, name: str, label: Callable[[str], str | None], expected: tuple[str, ...],
-            sideways_ok: bool = True) -> Report:
+            sideways_ok: bool = True, across_rows: tuple[str, ...] = ()) -> Report:
     """A summary saved with its labels in the index: one row per label, the labels read by `label`.
 
     A report written with its labels across the top, as describe() leaves it without .T, is read the same
-    way. A report saved with index=False has no labels; when it has the README's number of rows they are
-    read in the README's order, at no cost.
+    way; saved that way with index=False, its rows are read as `across_rows` when it has that many. A report
+    saved with index=False has no labels; when it has the README's number of rows they are read in the README's
+    order, at no cost.
     """
     table = read_table(root, name)
     step, call = SAVED_BY[name]
@@ -717,6 +732,9 @@ def _report(root: Path, name: str, label: Callable[[str], str | None], expected:
                 cells.setdefault(found, {c: v for c, v in row.items() if c != key})
         return Report(table, cells, tuple(labels), tuple(raw[key] for raw in table.raw), key)
     across = [c for c in table.columns if label(c)]
+    if across and sideways_ok and table.columns[0] in across and across_rows and len(table.rows) == len(across_rows):
+        cells = {label(c): dict(zip(across_rows, (row[c] for row in table.rows))) for c in across}
+        return Report(table, cells, tuple(label(c) for c in across), tuple(across), None, by_order=True)
     if across and sideways_ok:
         first = table.columns[0]
         cells = {label(c): {(_header(row[first]) if row[first] else ""): row[c] for row in table.rows} for c in across}
@@ -782,23 +800,38 @@ def _count_cell(report: Report, label: str) -> float | None:
 DEDUPES = ("exact", "none", "keep_false", "patient", "visit")
 
 
-def _detected_rows(root: Path) -> tuple[str, str, str]:
-    """(dropna, dedupe, extra) as decision_log.csv's row counts show them, the README's steps when it cannot tell."""
+def _read_sentinel(root: Path) -> bool:
+    """Whether missing_report.csv counts -999 as missing: Task 1.1 read the export with na_values=[-999]."""
+    try:
+        report, count, _ = _missing_report(root)
+    except (AssertionError, OSError, csv.Error, UnicodeDecodeError):
+        return False
+    cells = {label: row[count] for label, row in report.cells.items()} if count else {}
+    return bool(cells) and any(all(_same(cell, missing_counts(also)[column]) for column, cell in cells.items())
+                               for also in NA_VALUES if "-999" in also)
+
+
+def _detected_rows(root: Path) -> tuple[str, str, str, bool]:
+    """(dropna, dedupe, extra, early) as the student's files show them, the README's steps when they cannot tell.
+
+    early is -999 made missing before Task 1.2's dropna(), which the missing report or rows_with_labs shows."""
+    read_early = _read_sentinel(root)
     report = _decision_report(root)
     if report is None:
-        return CORRECT.dropna, CORRECT.dedupe, CORRECT.extra
+        return CORRECT.dropna, CORRECT.dedupe, CORRECT.extra, read_early
     with_labs, unique = _count_cell(report, "with_labs"), _count_cell(report, "unique")
-    dropna = next((option for option in ("all", "any", "every", "none")
-                   if with_labs == len(_with_labs(option))), CORRECT.dropna)
-    dedupe = next((option for option in DEDUPES if unique == len(_unique(dropna, option))), None)
+    dropna, early = next(((option, early) for early in (read_early, not read_early)
+                          for option in ("all", "any", "every", "none")
+                          if with_labs == len(_with_labs(option, early))), (CORRECT.dropna, read_early))
+    dedupe = next((option for option in DEDUPES if unique == len(_unique(dropna, option, early))), None)
     if dedupe is not None:
-        return dropna, dedupe, CORRECT.extra
+        return dropna, dedupe, CORRECT.extra, early
     # Another dropna() after drop_duplicates(), bare or on one column, before rows_unique is set.
     for extra in RAW_COLUMNS + ("every",):
         for dedupe in DEDUPES:
-            if unique == len(labs_rows(Flags(dropna=dropna, dedupe=dedupe, extra=extra))):
-                return dropna, dedupe, extra
-    return dropna, CORRECT.dedupe, CORRECT.extra
+            if unique == len(labs_rows(Flags(dropna=dropna, dedupe=dedupe, extra=extra, early=early))):
+                return dropna, dedupe, extra, early
+    return dropna, CORRECT.dedupe, CORRECT.extra, early
 
 
 def _profile(root: Path) -> Report | None:
@@ -825,7 +858,7 @@ def _numeric_dtype(cells: dict[str, str]) -> bool:
     return all(_number(_value(cells, word) or "") is not None for word in ("min", "max"))
 
 
-def _detected_typed(root: Path, dropna: str, dedupe: str, extra: str = "") -> dict[str, str]:
+def _detected_typed(root: Path, dropna: str, dedupe: str, extra: str = "", early: bool = False) -> dict[str, str]:
     """The Task 2 choices typed_profile.csv shows, the README's steps when it cannot tell."""
     found = {"sentinel": CORRECT.sentinel, "age": CORRECT.age, "dates": CORRECT.dates, "undated": CORRECT.undated}
     report = _profile(root)
@@ -844,7 +877,7 @@ def _detected_typed(root: Path, dropna: str, dedupe: str, extra: str = "") -> di
     if date and dtype and "date" not in dtype:
         found["dates"] = "text"
     missing = _number(_value(date, "missing", "na", "null") or "") if date else None
-    flags = Flags(dropna=dropna, dedupe=dedupe, extra=extra, dates=found["dates"])
+    flags = Flags(dropna=dropna, dedupe=dedupe, extra=extra, early=early, dates=found["dates"])
     if missing == 0 and reference(flags).missing["visit_date"] > 0:
         found["undated"] = "dropped"
     return found
@@ -877,10 +910,10 @@ def upstream(root: Path, stage: int) -> list[Flags]:
 
     Stage 2 is typed_profile.csv, 3 category_counts.csv, 4 validation_report.csv, and 5 the Task 5 files.
     """
-    dropna, dedupe, extra = _detected_rows(root)
-    own = {"dropna": dropna, "dedupe": dedupe, "extra": extra}
+    dropna, dedupe, extra, early = _detected_rows(root)
+    own = {"dropna": dropna, "dedupe": dedupe, "extra": extra, "early": early}
     if stage >= 3:
-        own.update(_detected_typed(root, dropna, dedupe, extra))
+        own.update(_detected_typed(root, dropna, dedupe, extra, early))
     options = [CORRECT]
     for ids, test in (_detected_ids(root, own) if stage >= 5 else (("clean", "fullmatch"),)):
         flags = Flags(**own, ids=ids, id_test=test)
@@ -934,11 +967,11 @@ def check_missing_count(root: Path) -> None:
             f"{MISSING_FILE} has no missing_count column (its columns are {_columns(report.table)}); Task 1.1 "
             'builds it with "missing_count": labs.isna().sum().')
     cells = {label: row[count] for label, row in report.cells.items()}
+    if any(all(_same(cell, missing_counts(also)[column]) for column, cell in cells.items()) for also in NA_VALUES):
+        return
     expected = missing_counts()
     wrong = [f"{column} has {cell or 'blank'}, expected {expected[column]}"
              for column, cell in cells.items() if not _same(cell, expected[column])]
-    if not wrong:
-        return
     rows = len(raw_rows())
     if all(_same(cell, rows - expected[column]) for column, cell in cells.items()):
         cause = "Each count is of the values present: isna().sum() counts the gaps, and notna() or count() the values."
@@ -1363,7 +1396,12 @@ def check_category_a1c(root: Path) -> None:
     if any(_counts_match(found, expected.a1c, _skipped(categories, "a1c")) for expected in options):
         return
     expected = {_fold(key): value for key, value in options[0].a1c.items() if key is not None}
-    if any(_counts_match(found, option.a1c_wrong_edges) for option in options):
+    renamed = any(len(found) == 3 and sorted(found.values()) == sorted(v for k, v in option.a1c.items() if k)
+                  for option in options)
+    if renamed:
+        cause = ("the counts are right under other names: the labels should be normal, prediabetes, and diabetes, "
+                 'as pd.cut(..., labels=["normal", "prediabetes", "diabetes"]), in that order.')
+    elif any(_counts_match(found, option.a1c_wrong_edges) for option in options):
         cause = ("these follow the edges 5.7 and 6.5. Each pd.cut() bin includes its right edge, so 5.7 lands in "
                  "normal and 6.5 in prediabetes. HbA1c has one decimal, so each edge is the highest value of its "
                  "band, and the last edge, 20, is included.")
@@ -1385,6 +1423,9 @@ def check_category_a1c(root: Path) -> None:
 
 def check_category_indicators(root: Path) -> None:
     categories = _categories(root)
+    _assert(bool(categories.entries),
+            f"{CATEGORY_FILE} has a header but no indicator rows; in Task 3.2, save category_counts = coded.sum(), "
+            "one row per indicator column.")
     _assert(categories.table.copies == 1, _written_again(categories.table))
     blanks = [entry.label for entry in categories.entries if _dummy_na(entry)]
     _assert(not blanks,
@@ -1491,11 +1532,11 @@ def check_validation_ids(root: Path) -> None:
     if any(_same(cell, option.failing["patient_id_format"]) for option in options):
         return
     own = dataclasses.replace(upstream(root, 4)[-1], ids="clean")
-    hints = {"unstripped": "' D11126' still has its space: add .str.strip() before .str.upper()",
-             "cased": "'d10007' is still lower case: add .str.upper() after .str.strip()",
-             "raw": "IDs such as ' D11126' and 'd10007' are not cleaned: use .str.strip().str.upper()"}
+    hints = {"unstripped": "' D28632' still has its space: add .str.strip() before .str.upper()",
+             "cased": "'d10243' is still lower case: add .str.upper() after .str.strip()",
+             "raw": "IDs such as ' D28632' and 'd10243' are not cleaned: use .str.strip().str.upper()"}
     hints["contains"] = ("str.contains() and str.match() also pass a longer ID that starts with D and five digits, "
-                         "such as 'D267188'; test the whole ID with .str.fullmatch(r\"D[0-9]{5}\", na=False)")
+                         "such as 'D285777'; test the whole ID with .str.fullmatch(r\"D[0-9]{5}\", na=False)")
     cause = next((hint for ids, hint in hints.items()
                   if _same(cell, reference(dataclasses.replace(own, id_test="contains") if ids == "contains" else
                                            dataclasses.replace(own, ids=ids)).failing["patient_id_format"])),
@@ -1609,8 +1650,8 @@ def check_decision_no_lab(root: Path) -> None:
             f"{DECISION_FILE}: rows_read is {_show(read)}, expected {expected.rows_read}, the rows of "
             "data/lab_visits.csv. Set rows_read = len(labs) right after pd.read_csv(DATA_PATH), and keep the data "
             "file as generate_data.py wrote it.")
-    if with_labs == expected.rows_with_labs:
-        return
+    if with_labs in (expected.rows_with_labs, len(_with_labs("all", True))):
+        return  # with -999 read as missing, a visit with only a -999 glucose has no labs either
     if with_labs == expected.rows_read:
         cause = ('nothing was dropped. In Task 1.2, drop the no-show visits with labs = labs.dropna(subset=["hba1c_pct", '
                  '"glucose_mg_dl"], how="all"), then set rows_with_labs = len(labs).')
@@ -1629,20 +1670,20 @@ def check_decision_no_lab(root: Path) -> None:
 
 def check_decision_repeats(root: Path) -> None:
     unique = _decisions(root, "unique")["unique"]
-    dropna, _, extra = _detected_rows(root)
-    expected = len(_unique(dropna, "exact"))
+    dropna, _, extra, early = _detected_rows(root)
+    expected = len(_unique(dropna, "exact", early))
     if unique == expected or unique == reference().rows_unique:
         return
-    if unique is not None and unique <= len(_unique(dropna, "patient")):
+    if unique is not None and unique <= len(_unique(dropna, "patient", early)):
         return  # Visits collapsed to one per patient are charged once, by the repeat-visit check.
-    with_labs = len(_with_labs(dropna))
+    with_labs = len(_with_labs(dropna, early))
     if unique == with_labs:
         cause = "nothing was removed. In Task 1.2, remove the exact repeats with labs = labs.drop_duplicates()."
-    elif unique == len(_unique(dropna, "visit")):
+    elif unique == len(_unique(dropna, "visit", early)):
         cause = (f'subset=["patient_id", "visit_date"] also drops {_show(expected - unique)} visits that differ but '
                  "share a patient and a blank date, since drop_duplicates() treats two blanks as equal. drop_duplicates() "
                  "with no arguments removes only rows identical in every column.")
-    elif unique == len(_unique(dropna, "keep_false")):
+    elif unique == len(_unique(dropna, "keep_false", early)):
         cause = ("keep=False drops every copy of a repeated row, the first one too. drop_duplicates() with no "
                  "arguments keeps the first copy.")
     elif extra:
@@ -1657,12 +1698,12 @@ def check_decision_repeats(root: Path) -> None:
 
 def check_decision_repeat_visits(root: Path) -> None:
     unique = _decisions(root, "unique")["unique"]
-    dropna, _, extra = _detected_rows(root)
-    patients = len(_unique(dropna, "patient"))
+    dropna, _, extra, early = _detected_rows(root)
+    patients = len(_unique(dropna, "patient", early))
     _assert(
         unique is None or unique > patients,
         f"{DECISION_FILE}: rows_unique is {_show(unique)}, one row per patient; expected about "
-        f"{len(_unique(dropna, 'exact'))}, one row per visit. Call labs.drop_duplicates() with no subset, so only "
+        f"{len(_unique(dropna, 'exact', early))}, one row per visit. Call labs.drop_duplicates() with no subset, so only "
         "rows identical in every column are removed.",
     )
 
@@ -1734,7 +1775,7 @@ def _summary_label(cell: str) -> str | None:
 
 
 def _summary(root: Path) -> dict[str, dict[str, float | None]]:
-    report = _report(root, SUMMARY_FILE, _summary_label, NUMBER_COLUMNS)
+    report = _report(root, SUMMARY_FILE, _summary_label, NUMBER_COLUMNS, across_rows=STATS)
     found = {}
     for column, cells in report.cells.items():
         stats = {}
@@ -1782,12 +1823,8 @@ def _rows_stop_assert(flags: Flags) -> bool:
     return False
 
 
-def check_summary_blanked(root: Path) -> None:
-    # A stopped assert is charged once, here, unless kept rows that an earlier check charged stopped it: repeats,
-    # bad IDs, or missing dates left by Task 1.2, Task 4's ID rule, or Task 5.1's filter.
-    if _summary_stopped(root) and any(_rows_stop_assert(flags) for flags in _task5_options(root)):
-        return
-    found = _summary(root)
+def _out_of_range(found: dict) -> list[str]:
+    """The HbA1c and weight minimums and maximums of a clean summary that fall outside the contract's ranges."""
     wrong = []
     for column, (low, high) in (("hba1c_pct", HBA1C_RANGE), ("weight_kg", WEIGHT_RANGE)):
         stats = found.get(column, {})
@@ -1795,11 +1832,47 @@ def check_summary_blanked(root: Path) -> None:
             value = stats.get(stat)
             if value is None or not low - TOLERANCE <= value <= high + TOLERANCE:
                 wrong.append(f"{column}'s {stat} is {_show(value)}")
+    return wrong
+
+
+def _counts_are(found: dict, counts: dict) -> bool:
+    """Whether every column's count in the summary is the one `counts` gives it."""
+    return bool(found) and all(stats.get("count") is not None and abs(stats["count"] - counts[column]) < 0.5
+                               for column, stats in found.items())
+
+
+def _filled(root: Path, found: dict) -> bool:
+    """Whether every column counts every kept visit: the blanks were filled, which the blanks-kept check charges."""
+    return any(_counts_are(found, dict.fromkeys(found, reference(flags).clean_rows)) for flags in _task5_options(root))
+
+
+def _summarized_labs(root: Path, found: dict) -> bool:
+    """Whether the summary's counts are those of labs before Task 5.1: Task 5.2 described labs in place of clean."""
+    return any(_counts_are(found, {column: stats["count"] for column, stats in
+                                   reference(dataclasses.replace(flags, keep="every_visit", blank_ranges=False))
+                                   .clean.items()})
+               for flags in upstream(root, 5))
+
+
+def check_summary_blanked(root: Path) -> None:
+    # A stopped assert is charged once, here, unless kept rows that an earlier check charged stopped it: repeats,
+    # bad IDs, or missing dates left by Task 1.2, Task 4's ID rule, or Task 5.1's filter.
+    if _summary_stopped(root) and any(_rows_stop_assert(flags) for flags in _task5_options(root)):
+        return
+    found = _summary(root)
+    wrong = _out_of_range(found)
+    if not wrong or _filled(root, found):
+        return  # Blanks filled with a value such as 0 are charged once, by the blanks-kept check.
     _assert(
-        not wrong,
+        not _summarized_labs(root, found),
+        f"{SUMMARY_FILE}: {_join(wrong)}, and its counts are those of labs before Task 5.1, so the Task 5.2 cell "
+        'summarized labs. Summarize clean, as clean_summary = clean[["age", "weight_kg", "hba1c_pct", '
+        '"glucose_mg_dl"]].describe().round(2).T.',
+    )
+    raise AssertionError(
         f"{SUMMARY_FILE}: {_join(wrong)}, outside the contract's 4 to 20 % for HbA1c or 30 to 250 kg for weight. In "
         'Task 5.1, blank them with clean["hba1c_pct"] = clean["hba1c_pct"].where(clean["hba1c_pct"].between(4, 20)), '
-        "and the same for weight_kg with 30 and 250.",
+        "and the same for weight_kg with 30 and 250."
     )
 
 
@@ -1811,6 +1884,8 @@ def check_summary_counts(root: Path) -> None:
         if all(stats.get("count") is not None and abs(stats["count"] - expected[column]["count"]) < 0.5
                for column, stats in found.items()):
             return
+    if _out_of_range(found) and _summarized_labs(root, found):
+        return  # Task 5.2 summarizing labs is charged once, by the impossible-values check.
     expected = reference()
     wrong = [f"{column} has {_show(stats.get('count'))}, expected {_show(expected.clean[column]['count'])}"
              for column, stats in found.items()
@@ -1836,13 +1911,16 @@ def check_summary_stats(root: Path) -> None:
         return  # The stopped assert is charged once, by the impossible-values check.
     found = _summary(root)
     best: list[str] | None = None
+    passed = False
+    uncounted = any(stats.get("count") is None for stats in found.values())
     # The options whose counts all match come first; when there is none, the blanks-kept check charges the count
-    # mistake (blanks filled, other bounds), so the second pass judges only the columns whose counts match.
+    # mistake (blanks filled, other bounds), so the second pass judges the columns whose counts match or are
+    # missing. A summary whose every count is present and wrong is charged once, by the blanks-kept check.
     for every_count in (True, False):
         for expected in _summary_options(root):
-            counted = [column for column, stats in found.items() if stats.get("count") is not None
-                       and abs(stats["count"] - expected[column]["count"]) < 0.5]
-            if every_count and len(counted) < len(found):
+            counted = [column for column, stats in found.items() if stats.get("count") is None
+                       or abs(stats["count"] - expected[column]["count"]) < 0.5]
+            if not counted or (every_count and (uncounted or len(counted) < len(found))):
                 continue
             wrong = []
             for column in counted:
@@ -1852,18 +1930,20 @@ def check_summary_stats(root: Path) -> None:
                             else value is not None and abs(value - want) <= max(TOLERANCE, abs(want) * 1e-4)):
                         wrong.append(f"{column}'s {stat} is {_show(value)}, expected {_show(want)}")
             if not wrong:
-                # A summary written again is graded from its last copy and charged once, here.
-                table = read_table(root, SUMMARY_FILE)
-                _assert(table.copies == 1, _written_again(table))
-                return
-            if best is None:
-                best = wrong
-        if best is not None:
+                passed = True
+                break
+            best = best or wrong
+        if passed or best is not None:
             break
-    raise AssertionError(
+    # When every count is present and wrong, no column is judged and best stays None: the blanks-kept check charges it.
+    _assert(
+        passed or best is None,
         f"{SUMMARY_FILE}: {_first(best or [], 3)}. Task 5.1 changes only the out-of-range HbA1c and weight values; "
-        'summarize clean with clean[["age", "weight_kg", "hba1c_pct", "glucose_mg_dl"]].describe().round(2).T.'
+        'summarize clean with clean[["age", "weight_kg", "hba1c_pct", "glucose_mg_dl"]].describe().round(2).T.',
     )
+    # A summary written again is graded from its last copy and charged once, here.
+    table = read_table(root, SUMMARY_FILE)
+    _assert(table.copies == 1, _written_again(table))
 
 
 CHECKS = (

@@ -253,7 +253,7 @@ print('Saved', len(clean), 'visits;', clean['needs_review'].sum(), 'flagged for 
 
 **Expect:** every check `True`, then `Saved 12 visits; 5 flagged for review`.
 
-Save the decisions with the file's provenance: four columns that hold the same value on every row, so the log says which file it cleaned and how many rows went in and came out.
+Save the decisions with the file's provenance: four columns that hold the same value on every row, so the log says which file it cleaned and how many rows went in and came out. `str(raw_path)` turns the `Path` into plain text for the `source` column.
 
 ```python
 decision_log = decisions.copy()

@@ -34,17 +34,15 @@ The two extracts (Tasks 4.3 and 5.2) hold the rows of 16 sample patients, `SAMPL
 
 ## Setup
 
-1. Fork the assignment repository on GitHub and clone your fork as in Lecture 01: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open the cloned folder itself, not a folder above it.
-2. In the integrated terminal, create the environment, activate it, and install the packages `pyproject.toml` and `uv.lock` list. Do not run `uv init`.
+1. Fork and clone the repository, then open its folder in VS Code.
+2. Create the environment:
 
     ```bash
     uv venv --seed
     source .venv/bin/activate
     uv sync
     ```
-
-    - Expect: `uv sync` lists `+ ipykernel==6.29.5`, `+ numpy==2.3.3`, `+ pandas==3.0.5`, and `+ pyarrow==25.0.0`.
-3. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`.
+3. Open `assignment.ipynb` and select the `.venv` Python as the kernel.
 4. Run the first code cell. When `data/` is missing, it runs `generate_data.py` (`python3 generate_data.py` in the terminal does the same) to write the five files.
     - Expect: the Python, NumPy, and pandas versions, `Wrote 5 data files to .../data` on the first run, then `Verified 5 data files`.
 

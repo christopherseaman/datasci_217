@@ -13,7 +13,7 @@ P0001,M06,111,122, ... ,108
 
 ## Setup
 
-1. Fork the assignment repository on GitHub and clone your fork as in Lecture 01: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open the cloned folder itself, not a folder above it.
+1. Fork and clone the repository, then open its folder in VS Code.
 2. Open **Terminal → New Terminal** in VS Code.
     - Expect: `ls data` prints `bp_readings.csv`.
 

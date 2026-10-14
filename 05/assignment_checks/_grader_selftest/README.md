@@ -13,7 +13,8 @@ in ignored `scratch/`, and confirms that:
   month name, UTF-16 or a BOM, a file name in another letter case, unrounded or
   whole-number percents, means rounded to one decimal, `describe()` without
   `.T`, category counts on their side, every file saved with `index=False`,
-  `pd.cut(right=False)` with edges that fit it, other step, indicator, and
+  `pd.cut(right=False)` with edges that fit it, `-999` made missing at read
+  with `na_values=[-999]` or by `replace()` before Task 1.2's `dropna()`, other step, indicator, and
   rule labels, and `missing` for a blank;
 - each single mistake costs exactly the checks it gets wrong, with a message
   that names the fix: counts taken after `dropna()`, `notna()` for `isna()`,

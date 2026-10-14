@@ -3,9 +3,9 @@
   "seed": 217,
   "files": {
     "data/lab_visits.csv": {
-      "rows": 59447,
-      "bytes": 2668782,
-      "sha256": "52bebce16a0b982546213e419dec762bcd702e579aea1dd842bfdf89445b8d18"
+      "rows": 60918,
+      "bytes": 2743752,
+      "sha256": "f0a658e5ee1dc8b1ea616bbf4e562b1b24d655aae006fc498d1003a24c1b83a0"
     }
   }
 }

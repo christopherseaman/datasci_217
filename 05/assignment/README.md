@@ -4,13 +4,13 @@
 
 Clean a diabetes clinic network's lab export and save a small summary of each stage for the checks.
 
-`generate_data.py` writes `data/lab_visits.csv`, a synthetic export of about 59,000 visits by 18,000 patients, most seen about every three months. It has blanks, rows sent twice, `-999` for a measurement not taken, ages typed as `unknown`, dates that do not exist, IDs and labels spelled several ways, and dropped decimal points (`64` for 6.4).
+`generate_data.py` writes `data/lab_visits.csv`, a synthetic export of about 61,000 visits from January 2024 to June 2026 by about 14,000 patients, seen every two to six months. It has blanks, rows sent twice, `-999` for a measurement not taken, ages typed as `unknown`, dates that do not exist, IDs and labels spelled several ways, and dropped decimal points (`99` for 9.9).
 
 ```text
 patient_id,visit_date,clinic,gender,age,weight_kg,hba1c_pct,glucose_mg_dl
-D10632,2024-01-02,Sunset,female,72,73.4,6.3,118
-D10720,2024-01-02,Sunset,F,46,96.0,5.9,107
-D11156,2024-01-02,Excelsior,M,71,89.6,5.2,69
+D10425,2024-01-02,Bayview,M,64,122.7,6.7,164
+D10810,2024-01-02,Mission,F,74,42.0,7.7,172
+D11509,2024-01-02,SUNSET,F,57,70.0,7.0,178
 ```
 
 The cleaned table follows this data contract. One row is one visit, identified by `patient_id` and `visit_date` together.
@@ -28,19 +28,17 @@ The cleaned table follows this data contract. One row is one visit, identified b
 
 ## Setup
 
-1. Fork the assignment repository on GitHub and clone your fork as in Lecture 01 (Command Palette → **Git: Clone**). Open the cloned folder itself.
-2. In the integrated terminal, create the environment and install the supplied packages. Do not run `uv init`.
+1. Fork and clone the repository, then open its folder in VS Code.
+2. Create the environment:
 
     ```bash
     uv venv --seed
     source .venv/bin/activate
     uv sync
     ```
-
-    - Expect: `uv sync` lists `+ pandas==3.0.5` and `+ pyarrow==25.0.0`.
-3. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`.
+3. Open `assignment.ipynb` and select the `.venv` Python as the kernel.
 4. Run the first code cell. It runs `generate_data.py` when `data/` is missing and checks the file against `data_manifest.json`.
-    - Expect: `NumPy: 2.3.3`, `pandas: 3.0.5`, and `data/lab_visits.csv matches data_manifest.json`, and, on the first run, `wrote data/lab_visits.csv: 59447 rows`.
+    - Expect: `NumPy: 2.3.3`, `pandas: 3.0.5`, and `data/lab_visits.csv matches data_manifest.json`, and, on the first run, `wrote data/lab_visits.csv: 60918 rows`.
 
 ## Files
 
@@ -73,7 +71,7 @@ Each task changes `labs`, so run the cells in order; after a mistake, **Restart*
 
 Run the first Task 1 cell as it is; it sets `rows_read`.
 
-- Expect: `shape: (59447, 8)`. `age` is `str` (some ages are `unknown`); `weight_kg` is `float64`, with `-999` counted as a weight.
+- Expect: `shape: (60918, 8)`. `age` is `str` (some ages are `unknown`); `weight_kg` is `float64`, with `-999` counted as a weight.
 
 1. Build `missing_report` with `pd.DataFrame()` from a dictionary of two Series, so it has one row per column of `labs`:
     - `missing_count`: the number of blanks in each column;
@@ -87,13 +85,13 @@ Run the first Task 1 cell as it is; it sets `rows_read`.
                    missing_count  missing_pct
     column                                   
     patient_id                 0          0.0
-    visit_date               206          0.3
-    clinic                   240          0.4
-    gender                   132          0.2
-    age                       88          0.1
-    weight_kg                388          0.7
-    hba1c_pct               4272          7.2
-    glucose_mg_dl           3484          5.9
+    visit_date               196          0.3
+    clinic                   248          0.4
+    gender                   117          0.2
+    age                       93          0.2
+    weight_kg                364          0.6
+    hba1c_pct               4882          8.0
+    glucose_mg_dl           3741          6.1
     ```
 
 3. Save with `missing_report.to_csv(MISSING_PATH)`.
@@ -104,11 +102,11 @@ Run the first Task 1 cell as it is; it sets `rows_read`.
 ### 1.2 Drop no-lab visits and exact repeats
 
 1. Drop the no-shows, visits with neither lab result, with `dropna()`: `subset` names the two lab columns, and `how="all"` drops a row only when both are missing. Assign the result back to `labs`. The cell then sets `rows_with_labs`.
-    - Expect: `rows with labs: 58554`.
+    - Expect: `rows with labs: 59977`.
 2. Set `exact_repeats` to the number of rows identical to an earlier row, with `duplicated()` and `.sum()`.
-    - Expect: `exact repeats: 524`.
+    - Expect: `exact repeats: 491`.
 3. Keep the first copy of each repeat with `drop_duplicates()`, and assign the result back to `labs`. The cell then sets `rows_unique`.
-    - Expect: `unique rows: 58030`.
+    - Expect: `unique rows: 59486`.
 
 ## Task 2: Replace codes and convert types
 
@@ -127,14 +125,14 @@ Run the first Task 1 cell as it is; it sets `rows_read`.
     ```text
                             dtype  missing_count                  min                  max    mean
     column
-    age                     Int64            213                   25                   86   55.13
-    glucose_mg_dl         float64           3079                 52.0                412.0  129.34
-    hba1c_pct             float64           3347                  3.9                103.0    6.69
-    visit_date     datetime64[us]            295  2024-01-02 00:00:00  2026-06-30 00:00:00    <NA>
-    weight_kg             float64            946                 29.9               1295.0   86.84
+    age                     Int64            236                   21                   94   58.59
+    glucose_mg_dl         float64           3226                 55.0                407.0  145.03
+    hba1c_pct             float64           3907                  3.9                 99.0    6.77
+    visit_date     datetime64[us]            299  2024-01-02 00:00:00  2026-06-30 00:00:00    <NA>
+    weight_kg             float64            940                 29.9               1258.0   87.43
     ```
 
-    The `max` values 103.0 and 1295.0 are decimal slips; Task 5 blanks them.
+    The `max` values 99.0 and 1258.0 are decimal slips; Task 5 blanks them.
 6. Save with `typed_profile.to_csv(PROFILE_PATH)`.
 
 > **Checkpoint: `output/typed_profile.csv`**
@@ -153,11 +151,11 @@ Run the first Task 1 cell as it is; it sets `rows_read`.
     - `m` and `male` to `M`;
     - `x`, `nb`, and `nonbinary` to `X`.
 5. Clean `gender` with `.str.strip()` and `.str.lower()`, then `.map(gender_codes)`, and assign the result back. A label the dictionary does not list, such as `U`, `unknown`, or `?`, becomes `NaN`.
-    - Expect: `labs["clinic"].value_counts()` shows Mission 20225, Sunset 15923, Excelsior 12952, Bayview 8698, and Unknown 232; `labs["gender"].value_counts(dropna=False)` shows F 29012, M 26876, X 1765, and `NaN` 377.
+    - Expect: `labs["clinic"].value_counts()` shows Mission 21004, Sunset 15937, Excelsior 13412, Bayview 8895, and Unknown 238; `labs["gender"].value_counts(dropna=False)` shows F 31284, M 26634, X 1231, and `NaN` 337.
 
 ### 3.2 Bin HbA1c and count the categories
 
-HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% to 20% is diabetes. A slip above 20, such as 64, gets no category.
+HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% to 20% is diabetes. A slip above 20, such as 99, gets no category.
 
 1. Add the column `a1c_category` to `labs` by binning `hba1c_pct` with `pd.cut()`. Choose `bins` edges that match the bands, and pass the three band names as `labels`. Each bin includes its right edge, and HbA1c is recorded to one decimal.
 2. Build `coded`, one 0/1 column per category of `clinic`, `gender`, and `a1c_category`, with `pd.get_dummies()` on those three columns and `dtype="int64"`. A blank gets 0 in every column.
@@ -166,17 +164,17 @@ HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.
 
     ```text
     indicator
-    clinic_Bayview               8698
-    clinic_Excelsior            12952
-    clinic_Mission              20225
-    clinic_Sunset               15923
-    clinic_Unknown                232
-    gender_F                    29012
-    gender_M                    26876
-    gender_X                     1765
-    a1c_category_normal         14045
-    a1c_category_prediabetes    14827
-    a1c_category_diabetes       25763
+    clinic_Bayview               8895
+    clinic_Excelsior            13412
+    clinic_Mission              21004
+    clinic_Sunset               15937
+    clinic_Unknown                238
+    gender_F                    31284
+    gender_M                    26634
+    gender_X                     1231
+    a1c_category_normal          8531
+    a1c_category_prediabetes    17069
+    a1c_category_diabetes       29918
     Name: visits, dtype: int64
     ```
 
@@ -188,9 +186,9 @@ HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.
 ## Task 4: Flag outliers and count rule failures
 
 1. Set `q1` and `q3` to the quartiles of `glucose_mg_dl` with `quantile()`. Set `iqr` to their difference, and the fences `lower` and `upper` to 1.5 IQRs below Q1 and above Q3.
-    - Expect: `Q1 102.0, Q3 152.0, fences 27.0 to 227.0`.
+    - Expect: `Q1 119.0, Q3 166.0, fences 48.5 to 236.5`.
 2. Flag the unusual values, keeping them in the table: add `glucose_outlier`, `True` where `glucose_mg_dl` is below `lower` or above `upper`. Join the two comparisons with `|`, each in parentheses. A missing glucose is not an outlier.
-    - Expect: `labs["glucose_outlier"].sum()` is 713.
+    - Expect: `labs["glucose_outlier"].sum()` is 859.
 3. Build `rules` with `pd.DataFrame()`: one `True`/`False` column per rule of the data contract, `True` where the visit passes. Pick each test from Lecture 05's card "Validation rules". Use these six names in this order:
     - `patient_id_format`: the whole ID matches `r"D[0-9]{5}"`, and a missing ID fails;
     - `visit_date_present`: the date is not missing;
@@ -203,12 +201,12 @@ HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.
 
     ```text
     rule
-    patient_id_format        119
-    visit_date_present       295
-    gender_valid             377
-    hba1c_in_range            49
-    weight_in_range           70
-    glucose_within_fences    713
+    patient_id_format        116
+    visit_date_present       299
+    gender_valid             337
+    hba1c_in_range            62
+    weight_in_range           47
+    glucose_within_fences    859
     Name: failing_rows, dtype: int64
     ```
 
@@ -231,7 +229,7 @@ HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.
     - `visits_dropped`: `len(labs)` minus `len(clean)`;
     - `hba1c_blanked` and `weight_blanked`: `hba1c_outside` and `weight_outside`.
 7. Name the index `decision`.
-    - Expect: `shape: (57618, 10)`; `rows_read` 59447, `rows_with_labs` 58554, `rows_unique` 58030, then `visits_dropped` 412 (2 visits fail both rules), `hba1c_blanked` 48, and `weight_blanked` 70. `hba1c_blanked` is one fewer than Task 4's 49 because one bad HbA1c sits on a visit dropped in step 2.
+    - Expect: `shape: (59071, 10)`; `rows_read` 60918, `rows_with_labs` 59977, `rows_unique` 59486, then `visits_dropped` 415 (116 bad IDs plus 299 undated visits), `hba1c_blanked` 61, and `weight_blanked` 46. Each is one fewer than Task 4's 62 and 47 because one bad HbA1c and one bad weight sit on visits dropped in step 2.
 8. Save with `decision_log.to_csv(DECISION_PATH)`.
 
 > **Checkpoint: `output/decision_log.csv`**
@@ -252,10 +250,10 @@ HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.
 
     ```text
                      count    mean    std   min    25%    50%    75%    max
-    age            57406.0   55.13   17.7  25.0   40.0   55.0   70.0   86.0
-    weight_kg      56608.0   85.94  17.09  30.0   74.2   86.0   97.7  250.0
-    hba1c_pct      54252.0    6.64   1.32   4.0    5.6    6.3    7.5   20.0
-    glucose_mg_dl  54564.0  129.32   36.7  52.0  102.0  122.0  152.0  412.0
+    age            58836.0   58.59  12.81  21.0   50.0   59.0   68.0   94.0
+    weight_kg      58096.0   86.84  19.27  30.0   72.9   85.4   99.5  250.0
+    hba1c_pct      55123.0     6.7   1.08   4.0    5.9    6.6    7.4   20.0
+    glucose_mg_dl  55867.0  145.03  35.82  55.0  119.0  141.0  166.0  407.0
     ```
 
 4. Save with `clean_summary.to_csv(SUMMARY_PATH)`.
@@ -272,7 +270,7 @@ Parquet keeps each column's dtype.
     - Expect: `age` is `Int64`, `visit_date` is `datetime64[us]`, `a1c_category` is `category`, `glucose_outlier` is `bool`, and `same as clean: True`.
 
 > **Checkpoint: `data/labs_clean.parquet`**
-> Not committed or checked; about 0.5 MB, with the 57618 rows and 10 columns of `clean`.
+> Not committed or checked; about 0.5 MB, with the 59071 rows and 10 columns of `clean`.
 
 ## Check your work
 

@@ -16,7 +16,7 @@ P004,2026-03-02,not recorded
 
 ## Setup
 
-1. Fork the assignment repository on GitHub and clone your fork as in Lecture 01: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open the cloned folder itself.
+1. Fork and clone the repository, then open its folder in VS Code.
 2. Command Palette → **Git: Create Branch**, and name it `feature/clinic-report`.
 3. In the integrated terminal, run `ls data`.
     - Expect: `clinic_encounters.csv`.

@@ -17,8 +17,8 @@ Foster Weather Station,2022-01-01 00:00:00,3.39,,87,...
 
 ## Setup
 
-1. Fork the assignment repository on GitHub and clone your fork as in Lecture 01: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open the cloned folder itself.
-2. In the integrated terminal, create the environment, activate it, install the packages `pyproject.toml` and `uv.lock` list, and verify the data. Do not run `uv init`: the project files already exist.
+1. Fork and clone the repository, then open its folder in VS Code.
+2. Create the environment and verify the data:
 
     ```bash
     uv venv --seed
@@ -27,8 +27,8 @@ Foster Weather Station,2022-01-01 00:00:00,3.39,,87,...
     bash download_data.sh
     ```
 
-    - Expect: `uv sync` lists `+ pandas==3.0.5`; the last command prints `Verified frozen release and manifest: data/chicago_beach_sensors_2022_2024.csv (4731351 bytes)`. On a mismatch, discard your changes to `data/` in Source Control and run it again.
-3. Open `q1_setup_exploration.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`. Select the same kernel in each notebook.
+    - Expect: `bash download_data.sh` prints `Verified frozen release and manifest: data/chicago_beach_sensors_2022_2024.csv (4731351 bytes)`. On a mismatch, discard your changes to `data/` in Source Control and run it again.
+3. Open `q1_setup_exploration.ipynb` and select the `.venv` Python as the kernel. Select the same kernel in each notebook.
 4. Run the first code cell.
     - Expect: the Python, NumPy, pandas, scikit-learn, and Matplotlib versions, then the first rows of the release.
 

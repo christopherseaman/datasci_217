@@ -4,7 +4,7 @@ The report prints one `PASS` or `FIX` line per check with its points. Before Tas
 
 ```text
 [FIX ]  0/4  missing report: one row per column
-         output/missing_report.csv is missing; run the Task 1.1 cell to write it with missing_report.to_csv(MISSING_PATH), then commit it.
+         output/missing_report.csv is missing; run the Task 1.1 cell to write it with missing_report.to_csv(MISSING_PATH), then commit it. If an earlier cell stopped with an error, fix that one first.
 [FIX ]  0/5  missing report: missing_count  (same fix as above)
 [FIX ]  0/4  missing report: missing_pct  (same fix as above)
 ```
@@ -23,6 +23,7 @@ How the files are read:
 - The checks rebuild `data/lab_visits.csv` from `generate_data.py`, run the README's steps on it, and compare your summaries with the result. They never read your notebook or your `data/` folder.
 - Each check is scored on its own, so one mistake costs only the checks it gets wrong.
 - If the Task 5.2 `assert` stops the cell, `clean_summary.csv` is not written and only its checks lose points.
+- `-999` may become missing before Task 1.2, with `pd.read_csv(DATA_PATH, na_values=[-999])` or an earlier `replace()`: the missing report may count it, and later files are judged against the rows that leaves.
 - A file is judged against your own other files: if `typed_profile.csv` shows `-999` kept, only the `-999 read as missing` check loses points, and the validation report, decision log, and summary built from that data still count.
 - Line endings, quoting, letter case, spaces around a cell, column order, row order, number format (`54`, `54.0`), and date format (`2024-01-02`, `2024/01/02`) never cost points; a percent may be unrounded or rounded to a whole number, a blank may be written as `missing` (`to_csv(na_rep="missing")`), and `clean_summary.csv` may be saved with or without `.T`.
 - A leading column of row numbers, which `to_csv()` writes without `index=False`, is ignored. A file saved with `index=False`, which drops its row labels, is read in the README's row order and costs nothing.

@@ -34,17 +34,15 @@ From late April the program also enrolled patients referred from the emergency d
 
 ## Setup
 
-1. Fork the assignment repository on GitHub and clone your fork as in Lecture 01: Command Palette → **Git: Clone**, paste your fork's URL, pick a folder, and open the cloned folder itself, not a folder above it.
-2. In the integrated terminal, create the environment, activate it, and install the packages `pyproject.toml` and `uv.lock` list. Do not run `uv init`: the project files already exist.
+1. Fork and clone the repository, then open its folder in VS Code.
+2. Create the environment:
 
     ```bash
     uv venv --seed
     source .venv/bin/activate
     uv sync
     ```
-
-    - Expect: `uv venv` prints `Using CPython 3.13.x`, and `uv sync` lists `+ pandas==3.0.5`, `+ statsmodels==0.14.6`, and `+ scikit-learn==1.9.0` among the packages it installs.
-3. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`.
+3. Open `assignment.ipynb` and select the `.venv` Python as the kernel.
 4. Run the notebook's first two code cells.
     - Expect: `pandas: 3.0.5`, `statsmodels: 0.14.6`, `scikit-learn: 1.9.0`, and `data folder found: True` from the first; `patients: (20, 4)`, `candidates: (5, 2)`, `visits: (48, 9)`, and `flags: (20, 4)` from the second.
 

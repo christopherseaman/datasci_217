@@ -123,15 +123,12 @@ display(labs.isna().sum(axis=1))  # gaps per row
 | 2 | 1 |
 | 3 | 2 |
 
-# Repeated Rows, Sentinels, and Wrong Types
-
-Three problems hide beside blanks:
+# When Data Go Bad
 
 - **Repeated rows**: the same visit entered twice; pandas counts it twice.
 - **Sentinels**: `-999` and similar codes still in the data.
 - **Wrong types**: numbers or dates stored as text; `mean()` raises `TypeError`, and `sum()` joins them into one string.
-
-Fixing sentinels and types turns bad values into gaps, so drop or fill comes last, once the gaps are final.
+- **Gaps to drop or fill**: decided last, once sentinels and types have turned bad values into gaps.
 
 ## Detecting and Resolving Duplicates
 
@@ -219,7 +216,7 @@ print(ages.mask(ages > 120).tolist())  # [34.0, nan, 52.0]; check 150 against th
 | Change a clean column's type | `s.astype('float64')` / `s.astype('int64')` | Raises an error if any value cannot convert |
 | Change several columns at once | `df.astype({'patient_id': 'string', 'age': 'Int64'})` | New `DataFrame`; columns not named keep their dtype |
 | Keep only whole numbers | `s.where(s % 1 == 0)` | `s % 1 == 0` is `True` where the value has no fractional part, so `40.5` becomes missing |
-| Whole numbers with gaps | `s.astype('Int64')` | Nullable integers; a fraction such as `40.5` raises `TypeError`, so drop fractions first |
+| Whole numbers with gaps | `s.astype('Int64')` | Nullable integers; on `float64` input, `40.5` raises `TypeError`, but nullable `Float64` from `string` text silently truncates `40.5` to `40`, so drop fractions first |
 | Nullable text (`<NA>` for gaps) | `s.astype('string')` | Nullable text; missing shows as `<NA>` |
 | Dates in a known format | `pd.to_datetime(s, format='%Y-%m-%d', errors='coerce')` | `%Y` year, `%m` month, `%d` day; `datetime64[us]`; impossible dates such as `2026-02-30` become `NaT`, but single-digit parts such as `2026-7-01` are still accepted (exact check: Data Validation Rules) |
 | True/false with unknowns | `s.astype('boolean')` | Nullable `True` / `False` / `<NA>` |
@@ -272,7 +269,7 @@ Original Data:        Forward Fill (ffill):           Backward Fill (bfill):
 | Fill with the most common value | `df.fillna(df.mode().iloc[0])` | First mode per column; ties are broken by sort order |
 | Fill from neighbors | `df.ffill()` / `df.bfill()` | Previous / next observed value; `limit=1` fills at most one gap in a row |
 | Fill within each patient | `df.groupby('patient_id')['sbp'].ffill()` | Previous value from the same patient only; a patient's first gap stays missing |
-| Fill between neighbors | `df['col'].interpolate()` | Linear interpolation; numeric columns only, and a `DataFrame` with a `str` column raises `TypeError`; assumes rows are in order and equally spaced |
+| Fill between neighbors | `df['col'].interpolate()` | Fills each gap on a straight line between its neighbors, so `10, NaN, 20` becomes `10, 15, 20`; numeric columns only, and a `DataFrame` with a `str` column raises `TypeError`; assumes rows are in order and equally spaced |
 
 <callout icon="⚠️" color="yellow_bg">
 	## `fillna()` returns a new table!
@@ -522,7 +519,7 @@ Without `pyarrow`: `274132` and `5297` bytes.
 ## Creating Categories
 
 - **Binning**: assigning each value to an interval, such as the age bands in Table 1 of a clinical paper.
-- `pd.cut()` returns the `category` dtype. It uses edges you choose, so bands can match a clinical definition; `pd.qcut()` picks edges so each bin gets about the same number of rows.
+- `pd.cut()` returns the `category` dtype. It uses edges you choose, so bands can match a clinical definition; `pd.qcut()` picks edges at **quantiles** (cut points that split sorted values into equal-sized groups, such as the median) so each bin gets about the same number of rows.
 - `(30, 50]` means 30 is not included (round bracket) and 50 is (square bracket).
 
 ### Reference Card: Binning values
