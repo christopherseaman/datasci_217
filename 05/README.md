@@ -765,19 +765,10 @@ Labels 1 and 2 are P002's double entry, so this draw surfaces the repeat. A samp
 
 ```mermaid
 graph LR
-    subgraph plan[" "]
-        direction LR
-        A[Define the data contract] --> B[Load source and preserve raw table]
-    end
-    subgraph clean[" "]
-        direction LR
-        C[Audit and detect] --> D[Decide and record rationale] --> E[Update cleaning code, rerun from raw] --> F{Check validation rules}
-    end
-    B --> C
+    A[Define the data contract] --> B[Load source and preserve raw table] --> C[Audit and detect]
+    C --> D[Decide and record rationale] --> E[Update cleaning code, rerun from raw] --> F{Check validation rules}
     F -->|Failed| C
     F -->|Passed| G[Save cleaned table]
-    style plan fill:none,stroke:none
-    style clean fill:none,stroke:none
 ```
 
 - **Provenance**: where the file came from. Record it with each decision, one row per rule with the field, issue, action, and reason, so someone else can repeat your steps.
