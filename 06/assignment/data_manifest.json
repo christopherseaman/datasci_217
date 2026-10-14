@@ -1,5 +1,5 @@
 {
-  "fixture_id": "a06-clinic-midterm-v4",
+  "fixture_id": "a06-clinic-midterm-v5",
   "provenance": "course-authored synthetic teaching data; no real patients",
   "generator": "generate_data.py",
   "sha256": "of each table as CSV text with \\n line endings, as to_csv(index=False) writes it",
@@ -54,7 +54,7 @@
         "a1c_baseline",
         "a1c_week12"
       ],
-      "sha256": "21c343765c3b6131c9ebda7f201d66089f4d859b9a6aa8ff4b51ef8457825219"
+      "sha256": "6dcf0c68ec017ebd5379cf5c775299391ba17528c5f4130b7de533a59575adc6"
     }
   }
 }

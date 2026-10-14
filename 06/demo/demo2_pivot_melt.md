@@ -34,7 +34,7 @@ Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ### 1. Load the study table (wide)
 
-This supplied cell keeps any CSV already in `data/` and downloads the rest (`urlretrieve(url, path)` saves the file at a web address to `path`).
+This supplied cell keeps any Parquet file already in `data/` and downloads the rest (`urlretrieve(url, path)` saves the file at a web address to `path`; `data_dir.glob("demo2_*.parquet")` lists the matching files).
 
 ```python
 from pathlib import Path
@@ -129,7 +129,7 @@ print(sbp_by_visit.stack().equals(by_visit['sbp']))
 
 ### 6. Long back to wide with `pivot()`
 
-`pivot()` does `set_index()` and `unstack()` in one call: `visit` supplies the headers and `sbp` fills the cells. With four identifier columns in `ids`, the result has four-level row labels, so `reset_index()` turns them back into columns.
+`pivot()` does `set_index()` and `unstack()` in one call: `visit` supplies the headers and `sbp` fills the cells. With four identifier columns in `ids`, the result has four-level row labels, so `reset_index()` turns them back into columns, and `columns.name = None` drops the leftover `visit` header label.
 
 ```python
 bp_wide_again = bp_long.pivot(

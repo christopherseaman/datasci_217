@@ -41,7 +41,7 @@ Run the cells from top to bottom; after each step, an **Expect** line says what 
 | `visit_date` | visit day | `datetime64` | exact `YYYY-MM-DD` text and a real date; missing allowed but flagged |
 | `site` | clinic | `string` | `north`, `south`, or `west`; missing allowed but flagged |
 | `age` | age at visit (years) | `Int64` | whole number, 0 to 120; missing allowed but flagged |
-| `sbp` | systolic blood pressure (mmHg) | `Int64` | 60 to 250; missing allowed but flagged |
+| `sbp` | systolic blood pressure (mmHg) | `Int64` | whole number, 60 to 250; missing allowed but flagged |
 | `heart_rate` | resting pulse (beats per minute) | `Int64` | whole number, 30 to 220; missing allowed but flagged |
 | `needs_review` | follow-up needed | `boolean` | `True` exactly when a date, site, age, SBP, or heart rate is missing |
 
@@ -81,7 +81,7 @@ display(raw)
 print('Blank cells:', (raw == '').sum().sum(), '| cells holding the text NA:', (raw == 'NA').sum().sum())
 ```
 
-**Expect:** 13 rows and 7 columns, all `string`. V007's age is blank in both of its rows, and V006's SBP shows the text `NA`: `Blank cells: 2 | cells holding the text NA: 1`.
+**Expect:** 13 rows and 7 columns. V007's age is blank in both of its rows, and V006's SBP shows the text `NA`: `Blank cells: 2 | cells holding the text NA: 1`.
 
 `head()` shows only the top of the file. Three random rows show the middle.
 
@@ -89,7 +89,7 @@ print('Blank cells:', (raw == '').sum().sum(), '| cells holding the text NA:', (
 display(raw.sample(n=3, random_state=42))
 ```
 
-**Expect:** V011, V009, and V001, in that order. One random draw already turns up `' North '` and the 210 reading, so problems are not confined to the top of the file.
+**Expect:** V011, V009, and V001, in that order. One random draw already turns up V011's `North` (the export text above shows its extra spaces) and the 210 reading, so problems are not confined to the top of the file.
 
 Record the file itself too: its name, its size, and its SHA-256 hash. Step 7 saves the hash with the decisions, so anyone can check they are cleaning the same file.
 
@@ -203,7 +203,7 @@ display(working.dtypes)
 Each invariant is one named `True`/`False`, collected in a Series so it shows as a report. A function lets the same checks run again after a fix.
 
 ```python
-def run_checks(table):
+def contract_checks(table):
     """Return one named True/False per contract rule."""
     return pd.Series({
         'visit IDs present': table['visit_id'].notna().all() & (table['visit_id'] != '').all(),
@@ -220,7 +220,7 @@ def run_checks(table):
     })
 
 
-checks = run_checks(working)
+checks = contract_checks(working)
 display(checks)
 ```
 
@@ -243,7 +243,7 @@ except AssertionError as error:
 
 ```python
 clean = working[~raw.duplicated()].reset_index(drop=True)
-checks = run_checks(clean)
+checks = contract_checks(clean)
 display(checks)
 
 assert checks.all(), checks[~checks]
@@ -265,7 +265,7 @@ decision_log.to_csv(output_dir / 'decision_log.csv', index=False)
 display(decision_log[['field', 'action', 'source', 'rows_before', 'rows_after']])
 ```
 
-**Expect:** the 8 decisions from step 5, each with `source` `output/clinic_visits_raw.csv`, `rows_before` 13, and `rows_after` 12. Every row also carries the step 2 hash in `source_sha256`.
+**Expect:** the 8 decisions from step 5, each with `source` `output/clinic_visits_raw.csv`, `rows_before` 13, and `rows_after` 12.
 
 ### 8. Read the saved file back
 
@@ -299,3 +299,23 @@ print('Parquet round trip equals clean:', parquet_trip.equals(clean))
 ```
 
 **Expect:** `visit_date` is `datetime64[us]`, `visit_id`, `patient_id` and `site` are `string`, `age`, `sbp` and `heart_rate` are `Int64`, `needs_review` is `boolean`, and `Parquet round trip equals clean: True`, with no `dtype=` or `parse_dates=`.
+
+## Independent practice
+
+Continue on your own after class, outside the live route. These cells reuse the core results; if the runtime closed, run the cells above again first.
+
+### Practice 1: Break the contract on purpose
+
+Put an impossible SBP of 1320 into the first row of a copy of the clean table and run the checks again.
+
+```python
+broken = clean.copy()
+broken.loc[0, 'sbp'] = 1320
+display(contract_checks(broken))
+```
+
+**Expect:** exactly one `False`, `SBP 60-250 when present`. The other nine checks stay `True`.
+
+### Practice 2: Add a rule
+
+Add a check named `visit dates in 2026` to `contract_checks()`, then run it on `clean`. Expect every check `True`; then set one `visit_date` in `broken` to `2025-12-31` and expect that check to fail.

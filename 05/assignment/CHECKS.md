@@ -22,7 +22,8 @@ How the files are read:
 
 - The checks rebuild `data/lab_visits.csv` from `generate_data.py`, run the README's steps on it, and compare your summaries with the result. They never read your notebook or your `data/` folder.
 - Each check is scored on its own, so one mistake costs only the checks it gets wrong.
-- When Task 5.2's `assert` stops the cell, so `clean_summary.csv` is missing while `decision_log.csv` is saved, only `clean summary: impossible values blanked` loses points, and none when repeats `row_counts.csv` already shows stopped it.
+- When Task 5.2's `assert` stops the cell, so `clean_summary.csv` is missing while `decision_log.csv` is saved, only `clean summary: impossible values blanked` loses points, and none when the assert stopped on repeats that `row_counts.csv` already charges.
+- In `clean_summary.csv`, a column whose `count` is wrong, such as a filled or over-blanked column, costs only `clean summary: blanks kept`; `clean summary: statistics` judges the other columns.
 - A later file is judged against your own earlier ones: if `typed_profile.csv` shows `-999` kept, only the `-999 read as missing` check loses points, and the validation report, fences, and summaries built from that data still count.
 - Line endings, quoting, letter case, column order, row order, number format (`54`, `54.0`), and date format (`2024-01-02`, `2024-01-02 00:00:00`, `2024/01/02`, `January 02, 2024`) never cost points; a percent may be unrounded or rounded to a whole number, a blank may be written as `missing` (`to_csv(na_rep="missing")`), an indicator may be `1`/`0` or `True`/`False`, and `clean_summary.csv` may be saved with or without `.T`.
 - Spaces around a label cost points only in `clinic_counts.csv` and the `patient_id` of `coded_sample.csv`, where Task 3.1 strips them.

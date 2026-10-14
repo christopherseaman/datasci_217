@@ -56,7 +56,7 @@ DATA_SHA256 = {
     "sites.csv": "daaa4f3fc475900db905590faf6524f34143e78b73633b1794de4c6cf4b56a77",
     "visits_north.csv": "9136d39ad6571e4ff6b21f1119dde6cd6a16d101bc7d9348b86e7ac15a0efbd2",
     "visits_south.csv": "96d19aad4cbbefa5d96536f2154cdfb7a17cf8c04cad823171def21ac7a1842c",
-    "a1c_wide.parquet": "21c343765c3b6131c9ebda7f201d66089f4d859b9a6aa8ff4b51ef8457825219",
+    "a1c_wide.parquet": "6dcf0c68ec017ebd5379cf5c775299391ba17528c5f4130b7de533a59575adc6",
 }
 # The patients whose rows the extracts hold, as the README and the notebook's first cell list them. They
 # cover a repeated registry row, the 9999 sentinel, messy gender and site spellings, a site sites.csv lacks,
@@ -82,7 +82,7 @@ PROFILE_HINTS = {
 ISSUE_HINTS = {
     "patients: gender values that are not a code": "leave out empty values and count every other gender, as "
                                                    "written, that is not exactly F, M, or X",
-    "patients: empty gender": "compare the stripped value with '' in the table read with keep_default_na=False",
+    "patients: empty gender": "compare raw[\"patients\"][\"gender\"].str.strip() with \"\"",
     "patients: birth_year sentinel 9999": "count birth_year values equal to '9999'",
     "patients: site codes needing normalization": "count every site_code that .str.upper() and removing every "
                                                   "space and hyphen change",
@@ -311,6 +311,8 @@ _earlier: dict[tuple[str, str], dict[str, str]] = {}
 for _row in sorted(_first_copies(_raw_visits), key=lambda row: row["visit_time"]):
     _earlier.setdefault((_row["patient_id"], VISIT_MAP[_row["visit"].strip().lower()]), _row)
 VISIT_SUMMARY_EARLIER = _visit_summary({key: _clean_visit(_earlier[key]) for key in sorted(_earlier)})
+# Each pair's earlier clean SBP, which a pivot carries when an unmapped label kept a recheck apart.
+EARLIER_SBP = {key: _clean_visit(row)["sbp_mmhg"] for key, row in _earlier.items()}
 VISIT_PARTS = {
     "rows": ("visits", "baseline visits", "week12 visits"),
     "visit_date": ("visit_date missing", "visit_date min", "visit_date max"),
@@ -893,7 +895,7 @@ def score_metrics(cells: dict[str, str], labels: Sequence[str], right: Callable[
             outcome.right += 1
         else:
             want = expected(wanted)
-            want = want.isoformat() if isinstance(want, date) else want
+            want = want.isoformat() if isinstance(want, date) else f"{want:.2f}" if isinstance(want, float) else want
             outcome.problems.append(f"'{wanted}' should be {want}, found {shown(cell)} ({hint(wanted)})")
     return outcome
 
@@ -1103,7 +1105,7 @@ def check_a1c_means(root: Path) -> Outcome:
         else:
             outcome.problems.append(f"{visit} a1c_pct_mean should be {A1C_SUMMARY[visit][1]:.2f}, found "
                                     f"{shown(row['a1c_pct_mean'])} (the mean of the {visit} a1c_pct values, "
-                                    "converted with pd.to_numeric, rounded to two decimals)")
+                                    "rounded to two decimals)")
     return outcome
 
 
@@ -1139,6 +1141,8 @@ def check_merge_audit(root: Path) -> Outcome:
     visits = own_metrics(root, "visits_summary.csv", VISIT_PARTS["rows"])
     patients = own_metrics(root, "patients_summary.csv", ("patients", "patients at N01", "patients at S02"))
     own_visits, own_labs = visits.get("visits"), own_a1c_total(root)
+    if own_labs == 0:  # labels left unmapped count no baseline or week12 result, so every result is right_only
+        own_labs = len(A1C)
     upstream = (any(visits.get(name) != VISIT_SUMMARY[name] for name in VISIT_PARTS["rows"])
                 or a1c_summary_differs(root)) and None not in (own_visits, own_labs)
     both, left, right = (found.get(name) for name, _ in MERGE_AUDIT[:3])
@@ -1353,16 +1357,18 @@ def sbp_wide_visit(visit: str) -> Callable[[Path], Outcome]:
 
         def accepted(key: Key, row: dict[str, str]) -> list[object]:
             values: list[object] = [SBP_WIDE[key[0]][visit]]
-            if sbp_off:  # the 70 through 250 rule skipped is charged once in visits_summary.csv
-                values.append(RAW_SBP.get((key[0], visit)))
+            if sbp_off:  # a 70 through 250 rule skipped or misapplied is charged once in visits_summary.csv
+                values += [RAW_SBP.get((key[0], visit)), None]
             if rows_off:  # an unmapped label pivots into its own column, charged once in visits_summary.csv
-                values.append(None)
+                values += [None, EARLIER_SBP.get((key[0], visit))]
             return values
 
         return score_sample(grouped, visit, [(pid,) for pid in SAMPLE_WIDE], accepted, number_right,
                             f"the {visit} sbp_mmhg from visits_clean, the later reading of a rechecked pair "
                             "(sort_values('visit_time'), then drop_duplicates(subset=['patient_id', 'visit'], "
-                            "keep='last')); missing when that visit or reading is missing", "patients")
+                            "keep='last')); missing when that visit or reading is missing" + (
+                                "; visits_summary.csv's sbp_mmhg counts also differ, so check Task 3.2 step 3 "
+                                "(keep 70 through 250)" if sbp_off else ""), "patients")
     return check
 
 
@@ -1403,9 +1409,13 @@ def check_decisions(root: Path) -> Outcome:
     for position, (table_name, decision) in enumerate(DECISIONS):
         if position in chosen:
             outcome.right += 1
-        else:
-            outcome.problems.append(f"no row with table '{table_name}' and decision '{decision}' (copy both from "
-                                    "Task 3.3's table)")
+            continue
+        closest = next((table.rows[index] for _, wanted, index in pairs
+                        if wanted == position and index not in chosen.values()), None)
+        found = "" if closest is None else (f"; the closest row has table {shown(closest['table'])} and "
+                                            f"decision {shown(closest['decision'])}")
+        outcome.problems.append(f"no row with table '{table_name}' and decision '{decision}'{found} (copy both "
+                                "from Task 3.3's table)")
     return outcome
 
 
@@ -1450,7 +1460,7 @@ CHECKS = (
     Check("sbp_wide_sample.csv: rows", 2, T_WIDE, sbp_wide_rows),
     Check("sbp_wide_sample.csv: baseline", 1, T_WIDE, sbp_wide_visit("baseline")),
     Check("sbp_wide_sample.csv: week12", 1, T_WIDE, sbp_wide_visit("week12")),
-    Check("sbp_wide_sample.csv: sbp_change", 2, T_WIDE, check_sbp_change),
+    Check("sbp_wide_sample.csv: sbp_change", 2, "Task 4.3", check_sbp_change),
     Check("decision_log.csv: decisions", 3, T_DECISIONS, check_decisions),
     Check("decision_log.csv: reason", 1, T_DECISIONS, check_reasons),
 )

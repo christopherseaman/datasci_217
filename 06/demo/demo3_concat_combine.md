@@ -35,7 +35,7 @@ Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ### 1. Load two monthly admission extracts
 
-This supplied cell keeps any CSV already in `data/` and downloads the rest (`urlretrieve(url, path)` saves the file at a web address to `path`).
+This supplied cell keeps any Parquet file already in `data/` and downloads the rest (`urlretrieve(url, path)` saves the file at a web address to `path`; `data_dir.glob("demo3_*.parquet")` lists the matching files).
 
 ```python
 from pathlib import Path
@@ -59,7 +59,7 @@ print(len(sorted(data_dir.glob("demo3_*.parquet"))))
 
 **Expect:** `12`, the number of `demo3_*.parquet` files in `data/`.
 
-Each admission file has one row per admission. `los_days` is the length of stay in days.
+Each admission file has one row per admission; these are 3-row samples of the real monthly extracts. `los_days` is the length of stay in days.
 
 ```python
 jan = pd.read_parquet(data_dir / "demo3_jan_admissions.parquet")
@@ -204,7 +204,7 @@ display(filled)
 
 **Expect:** `['2026-01', '2026-03', '2026-05']`, and `data_source` reads `adt_primary` for those three months and `finance_estimate` for February, April, and June.
 
-Before saving, turn the month labels back into a column so the file keeps them.
+To keep the month labels in a saved file, turn them back into a column.
 
 ```python
 filled_flat = filled.reset_index()

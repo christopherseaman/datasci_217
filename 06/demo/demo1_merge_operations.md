@@ -34,7 +34,7 @@ Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ### 1. Load the tables
 
-This supplied cell keeps any CSV already in `data/` and downloads the rest (`urlretrieve(url, path)` saves the file at a web address to `path`).
+This supplied cell keeps any Parquet file already in `data/` and downloads the rest (`urlretrieve(url, path)` saves the file at a web address to `path`; `data_dir.glob("demo1_*.parquet")` lists the matching files).
 
 ```python
 from pathlib import Path
@@ -166,11 +166,23 @@ display(labs_with_clinic[['lab_id', 'patient_id', 'clinic', '_merge']])
 
 **Expect:** `True`, then 7 rows (one per lab, as it should be), with `both` 6, `left_only` 1, and `right_only` 0 (pandas lists every `_merge` label, even an empty one). P003's lab `L04` now shows the `South` clinic, and P006's lab is the one `left_only` row.
 
+### 6. Overlapping column names: `suffixes=`
+
+The patient table and the current registry both have a `clinic` column. Only `patient_id` is the key, so pandas must rename the other two.
+
+```python
+clinics = pd.merge(patients, current, on='patient_id', validate='one_to_one',
+                   suffixes=('_patient', '_registry'))
+display(clinics[['patient_id', 'clinic_patient', 'clinic_registry']])
+```
+
+**Expect:** 5 rows. Without `suffixes=`, the columns would be named `clinic_x` and `clinic_y`. Here P003 shows `North` in `clinic_patient` and `South` in `clinic_registry`: the patient table is older and never recorded the move.
+
 ## Independent practice
 
 Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
-### 6. Right join: every lab result
+### 7. Right join: every lab result
 
 **Question:** "Show every lab result, even when the patient is not registered."
 
@@ -183,7 +195,7 @@ display(orphans[['lab_id', 'patient_id', 'test', 'value', 'units']])
 
 **Expect:** 7 rows in the right join, one per lab. The orphan table has 1 row: `L05`, `P006`, `A1c`, `6.4`, `%`. An orphaned lab is a data-quality issue to send back to registration.
 
-### 7. Why all three keys matter
+### 8. Why all three keys matter
 
 Check that each key combination appears once in each table, then confirm the merge is one-to-one with `validate`.
 
@@ -205,7 +217,7 @@ print(list(wrong.columns))
 
 **Expect:** `12` rows from 5 visit counts, with the key columns that were left out renamed `month_x`, `month_y`, `service_x`, and `service_y`.
 
-### 8. Which clinic-service pairs have no target? A cross join
+### 9. Which clinic-service pairs have no target? A cross join
 
 A missing target leaves no row to find. Build the expected grid of every clinic with every service using `how='cross'`, then left-merge January's targets onto it.
 
@@ -223,9 +235,9 @@ display(coverage[coverage['_merge'] == 'left_only'][['clinic', 'service']])
 
 **Expect:** `6` (3 clinics × 2 services), then 2 rows: East primary care and East cardiology have no January target.
 
-### 9. Overlapping column names: two A1c sources
+### 10. Overlapping column names: two A1c sources
 
-The central lab and a point-of-care (POC) device both report A1c in a column named `a1c`. `a1c` is not the key, so pandas must rename one of them.
+The central lab and a point-of-care (POC) device both report A1c in a column named `a1c`.
 
 ```python
 central = pd.read_parquet(data_dir / "demo1_central_a1c.parquet")
@@ -244,9 +256,9 @@ display(paired[['patient_id', 'a1c_lab', 'a1c_poc', 'device', 'poc_minus_lab']])
 
 **Expect:** columns `a1c_lab` and `a1c_poc`, and `poc_minus_lab` of -0.2, 0.2, -0.7, and 0.1. P003's device reading is 0.7 points below the lab, the largest gap, and it came from device `DCA-2`: a question for the lab's quality team. This comparison needs the descriptive suffixes to be readable.
 
-### 10. Putting it together: a checked patient-lab table
+### 11. Putting it together: a checked patient-lab table
 
-Merge the registry with the labs, keep every patient, check the cardinality, and flag who has results.
+Merge the registry with the labs, keep every patient, check the cardinality, and flag who has results. The `clinic` column comes from the older `patients` table, so P003 still appears under North after the move in step 5.
 
 ```python
 patient_labs = pd.merge(patients, labs, on='patient_id', how='left',

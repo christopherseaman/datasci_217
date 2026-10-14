@@ -252,7 +252,7 @@ Build `visits_clean` from `visits_raw`:
 1. Remove exact duplicate rows, keeping the first.
 2. `visit`: list the spellings with `value_counts()`, then strip and lowercase them and map each to `baseline` or `week12` with a dictionary and `Series.map()`, as for `gender`.
 3. `sbp_mmhg`: convert with `pd.to_numeric(..., errors="coerce")`; keep values from 70 through 250, and make everything else, `999` included, missing; dtype `Int64`.
-4. `weight_kg`: convert to numbers (`float64`); an empty value stays missing.
+4. `weight_kg`: convert with `pd.to_numeric(..., errors="coerce")`; an empty value stays missing.
 5. `visit_date`: keep a value only when its text is exact `YYYY-MM-DD` and the date exists on the calendar; anything else becomes missing.
 6. Show the rows whose `patient_id` and `visit` pair still repeats, with `duplicated(subset=[...], keep=False)`. A repeat here is a recheck: keep the later reading with `sort_values("visit_time")`, then `drop_duplicates(subset=["patient_id", "visit"], keep="last")`.
 7. Sort by `patient_id` and `visit`, renumber with `reset_index(drop=True)`, and keep these columns in this order: `patient_id`, `visit`, `visit_date`, `sbp_mmhg`, `weight_kg`, `source_file`.
@@ -381,7 +381,6 @@ Self-checks before you save:
 - `visits with an A1c result` plus `A1c results without a visit` equals the two `results` in your `a1c_summary.csv` added together.
 - `patients at N01` plus `patients at S02` plus `registry patients whose site is not in the site list` equals `patients` in your `patients_summary.csv`.
 - `visits whose patient is not in the registry` is at most `visits`, and `registry patients with no visit` at most `patients`; both are small shares.
-- `site list rows removed by the current-record rule` is `sites.csv`'s 5 rows minus the rows of `sites_current`.
 
 > **Checkpoint: `output/merge_audit.csv`**
 > 8 lines: the header `check,count` and the 7 checks in the order above, each with a whole-number count.

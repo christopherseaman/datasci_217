@@ -21,13 +21,15 @@ The midterm totals 100 points: 75 points graded from your committed files after 
 ## How the files are read
 
 - Line endings, blank lines, spaces at the end of a line or around a header name, a comma, semicolon, or tab between cells, column order, extra columns, a leading column of row numbers, and number format (`6`, `6.0`) do not matter. Letter case and surrounding spaces in labels, codes, IDs, and text values do not cost points: `f` reads as `F`. A spelling that still needs its dictionary, such as `woman`, `N-01`, or `wk12`, does.
-- An empty field, `NaN`, and `<NA>` all read as missing; a date may carry a `00:00:00` time after it or use `/` in place of `-`; a mean within 0.01 of the exact one is right.
-- A file missing from `output/` earns 0 points. A `MergeError` in the Task 4.4 join or a failed Task 5.1 check leaves `analysis_sample.csv` unwritten, which costs its 9 points on top of the earlier file that shows the mistake.
+- An empty field, `NaN`, and `<NA>` all read as missing; a date written year first may carry a `00:00:00` time after it or use `/` in place of `-`, while a date with the year last, such as `01/05/2026`, can be read as May 1 or January 5 and costs its point; a mean rounded to two decimals (within 0.006 of the exact one) is right.
+- A file missing from `output/` earns 0 points. A file a stopped notebook never writes costs its points on top of the earlier file that shows the mistake:
+    - A Task 4.3 `pivot()` `ValueError`, raised when the Task 3.2 step 6 rechecks are left in, leaves `sbp_wide_sample.csv` and `analysis_sample.csv` unwritten (15 points).
+    - A `MergeError` in the Task 4.4 join or a failed Task 5.1 check leaves `analysis_sample.csv` unwritten (9 points).
 - One mistake is charged once, in the file that first shows it. A later file is also right when it follows from your own earlier ones:
     - `patients_summary.csv` and `gender_categories.csv` counts made with the exact registry repeats left in cost only `patients`.
     - When `visits` in `visits_summary.csv` is off by some rows, its other counts may be off by at most that many; counts made with the earlier reading of each recheck cost only `sbp_wide_sample.csv`.
     - An `a1c_pct_mean` is right for the results its row counts, so swapped labels cost only `results`.
-    - The first three `merge_audit.csv` counts are judged against your own `visits` and A1c `results` when those differ from the expected ones (`both` plus `left_only` equals your visits, `both` plus `right_only` your results); the patient counts against your own `patients_summary.csv`.
+    - The first three `merge_audit.csv` counts are judged against your own `visits` and A1c `results` when those differ from the expected ones (`both` plus `left_only` equals your visits, `both` plus `right_only` your results, or every A1c result when your summary counts none); the patient counts against your own `patients_summary.csv`.
     - The extracts carry what an earlier mistake left without a second charge: an unmapped gender or visit label, `9999`, a raw SBP, a mislabeled A1c result, and the current `site_name` for your own `site_code`. `sbp_change` is judged against your own `baseline` and `week12` columns.
 
 ## Human review

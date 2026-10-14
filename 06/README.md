@@ -265,7 +265,7 @@ North's 9:00 `NaN` means no report arrived; its 10:00 `0.0` is a real report of 
 
 <callout icon="⚠️" color="yellow_bg">
 	## A repeated key copies rows without an error!
-	Every row that matches a repeated lookup key is copied once per repeat. Row growth alone proves nothing, because a one-to-many merge adds rows too, so state the expected relationship with `validate=`.
+	Every row that matches a repeated key in a **lookup table** (one row of details per key, such as clinics) is copied once per repeat. Row growth alone proves nothing, because a one-to-many merge adds rows too, so state the expected relationship with `validate=`.
 </callout>
 
 ### Reference Card: Merge cardinality and audit
@@ -306,15 +306,70 @@ pd.merge(visits, clinics, on='clinic_id', how='left', validate='many_to_one')
 
 [Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo1_merge_operations.ipynb)
 
-# Working with DataFrame Indexes
+# Reshaping: Wide vs Long Format
 
-- The index, as in Lecture 04, holds the row labels that `loc` uses to find rows.
-- Sometimes one column cannot name a row: a clinic has one visit count per quarter, so the row needs a clinic _and_ a quarter.
+- **Reshaping**: changing what one row represents without adding or removing any values.
+- **Wide**: measurements of one kind spread across columns, such as a systolic blood pressure (SBP) column per visit.
+- **Long**: one row per measurement, such as one row per patient-visit; grouping and plotting tools usually want this layout.
+
+```
+wide: a column per visit                  long: a row per patient-visit
+┌────────────┬──────────┬──────────┐      ┌────────────┬──────────┬─────┐
+│ patient_id │ baseline │ followup │      │ patient_id │ visit    │ sbp │
+├────────────┼──────────┼──────────┤      ├────────────┼──────────┼─────┤
+│ P001       │   152    │   138    │      │ P001       │ baseline │ 152 │
+│ P002       │   138    │   132    │      │ P002       │ baseline │ 138 │
+│ P003       │   145    │   129    │      │ P003       │ baseline │ 145 │
+└────────────┴──────────┴──────────┘      │ P001       │ followup │ 138 │
+                                          │ P002       │ followup │ 132 │
+                                          │ P003       │ followup │ 129 │
+                                          └────────────┴──────────┴─────┘
+```
+
+- In long data, the **identifier columns** (`patient_id`, `visit`) say which observation a row is, and the **value column** (`sbp`) holds the measurement.
+- Long data with one observation per row and one variable per column is often called **tidy** data.
+
+| Shape | One row represents | Best for | Conversion |
+| --- | --- | --- | --- |
+| Wide | One entity with several measured columns | Side-by-side comparison | `melt()` to long |
+| Long | One entity/variable observation | Grouping and tidy plotting | `pivot()` to wide |
+
+## Melting Wide to Long with melt()
+
+`melt()`, written `pd.melt(df, ...)` or `df.melt(...)`, keeps the identifier columns fixed and turns each selected column into rows: the old column name goes into a variable column and its cell into a value column. Questionnaire answers stored in `Q1`, `Q2`, and `Q3` columns melt the same way, with the question name as the variable.
+
+### Reference Card: `melt()`
+
+| Argument | Purpose | Output |
+| --- | --- | --- |
+| `id_vars` | Columns to keep fixed | Identifier columns repeated |
+| `value_vars` | Columns to unpivot | One row per source row and selected value column |
+| `var_name` | Name for former column labels | Variable column |
+| `value_name` | Name for former cell values | Value column |
+
+### Code Snippet: Melt wide data
+
+```python
+long = pd.melt(wide, id_vars=['patient_id'], value_vars=['baseline', 'followup'],
+               var_name='visit', value_name='sbp')
+display(long)
+```
+
+|  | patient_id | visit | sbp |
+| --- | --- | --- | --- |
+| 0 | P001 | baseline | 152 |
+| 1 | P002 | baseline | 138 |
+| 2 | P003 | baseline | 145 |
+| 3 | P001 | followup | 138 |
+| 4 | P002 | followup | 132 |
+| 5 | P003 | followup | 129 |
 
 ![xkcd 1762: Moving Boxes. A good row label says what is inside, like a patient ID](media/xkcd_1762.png)
 
 ## Two-Level Row Labels
 
+- The index, as in Lecture 04, holds the row labels that `loc` uses to find rows.
+- In long data one column often cannot name a row: after `melt()` a patient has a row per visit, and a clinic with one visit count per quarter needs a clinic _and_ a quarter.
 - **MultiIndex** (hierarchical index): row labels with more than one level, such as a `(clinic, quarter)` pair. The outer label prints once, with the inner labels under it.
 - Build one by passing `set_index()` a list of columns.
 
@@ -398,70 +453,12 @@ print(by_quarter.stack().equals(summary['visits']))   # True: stack() undoes uns
 | Q1 | 410 | 380 |
 | Q2 | 395 | 362 |
 
-# Reshaping: Wide vs Long Format
-
-- **Reshaping**: changing what one row represents without adding or removing any values.
-- **Wide**: measurements of one kind spread across columns, such as a systolic blood pressure (SBP) column per visit.
-- **Long**: one row per patient-visit, the layout grouping and plotting tools usually want.
-
-```
-wide: a column per visit                  long: a row per patient-visit
-┌────────────┬──────────┬──────────┐      ┌────────────┬──────────┬─────┐
-│ patient_id │ baseline │ followup │      │ patient_id │ visit    │ sbp │
-├────────────┼──────────┼──────────┤      ├────────────┼──────────┼─────┤
-│ P001       │   152    │   138    │      │ P001       │ baseline │ 152 │
-│ P002       │   138    │   132    │      │ P002       │ baseline │ 138 │
-│ P003       │   145    │   129    │      │ P003       │ baseline │ 145 │
-└────────────┴──────────┴──────────┘      │ P001       │ followup │ 138 │
-                                          │ P002       │ followup │ 132 │
-                                          │ P003       │ followup │ 129 │
-                                          └────────────┴──────────┴─────┘
-```
-
-- In long data, the **identifier columns** (`patient_id`, `visit`) say which observation a row is, and the **value column** (`sbp`) holds the measurement.
-- Long data with one observation per row and one variable per column is often called **tidy** data.
-
-| Shape | One row represents | Best for | Conversion |
-| --- | --- | --- | --- |
-| Wide | One entity with several measured columns | Side-by-side comparison | `melt()` to long |
-| Long | One entity/variable observation | Grouping and tidy plotting | `pivot()` to wide |
-
-## Melting Wide to Long with melt()
-
-`melt()`, written `pd.melt(df, ...)` or `df.melt(...)`, keeps the identifier columns fixed and turns each selected column into rows: the old column name goes into a variable column and its cell into a value column. Questionnaire answers stored in `Q1`, `Q2`, and `Q3` columns melt the same way, with the question name as the variable.
-
-### Reference Card: `melt()`
-
-| Argument | Purpose | Output |
-| --- | --- | --- |
-| `id_vars` | Columns to keep fixed | Identifier columns repeated |
-| `value_vars` | Columns to unpivot | One row per source row and selected value column |
-| `var_name` | Name for former column labels | Variable column |
-| `value_name` | Name for former cell values | Value column |
-
-### Code Snippet: Melt wide data
-
-```python
-long = pd.melt(wide, id_vars=['patient_id'], value_vars=['baseline', 'followup'],
-               var_name='visit', value_name='sbp')
-display(long)
-```
-
-|  | patient_id | visit | sbp |
-| --- | --- | --- | --- |
-| 0 | P001 | baseline | 152 |
-| 1 | P002 | baseline | 138 |
-| 2 | P003 | baseline | 145 |
-| 3 | P001 | followup | 138 |
-| 4 | P002 | followup | 132 |
-| 5 | P003 | followup | 129 |
-
 ## Pivoting Long Back to Wide with pivot()
 
-- `pivot()` runs `melt()` backwards, for a reader or a matrix-shaped tool that needs one column per visit.
+- `pivot()` runs `melt()` backwards, for a reader or a comparison of baseline with follow-up that needs one column per visit.
 - It files each value by its labels, so the long rows may come in any order.
 - It never aggregates, so each `index`/`columns` pair must identify exactly one value.
-- `pivot()` is a shortcut for `set_index()` on the two label columns followed by `unstack()`; `melt()` likewise does the work of `stack()` on ordinary columns.
+- `pivot()` is a shortcut for `set_index()` on the two label columns followed by `unstack()`, just as `melt()` does the work of `stack()` on ordinary columns.
 
 ### Reference Card: `pivot()`
 
@@ -562,6 +559,21 @@ Result (outer join keeps every label):
 
 ## Vertical Concatenation: Adding More Rows
 
+### Code Snippet: Count each extract's lines with `%%bash`
+
+Lecture 04's `!command` runs one shell line; a cell whose first line is `%%bash` (a **cell magic**) runs the whole cell in the shell. `wc -l` counts the header too, so each extract has one row fewer than its count:
+
+```python
+%%bash
+wc -l data/*_admissions.csv
+```
+
+```text
+ 3 data/feb_admissions.csv
+ 4 data/jan_admissions.csv
+ 7 total
+```
+
 ### Reference Card: Vertical `concat()`
 
 | Call | Purpose | Result |
@@ -597,7 +609,7 @@ print(list(combined.index))   # [0, 1, 2, 3, 4]: a clean sequential index
 
 ## Column-Set Alignment with the join Parameter
 
-When stacked extracts do not share every column, the `join=` argument of `concat()` chooses which columns to keep. It matches no key values, so it is not a merge.
+When stacked extracts do not share every column, the `join=` argument of `concat()` chooses which columns to keep.
 
 ### Reference Card: `concat(join=...)`
 

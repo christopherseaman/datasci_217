@@ -132,7 +132,7 @@ display(clean[['patient_id', 'age_text', 'age', 'sbp']])
 
 **Expect:** `age` is `<NA>` for P002 (`'unknown'`) and P005 (`'forty'`), and `sbp` shows whole numbers such as `120` with `<NA>` in the gaps.
 
-A date that does not exist becomes `NaT` with an explicit format. Separate a blank date (never recorded) from a date that failed to parse (recorded but wrong).
+`errors='coerce'` turns a date that does not exist into `NaT`, and `format=` states the expected layout. Separate a blank date (never recorded) from a date that failed to parse (recorded but wrong).
 
 ```python
 parsed = pd.to_datetime(clean['visit_date'], format='%Y-%m-%d', errors='coerce')
@@ -159,7 +159,7 @@ The disguised problems are now real missing values, so the counts go up.
 display(clean.isna().sum())
 ```
 
-**Expect:** `visit_date 2`, `sbp 4`, `cholesterol 3`, and `age 2`. Before the conversions, only one date and two pressures looked missing.
+**Expect:** `visit_date 2`, `sbp 4`, `cholesterol 3`, and `age 2`. Before the conversions, only one date and two pressures looked missing. Cholesterol falls from 4 to 3 because step 4 dropped the duplicate P007 row.
 
 For a blood-pressure and cholesterol analysis, a visit with neither measurement adds nothing. Drop only those rows.
 
@@ -192,7 +192,7 @@ print('Rows:', len(visits), 'raw,', len(analysis), 'for analysis;',
       analysis['needs_review'].sum(), 'flagged for review')
 ```
 
-**Expect:** 8 rows and `Rows: 10 raw, 8 for analysis; 4 flagged for review` (P002, P003, P004, and P005). Every change is visible: the double entry is gone, sentinels and impossible values are missing rather than averaged, the filled cholesterol values are marked.
+**Expect:** 8 rows and `Rows: 10 raw, 8 for analysis; 4 flagged for review` (P002, P003, P004, and P005).
 
 ## Independent practice
 
@@ -209,3 +209,24 @@ display(wrong)
 ```
 
 **Expect:** P003, P004, and P005 all receive `135`, P002's reading, from a different patient. Those rows show `needs_review` as `True`, so leave `sbp` missing and let the flag send them for review.
+
+Fill within each patient instead: `groupby('patient_id')` keeps a reading from crossing into another patient.
+
+```python
+wrong['sbp_by_patient'] = analysis.groupby('patient_id')['sbp'].ffill()
+display(wrong)
+```
+
+**Expect:** P003, P004, and P005 stay `<NA>` in `sbp_by_patient`. Each has one visit, so there is no earlier reading of their own to copy.
+
+**Exercise:** check that the grouped fill still fills a gap inside one patient. Give P008 a missing second SBP on a copy of `analysis`, then compare `.ffill()` with `.groupby('patient_id')['sbp'].ffill()`.
+
+```python
+repeat = analysis[['patient_id', 'visit_date', 'sbp']].copy()
+repeat.loc[repeat['patient_id'] == 'P008', 'sbp'] = [130, pd.NA]
+repeat['plain'] = repeat['sbp'].ffill()
+repeat['by_patient'] = repeat.groupby('patient_id')['sbp'].ffill()
+display(repeat.tail(3))
+```
+
+**Expect:** P008's second visit gets `130` in both columns, because the row above is the same patient. Only `by_patient` stays safe when the previous row belongs to someone else.

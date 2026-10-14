@@ -4,7 +4,7 @@
 
 - `frame[frame.duplicated(subset=[...], keep=False)].sort_values([...])` shows every row of a repeated key (Lecture 06).
 - A row count that differs from the earlier summary points to the step that added or dropped rows. Compare with `visits_summary.csv`, `patients_summary.csv`, and `merge_audit.csv`.
-- A raw table that no longer equals its snapshot was changed in place: work on `copy(deep=True)` and rerun from the first cell.
+- An assert or error that stops the notebook points to an earlier step. Fix that step, then Restart and Run All; never edit the check. For example, a raw table that no longer equals its snapshot from the first code cell was changed in place: work on `copy(deep=True)`.
 
 ## Task 2: Contract, stack, and audit
 
@@ -28,7 +28,7 @@
     - `many_to_one` on `sites_current` fails when a `site_code` repeats there: a retired record was kept in Task 4.2.
     - `many_to_one` on `a1c_long` fails when a `["patient_id", "visit"]` pair repeats there: the wide table was melted with unmapped labels, or rows were stacked twice.
 - A larger `len(analysis)` means the table just merged repeated a key; run the `duplicated()` check on it.
-- Dtypes: `analysis.dtypes` should match the table in Task 4.4. `object` where `string` is expected means the `astype()` dictionary missed a column.
+- Dtypes: `analysis.dtypes` should match the table in Task 4.4. `str` (or `object`) where `string` is expected means the `astype()` dictionary missed a column.
 
 ## Task 5: Validate, save, and read back
 

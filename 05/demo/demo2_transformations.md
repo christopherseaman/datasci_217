@@ -90,6 +90,8 @@ print(intake.columns.tolist())
 
 ### 3. Normalize the text columns
 
+Strip spaces and lowercase the text so one clinic is not counted under several spellings.
+
 ```python
 display(intake['site'].value_counts())
 
@@ -179,15 +181,19 @@ print('Ever smokers:', intake['ever_smoker'].sum())
 
 ### 8. Store repeated labels as categories
 
+A **category** column stores each distinct label once and keeps a small integer code per row.
+
 ```python
 intake['site'] = intake['site'].astype('category')
 print(intake['site'].cat.categories)
 print(intake['site'].cat.codes.tolist())
 ```
 
-**Expect:** categories `['north', 'south', 'west']` and codes `[0, 0, 1, 1, 0, 2, 2, 1, 0]`: each row stores a small number that points to its label.
+**Expect:** categories `['north', 'south', 'west']` and codes `[0, 0, 1, 1, 0, 2, 2, 1, 0]`.
 
 ### 9. Indicator columns for a model
+
+`get_dummies()` turns a text column into 0/1 columns that a model can use.
 
 ```python
 smoking_dummies = pd.get_dummies(intake['smoking_status'], prefix='smoking', drop_first=True, dtype='int64')

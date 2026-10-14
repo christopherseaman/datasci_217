@@ -155,7 +155,7 @@ Original Data:        Forward Fill (ffill):           Backward Fill (bfill):
 
 <callout icon="⚠️" color="yellow_bg">
 	## `fillna()` returns a new table!
-	`dropna()`, `fillna()`, `replace()`, `rename()`, and the other cleaning methods in this lecture leave the original unchanged, so `labs.fillna(0)` alone changes nothing. Assign the result: `labs = labs.fillna(0)`.
+	`dropna()`, `fillna()`, and every cleaning method in this lecture leave the original unchanged, so `labs.fillna(0)` alone changes nothing. Assign the result: `labs = labs.fillna(0)`.
 </callout>
 
 ### Code Snippet: Keep visits with at least one lab
@@ -194,7 +194,7 @@ print(visits.groupby('patient_id')['sbp'].ffill().tolist())   # [120.0, 120.0, n
 Three problems hide beside blanks:
 
 - **Repeated rows**: the same visit entered twice; pandas counts it twice.
-- **Sentinels**: pandas averages a code such as `-999` as real data.
+- **Sentinels**: codes such as `-999` not yet converted to missing.
 - **Wrong types**: numbers or dates stored as text; `mean()` raises `TypeError`, and `sum()` joins them into one string.
 
 ## Detecting and Resolving Duplicates
@@ -279,11 +279,11 @@ print(ages.mask(ages > 120).tolist())  # [34.0, nan, 52.0]; check 150 against th
 
 | Task | Code | Output / note |
 | --- | --- | --- |
-| Text to number, invalid to missing | `pd.to_numeric(s, errors='coerce')` | Numbers (`float64` once any value becomes `NaN`); `'forty'` becomes `NaN` |
+| Text to number, invalid to missing | `pd.to_numeric(s, errors='coerce')` | Numbers (`float64` once any value becomes `NaN`); `'forty'` becomes `NaN`; `string`-dtype input gives nullable `Float64` with `<NA>` |
 | Change a clean column's type | `s.astype('float64')` / `s.astype('int64')` | Raises an error if any value cannot convert |
 | Change several columns at once | `df.astype({'patient_id': 'string', 'age': 'Int64'})` | New `DataFrame`; columns not named keep their dtype |
 | Keep only whole numbers | `s.where(s % 1 == 0)` | `s % 1 == 0` is `True` where the value has no fractional part, so `40.5` becomes missing |
-| Whole numbers with gaps | `s.astype('Int64')` | Nullable integers; a fraction such as `40.5` may raise or be silently truncated, so drop fractions first |
+| Whole numbers with gaps | `s.astype('Int64')` | Nullable integers; a fraction such as `40.5` raises `TypeError`, so drop fractions first |
 | Nullable text (`<NA>` for gaps) | `s.astype('string')` | Nullable text; missing shows as `<NA>` |
 | Dates in a known format | `pd.to_datetime(s, format='%Y-%m-%d', errors='coerce')` | `%Y` year, `%m` month, `%d` day; `datetime64[us]`; impossible dates such as `2026-02-30` become `NaT`, but single-digit parts such as `2026-7-01` are still accepted (exact check: Data Validation Rules) |
 | True/false with unknowns | `s.astype('boolean')` | Nullable `True` / `False` / `<NA>` |
@@ -416,7 +416,7 @@ Index(['patient id', 'sbp (mmhg)'], dtype='str')
 ## Creating Categories
 
 - **Binning**: assigning each value to an interval, such as the age bands in Table 1 of a clinical paper.
-- `pd.cut()` uses edges you choose, so bands can match a clinical definition; `pd.qcut()` picks edges so each bin gets about the same number of rows.
+- `pd.cut()` returns the `category` dtype, covered in Categorical Data Encoding. It uses edges you choose, so bands can match a clinical definition; `pd.qcut()` picks edges so each bin gets about the same number of rows.
 - `(30, 50]` means 30 is not included (round bracket) and 50 is (square bracket).
 
 ### Reference Card: Categorical variables
@@ -452,7 +452,7 @@ The labels are ordered categories: they sort by band, and comparing the result w
 
 - **String manipulation**: cleaning and testing text values, such as trimming spaces, fixing letter case, or matching a pattern.
 - **`.str` accessor**: applies Lecture 01's string methods to every value in a column at once, leaving missing values missing.
-- **Regular expression** (regex): a text pattern in which plain letters and digits match themselves, `[0-9]` matches any one digit, `{3}` repeats the previous item three times, and `+` means one or more. Write patterns as raw strings, `r'...'`, so Python leaves backslashes alone.
+- **Regular expression** (regex): a text pattern in which plain letters and digits match themselves, `[0-9]` matches any one digit, `{3}` repeats the previous item three times, `+` means one or more, and `|` means or, so `'former|current'` matches either word. Write patterns as raw strings, `r'...'`, so Python leaves backslashes alone.
 - `r'P[0-9]{3}'` matches `P003` but not `P0003` (four digits).
 - Hand-typed text hides inconsistent categories: `value_counts()` counts `'North'`, `' north'`, and `'NORTH'` as three sites until you normalize them:
 
@@ -543,13 +543,13 @@ print(smoking_cat.cat.codes[:5].tolist())  # .tolist() makes a plain Python list
 ```
 
 ```text
-As str: 274132 bytes
-As category: 5297 bytes
+As str: 69132 bytes
+As category: 5175 bytes
 Index(['current', 'former', 'never'], dtype='str')
 [2, 1, 2, 0, 1]
 ```
 
-With `pyarrow` installed, as in Colab: `69132` and `5175` bytes.
+Without `pyarrow`: `274132` and `5297` bytes.
 
 ## Creating Indicator (Dummy) Variables
 
@@ -597,7 +597,7 @@ display(pd.get_dummies(colors, prefix='color', drop_first=True, dtype='int64')) 
 
 # Data Validation and Quality Assessment
 
-- **Validation**: checking a table against its data contract, where inspection only describes it.
+- **Validation**: checking every row against the data contract's rules; inspection (counts, dtypes, `describe()`) only describes the table.
 - **Validation rule**: a yes/no question asked of every row, such as "is the age between 0 and 120?"
 - List failing rows for review rather than deleting them: an age of 150 is almost certainly a typo, while a systolic pressure of 220 may be a real emergency.
 - Run the inspection checks (`isna().sum()`, `duplicated().sum()`, `value_counts()`, `nunique()`, `dtypes`, `describe()`) before and after cleaning; counts should change only where you meant them to.
@@ -726,7 +726,8 @@ graph LR
     F -->|Failed| C
 ```
 
-- **Provenance**: where the file came from. Record it with each decision, one row per rule with the field, issue, action, and reason, so someone else can repeat your steps.
+- **Provenance**: where the file came from.
+- **Decision log**: one row per cleaning rule with the field, issue, action, and reason, so someone else can repeat your steps.
 - **Hash**: a fingerprint of the file itself. SHA-256 turns a file's bytes into 64 characters, and changing any byte changes it. When a data release publishes its hashes, as PhysioNet does, a matching hash shows your copy is the same file.
 
 ### Reference Card: Keep the raw table unchanged

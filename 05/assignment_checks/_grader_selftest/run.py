@@ -91,6 +91,8 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
     # Task 2
     if "dedupe-by-patient" in wrong:
         labs = labs.drop_duplicates(subset=["patient_id"])
+    elif "dedupe-by-visit" in wrong:
+        labs = labs.drop_duplicates(subset=["patient_id", "visit_date"])
     elif "dedupe-keep-false" in wrong:
         labs = labs.drop_duplicates(keep=False)
     elif "no-dedupe" not in wrong:
@@ -131,6 +133,9 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
     elif "gender-no-x" in wrong:
         binary = {key: code for key, code in GENDER_CODES.items() if code != "X"}
         labs["gender"] = labs["gender"].str.strip().str.lower().map(binary)
+    elif "gender-no-nb" in wrong:
+        spellings = {key: code for key, code in GENDER_CODES.items() if key not in ("nb", "nonbinary")}
+        labs["gender"] = labs["gender"].str.strip().str.lower().map(spellings)
     elif "gender-replace" in wrong:
         labs["gender"] = labs["gender"].str.strip().str.lower().replace(GENDER_CODES)
     else:
@@ -138,7 +143,8 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
     labs["clinic"].value_counts(dropna=False).to_csv(output / "clinic_counts.csv")
     labs["gender"].value_counts(dropna=False).to_csv(output / "gender_counts.csv")
     bins = [0, 5.7, 6.5, 20] if "cut-wrong-edges" in wrong else [0, 5.6, 6.4, 20]
-    labs["a1c_category"] = pd.cut(labs["hba1c_pct"], bins=bins, labels=["normal", "prediabetes", "diabetes"])
+    labs["a1c_category"] = pd.cut(labs["hba1c_pct"], bins=bins, labels=["normal", "prediabetes", "diabetes"],
+                                  right="cut-left-closed" not in wrong)
     labs["a1c_category"].value_counts(dropna=False).to_csv(output / "a1c_counts.csv")
     if "no-dummies" not in wrong:
         labs = labs.join(pd.get_dummies(labs["clinic"], prefix="clinic", dtype="int64"))
@@ -158,7 +164,8 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
         "hba1c_in_range": hba1c_ok,
         ("weight_ok" if "rule-renamed" in wrong else "weight_in_range"): weight_ok,
     })
-    validation_report = rules.sum() if "rules-pass-count" in wrong else (~rules).sum()
+    validation_report = rules.sum() if "rules-pass-count" in wrong else (~rules).sum(
+        axis=1 if "rules-sum-per-visit" in wrong else 0)
     validation_report.index.name = "rule"
     validation_report.name = "failing_rows"
     validation_report.to_csv(output / "validation_report.csv")
@@ -181,20 +188,29 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
     clean = labs.copy()
     if "drop-every-failure" in wrong:
         clean = clean[rules.all(axis="columns")]
+    elif "drop-bad-gender" in wrong:
+        clean = clean[rules["patient_id_format"] & rules["visit_date_present"] & rules["gender_valid"]]
     elif "keep-bad-ids" in wrong:
         clean = clean[rules["visit_date_present"]]
     else:
         clean = clean[rules["patient_id_format"] & rules["visit_date_present"]]
     hba1c_outside = ((clean["hba1c_pct"] < 4) | (clean["hba1c_pct"] > 20)).sum()
     weight_outside = ((clean["weight_kg"] < 30) | (clean["weight_kg"] > 250)).sum()
-    if "range-kept" not in wrong:
-        clean["hba1c_pct"] = clean["hba1c_pct"].where(clean["hba1c_pct"].between(4, 20))
+    if "blank-edges" in wrong:
+        clean["hba1c_pct"] = clean["hba1c_pct"].where((clean["hba1c_pct"] > 4) & (clean["hba1c_pct"] < 20))
         clean["weight_kg"] = clean["weight_kg"].where(clean["weight_kg"].between(30, 250))
+    elif "range-kept" not in wrong:
+        if "hba1c-kept" not in wrong:
+            clean["hba1c_pct"] = clean["hba1c_pct"].where(clean["hba1c_pct"].between(4, 20))
+        if "weight-kept" not in wrong:
+            clean["weight_kg"] = clean["weight_kg"].where(clean["weight_kg"].between(30, 250))
     if "count-after-blanking" in wrong:
         hba1c_outside = ((clean["hba1c_pct"] < 4) | (clean["hba1c_pct"] > 20)).sum()
         weight_outside = ((clean["weight_kg"] < 30) | (clean["weight_kg"] > 250)).sum()
     if "fill-median" in wrong:
         clean = clean.fillna(clean.median(numeric_only=True))
+    if "fill-weight-mean" in wrong:
+        clean["weight_kg"] = clean["weight_kg"].fillna(clean["weight_kg"].mean())
     clean = clean.reset_index(drop=True)
     decision_log = pd.Series({"visits_dropped": len(labs) - len(clean), "hba1c_blanked": hba1c_outside,
                               "weight_blanked": weight_outside}, name="rows")
@@ -317,8 +333,9 @@ def run() -> None:
             sample.to_csv(root / SAMPLE_FILE, sep=";", quoting=csv.QUOTE_ALL)
             for name in (MISSING_FILE, PROFILE_FILE, CLINIC_FILE, SUMMARY_FILE):
                 report = pd.read_csv(root / name, dtype=str, keep_default_na=False)
+                report = report[report.columns[::-1]] if name == CLINIC_FILE else report
                 report.sample(frac=1, random_state=1).to_csv(root / name, sep="\t")
-            for name in (GENDER_FILE, VALIDATION_FILE):
+            for name in (GENDER_FILE, VALIDATION_FILE, FENCES_FILE):
                 report = pd.read_csv(root / name, dtype=str, keep_default_na=False)
                 report[report.columns[::-1]].to_csv(root / name, index=False, quoting=csv.QUOTE_ALL)
 
@@ -405,6 +422,7 @@ def run() -> None:
         mistake("no-dedupe", {"row counts: exact repeats removed"}, "nothing was removed", gate=False)
         mistake("dedupe-keep-false", {"row counts: exact repeats removed"}, "keep=False drops every copy")
         mistake("dedupe-by-patient", {"row counts: repeat visits kept"}, 'subset=["patient_id"]')
+        mistake("dedupe-by-visit", {"row counts: exact repeats removed"}, "treats two blanks as equal")
         mistake("sentinel-kept", {"typed profile: -999 read as missing"}, "-999, the export's code")
         mistake("age-text", {"typed profile: age as numbers"}, 'errors="coerce"')
         mistake("age-fill-zero", {"typed profile: unreadable ages left blank"}, "fillna() with 0")
@@ -418,19 +436,36 @@ def run() -> None:
         mistake("gender-upper-only", {"gender counts: gender codes mapped"}, "which are spellings")
         mistake("gender-replace", {"gender counts: gender codes mapped"}, "replace() leaves it")
         mistake("gender-no-x", {"gender counts: gender codes mapped"}, "there is no X")
+        mistake("gender-no-nb", {"gender counts: gender codes mapped"}, "missing from gender_codes (nb, nonbinary)")
         mistake("cut-wrong-edges", {"a1c counts: a1c_category"}, "includes its right edge")
+        mistake("cut-left-closed", {"a1c counts: a1c_category"}, "do not pass right=False")
         mistake("no-dummies", {"coded sample: clinic indicators"}, "pd.get_dummies")
         mistake("rules-pass-count", {"validation report: failing rows"}, "(~rules).sum()")
+        mistake("rules-sum-per-visit", {"validation report: one row per rule"}, "without axis=1")
         mistake("rules-blank-fails", {"validation report: failing rows"}, "between() is False for NaN")
         mistake("rule-renamed", {"validation report: rule names"}, "it has weight_ok for weight_in_range")
         mistake("iqr-multiplier-1", {"glucose fences: quartiles and fences"}, "1 * IQR")
         mistake("outlier-blank-flagged", {"glucose fences: outliers flagged"}, "~between() is True for NaN")
         mistake("no-outlier-count", {"glucose fences: outliers flagged"}, "has no value for outliers")
         mistake("keep-bad-ids", {"decision log: failing visits dropped"}, "drops only the undated visits", gate=False)
+        mistake("drop-bad-gender", {"decision log: failing visits dropped"}, "visits without a valid ID")
         mistake("drop-every-failure", {"decision log: failing visits dropped"}, "fails any rule")
         mistake("count-after-blanking", {"decision log: out-of-range values counted"}, "Count them before blanking")
         mistake("fill-median", {"clean summary: blanks kept"}, "keeps blanks as blanks")
+        # One count mistake in one column costs the blanks-kept check only, not the statistics too.
+        mistake("fill-weight-mean", {"clean summary: blanks kept"}, "count is the values present")
+        mistake("blank-edges", {"clean summary: blanks kept"}, "keeps the edges 4 and 20")
+
+        def mean_off(root: Path) -> None:
+            summary = pd.read_csv(root / SUMMARY_FILE, index_col=0)
+            summary.loc["hba1c_pct", "mean"] += 1
+            summary.to_csv(root / SUMMARY_FILE)
+
+        mistake("summary-mean-off", {"clean summary: statistics"}, "changes only the out-of-range", mean_off)
         mistake("range-kept", {"clean summary: impossible values blanked"}, ".where(", gate=False)
+        # One column left unblanked costs the impossible-values check only, not its count or statistics too.
+        mistake("weight-kept", {"clean summary: impossible values blanked"}, ".where(", gate=False)
+        mistake("hba1c-kept", {"clean summary: impossible values blanked"}, ".where(", gate=False)
 
         def gate_stops(root: Path) -> None:
             (root / SUMMARY_FILE).unlink()

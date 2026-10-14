@@ -16,6 +16,7 @@ from __future__ import annotations
 import csv
 from datetime import date, timedelta
 import io
+import math
 from pathlib import Path
 import random
 
@@ -142,9 +143,10 @@ def build(rng: random.Random) -> dict[str, list[list[str]]]:
     lab_ids += [f"P{n:05d}" for n in VISIT_ONLY_IDS if rng.random() < 0.5]
     lab_ids += [f"P{n:05d}" for n in LAB_ONLY_IDS]
     for pid in lab_ids:
-        # A diabetes follow-up cohort: most baseline A1c results at or above 6.5%.
-        baseline = min(13.5, max(5.9, rng.gauss(8.1, 1.1)))
-        week12 = max(5.0, baseline - rng.uniform(-0.3, 1.2))
+        # A diabetes follow-up cohort: a right-skewed baseline A1c (mean about 8.1%, rarely below 6.5% or
+        # above 14%) that never needs clipping, and a week 12 change that grows with the excess over 5%.
+        baseline = 4.8 + math.exp(rng.gauss(1.15, 0.31))
+        week12 = baseline - (baseline - 5.0) * rng.uniform(-0.1, 0.45)
         a1c.append([pid, "" if rng.random() < 0.01 else f"{baseline:.1f}",
                     "" if rng.random() < 0.06 else f"{week12:.1f}"])
 

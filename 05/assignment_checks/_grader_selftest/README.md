@@ -23,7 +23,7 @@ in ignored `scratch/`, and confirms that:
   wrong `pd.cut` edges, no indicators, passes counted for failures, a blank
   failing a range rule, a renamed rule, 1 * IQR, blanks flagged as outliers, no
   outlier count, bad IDs kept, every failing visit dropped, impossible values
-  counted after blanking or kept, blanks filled with the median, a missing or
+  counted after blanking or kept (in both columns or one), blanks filled with the median, a missing or
   misplaced file, a sideways report, and a report written twice;
 - a mistake upstream is charged only where it was made, since later files are
   judged against the pipeline the student's own earlier files show; Task 5.2's

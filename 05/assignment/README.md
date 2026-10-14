@@ -4,7 +4,7 @@
 
 Clean a diabetes clinic network's lab export and save a small summary at each stage, such as a missing-value report, row counts, or category counts.
 
-`generate_data.py` writes `data/lab_visits.csv`, a synthetic export of about 59,000 visits by 18,000 patients. Each row is one clinic visit: `patient_id` (`D` and five digits), `visit_date`, `clinic`, `gender`, `age` in years, `weight_kg`, `hba1c_pct` (**HbA1c**, the percent of hemoglobin carrying glucose, a three-month average of blood sugar), and `glucose_mg_dl` (fasting glucose in mg/dL). Most patients come back every three to four months. It has blanks, rows sent twice, `-999` for a measurement not taken, ages typed as `unknown`, dates that do not exist, IDs and labels spelled several ways, and dropped decimal points (`64` for 6.4).
+`generate_data.py` writes `data/lab_visits.csv`, a synthetic export of about 59,000 visits by 18,000 patients. Each row is one clinic visit: `patient_id` (`D` and five digits), `visit_date`, `clinic`, `gender`, `age` in years, `weight_kg`, `hba1c_pct` (**HbA1c**, the percent of hemoglobin carrying glucose, a three-month average of blood sugar), and `glucose_mg_dl` (fasting glucose in mg/dL). Most patients come back about every three months. It has blanks, rows sent twice, `-999` for a measurement not taken, ages typed as `unknown`, dates that do not exist, IDs and labels spelled several ways, and dropped decimal points (`64` for 6.4).
 
 ```text
 patient_id,visit_date,clinic,gender,age,weight_kg,hba1c_pct,glucose_mg_dl
@@ -257,7 +257,6 @@ HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more
     ```
 
 2. Count the failures per rule with `validation_report = (~rules).sum()`, then name it: `validation_report.index.name = "rule"` and `validation_report.name = "failing_rows"`.
-3. Display the first failing rows with `labs[~rules.all(axis=1)].head(10)`.
     - Expect:
 
     ```text
@@ -270,6 +269,7 @@ HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more
     Name: failing_rows, dtype: int64
     ```
 
+3. Display the first failing rows with `labs[~rules.all(axis=1)].head(10)`.
 4. Save with `validation_report.to_csv(VALIDATION_PATH)`.
 
 > **Checkpoint: `output/validation_report.csv`**
@@ -277,7 +277,7 @@ HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more
 
 ### 4.2 Flag unusual glucose values
 
-Flag unusual glucose values; keep them in the table.
+Keep the flagged values in the table.
 
 1. Compute the quartiles of `labs["glucose_mg_dl"]` with `quantile(0.25)` and `quantile(0.75)`, then `iqr = q3 - q1`, `lower = q1 - 1.5 * iqr`, and `upper = q3 + 1.5 * iqr`.
     - Expect: `Q1 102.0, Q3 153.0, fences 25.5 to 229.5`.
@@ -303,7 +303,7 @@ Flag unusual glucose values; keep them in the table.
 1. Work on a copy: `clean = labs.copy()`.
 2. Keep only the visits that can be identified, a valid ID and a real date: `clean = clean[rules["patient_id_format"] & rules["visit_date_present"]]`.
 3. Before blanking, count the impossible values among the kept visits: `hba1c_outside = ((clean["hba1c_pct"] < 4) | (clean["hba1c_pct"] > 20)).sum()`, and `weight_outside` the same way with 30 and 250.
-4. Blank the impossible values, keeping the visit: `clean["hba1c_pct"] = clean["hba1c_pct"].where(clean["hba1c_pct"].between(4, 20))`, and the same for `weight_kg` with 30 and 250. Leave other blanks as they are.
+4. Blank the impossible values, keeping the visit: `clean["hba1c_pct"] = clean["hba1c_pct"].where(clean["hba1c_pct"].between(4, 20))`, and the same for `weight_kg` with 30 and 250. Leave other blanks as they are. Blanking an out-of-range HbA1c, such as 3.9, leaves its `a1c_category` from Task 3.2 as is.
 5. Number the rows again with `clean = clean.reset_index(drop=True)`.
 6. Log the three decisions:
 
