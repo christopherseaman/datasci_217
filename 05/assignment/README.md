@@ -189,10 +189,10 @@ HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.
     - Expect: `Q1 119.0, Q3 166.0, fences 48.5 to 236.5`.
 2. Flag the unusual values, keeping them in the table: add `glucose_outlier`, `True` where `glucose_mg_dl` is below `lower` or above `upper`. Join the two comparisons with `|`, each in parentheses. A missing glucose is not an outlier.
     - Expect: `labs["glucose_outlier"].sum()` is 859.
-3. Build `rules` with `pd.DataFrame()`: one `True`/`False` column per rule of the data contract, `True` where the visit passes. Pick each test from Lecture 05's card "Validation rules". Use these six names in this order:
+3. Build `rules` with `pd.DataFrame()`: one `True`/`False` column per audit check, `True` where the visit passes. These flag values to review; a flag does not always mean the final table violates its contract. Pick each test from Lecture 05's card "Validation rules". Use these six names in this order:
     - `patient_id_format`: the whole ID matches `r"D[0-9]{5}"`, and a missing ID fails;
     - `visit_date_present`: the date is not missing;
-    - `gender_valid`: the code is `F`, `M`, or `X`, so a blank fails;
+    - `gender_valid`: the code is `F`, `M`, or `X`; a blank is flagged for review but is allowed in the cleaned table;
     - `hba1c_in_range`: the value is from 4 to 20, or missing;
     - `weight_in_range`: the weight is from 30 to 250, or missing;
     - `glucose_within_fences`: the visit is not a glucose outlier.
@@ -223,6 +223,7 @@ HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.
 2. Keep the visits that pass both the ID rule and the date rule from Task 4: join the two `rules` columns with `&` and select those rows. Assign the result back to `clean`.
 3. Before blanking, count the impossible values among the kept visits in `clean`. Set `hba1c_outside` to the number of `hba1c_pct` values below 4 or above 20, joining the two comparisons with `|` as in Task 4 step 2. Set `weight_outside` the same way with 30 and 250.
 4. Blank those values, keeping the visit: `.where()` keeps the values where its mask is `True` and turns the rest into `NaN`. Give it a mask of the 4 to 20 range, assign the result back to `clean["hba1c_pct"]`, and do the same for `weight_kg` with 30 and 250.
+    - Recompute `clean["a1c_category"]` from the cleaned HbA1c with Task 3.2's `pd.cut()` bins and labels. Expect: a blanked value such as 3.9 now has a missing category, not `normal`. Keep `category_counts.csv` as the Task 3 snapshot.
 5. Number the rows again with `reset_index()`, using `drop` so the old index does not become a column. Assign the result back to `clean`.
 6. Build `decision_log` with `pd.Series()` from a dictionary of six counts, in this order, and `name="rows"`:
     - `rows_read`, `rows_with_labs`, and `rows_unique`, the variables from Task 1;
