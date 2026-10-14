@@ -27,7 +27,7 @@ This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 
 # What Clean Means: The Data Contract
 
-_Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis._
+> Data scientists spend 80% of their time cleaning data and 20% complaining about it. The remaining 20% is spent on actual analysis.
 
 - **Data contract**: a written description of what a clean table looks like. Clean does not mean perfect; it means the table matches its contract, so write the contract first and make every cleaning step check or satisfy one of its rules.
 - **Row meaning**: what one row represents. Below, one row is one clinic visit, not one patient.
