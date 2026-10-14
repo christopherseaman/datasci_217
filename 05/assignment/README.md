@@ -9,8 +9,8 @@ Clean a diabetes clinic network's lab export and save a small summary of each st
 ```text
 patient_id,visit_date,clinic,gender,age,weight_kg,hba1c_pct,glucose_mg_dl
 D10632,2024-01-02,Sunset,female,72,73.4,6.3,118
-D10720,2024-01-02,Sunset,F,46,96.0,5.9,106
-D11156,2024-01-02,Excelsior,M,71,89.6,5.2,62
+D10720,2024-01-02,Sunset,F,46,96.0,5.9,107
+D11156,2024-01-02,Excelsior,M,71,89.6,5.2,69
 ```
 
 The cleaned table follows this data contract. One row is one visit, identified by `patient_id` and `visit_date` together.
@@ -40,7 +40,7 @@ The cleaned table follows this data contract. One row is one visit, identified b
     - Expect: `uv sync` lists `+ pandas==3.0.5` and `+ pyarrow==25.0.0`.
 3. Open `assignment.ipynb`, click **Select Kernel** at the top right, and choose the Python inside this project's `.venv`.
 4. Run the first code cell. It runs `generate_data.py` when `data/` is missing and checks the file against `data_manifest.json`.
-    - Expect: `NumPy: 2.3.3`, `pandas: 3.0.5`, and `data/lab_visits.csv matches data_manifest.json`.
+    - Expect: `NumPy: 2.3.3`, `pandas: 3.0.5`, and `data/lab_visits.csv matches data_manifest.json`, and, on the first run, `wrote data/lab_visits.csv: 59447 rows`.
 
 ## Files
 
@@ -118,7 +118,7 @@ Run the first Task 1 cell as it is; it sets `rows_read`.
     - Expect: `age` is `Int64` and `visit_date` is `datetime64[us]`.
 4. The cell selects the five converted columns as `typed`. Build `typed_profile` with `pd.DataFrame()`, one row per column of `typed`, from these five Series in this order:
     - `dtype`: `typed.dtypes`, turned to text with `.astype(str)`;
-    - `missing_count`: the blanks per column, as in Task 1.1;
+    - `missing_count`: the blanks per column of `typed`, as in Task 1.1;
     - `min` and `max`: each column's smallest and largest value;
     - `mean`: each column's mean, with `numeric_only=True` to skip the date column, rounded to 2 decimals.
 5. Name the index `column`, as in Task 1.1.
@@ -128,7 +128,7 @@ Run the first Task 1 cell as it is; it sets `rows_read`.
                             dtype  missing_count                  min                  max    mean
     column
     age                     Int64            213                   25                   86   55.13
-    glucose_mg_dl         float64           3079                 62.0                412.0  129.37
+    glucose_mg_dl         float64           3079                 52.0                412.0  129.34
     hba1c_pct             float64           3347                  3.9                103.0    6.69
     visit_date     datetime64[us]            295  2024-01-02 00:00:00  2026-06-30 00:00:00    <NA>
     weight_kg             float64            946                 29.9               1295.0   86.84
@@ -153,6 +153,7 @@ Run the first Task 1 cell as it is; it sets `rows_read`.
     - `m` and `male` to `M`;
     - `x`, `nb`, and `nonbinary` to `X`.
 5. Clean `gender` with `.str.strip()` and `.str.lower()`, then `.map(gender_codes)`, and assign the result back. A label the dictionary does not list, such as `U`, `unknown`, or `?`, becomes `NaN`.
+    - Expect: `labs["clinic"].value_counts()` shows Mission 20225, Sunset 15923, Excelsior 12952, Bayview 8698, and Unknown 232; `labs["gender"].value_counts(dropna=False)` shows F 29012, M 26876, X 1765, and `NaN` 377.
 
 ### 3.2 Bin HbA1c and count the categories
 
@@ -187,9 +188,10 @@ HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.
 ## Task 4: Flag outliers and count rule failures
 
 1. Set `q1` and `q3` to the quartiles of `glucose_mg_dl` with `quantile()`. Set `iqr` to their difference, and the fences `lower` and `upper` to 1.5 IQRs below Q1 and above Q3.
-    - Expect: `Q1 102.0, Q3 153.0, fences 25.5 to 229.5`.
+    - Expect: `Q1 102.0, Q3 152.0, fences 27.0 to 227.0`.
 2. Flag the unusual values, keeping them in the table: add `glucose_outlier`, `True` where `glucose_mg_dl` is below `lower` or above `upper`. Join the two comparisons with `|`, each in parentheses. A missing glucose is not an outlier.
-3. Build `rules` with `pd.DataFrame()`: one `True`/`False` column per rule of the data contract, `True` where the visit passes. Pick each test from Lecture 05's validation card. Use these six names in this order:
+    - Expect: `labs["glucose_outlier"].sum()` is 713.
+3. Build `rules` with `pd.DataFrame()`: one `True`/`False` column per rule of the data contract, `True` where the visit passes. Pick each test from Lecture 05's card "Validation rules". Use these six names in this order:
     - `patient_id_format`: the whole ID matches `r"D[0-9]{5}"`, and a missing ID fails;
     - `visit_date_present`: the date is not missing;
     - `gender_valid`: the code is `F`, `M`, or `X`, so a blank fails;
@@ -206,7 +208,7 @@ HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.
     gender_valid             377
     hba1c_in_range            49
     weight_in_range           70
-    glucose_within_fences    486
+    glucose_within_fences    713
     Name: failing_rows, dtype: int64
     ```
 
@@ -253,7 +255,7 @@ HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.
     age            57406.0   55.13   17.7  25.0   40.0   55.0   70.0   86.0
     weight_kg      56608.0   85.94  17.09  30.0   74.2   86.0   97.7  250.0
     hba1c_pct      54252.0    6.64   1.32   4.0    5.6    6.3    7.5   20.0
-    glucose_mg_dl  54564.0  129.35  36.79  62.0  102.0  124.0  153.0  412.0
+    glucose_mg_dl  54564.0  129.32   36.7  52.0  102.0  122.0  152.0  412.0
     ```
 
 4. Save with `clean_summary.to_csv(SUMMARY_PATH)`.
@@ -274,9 +276,9 @@ Parquet keeps each column's dtype.
 
 ## Check your work
 
-- Run `python3 check_assignment.py` in the terminal any time; it prints your score and what to fix.
-- The notebook's last cell, `run_checks()`, runs the same checks after **Restart** and **Run All**.
-- GitHub runs the latest checks on each push. Commit `assignment.ipynb` and the `output/` files, then push.
-- Expect: `Score: 100/100`.
+- Run the checks any time, even partway through: `python3 check_assignment.py` in the terminal (with the environment active) prints your score and what to fix.
+- When **Restart** and **Run All** finish without errors, the notebook's last cell runs the same checks.
+- Both use the latest checks from the course repository, the same checks GitHub runs on each push. Commit `assignment.ipynb` and the `output/` files, then push.
+- Expect: a passing run ends with `Score: 100/100`.
 
 What each check looks for: [CHECKS.md](CHECKS.md)

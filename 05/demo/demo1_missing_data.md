@@ -39,7 +39,7 @@ Write down what the table should look like before changing anything.
 | Column | Meaning | dtype | Rule |
 | --- | --- | --- | --- |
 | `patient_id` | study patient | `str` | `P` + three digits; never blank |
-| `visit_date` | visit day | `datetime64` | a real calendar date |
+| `visit_date` | visit day | `datetime64` | a real calendar date when present |
 | `age` | age at visit (years) | `Int64` | 0 to 120 when present |
 | `sbp` | systolic blood pressure (mmHg) | `Int64` | 60 to 250 when present |
 | `cholesterol` | total cholesterol (mg/dL) | `float64` | blank allowed |
@@ -99,7 +99,7 @@ print(len(visits), 'rows before,', len(clean), 'after')
 display(clean['patient_id'].value_counts())
 ```
 
-**Expect:** `10 rows before, 9 after`. P008 is the only patient counted twice; row label 7 is gone.
+**Expect:** `10 rows before, 9 after`. P008 is the only patient counted twice; P007 now counts 1.
 
 ### 5. Sentinels and impossible values
 
@@ -130,7 +130,7 @@ clean['sbp'] = clean['sbp'].astype('Int64')
 display(clean[['patient_id', 'age_text', 'age', 'sbp']])
 ```
 
-**Expect:** `age` is `<NA>` for P002 (`'unknown'`) and P005 (`'forty'`), and `sbp` shows whole numbers such as `120` with `<NA>` in the gaps.
+**Expect:** `age` is `<NA>` for P002 (`'unknown'`) and P005 (`'forty'`), and `sbp` shows whole numbers such as `120` with `<NA>` in the gaps. Every parsed age is within 0 to 120, and every `patient_id` is `P` plus three digits.
 
 `errors='coerce'` turns a date that does not exist into `NaT`, and `format=` states the expected layout. Separate a blank date (never recorded) from a date that failed to parse (recorded but wrong).
 
@@ -222,11 +222,7 @@ display(wrong)
 **Exercise:** check that the grouped fill still fills a gap inside one patient. Give P008 a missing second SBP on a copy of `analysis`, then compare `.ffill()` with `.groupby('patient_id')['sbp'].ffill()`.
 
 ```python
-repeat = analysis[['patient_id', 'visit_date', 'sbp']].copy()
-repeat.loc[repeat['patient_id'] == 'P008', 'sbp'] = [130, pd.NA]
-repeat['plain'] = repeat['sbp'].ffill()
-repeat['by_patient'] = repeat.groupby('patient_id')['sbp'].ffill()
-display(repeat.tail(3))
+# Copy analysis, set P008's second sbp to missing, then add 'plain' and 'by_patient' ffill columns and show the last 3 rows
 ```
 
 **Expect:** P008's second visit gets `130` in both columns, because the row above is the same patient. Only `by_patient` stays safe when the previous row belongs to someone else.

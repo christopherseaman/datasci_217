@@ -123,79 +123,15 @@ display(labs.isna().sum(axis=1))  # gaps per row
 | 2 | 1 |
 | 3 | 2 |
 
-## Drop or Fill Missing Values
-
-- Three choices: leave gaps, drop the rows that have them, or fill them.
-- **Imputation**: filling a gap by a stated rule, such as the column median. Every filled value is a guess, so record the rule and flag which cells were filled.
-- **Forward fill** copies the last observed value down; **backward fill** copies the next one up.
-
-```text
-Original Data:        Forward Fill (ffill):           Backward Fill (bfill):
-  Index Value           Index Value                     Index Value
-    0     10              0     10 ─┐                     0     10
-    1   [NaN]             1     10 ←┤ fills down          1     15 ←┐
-    2   [NaN]             2     10 ←┘ from 10             2     15 ←┤ fills up
-    3     15              3     15 ─┐                     3     15 ─┘ from 15
-    4   [NaN]             4     15 ←┤ fills down          4   [NaN] can't fill
-    5   [NaN]             5     15 ←┘ from 15             5   [NaN] no later rows
-```
-
-### Reference Card: Dropping and filling
-
-| Task | Code | Output / caution |
-| --- | --- | --- |
-| Drop incomplete rows | `df.dropna()` | New `DataFrame` without any row that has a gap; can remove most rows |
-| Drop rows empty in key columns | `df.dropna(subset=['glucose', 'hba1c'], how='all')` | Drops a row only when every listed column is empty; keeps rows with at least one lab |
-| Drop sparse rows | `df.dropna(thresh=n)` | Keeps rows with at least `n` non-missing values |
-| Fill with a constant | `df.fillna(value)` or `df.fillna({'col': value})` | New `DataFrame` with gaps filled |
-| Fill with a column summary | `df.fillna(df.median(numeric_only=True))` | Numeric gaps get their column median (resists extreme values); `mean` works the same way |
-| Fill with the most common value | `df.fillna(df.mode().iloc[0])` | First mode per column; ties are broken by sort order |
-| Fill from neighbors | `df.ffill()` / `df.bfill()` | Previous / next observed value; `limit=1` fills at most one gap in a row |
-| Fill between neighbors | `df['col'].interpolate()` | Linear interpolation; numeric columns only, and a `DataFrame` with a `str` column raises `TypeError`; assumes rows are in order and equally spaced |
-
-<callout icon="⚠️" color="yellow_bg">
-	## `fillna()` returns a new table!
-	`dropna()`, `fillna()`, and every cleaning method in this lecture leave the original unchanged, so `labs.fillna(0)` alone changes nothing. Assign the result: `labs = labs.fillna(0)`.
-</callout>
-
-### Code Snippet: Keep visits with at least one lab
-
-```python
-analysis = labs.dropna(subset=['glucose', 'hba1c'], how='all')
-print(analysis['patient_id'].tolist())  # ['P001', 'P002', 'P003']
-```
-
-### Code Snippet: Fill one lab with its median
-
-```python
-print(labs['glucose'].fillna(labs['glucose'].median()).tolist())  # [98.0, 104.0, 110.0, 104.0]
-```
-
-<callout icon="⚠️" color="yellow_bg">
-	## `ffill()` copies across patients!
-	Forward and backward fill copy whatever row sits above or below. Use them only on rows in time order for one patient or one sensor.
-</callout>
-
-### Code Snippet: Fill within each patient
-
-`visits` lists P001 (SBP 120, then missing) and P002 (missing, then 130), in time order:
-
-```python
-print(visits['sbp'].ffill().tolist())                         # [120.0, 120.0, 120.0, 130.0]: P002 got P001's 120
-print(visits.groupby('patient_id')['sbp'].ffill().tolist())   # [120.0, 120.0, nan, 130.0]
-```
-
-`groupby('patient_id')` runs the fill separately for each patient, so a value never crosses to the next patient; group by site or period the same way.
-
-![xkcd 1827: Survivorship Bias. Dropping incomplete records can leave a convincing but biased sample](media/xkcd_1827.png)
-
 # Repeated Rows, Sentinels, and Wrong Types
 
 Three problems hide beside blanks:
 
 - **Repeated rows**: the same visit entered twice; pandas counts it twice.
-- **Sentinels**: codes such as `-999` not yet converted to missing.
+- **Sentinels**: `-999` and similar codes still in the data.
 - **Wrong types**: numbers or dates stored as text; `mean()` raises `TypeError`, and `sum()` joins them into one string.
+
+Fixing sentinels and types turns bad values into gaps, so drop or fill comes last, once the gaps are final.
 
 ## Detecting and Resolving Duplicates
 
@@ -279,7 +215,7 @@ print(ages.mask(ages > 120).tolist())  # [34.0, nan, 52.0]; check 150 against th
 
 | Task | Code | Output / note |
 | --- | --- | --- |
-| Text to number, invalid to missing | `pd.to_numeric(s, errors='coerce')` | Numbers (`float64` once any value becomes `NaN`); `'forty'` becomes `NaN`; `string`-dtype input gives nullable `Float64` with `<NA>` |
+| Text to number, invalid to missing | `pd.to_numeric(s, errors='coerce')` | Numbers (`float64` once any value becomes `NaN`); `'forty'` becomes `NaN`; `string`-dtype input gives nullable `Int64` or `Float64` with `<NA>` |
 | Change a clean column's type | `s.astype('float64')` / `s.astype('int64')` | Raises an error if any value cannot convert |
 | Change several columns at once | `df.astype({'patient_id': 'string', 'age': 'Int64'})` | New `DataFrame`; columns not named keep their dtype |
 | Keep only whole numbers | `s.where(s % 1 == 0)` | `s % 1 == 0` is `True` where the value has no fractional part, so `40.5` becomes missing |
@@ -307,14 +243,81 @@ display(form)
 
 ![xkcd 1179: ISO 8601. Pass format='%Y-%m-%d' and every date has one spelling](media/xkcd_1179.png)
 
+## Drop or Fill Missing Values
+
+- Three choices: leave gaps, drop the rows that have them, or fill them.
+- **Imputation**: filling a gap by a stated rule, such as the column median. Every filled value is a guess, so record the rule and flag which cells were filled.
+- **Forward fill** copies the last observed value down; **backward fill** copies the next one up.
+
+```text
+Original Data:        Forward Fill (ffill):           Backward Fill (bfill):
+  Index Value           Index Value                     Index Value
+    0     10              0     10 ─┐                     0     10
+    1   [NaN]             1     10 ←┤ fills down          1     15 ←┐
+    2   [NaN]             2     10 ←┘ from 10             2     15 ←┤ fills up
+    3     15              3     15 ─┐                     3     15 ─┘ from 15
+    4   [NaN]             4     15 ←┤ fills down          4   [NaN] can't fill
+    5   [NaN]             5     15 ←┘ from 15             5   [NaN] no later rows
+```
+
+### Reference Card: Dropping and filling
+
+| Task | Code | Output / caution |
+| --- | --- | --- |
+| Drop incomplete rows | `df.dropna()` | New `DataFrame` without any row that has a gap; can remove most rows |
+| Drop rows empty in key columns | `df.dropna(subset=['glucose', 'hba1c'], how='all')` | Drops a row only when every listed column is empty; keeps rows with at least one lab |
+| Drop sparse rows | `df.dropna(thresh=n)` | Keeps rows with at least `n` non-missing values |
+| Fill with a constant | `df.fillna(value)` or `df.fillna({'col': value})` | New `DataFrame` with gaps filled |
+| Fill with a column summary | `df.fillna(df.median(numeric_only=True))` | Numeric gaps get their column median (resists extreme values); `mean` works the same way |
+| Fill with the most common value | `df.fillna(df.mode().iloc[0])` | First mode per column; ties are broken by sort order |
+| Fill from neighbors | `df.ffill()` / `df.bfill()` | Previous / next observed value; `limit=1` fills at most one gap in a row |
+| Fill within each patient | `df.groupby('patient_id')['sbp'].ffill()` | Previous value from the same patient only; a patient's first gap stays missing |
+| Fill between neighbors | `df['col'].interpolate()` | Linear interpolation; numeric columns only, and a `DataFrame` with a `str` column raises `TypeError`; assumes rows are in order and equally spaced |
+
+<callout icon="⚠️" color="yellow_bg">
+	## `fillna()` returns a new table!
+	`dropna()`, `fillna()`, and every cleaning method in this lecture leave the original unchanged, so `labs.fillna(0)` alone changes nothing. Assign the result: `labs = labs.fillna(0)`.
+</callout>
+
+### Code Snippet: Keep visits with at least one lab
+
+```python
+analysis = labs.dropna(subset=['glucose', 'hba1c'], how='all')
+print(analysis['patient_id'].tolist())  # ['P001', 'P002', 'P003']
+```
+
+### Code Snippet: Fill one lab with its median
+
+```python
+print(labs['glucose'].fillna(labs['glucose'].median()).tolist())  # [98.0, 104.0, 110.0, 104.0]
+```
+
+<callout icon="⚠️" color="yellow_bg">
+	## `ffill()` copies across patients!
+	Forward and backward fill copy whatever row sits above or below. Use them only on rows in time order for one patient or one sensor.
+</callout>
+
+### Code Snippet: Fill within each patient
+
+`readings` lists P001 (SBP 120, then missing) and P002 (missing, then 130), in time order:
+
+```python
+print(readings['sbp'].ffill().tolist())                         # [120.0, 120.0, 120.0, 130.0]: P002 got P001's 120
+print(readings.groupby('patient_id')['sbp'].ffill().tolist())   # [120.0, 120.0, nan, 130.0]
+```
+
+Preview: `groupby('patient_id')` runs the fill separately for each patient, so a value never crosses to the next patient.
+
+![xkcd 1827: Survivorship Bias. Dropping incomplete records can leave a convincing but biased sample](media/xkcd_1827.png)
+
 # LIVE DEMO!
 
 [Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/05/demo/demo1_missing_data.ipynb)
 
 # Data Transformation Techniques
 
-- **Data transformation**: changing how correct values are expressed, by a rule you choose: a text answer into a score, consistent column names, exact ages into bands.
-- Write each rule where others can read it, as a dictionary, a function, or a list of bin edges, so anyone can check how every value changed.
+- **Data transformation**: changing how correct values are expressed, by a rule you choose: a text answer into a score, two pressures into a stage, consistent column names.
+- Write each rule where others can read it, as a dictionary or a function, so anyone can check how every value changed.
 
 ## Applying Custom Functions
 
@@ -413,47 +416,12 @@ Index(['patient_id', 'sbp'], dtype='str')
 Index(['patient id', 'sbp (mmhg)'], dtype='str')
 ```
 
-## Creating Categories
-
-- **Binning**: assigning each value to an interval, such as the age bands in Table 1 of a clinical paper.
-- `pd.cut()` returns the `category` dtype, covered in Categorical Data Encoding. It uses edges you choose, so bands can match a clinical definition; `pd.qcut()` picks edges so each bin gets about the same number of rows.
-- `(30, 50]` means 30 is not included (round bracket) and 50 is (square bracket).
-
-### Reference Card: Categorical variables
-
-| Item | Purpose / arguments | Output / note |
-| --- | --- | --- |
-| `pd.cut(series, bins=4)` | Cut the value range into four equal-width bins | Categorical Series of bins |
-| `pd.cut(series, bins=[...])` | Cut at explicitly supplied edges (not necessarily equal-width) | Categorical Series of bins |
-| `pd.qcut(series, q)` | Use quantiles to target equal-frequency bins | Categorical `Series`; duplicate edges raise by default |
-| `pd.qcut(series, q, duplicates='drop')` | Merge repeated edges caused by tied values instead of raising | Fewer than `q` bins; leave out `labels`, whose count must match the bins |
-
-### Code Snippet: Create ordered categories
-
-`ages` contains `[25, 30, 45, 60, 75]`:
-
-```python
-print(pd.cut(ages, bins=[0, 30, 50, 100], labels=['Young', 'Middle', 'Senior']))  # 30 falls in (0, 30]
-```
-
-```text
-0     Young
-1     Young
-2    Middle
-3    Senior
-4    Senior
-dtype: category
-Categories (3, str): ['Young' < 'Middle' < 'Senior']
-```
-
-The labels are ordered categories: they sort by band, and comparing the result with `< 'Senior'` gives `True` for every Young and Middle row.
-
 # String Manipulation
 
 - **String manipulation**: cleaning and testing text values, such as trimming spaces, fixing letter case, or matching a pattern.
 - **`.str` accessor**: applies Lecture 01's string methods to every value in a column at once, leaving missing values missing.
 - **Regular expression** (regex): a text pattern in which plain letters and digits match themselves, `[0-9]` matches any one digit, `{3}` repeats the previous item three times, `+` means one or more, and `|` means or, so `'former|current'` matches either word. Write patterns as raw strings, `r'...'`, so Python leaves backslashes alone.
-- `r'P[0-9]{3}'` matches `P003` but not `P0003` (four digits).
+- `r'P[0-9]{3}'` matches `P003` as a whole value with `fullmatch()`. `contains()` and `match()` also accept `P0003`.
 - Hand-typed text hides inconsistent categories: `value_counts()` counts `'North'`, `' north'`, and `'NORTH'` as three sites until you normalize them:
 
 | Raw value | Count before | After `.str.strip().str.lower()` | Count after |
@@ -551,6 +519,41 @@ Index(['current', 'former', 'never'], dtype='str')
 
 Without `pyarrow`: `274132` and `5297` bytes.
 
+## Creating Categories
+
+- **Binning**: assigning each value to an interval, such as the age bands in Table 1 of a clinical paper.
+- `pd.cut()` returns the `category` dtype. It uses edges you choose, so bands can match a clinical definition; `pd.qcut()` picks edges so each bin gets about the same number of rows.
+- `(30, 50]` means 30 is not included (round bracket) and 50 is (square bracket).
+
+### Reference Card: Binning values
+
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `pd.cut(series, bins=4)` | Cut the value range into four equal-width bins | Categorical Series of bins |
+| `pd.cut(series, bins=[...])` | Cut at explicitly supplied edges (not necessarily equal-width) | Categorical Series of bins |
+| `pd.qcut(series, q)` | Use quantiles to target equal-frequency bins | Categorical `Series`; duplicate edges raise by default |
+| `pd.qcut(series, q, duplicates='drop')` | Merge repeated edges caused by tied values instead of raising | Fewer than `q` bins; leave out `labels`, whose count must match the bins |
+
+### Code Snippet: Create ordered categories
+
+`ages` contains `[25, 30, 45, 60, 75]`:
+
+```python
+print(pd.cut(ages, bins=[0, 30, 50, 100], labels=['Young', 'Middle', 'Senior']))  # 30 falls in (0, 30]
+```
+
+```text
+0     Young
+1     Young
+2    Middle
+3    Senior
+4    Senior
+dtype: category
+Categories (3, str): ['Young' < 'Middle' < 'Senior']
+```
+
+The labels are ordered categories: they sort by band, and comparing the result with `< 'Senior'` gives `True` for every Young and Middle row.
+
 ## Creating Indicator (Dummy) Variables
 
 - **Reference category**: with `drop_first=True`, one label gets no column; its rows are 0 in every indicator, so the model carries no redundant column.
@@ -562,7 +565,7 @@ Without `pyarrow`: `274132` and `5297` bytes.
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
 | `pd.get_dummies(series)` | Create one indicator column per category | Boolean `DataFrame` by default |
-| `pd.get_dummies(df[['site', 'smoking']])` | One set of indicators per listed column | Names prefixed with the column, such as `site_north` and `smoking_yes` |
+| `pd.get_dummies(df[['site', 'smoking']])` | One set of indicators per listed column | Names prefixed with the column, such as `site_north` and `smoking_never` |
 | `prefix='color'` | Prefix the output labels | Names such as `color_blue` |
 | `drop_first=True` | Omit the first category as the reference | `k - 1` columns for `k` categories |
 | `dtype='int64'` | Request integer indicators | Columns containing `0` and `1` |
@@ -699,6 +702,8 @@ Exclude it with `df.loc[~iqr_flag]` only after evidence supports that decision.
 
 ### Code Snippet: Draw three rows to inspect
 
+`visits` is the five-row table from Detecting and Resolving Duplicates.
+
 ```python
 print(visits.sample(n=3, random_state=42).index.tolist())  # [1, 4, 2]
 ```
@@ -712,7 +717,7 @@ Labels 1 and 2 are P002's double entry, so this draw surfaces the repeat. A samp
 - **Data cleaning pipeline**: the same steps, in order, from the file you received to a saved clean table.
 - **Raw table**: the file as loaded, never changed, like a lab specimen.
 - **Working copy**: where every change happens.
-- **Cleaned table**: saved only after it passes validation, so the cleaning can rerun from the start and show nothing changed by accident.
+- **Cleaned table**: saved only after it passes validation. Because raw stays unchanged, the cleaning can rerun from the start.
 
 ## From Source to Cleaned Table
 
@@ -780,6 +785,7 @@ intake.csv 70
 - `series.notna().all()`: `True` when every value is present. Check this separately from uniqueness: a single missing ID does not repeat.
 - `series.isin(allowed).all()`: `True` when every value is on the allowed list.
 - `series.dropna().between(low, high).all()`: `True` when every recorded value is in the inclusive range.
+- `df.describe().T`: Summary statistics with each column turned into a row, like Lecture 03's `arr.T`.
 - `pd.Series({'rule name': result, ...})`: One named `True`/`False` per rule; prints as a validation report.
 - `assert checks.all(), checks[~checks]`: Stops with `AssertionError` listing the failed rules; nothing after it runs.
 - `clean.reset_index(drop=True)`: Renumber rows 0, 1, 2, ... after rows were dropped. A CSV saved with `index=False` reads back numbered this way.

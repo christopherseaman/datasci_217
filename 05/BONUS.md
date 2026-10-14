@@ -188,6 +188,8 @@ The core lecture finds exact repeats and repeated identifiers with `duplicated()
 ### Reference Card: Fuzzy matching
 
 - Fuzzy matching for near-duplicates (requires `thefuzz`, the maintained successor to `fuzzywuzzy`; `uv add thefuzz` installs it)
+- `fuzz.ratio(a, b)`: Similarity score from 0 to 100.
+- `process.extractOne(query, choices, scorer=fuzz.ratio, score_cutoff=n)`: Best match as `(match, score)`, or `None` when no choice reaches `n`.
 
 ### Code Snippet: Find near-duplicate names
 

@@ -18,7 +18,7 @@ jupyter:
 
 # Demo 2: Transforming a Clinic Intake Export
 
-A clinic's intake form exports column names with spaces and units, smoking status and site typed several ways, age as text, and pain as `'7/10'`. This demo renames the columns, normalizes the text, turns labels and text into numbers, groups values into bands, flags text with a pattern, stores repeated labels as categories, and prepares indicator columns for a model.
+A clinic's intake form exports column names with spaces and units, smoking status and site typed several ways, age as text, and pain as `'7/10'`. This demo renames the columns, normalizes the text, turns labels and text into numbers, flags text with a pattern, stores repeated labels as categories, groups values into bands, and prepares indicator columns for a model.
 
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
@@ -105,7 +105,7 @@ display(intake['smoking_status'].value_counts())
 
 ### 4. Convert age, and leave unreadable ages missing
 
-`'thirty-two'` and `'unknown'` cannot be read as numbers. Leave them missing and count them. Filling them with an average would put two invented ages into the age bands in step 6.
+`'thirty-two'` and `'unknown'` cannot be read as numbers. Leave them missing and count them. Filling them with an average would put two invented ages into the age bands in step 8.
 
 ```python
 intake['age'] = pd.to_numeric(intake['age'], errors='coerce').astype('Int64')
@@ -148,7 +148,31 @@ display(pd.Series(['never', 'Former', 'current']).map({'never': 0, 'former': 1, 
 
 **Expect:** `0.0`, `NaN`, `2.0`. The unnormalized `'Former'` has no code.
 
-### 6. Group values into bands
+### 6. Flag text with a pattern
+
+`str.contains` reads its pattern as a regular expression, and `|` means "or".
+
+```python
+intake['ever_smoker'] = intake['smoking_status'].str.contains('former|current')
+display(intake[['patient_id', 'smoking_status', 'ever_smoker']])
+print('Ever smokers:', intake['ever_smoker'].sum())
+```
+
+**Expect:** `True` for P102, P103, P105, P106, and P109, `False` for the four `never` rows, and `Ever smokers: 5`.
+
+### 7. Store repeated labels as categories
+
+A **category** column stores each distinct label once and keeps a small integer code per row.
+
+```python
+intake['site'] = intake['site'].astype('category')
+print(intake['site'].cat.categories)
+print(intake['site'].cat.codes.tolist())
+```
+
+**Expect:** categories `['north', 'south', 'west']` and codes `[0, 0, 1, 1, 0, 2, 2, 1, 0]`.
+
+### 8. Group values into bands
 
 Age bands with edges chosen to match a clinical table (`cut`), and SBP groups with edges chosen by the data so each holds about the same number of rows (`qcut`).
 
@@ -166,30 +190,6 @@ display(intake['sbp_group'].value_counts())
 ```
 
 **Expect:** `low` for 118, 120, and 126; `high` for 142 and 152; `middle` for the four readings of 130. Counts are `middle 4`, `low 3`, `high 2`, uneven because tied values cannot be split.
-
-### 7. Flag text with a pattern
-
-`str.contains` reads its pattern as a regular expression, and `|` means "or".
-
-```python
-intake['ever_smoker'] = intake['smoking_status'].str.contains('former|current')
-display(intake[['patient_id', 'smoking_status', 'ever_smoker']])
-print('Ever smokers:', intake['ever_smoker'].sum())
-```
-
-**Expect:** `True` for P102, P103, P105, P106, and P109, `False` for the four `never` rows, and `Ever smokers: 5`.
-
-### 8. Store repeated labels as categories
-
-A **category** column stores each distinct label once and keeps a small integer code per row.
-
-```python
-intake['site'] = intake['site'].astype('category')
-print(intake['site'].cat.categories)
-print(intake['site'].cat.codes.tolist())
-```
-
-**Expect:** categories `['north', 'south', 'west']` and codes `[0, 0, 1, 1, 0, 2, 2, 1, 0]`.
 
 ### 9. Indicator columns for a model
 

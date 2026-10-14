@@ -25,7 +25,8 @@ How the files are read:
 - If the Task 5.2 `assert` stops the cell, `clean_summary.csv` is not written and only its checks lose points.
 - A file is judged against your own other files: if `typed_profile.csv` shows `-999` kept, only the `-999 read as missing` check loses points, and the validation report, decision log, and summary built from that data still count.
 - Line endings, quoting, letter case, spaces around a cell, column order, row order, number format (`54`, `54.0`), and date format (`2024-01-02`, `2024/01/02`) never cost points; a percent may be unrounded or rounded to a whole number, a blank may be written as `missing` (`to_csv(na_rep="missing")`), and `clean_summary.csv` may be saved with or without `.T`.
-- A leading column of row numbers, which `to_csv()` writes without `index=False`, is ignored.
+- A leading column of row numbers, which `to_csv()` writes without `index=False`, is ignored. A file saved with `index=False`, which drops its row labels, is read in the README's row order and costs nothing.
+- A mean passes within 0.01 of the expected value, or rounded to one decimal.
 
 ## Completion contract
 
@@ -41,12 +42,12 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | `output/typed_profile.csv` | `age` counts every `unknown` as missing, not filled with a number. | typed profile: unreadable ages left blank | 3 |
 | `output/typed_profile.csv` | `visit_date` is `datetime64`, with the export's first and last dates, and counts the blank and impossible dates as missing. | typed profile: visit dates parsed | 3 |
 | `output/typed_profile.csv` | The visits without a real date are still in `labs`. | typed profile: undated visits kept | 2 |
-| `output/typed_profile.csv` | Every other `min`, `max`, and `mean` matches the data. | typed profile: other values unchanged | 3 |
+| `output/typed_profile.csv` | Every other `min`, `max`, and `mean` matches the data, each row labeled with its column. | typed profile: other values unchanged | 3 |
 | `output/category_counts.csv` | Each clinic has one spelling, and its count matches. | category counts: clinic names cleaned | 4 |
 | `output/category_counts.csv` | `clinic_Unknown` counts the visits the export left without a clinic. | category counts: missing clinic filled | 3 |
 | `output/category_counts.csv` | Gender has only `F`, `M`, and `X`, the codes `map()` leaves, with matching counts. | category counts: gender codes mapped | 4 |
 | `output/category_counts.csv` | It counts the visits in each HbA1c band. | category counts: a1c_category | 5 |
-| `output/category_counts.csv` | Each label is a `get_dummies()` column name, such as `clinic_Mission`. | category counts: indicator columns | 3 |
+| `output/category_counts.csv` | Each label is a `get_dummies()` column name, such as `clinic_Mission`, with one per category and none for blanks. | category counts: indicator columns | 3 |
 | `output/validation_report.csv` | It has one row for each of the six rules. | validation report: one row per rule | 3 |
 | `output/validation_report.csv` | Each rule keeps its Task 4 name. | validation report: rule names | 2 |
 | `output/validation_report.csv` | `patient_id_format` counts the IDs that fail `D` and five digits after Task 3.1 strips and upper-cases them. | validation report: patient IDs cleaned | 4 |
@@ -59,6 +60,6 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | `output/decision_log.csv` | `hba1c_blanked` and `weight_blanked` count the kept values outside the contract's ranges. | decision log: out-of-range values counted | 3 |
 | `output/clean_summary.csv` | Every HbA1c and weight `min` and `max` is inside the contract's range. | clean summary: impossible values blanked | 5 |
 | `output/clean_summary.csv` | Each `count` is the values present in the cleaned column, blanks not filled. | clean summary: blanks kept | 3 |
-| `output/clean_summary.csv` | Each `mean`, `min`, `50%`, and `max` matches the cleaned table. | clean summary: statistics | 4 |
+| `output/clean_summary.csv` | Each `mean`, `min`, `50%`, and `max` matches the cleaned table, saved once. | clean summary: statistics | 4 |
 
 Extra files are ignored.

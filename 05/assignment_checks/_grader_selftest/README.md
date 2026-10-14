@@ -11,25 +11,32 @@ in ignored `scratch/`, and confirms that:
   headers, spaces around report cells, every cell quoted, semicolons, tabs,
   reversed columns, shuffled rows, row numbers, dates day first or with a
   month name, UTF-16 or a BOM, a file name in another letter case, unrounded or
-  whole-number percents, `describe()` without `.T`, category counts on their
-  side, other step, indicator, and rule labels, and `missing` for a blank;
+  whole-number percents, means rounded to one decimal, `describe()` without
+  `.T`, category counts on their side, every file saved with `index=False`,
+  `pd.cut(right=False)` with edges that fit it, other step, indicator, and
+  rule labels, and `missing` for a blank;
 - each single mistake costs exactly the checks it gets wrong, with a message
   that names the fix: counts taken after `dropna()`, `notna()` for `isna()`,
-  fractions for percents, a report saved with `index=False`, the no-lab visits
-  kept or `how="any"`, repeats kept, `keep=False`, a subset that drops repeat
-  visits, `-999` kept, ages or dates left as text, ages filled with 0, undated
-  visits dropped early, IDs or clinics not stripped or not re-cased, blank
-  clinics not filled, gender upper-cased, replaced, or mapped without `X`, the
-  wrong `pd.cut` edges, counts without `get_dummies()`, passes counted for
-  failures, a blank failing a range rule, a renamed rule, 1 * IQR, blanks
-  flagged as outliers, an outlier rule not negated, bad IDs kept, every failing visit dropped, impossible values
-  counted after blanking or kept (in both columns or one), blanks filled with the median, a missing or
-  misplaced file, a sideways report, and a report written twice;
+  fractions for percents, a mean 0.021 off, the no-lab visits kept,
+  `how="any"`, a bare `dropna()`, or another `dropna()` after
+  `drop_duplicates()`, repeats kept, `keep=False`, a subset that drops
+  repeat visits, `-999` kept, ages or dates left as text, ages filled with 0,
+  undated visits dropped early, IDs or clinics not stripped or not re-cased,
+  blank clinics not filled or filled as `Missing`, gender upper-cased,
+  replaced, or mapped without `X`, the wrong `pd.cut` edges, `right=False`
+  with edges for the default or a last edge of 20, counts without
+  `get_dummies()` or with `drop_first` or `dummy_na`, passes counted for
+  failures, a blank failing a range rule, a range without its edges, a renamed
+  rule, `str.contains()` for the ID rule, 1 * IQR, blanks flagged as outliers,
+  an outlier rule not negated, bad IDs kept, the two rules joined with `|`,
+  every failing visit dropped, impossible values counted after blanking or kept
+  (in both columns or one), blanks filled with the median, a missing or
+  misplaced file, a sideways report, and a report or summary written twice;
 - a mistake upstream is charged only where it was made, since later files are
   judged against the pipeline the student's own earlier files show; Task 5.2's
   assert, which stops some mistakes, is skipped in those cases to show it; a
   stopped assert costs only the impossible-values check, and nothing when kept
-  repeats stopped it;
+  repeats, bad IDs, or undated visits that an earlier check charged stopped it;
 - the printed report gives a fix shared by consecutive checks once, ends with
   a `Left to fix` line, and the notebook's `run_checks()` prints the same text;
 - a fresh handout prints CHECKS.md's "Before Task 1" example, and CHECKS.md's

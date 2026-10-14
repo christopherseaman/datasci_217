@@ -81,7 +81,7 @@ display(raw)
 print('Blank cells:', (raw == '').sum().sum(), '| cells holding the text NA:', (raw == 'NA').sum().sum())
 ```
 
-**Expect:** 13 rows and 7 columns. V007's age is blank in both of its rows, and V006's SBP shows the text `NA`: `Blank cells: 2 | cells holding the text NA: 1`.
+**Expect:** 13 rows and 7 columns. V007's age is blank in both of its rows, and V006's SBP shows the text `NA`: `Blank cells: 2 | cells holding the text NA: 1`. `raw == ''` gives one `True`/`False` per cell; the first `.sum()` counts the `True` cells in each column, and the second adds the column counts.
 
 `head()` shows only the top of the file. Three random rows show the middle.
 
@@ -116,8 +116,8 @@ hr_number = pd.to_numeric(raw['heart_rate'], errors='coerce')
 
 rules = pd.DataFrame({
     'patient_id P+3 digits': raw['patient_id'].str.fullmatch(r'P[0-9]{3}'),
-    'date text YYYY-MM-DD': raw['visit_date'].str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}'),
-    'site allowed': raw['site'].isin(allowed_sites),
+    'date text YYYY-MM-DD or missing': raw['visit_date'].isin(missing_codes) | raw['visit_date'].str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}'),
+    'site allowed or missing': raw['site'].isin(missing_codes) | raw['site'].isin(allowed_sites),
     'age whole 0-120 or missing': raw['age'].isin(missing_codes) | (age_number.between(0, 120) & (age_number % 1 == 0)),
     'sbp whole 60-250 or missing': raw['sbp'].isin(missing_codes) | (sbp_number.between(60, 250) & (sbp_number % 1 == 0)),
     'heart rate whole 30-220 or missing': raw['heart_rate'].isin(missing_codes) | (hr_number.between(30, 220) & (hr_number % 1 == 0)),
@@ -318,4 +318,4 @@ display(contract_checks(broken))
 
 ### Practice 2: Add a rule
 
-Add a check named `visit dates in 2026` to `contract_checks()`, then run it on `clean`. Expect every check `True`; then set one `visit_date` in `broken` to `2025-12-31` and expect that check to fail.
+Add a check named `visit dates in 2026` to `contract_checks()`, with the test `table['visit_date'].dropna().between('2026-01-01', '2026-12-31').all()`. Run it on `clean`: every check is `True`. Then set one `visit_date` in a fresh `clean.copy()` to `2025-12-31` and run the checks again: only `visit dates in 2026` is `False`.

@@ -73,10 +73,12 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
         "missing_pct": (gaps.isna().mean() * (1 if "pct-as-fraction" in wrong else 100)).round(1),
     })
     missing_report.index.name = "column"
-    missing_report.to_csv(output / "missing_report.csv", index="report-index-false" not in wrong)
+    missing_report.to_csv(output / "missing_report.csv")
     rows_read = len(labs)
     if "dropna-any" in wrong:
         labs = labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="any")
+    elif "bare-dropna" in wrong:
+        labs = labs.dropna()
     elif "no-dropna" not in wrong:
         labs = labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="all")
     rows_with_labs = len(labs)
@@ -88,6 +90,8 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
         labs = labs.drop_duplicates(keep=False)
     elif "no-dedupe" not in wrong:
         labs = labs.drop_duplicates()
+    if "extra-dropna-weight" in wrong:
+        labs = labs.dropna(subset=["weight_kg"])
     rows_unique = len(labs)
 
     # Task 2
@@ -118,7 +122,7 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
     clinic = labs["clinic"] if "clinic-unstripped" in wrong else labs["clinic"].str.strip()
     labs["clinic"] = clinic if "clinic-not-title" in wrong else clinic.str.title()
     if "clinic-not-filled" not in wrong:
-        labs["clinic"] = labs["clinic"].fillna("Unknown")
+        labs["clinic"] = labs["clinic"].fillna("Missing" if "clinic-missing-label" in wrong else "Unknown")
     if "gender-upper-only" in wrong:
         labs["gender"] = labs["gender"].str.strip().str.upper()
     elif "gender-no-x" in wrong:
@@ -131,13 +135,19 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
         labs["gender"] = labs["gender"].str.strip().str.lower().replace(GENDER_CODES)
     else:
         labs["gender"] = labs["gender"].str.strip().str.lower().map(GENDER_CODES)
-    bins = [0, 5.7, 6.5, 20] if "cut-wrong-edges" in wrong else [0, 5.6, 6.4, 20]
+    if "cut-left-closed-right-edges" in wrong:
+        bins = [0, 5.7, 6.5, 20.1]
+    elif "cut-wrong-edges" in wrong or "cut-left-closed-20" in wrong:
+        bins = [0, 5.7, 6.5, 20]
+    else:
+        bins = [0, 5.6, 6.4, 20]
     labs["a1c_category"] = pd.cut(labs["hba1c_pct"], bins=bins, labels=["normal", "prediabetes", "diabetes"],
-                                  right="cut-left-closed" not in wrong)
+                                  right=not any(label.startswith("cut-left-closed") for label in wrong))
     if "no-dummies" in wrong:
         category_counts = pd.concat([labs[column].value_counts() for column in ("clinic", "gender", "a1c_category")])
     else:
-        coded = pd.get_dummies(labs[["clinic", "gender", "a1c_category"]], dtype="int64")
+        coded = pd.get_dummies(labs[["clinic", "gender", "a1c_category"]], dtype="int64",
+                               drop_first="dummies-drop-first" in wrong, dummy_na="dummies-na" in wrong)
         category_counts = coded.sum()
     category_counts.index.name = "indicator"
     category_counts.name = "visits"
@@ -152,13 +162,14 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
         labs["glucose_outlier"] = ~glucose.between(lower, upper)
     else:
         labs["glucose_outlier"] = (glucose < lower) | (glucose > upper)
-    hba1c_ok = labs["hba1c_pct"].between(4, 20)
+    hba1c_ok = labs["hba1c_pct"].between(4, 20, inclusive="neither" if "rules-edges-excluded" in wrong else "both")
     weight_ok = labs["weight_kg"].between(30, 250)
     if "rules-blank-fails" not in wrong:
         hba1c_ok = hba1c_ok | labs["hba1c_pct"].isna()
         weight_ok = weight_ok | labs["weight_kg"].isna()
     rules = pd.DataFrame({
-        "patient_id_format": labs["patient_id"].str.fullmatch(r"D[0-9]{5}", na=False),
+        "patient_id_format": (labs["patient_id"].str.contains if "ids-contains" in wrong
+                              else labs["patient_id"].str.fullmatch)(r"D[0-9]{5}", na=False),
         "visit_date_present": labs["visit_date"].notna(),
         "gender_valid": labs["gender"].isin(["F", "M", "X"]),
         "hba1c_in_range": hba1c_ok,
@@ -179,6 +190,8 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
         clean = clean[rules["patient_id_format"] & rules["visit_date_present"] & rules["gender_valid"]]
     elif "keep-bad-ids" in wrong:
         clean = clean[rules["visit_date_present"]]
+    elif "either-filter" in wrong:
+        clean = clean[rules["patient_id_format"] | rules["visit_date_present"]]
     else:
         clean = clean[rules["patient_id_format"] & rules["visit_date_present"]]
     hba1c_outside = ((clean["hba1c_pct"] < 4) | (clean["hba1c_pct"] > 20)).sum()
@@ -379,6 +392,28 @@ def run() -> None:
 
         full_marks("sideways-category-counts", sideways_counts)
 
+        def without_index(root: Path) -> None:
+            # index=False drops the labels; rows in the README's order are read in that order.
+            for name in FILES:
+                frame = pd.read_csv(root / name, dtype=str, keep_default_na=False)
+                frame.iloc[:, 1:].to_csv(root / name, index=False)
+
+        full_marks("index-false", without_index)
+
+        def one_decimal_means(root: Path) -> None:
+            for name in (PROFILE_FILE, SUMMARY_FILE):
+                frame = pd.read_csv(root / name, index_col=0)
+                frame["mean"] = frame["mean"].round(1)
+                frame.to_csv(root / name)
+
+        full_marks("one-decimal-means", one_decimal_means)
+
+        def right_false_edges(root: Path) -> None:
+            shutil.rmtree(root / "output")
+            solve(root, data, frozenset({"cut-left-closed-right-edges"}))
+
+        full_marks("cut-left-closed-right-edges", right_false_edges)
+
         # Each mistake costs only the checks it gets wrong.
         mistakes = []
 
@@ -399,7 +434,6 @@ def run() -> None:
         mistake("count-after-dropna", {"missing report: missing_count"}, "before Task 1.2's dropna()")
         mistake("count-present", {"missing report: missing_count"}, "isna().sum() counts the gaps")
         mistake("pct-as-fraction", {"missing report: missing_pct"}, "multiply it by 100")
-        mistake("report-index-false", {"missing report: one row per column"}, "index=False leaves them out")
         mistake("no-dropna", {"decision log: no-lab visits dropped"}, "nothing was dropped")
         mistake("dropna-any", {"decision log: no-lab visits dropped"}, 'how="any"')
         mistake("no-dedupe", {"decision log: exact repeats removed"}, "nothing was removed", gate=False)
@@ -421,7 +455,8 @@ def run() -> None:
         mistake("gender-no-x", {"category counts: gender codes mapped"}, "there is no gender_X")
         mistake("gender-no-nb", {"category counts: gender codes mapped"}, "missing from gender_codes (nb, nonbinary)")
         mistake("cut-wrong-edges", {"category counts: a1c_category"}, "includes its right edge")
-        mistake("cut-left-closed", {"category counts: a1c_category"}, "do not pass right=False")
+        mistake("cut-left-closed", {"category counts: a1c_category"}, "lands in the next band")
+        mistake("cut-left-closed-20", {"category counts: a1c_category"}, "leaves out an HbA1c of exactly 20")
         mistake("no-dummies", {"category counts: indicator columns"}, "pd.get_dummies")
         mistake("rules-pass-count", {"validation report: failing rows"}, "(~rules).sum()")
         mistake("rules-sum-per-visit", {"validation report: one row per rule"}, "without axis=1")
@@ -445,6 +480,14 @@ def run() -> None:
             summary.to_csv(root / SUMMARY_FILE)
 
         mistake("summary-mean-off", {"clean summary: statistics"}, "changes only the out-of-range", mean_off)
+
+        def profile_mean_off(root: Path) -> None:
+            profile = pd.read_csv(root / PROFILE_FILE, index_col=0)
+            profile.loc["hba1c_pct", "mean"] += 0.021
+            profile.to_csv(root / PROFILE_FILE)
+
+        mistake("profile-mean-off", {"typed profile: other values unchanged"}, "hba1c_pct's mean is",
+                profile_mean_off)
         mistake("range-kept", {"clean summary: impossible values blanked"}, ".where(", gate=False)
         # One column left unblanked costs the impossible-values check only, not its count or statistics too.
         mistake("weight-kept", {"clean summary: impossible values blanked"}, ".where(", gate=False)
@@ -469,15 +512,39 @@ def run() -> None:
             raise AssertionError("Task 5.2's checks should stop a submission that keeps exact repeats")
 
         mistake("no-dedupe-stopped", {"decision log: exact repeats removed"}, "nothing was removed", repeats_stop)
+
+        def stopped(wrong: str):
+            """Solve with `wrong`, which Task 5.2's assert stops before clean_summary.csv is saved."""
+            def change(root: Path) -> None:
+                shutil.rmtree(root / "output")
+                try:
+                    solve(root, data, frozenset({wrong}))
+                except GateStopped:
+                    return
+                raise AssertionError(f"Task 5.2's checks should stop {wrong}")
+            return change
+
+        # A stop that a mistake an earlier check charged explains costs nothing more.
+        mistake("keep-bad-ids-stopped", {"decision log: failing visits dropped"}, "drops only the undated visits",
+                stopped("keep-bad-ids"))
+        mistake("either-filter", {"decision log: failing visits dropped"}, "| means or", stopped("either-filter"))
+        mistake("ids-contains", {"validation report: patient IDs cleaned"}, "str.contains()", stopped("ids-contains"))
+        mistake("bare-dropna", {"decision log: no-lab visits dropped"}, "a plain dropna()")
+        mistake("extra-dropna-weight", {"decision log: exact repeats removed"}, "a blank weight_kg")
+        mistake("clinic-missing-label", {"category counts: missing clinic filled"}, "names them Unknown")
+        mistake("dummies-drop-first", {"category counts: indicator columns"}, "drop_first=True")
+        mistake("dummies-na", {"category counts: indicator columns"}, "dummy_na=True")
+        mistake("rules-edges-excluded", {"validation report: failing rows"}, "includes 4 and 20")
+
+        def summary_twice(root: Path) -> None:
+            text = (root / SUMMARY_FILE).read_text(encoding="utf-8")
+            (root / SUMMARY_FILE).write_text(text + text, encoding="utf-8")
+
+        mistake("summary-written-twice", {"clean summary: statistics"}, "holds the same table 2 times", summary_twice)
         mistake("profile-missing", group("typed profile"), "is missing; run the Task 2 cell",
                 lambda root: (root / PROFILE_FILE).unlink())
         mistake("counts-in-root", group("category counts"), "the assignment folder itself has category_counts.csv",
                 lambda root: (root / CATEGORY_FILE).rename(root / "category_counts.csv"))
-        mistake("counts-index-false", {"category counts: indicator columns"}, "index=False leaves them out",
-                lambda root: pd.read_csv(root / CATEGORY_FILE)[["visits"]].to_csv(root / CATEGORY_FILE, index=False))
-        mistake("validation-index-false", {"validation report: one row per rule"}, "index=False leaves them out",
-                lambda root: pd.read_csv(root / VALIDATION_FILE)[["failing_rows"]].to_csv(root / VALIDATION_FILE,
-                                                                                          index=False))
         mistake("validation-sideways", {"validation report: one row per rule"}, "rules across the top",
                 lambda root: pd.read_csv(root / VALIDATION_FILE, index_col="rule").T.to_csv(root / VALIDATION_FILE))
 

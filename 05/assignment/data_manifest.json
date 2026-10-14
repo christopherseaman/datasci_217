@@ -4,8 +4,8 @@
   "files": {
     "data/lab_visits.csv": {
       "rows": 59447,
-      "bytes": 2668900,
-      "sha256": "d2f5f1e71ec3b6ca8d058e42bfd1fafc037a347e70890544a01898941714fe68"
+      "bytes": 2668782,
+      "sha256": "52bebce16a0b982546213e419dec762bcd702e579aea1dd842bfdf89445b8d18"
     }
   }
 }

@@ -126,8 +126,10 @@ def patient_visits(rng: random.Random, number: int) -> list[dict[str, str]]:
         age = first_age + (day - first).days // 365
         weight = clip(weight + normal(rng, 0.0, 1.5), 40.0, 200.0)
         visit_a1c = clip(a1c + normal(rng, 0.0, 0.25), 4.2, 16.0)
-        # Fasting glucose follows HbA1c: the estimated average glucose is 28.7 * HbA1c - 46.7 mg/dL.
-        glucose = clip(0.9 * (28.7 * visit_a1c - 46.7) + normal(rng, 0.0, 14.0), 62.0, 450.0)
+        # Fasting glucose follows HbA1c: the estimated average glucose is 28.7 * HbA1c - 46.7 mg/dL. Its spread
+        # is 10% of that level, so the lowest values taper off near 50 mg/dL with no floor to pile up against.
+        level = 0.9 * (28.7 * visit_a1c - 46.7)
+        glucose = normal(rng, level, 0.10 * level)
         visits.append({
             "patient_id": patient_id, "visit_date": day.isoformat(), "clinic": clinic,
             "gender": pick(rng, SPELLINGS[gender]), "age": str(age), "weight_kg": f"{weight:.1f}",
