@@ -129,7 +129,7 @@ unchecked = pd.merge(labs, registry, on='patient_id', how='left')
 print('lab rows before:', len(labs), 'after:', len(unchecked))
 ```
 
-**Expect:** `missing keys: 0 0`, so no blank key can match another blank. Then `lab rows before: 7 after: 8`: one lab row was photocopied, and nothing raised an error.
+**Expect:** `missing keys: 0 0`, so no missing (`NA`) key can match another missing key. Empty strings and whitespace need separate cleaning. Then `lab rows before: 7 after: 8`: one lab row was photocopied, and nothing raised an error.
 
 Find the repeated key:
 
