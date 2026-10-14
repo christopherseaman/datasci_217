@@ -20,7 +20,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 REPO = Path(__file__).resolve().parents[1]
-COLUMNS = ["github_user", "email", "first_name", "last_name", "identity_hash", "course", "semester"]
+COLUMNS = ["github_user", "email", "last_name", "first_name", "course", "semester"]
 NS = {"s": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
 spec = importlib.util.spec_from_file_location("course_process_email", REPO / "01/assignment/process_email.py")
 identity = importlib.util.module_from_spec(spec)
@@ -131,7 +131,7 @@ def write_roster(students, output):
     output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     descriptor = os.open(output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=COLUMNS, delimiter="\t")
+        writer = csv.DictWriter(handle, fieldnames=COLUMNS, delimiter="\t", extrasaction="ignore")
         writer.writeheader()
         writer.writerows({**student, "course": "DataSci 217", "semester": semester} for student in students)
 
