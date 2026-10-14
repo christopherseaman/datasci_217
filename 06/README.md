@@ -292,7 +292,7 @@ North's 9:00 `NaN` means no report arrived; its 10:00 `0.0` is a real report of 
 | Many-to-many | Repeated keys on both sides | `validate='many_to_many'` documents, not constrains |
 | Broken contract | A side you declared unique has repeats | Raises `pd.errors.MergeError`; catch it with `try`/`except` (Lecture 02) |
 | Find the repeats | Every row whose key appears more than once | `df[df.duplicated(subset=['key'], keep=False)]` (Lecture 05); list every key column, such as `subset=['k1', 'k2']`, for a composite key |
-| Missing keys | Blank keys match each other: two blank-keyed rows on each side make four false matches | `df['key'].notna().all()` on both tables before merging |
+| Missing keys | Missing (`NA`) keys match each other: two missing-key rows on each side make four false matches | `df['key'].notna().all()` on both tables before merging; this does not reject empty strings or whitespace, which need separate cleaning |
 | Match audit | Show `left_only`, `right_only`, `both` | `indicator=True` |
 
 ### Code Snippet: Catch a Broken Merge Contract
@@ -336,7 +336,7 @@ display(checked[['visit_id', 'clinic_id', 'clinic_name', '_merge']])
 
 # Reshaping: Wide vs Long Format
 
-- **Reshaping**: changing what one row represents without adding or removing any values.
+- **Reshaping**: changing the layout of a table. A lossless reshape preserves every measurement; aggregation combines measurements and cannot recover the originals.
 - **Wide**: measurements of one kind spread across columns, such as a systolic blood pressure (SBP) column per visit.
 - **Long**: one row per measurement, such as one row per patient-visit; grouping and plotting tools usually want this layout.
 
@@ -391,6 +391,85 @@ display(long)
 | 3 | P001 | followup | 138 |
 | 4 | P002 | followup | 132 |
 | 5 | P003 | followup | 129 |
+
+## Pivoting Long Back to Wide with pivot()
+
+- `pivot()` runs `melt()` backwards, for a reader or a comparison of baseline with follow-up that needs one column per visit.
+- It files each value by its labels, so the long rows may come in any order.
+- It never aggregates, so each `index`/`columns` pair must identify exactly one value.
+
+### Reference Card: `pivot()`
+
+| Argument | Purpose | Constraint / output |
+| --- | --- | --- |
+| `index` | Column becoming row labels | One row per index value; a list such as `['id1', 'id2']` gives two-level row labels |
+| `columns` | Column becoming headers | One column per value |
+| `values` | Column filling cells | Duplicate index/column pairs raise an error |
+| `.reset_index()` afterward | Turn the row labels back into an ordinary column | Leaves the `columns` name as a header label |
+| `result.columns.name = None` | Drop that leftover header label | Plain column headers, as in the original wide table |
+
+### Code Snippet: Pivot long data back to wide
+
+```python
+back = long.pivot(index='patient_id', columns='visit', values='sbp')
+display(back)
+
+back = back.reset_index()
+back.columns.name = None   # drop the leftover 'visit' header label
+display(back)
+print(back.equals(wide))   # True: the round trip rebuilt the wide table exactly
+```
+
+| visit | baseline | followup |
+| --- | --- | --- |
+| **patient_id** |  |  |
+| P001 | 152 | 138 |
+| P002 | 138 | 132 |
+| P003 | 145 | 129 |
+
+|  | patient_id | baseline | followup |
+| --- | --- | --- | --- |
+| 0 | P001 | 152 | 138 |
+| 1 | P002 | 138 | 132 |
+| 2 | P003 | 145 | 129 |
+
+![xkcd 2313: Wrong Times Table. A grid can look right and still be wrong, so check the round trip](media/xkcd_2313.png)
+
+## When pivot() Finds a Repeated Pair
+
+If an `index`/`columns` pair identifies more than one value, `pivot()` cannot choose a cell value and stops with `ValueError: Index contains duplicate entries, cannot reshape`. List the repeated pairs with `duplicated(subset=[...], keep=False)` (Lecture 05), then decide whether they are data errors or real repeated observations.
+
+### Code Snippet: Find the Pair that Stops a Pivot
+
+`rechecked` holds one baseline reading per patient and two follow-up readings for P002, so `rechecked.pivot(index='patient_id', columns='visit', values='sbp')` raises the repeated-pair error:
+
+```python
+display(rechecked[rechecked.duplicated(subset=['patient_id', 'visit'], keep=False)])
+```
+
+|  | patient_id | visit | sbp | reading_time |
+| --- | --- | --- | --- | --- |
+| 3 | P002 | followup | 148 | 10:15 |
+| 4 | P002 | followup | 136 | 10:22 |
+
+- A recheck is a real repeated observation, so the fix is a documented rule, not a guess: to keep the later recheck, `sort_values('reading_time')`, then `drop_duplicates(subset=['patient_id', 'visit'], keep='last')`.
+- If both readings should count, `pivot_table()` aggregates them into one cell instead, and the choice of `sum`, `mean`, or another function changes the question being answered.
+
+### Code Snippet: Summarize repeated readings with `pivot_table()`
+
+**Aggregation** reduces several values to one summary. For just the two P002 rechecks shown above, stored in `repeat_readings`, the mean is `(148 + 136) / 2 = 142` mmHg.
+
+```python
+display(repeat_readings.pivot_table(index='patient_id', columns='visit',
+                                   values='sbp', aggfunc='mean'))
+```
+
+| visit | followup |
+| --- | --- |
+| **patient_id** |  |
+| P002 | 142.0 |
+
+`aggfunc='mean'` is the default; naming it records the decision. This answers “What was the average reading?”, while keeping the later recheck answers “What reading did the protocol record?” Aggregation is not lossless: the mean alone cannot recover the two readings.
 
 ![xkcd 1762: Moving Boxes. A good row label says what is inside, like a patient ID](media/xkcd_1762.png)
 
@@ -488,85 +567,7 @@ print(by_quarter.stack().equals(summary['visits']))   # True: stack() undoes uns
 | Q1 | 410 | 380 |
 | Q2 | 395 | 362 |
 
-## Pivoting Long Back to Wide with pivot()
-
-- `pivot()` runs `melt()` backwards, for a reader or a comparison of baseline with follow-up that needs one column per visit.
-- It files each value by its labels, so the long rows may come in any order.
-- It never aggregates, so each `index`/`columns` pair must identify exactly one value.
-- `pivot()` is a shortcut for `set_index()` on the two label columns followed by `unstack()`, just as `melt()` does the work of `stack()` on ordinary columns.
-
-### Reference Card: `pivot()`
-
-| Argument | Purpose | Constraint / output |
-| --- | --- | --- |
-| `index` | Column becoming row labels | One row per index value; a list such as `['id1', 'id2']` gives two-level row labels |
-| `columns` | Column becoming headers | One column per value |
-| `values` | Column filling cells | Duplicate index/column pairs raise an error |
-| `.reset_index()` afterward | Turn the row labels back into an ordinary column | Leaves the `columns` name as a header label |
-| `result.columns.name = None` | Drop that leftover header label | Plain column headers, as in the original wide table |
-
-### Code Snippet: Pivot long data back to wide
-
-```python
-back = long.pivot(index='patient_id', columns='visit', values='sbp')
-display(back)
-
-back = back.reset_index()
-back.columns.name = None   # drop the leftover 'visit' header label
-display(back)
-print(back.equals(wide))   # True: the round trip rebuilt the wide table exactly
-```
-
-| visit | baseline | followup |
-| --- | --- | --- |
-| **patient_id** |  |  |
-| P001 | 152 | 138 |
-| P002 | 138 | 132 |
-| P003 | 145 | 129 |
-
-|  | patient_id | baseline | followup |
-| --- | --- | --- | --- |
-| 0 | P001 | 152 | 138 |
-| 1 | P002 | 138 | 132 |
-| 2 | P003 | 145 | 129 |
-
-![xkcd 2313: Wrong Times Table. A grid can look right and still be wrong, so check the round trip](media/xkcd_2313.png)
-
-## When pivot() Finds a Repeated Pair
-
-If an `index`/`columns` pair identifies more than one value, `pivot()` cannot choose a cell value and stops with `ValueError: Index contains duplicate entries, cannot reshape`. List the repeated pairs with `duplicated(subset=[...], keep=False)` (Lecture 05), then decide whether they are data errors or real repeated observations.
-
-### Code Snippet: Find the Pair that Stops a Pivot
-
-`rechecked` holds one baseline reading per patient and two follow-up readings for P002, so `rechecked.pivot(index='patient_id', columns='visit', values='sbp')` raises the repeated-pair error:
-
-```python
-display(rechecked[rechecked.duplicated(subset=['patient_id', 'visit'], keep=False)])
-```
-
-|  | patient_id | visit | sbp | reading_time |
-| --- | --- | --- | --- | --- |
-| 3 | P002 | followup | 148 | 10:15 |
-| 4 | P002 | followup | 136 | 10:22 |
-
-- A recheck is a real repeated observation, so the fix is a documented rule, not a guess: to keep the later recheck, `sort_values('reading_time')`, then `drop_duplicates(subset=['patient_id', 'visit'], keep='last')`.
-- If both readings should count, `pivot_table()` aggregates them into one cell instead, and the choice of `sum`, `mean`, or another function changes the question being answered.
-
-### Code Snippet: Summarize repeated readings with `pivot_table()`
-
-**Aggregation** reduces several values to one summary. For just the two P002 rechecks shown above, stored in `repeat_readings`, the mean is `(148 + 136) / 2 = 142` mmHg.
-
-```python
-display(repeat_readings.pivot_table(index='patient_id', columns='visit',
-                                   values='sbp', aggfunc='mean'))
-```
-
-| visit | followup |
-| --- | --- |
-| **patient_id** |  |
-| P002 | 142.0 |
-
-`aggfunc='mean'` is the default; naming it records the decision. This answers “What was the average reading?”, while keeping the later recheck answers “What reading did the protocol record?”
+`pivot(index='clinic', columns='quarter', values='visits')` gives the same layout as `set_index(['clinic', 'quarter'])['visits'].unstack()`. Both preserve each clinic-quarter value; `melt()` similarly moves values from ordinary columns into rows.
 
 # LIVE DEMO!
 

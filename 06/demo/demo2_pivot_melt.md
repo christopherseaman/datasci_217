@@ -94,42 +94,9 @@ display(bp_long.head(6))
 
 **Expect:** `(12, 6)`: 4 patients × 3 visits = 12 rows, with columns `patient_id`, `age`, `sex`, `clinic`, `visit`, `sbp`. The first four rows are every patient's `baseline`, then the `week_04` rows begin.
 
-### 4. Two-level row labels
+### 4. Long back to wide with `pivot()`
 
-In the long table one patient has three rows, so `patient_id` alone no longer names a row; `patient_id` and `visit` together do.
-
-```python
-by_visit = bp_long.set_index(['patient_id', 'visit']).sort_index()
-print(by_visit.index.is_unique)
-display(by_visit.loc['P003'])
-print(by_visit.loc[('P003', 'week_12'), 'sbp'])
-```
-
-**Expect:** `True`, then P003's three visits (`baseline`, `week_04`, `week_12`) with SBP 147, 140, and 129, then `129`. The labels sort alphabetically, which here is also time order.
-
-### 5. Move a level with `unstack()` and `stack()`
-
-`unstack()` moves the inner level, `visit`, up into the columns: one row per patient again.
-
-```python
-sbp_by_visit = by_visit['sbp'].unstack()
-display(sbp_by_visit)
-display(by_visit['sbp'].unstack(level='patient_id'))
-```
-
-**Expect:** first a 4 × 3 table with patients as rows and `baseline`, `week_04`, `week_12` as columns (P001: 152, 144, 138). Then the same numbers turned the other way: visits as rows, P001 to P004 as columns.
-
-`stack()` moves the visit columns back down into the inner row level.
-
-```python
-print(sbp_by_visit.stack().equals(by_visit['sbp']))
-```
-
-**Expect:** `True`: no value was lost or moved to another patient.
-
-### 6. Long back to wide with `pivot()`
-
-`pivot()` does `set_index()` and `unstack()` in one call: `visit` supplies the headers and `sbp` fills the cells. With four identifier columns in `ids`, the result has four-level row labels, so `reset_index()` turns them back into columns, and `columns.name = None` drops the leftover `visit` header label.
+`pivot()` gives each patient one row: `visit` supplies the headers and `sbp` fills the cells. The four identifier columns in `ids` become row labels, so `reset_index()` turns them back into columns, and `columns.name = None` drops the leftover `visit` header label.
 
 ```python
 bp_wide_again = bp_long.pivot(
@@ -144,7 +111,7 @@ display(bp_wide_again)
 
 **Expect:** `True`: the round trip reproduces the original table exactly, the same 4 rows, 7 columns, values, and dtypes.
 
-### 7. When `pivot()` finds a repeated pair
+### 5. When `pivot()` finds a repeated pair
 
 The BP cuff's own export for the week 4 visit arrives.
 
@@ -187,11 +154,57 @@ display(recorded.pivot(index='patient_id', columns='visit', values='sbp'))
 
 If both readings should count, `pivot_table()` would average them instead.
 
+### 6. Two-level row labels
+
+In the long table one patient has three rows, so `patient_id` alone no longer names a row; `patient_id` and `visit` together do.
+
+```python
+by_visit = bp_long.set_index(['patient_id', 'visit']).sort_index()
+print(by_visit.index.is_unique)
+display(by_visit.loc['P003'])
+print(by_visit.loc[('P003', 'week_12'), 'sbp'])
+```
+
+**Expect:** `True`, then P003's three visits (`baseline`, `week_04`, `week_12`) with SBP 147, 140, and 129, then `129`. The labels sort alphabetically, which here is also time order.
+
+### 7. Move a level with `unstack()` and `stack()`
+
+`unstack()` moves the inner level, `visit`, up into the columns: one row per patient again.
+
+```python
+sbp_by_visit = by_visit['sbp'].unstack()
+display(sbp_by_visit)
+display(by_visit['sbp'].unstack(level='patient_id'))
+```
+
+**Expect:** first a 4 × 3 table with patients as rows and `baseline`, `week_04`, `week_12` as columns (P001: 152, 144, 138). Then the same numbers turned the other way: visits as rows, P001 to P004 as columns.
+
+`stack()` moves the visit columns back down into the inner row level.
+
+```python
+print(sbp_by_visit.stack().equals(by_visit['sbp']))
+```
+
+**Expect:** `True`: no value was lost or moved to another patient.
+
 ## Independent practice
 
 Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
-### 8. Visit numbers instead of labels
+### 8. Average the readings instead of selecting the recheck
+
+For a report about the average of all recorded readings, keep both P003 measurements and state the aggregation with `aggfunc='mean'`. This answers a different question from the clinic protocol in step 5.
+
+```python
+average_readings = device_week4.pivot_table(
+    index='patient_id', columns='visit', values='sbp', aggfunc='mean',
+)
+display(average_readings)
+```
+
+**Expect:** four rows: P001 144.0, P002 135.0, P003 146.0, and P004 136.0. P003's mean is `(152 + 140) / 2 = 146` mmHg; the protocol's later reading was 140 mmHg. Aggregation changes the values, so this is not a lossless reshape.
+
+### 9. Visit numbers instead of labels
 
 The visit labels are text. A number of weeks is easier to plot and sort, so look each label up in a dictionary with `.map()` (Lecture 05).
 
@@ -204,7 +217,7 @@ display(bp_long.sort_values(['patient_id', 'week']).head(3))
 
 **Expect:** `0` unmapped labels, then P001's three rows in time order: 152 at week 0, 144 at week 4, and 138 at week 12.
 
-### 9. A missed visit after `unstack()`
+### 10. A missed visit after `unstack()`
 
 P002 missed the week 12 visit. Drop that row and unstack again.
 
@@ -217,7 +230,7 @@ print(len(gappy.stack()), len(gappy.stack().dropna()))
 
 **Expect:** P002's `week_12` cell is `NaN`, and the SBP columns become floats (`138.0`) because `NaN` is a float. Then `12 11`: `stack()` keeps the empty cell as a row, and `.dropna()` removes it.
 
-### 10. Renumber rows after a filter
+### 11. Renumber rows after a filter
 
 Filtering keeps the original row labels, so the numbers now have gaps.
 
@@ -231,16 +244,3 @@ display(high_baseline[['patient_id', 'age', 'baseline']])
 ```
 
 **Expect:** `[0, 2, 3]`, then `[0, 1, 2]`: P001, P003, and P004 started at 140 mmHg or higher. `drop=True` throws the old labels away instead of saving them as a column, because `0, 2, 3` carried no information.
-
-### 11. Average the readings instead of selecting the recheck
-
-For a report about the average of all recorded readings, keep both P003 measurements and state the aggregation with `aggfunc='mean'`. This answers a different question from the clinic protocol in step 7.
-
-```python
-average_readings = device_week4.pivot_table(
-    index='patient_id', columns='visit', values='sbp', aggfunc='mean',
-)
-display(average_readings)
-```
-
-**Expect:** four rows: P001 144.0, P002 135.0, P003 146.0, and P004 136.0. P003's mean is `(152 + 140) / 2 = 146` mmHg; the protocol's later reading was 140 mmHg. Aggregation changes the values, so this is not a lossless reshape.

@@ -50,7 +50,7 @@ The two extracts (Tasks 4.3 and 5.2) hold the rows of 16 sample patients, `SAMPL
 4. Run the first code cell. When `data/` is missing, it runs `generate_data.py` (`python3 generate_data.py` in the terminal does the same) to write the five files.
     - Expect: the Python, NumPy, and pandas versions, `Wrote 5 data files to .../data` on the first run, then `Verified 5 data files`.
 
-The first cell supplies `DATA_DIR`, `OUTPUT_DIR`, a path for each output file, `SAMPLE_IDS`, and `raw`, a dictionary of the raw tables (`raw["patients"]`, `raw["visits_south"]`, ...). The Parquet files are read with `pd.read_parquet(path)`; the CSV files with `pd.read_csv(path, dtype="string", keep_default_na=False)`, so blanks stay empty text. Function names in the scaffold are suggestions. Fill in the "Cumulative midterm checkpoint" cell, below the first code cell, at any time.
+The first cell supplies `DATA_DIR`, `OUTPUT_DIR`, a path for each output file, `SAMPLE_IDS`, and `raw`, a dictionary of the raw tables (`raw["patients"]`, `raw["visits_south"]`, ...). The Parquet files are read with `pd.read_parquet(path)`; the CSV files with `pd.read_csv(path, dtype="string", keep_default_na=False)`, so blanks stay empty text. Function names in the scaffold are suggestions. Fill in the "Cumulative midterm checkpoint" cell below the first code cell as you work; its Lecture 03 entry uses the NumPy calculation after Task 4.3.
 
 ## Files
 
@@ -109,7 +109,7 @@ Write a function that takes a table's name and the table and returns a dictionar
 
 ### 2.1 Write the data contract
 
-In the notebook's Task 2.1 Markdown cell, state for each of the five tables its grain (what one row represents) and its key, single or composite. Then name the cardinality you expect for each Task 4.4 join: visits to patients, patients to sites, and visits to A1c results.
+In the notebook's Task 2.1 Markdown cell, state the intended grain (what one row represents) and key, single or composite, of the cleaned version of each of the five input tables. For the visit files, describe the rows after stacking and keeping the later recheck; for sites, describe current records only. Note which raw rows violate those intended keys: exact repeats, visit rechecks, and current/retired site versions. Then name the cardinality you expect for each Task 4.4 join using the cleaned tables: visits to patients, patients to sites, and visits to the long-form A1c results.
 
 ### 2.2 Stack the two visit files
 
@@ -397,6 +397,8 @@ Save the rows for the sample patients with `sbp_wide[sbp_wide["patient_id"].isin
 
 > **Checkpoint: `output/sbp_wide_sample.csv`**
 > 16 lines: the header `patient_id,baseline,week12,sbp_change` and one row per sample patient with a visit.
+
+For the cumulative checkpoint's Lecture 03 entry, use the full `sbp_wide` table to select `baseline` and `week12` in that order and keep only patients with both readings. Convert that two-column table, named `complete_pairs`, with `np.array(complete_pairs, dtype=float)`. Display the array's shape and use NumPy to calculate one mean per visit across patients. Expect two means in mmHg. Save these notebook outputs and write one sentence in the cumulative checkpoint explaining your axis choice; no extra output file is needed.
 
 ### 4.4 Join the analysis table
 

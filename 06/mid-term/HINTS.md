@@ -8,6 +8,7 @@
 
 ## Task 2: Contract, stack, and audit
 
+- Task 2.1 describes the intended cleaned tables. Raw rechecks and retired site records can repeat those keys without being exact duplicate rows.
 - A stack with a column of only missing values means a column name still differs: print `visits_raw.isna().all()` (Lecture 06).
 
 ## Task 3: Clean
@@ -24,6 +25,7 @@
 - Task 4.2: `sites_current["site_code"].is_unique` should be `True`.
 - `E04` visits are exported by the south office. Keep the registry's site code; a missing directory entry leaves the site name missing after a left join.
 - Task 4.3: `pivot()` raises when a pair repeats, so `visits_clean` still holds a recheck. `sbp_wide["patient_id"].is_unique` should be `True`.
+- The NumPy checkpoint uses only the two BP columns and patients with both readings (`dropna()`); exclude `patient_id` and `sbp_change`. A single mean mixes visits; one mean per patient reduces the wrong dimension. Review Lecture 03's axis reductions.
 - Task 4.4 `MergeError`: the error names the side that repeats.
     - `many_to_one` on `patients_clean` fails when a `patient_id` repeats there: exact registry repeats were not removed in Task 3.1.
     - `many_to_one` on `sites_current` fails when a `site_code` repeats there: a retired record was kept in Task 4.2.
