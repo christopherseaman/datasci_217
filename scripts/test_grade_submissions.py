@@ -15,6 +15,7 @@ GitHub.
 """
 
 from contextlib import contextmanager
+from contextlib import redirect_stdout
 import csv
 import io
 import json
@@ -594,7 +595,10 @@ def test_private_roster(work: Path) -> None:
     assert roster["noemail"]["email"] == ""
     destination = work / "roster-grades"
     url = publish_fork(work / "roster-forks", "alice", copy_tracked("01", work / "roster-alice"))
-    assert grade_submissions.main(["01", "--dest", str(destination), "--fork", url, "--roster", str(path)]) == 0
+    output = io.StringIO()
+    with redirect_stdout(output):
+        assert grade_submissions.main(["01", "--dest", str(destination), "--fork", url, "--roster", str(path)]) == 0
+    assert "Alice Example alice@example.com" in output.getvalue()
     saved = read_grades(destination)["alice"]
     assert (destination / "grades.csv").stat().st_mode & 0o777 == 0o600
     assert [saved[key] for key in grade_submissions.IDENTITY_COLUMNS] == ["alice@example.com", "Alice", "Example"]
@@ -613,6 +617,27 @@ def test_private_roster(work: Path) -> None:
     finally:
         os.chdir(previous_cwd)
     assert read_grades(destination)["alice"]["email"] == "alice@example.com"
+    # Missing identities remain quiet, with usable grading results in every case.
+    for case, contents in (
+        ("unmapped", "github_user\temail\tfirst_name\tlast_name\nbob\tbob@example.com\tBob\tExample\n"),
+        ("no-email", "github_user\temail\tfirst_name\tlast_name\nalice\t\tAlice\tExample\n"),
+        ("no-roster", None),
+    ):
+        case_dir = work / case
+        case_dir.mkdir()
+        if contents is not None:
+            (case_dir / "roster.tsv").write_text(contents)
+        output = io.StringIO()
+        try:
+            os.chdir(case_dir)
+            with redirect_stdout(output), patched(course_repo_warnings=lambda: []):
+                assert grade_submissions.main(["01", "--dest", str(case_dir / "grades"), "--fork", url]) == 0
+        finally:
+            os.chdir(previous_cwd)
+        assert "Warning:" not in output.getvalue(), output.getvalue()
+        result = read_grades(case_dir / "grades")["alice"]
+        assert result["email"] == ""
+        assert result["first_name"] == ("Alice" if case == "no-email" else "")
     # A changed roster refreshes saved identities even when fetching a fork fails.
     roster["alice"]["first_name"] = "Alicia"
     row = grade_submissions.write_grades({"github_user": "alice", "status": "error", "details": "offline"},

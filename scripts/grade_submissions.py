@@ -414,8 +414,6 @@ def main(argv: list[str] | None = None) -> int:
 
     roster_path = args.roster or Path("roster.tsv")
     roster = load_roster(roster_path) if args.roster or roster_path.exists() else None
-    if roster is None:
-        print("Warning: no private roster found; LMS identity columns will be blank for new rows. Use --roster PATH.")
     number = args.assignment.zfill(2)
     assignment = load_assignment(number)
     local = in_course_clone()
@@ -445,17 +443,15 @@ def main(argv: list[str] | None = None) -> int:
     errors = 0
     for fork in forks:
         row = write_grades(grade_fork(fork, checks, destination, version), grades, roster)
-        if roster is not None and fork["user"].casefold() not in roster:
-            print(f"Warning: {fork['user']} is not mapped in the private roster; LMS identity columns are blank.")
-        elif roster is not None and not row.get("email"):
-            print(f"Warning: {fork['user']} has no email in the private roster; fill it in for LMS import.")
         label, details = row["github_user"], row.get("details", "")
+        identity = " ".join(str(row.get(key, "")) for key in ["first_name", "last_name", "email"]).strip()
+        identity = f"  {printable(identity)}" if identity else ""
         if row["status"] == "graded":
             print(f"{label:<24} {row['score']:>3}/{row['max_score']:<3} {row['commit'][:7]}  "
-                  f"{local_time(row['commit_date'])}")
+                  f"{local_time(row['commit_date'])}{identity}")
         else:
             errors += 1
-            print(f"{label:<24} ERROR  {details}")
+            print(f"{label:<24} ERROR  {details}{identity}")
     print(f"Updated {grades}: {len(forks) - errors} graded, {errors} not graded")
     if first := first_full_score(grades):
         print(f"\n⭐ First {first['score']}/{first['max_score']}: {first['github_user']}  {first['commit'][:7]}  "
