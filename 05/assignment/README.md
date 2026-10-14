@@ -75,15 +75,9 @@ The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)` and se
 
 - Expect: `shape: (59447, 8)`. `age` is `str` (some ages are `unknown`); `weight_kg` is `float64`, with `-999` counted as a weight.
 
-1. Build a table with one row per column of `labs`:
-
-    ```python
-    missing_report = pd.DataFrame({
-        "missing_count": labs.isna().sum(),
-        "missing_pct": (labs.isna().mean() * 100).round(1),
-    })
-    ```
-
+1. Build `missing_report` with `pd.DataFrame()` from a dictionary of two Series, so it has one row per column of `labs`:
+    - `missing_count`: `isna()` on `labs`, then `.sum()`, counts each column's blanks;
+    - `missing_pct`: `isna()`, then `.mean()`, gives the share of blanks; multiply by 100 and `.round(1)`.
 2. Name the index with `missing_report.index.name = "column"`.
     - Expect:
 
@@ -107,38 +101,25 @@ The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)` and se
 
 ### 1.2 Drop no-lab visits and exact repeats
 
-1. Drop the no-shows, visits with neither lab result: `labs = labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="all")`. The cell then sets `rows_with_labs = len(labs)`.
+1. Drop the no-shows, visits with neither lab result, with `dropna()`: `subset` names the two lab columns, and `how="all"` drops a row only when both are missing. Assign the result back to `labs`. The cell then sets `rows_with_labs`.
     - Expect: `rows with labs: 58554`.
-2. Set `exact_repeats` to `labs.duplicated().sum()`, the rows identical to an earlier row.
+2. Set `exact_repeats` to the number of rows identical to an earlier row, with `duplicated()` and `.sum()`.
     - Expect: `exact repeats: 524`.
-3. Keep the first copy of each repeat: `labs = labs.drop_duplicates()`. The cell then sets `rows_unique = len(labs)`.
+3. Keep the first copy of each repeat with `drop_duplicates()`, and assign the result back to `labs`. The cell then sets `rows_unique`.
     - Expect: `unique rows: 58030`.
 
 ## Task 2: Replace codes and convert types
 
-1. Replace `-999` with a missing value in `weight_kg` and `glucose_mg_dl` only:
-
-    ```python
-    labs = labs.replace({"weight_kg": {-999: np.nan}, "glucose_mg_dl": {-999: np.nan}})
-    ```
-
-2. Convert `age`: `labs["age"] = pd.to_numeric(labs["age"], errors="coerce").astype("Int64")`.
-3. Convert `visit_date`: `labs["visit_date"] = pd.to_datetime(labs["visit_date"], format="%Y-%m-%d", errors="coerce")`.
+1. Replace `-999` with `np.nan` in `weight_kg` and `glucose_mg_dl` only, with `labs.replace()` and a nested dictionary: column name, then `{-999: np.nan}`. Assign the result back to `labs`.
+2. Convert `age` to numbers with `pd.to_numeric()`, letting `errors` turn `unknown` into a missing value, then to the nullable `Int64` dtype with `.astype()`. Assign it back to `labs["age"]`.
+3. Convert `visit_date` with `pd.to_datetime()`, giving the `YYYY-MM-DD` layout as `format` and using `errors` so a date that does not exist becomes `NaT`. Assign it back.
     - Expect: `age` is `Int64` and `visit_date` is `datetime64[us]`.
-4. Profile the five converted columns, one row per column:
-
-    ```python
-    typed = labs[["visit_date", "age", "weight_kg", "hba1c_pct", "glucose_mg_dl"]]
-    typed_profile = pd.DataFrame({
-        "dtype": typed.dtypes.astype(str),
-        "missing_count": typed.isna().sum(),
-        "min": typed.min(),
-        "max": typed.max(),
-        "mean": typed.mean(numeric_only=True).round(2),
-    })
-    typed_profile.index.name = "column"
-    ```
-
+4. The cell selects the five converted columns as `typed`. Build `typed_profile` with `pd.DataFrame()`, one row per column of `typed`, from these five Series in this order:
+    - `dtype`: `typed.dtypes`, turned to text with `.astype(str)`;
+    - `missing_count`: `isna()`, then `.sum()`;
+    - `min` and `max`: `typed.min()` and `typed.max()`;
+    - `mean`: `typed.mean(numeric_only=True)`, which skips the date column, rounded with `.round(2)`.
+5. Name the index `column`, as in Task 1.1.
     - Expect:
 
     ```text
@@ -152,7 +133,7 @@ The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)` and se
     ```
 
     The `max` values 103.0 and 1295.0 are decimal slips; Task 5 blanks them.
-5. Save with `typed_profile.to_csv(PROFILE_PATH)`.
+6. Save with `typed_profile.to_csv(PROFILE_PATH)`.
 
 > **Checkpoint: `output/typed_profile.csv`**
 > Header `column,dtype,missing_count,min,max,mean` and the five rows above.
@@ -162,23 +143,22 @@ The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)` and se
 ### 3.1 Clean the text columns
 
 1. Display `labs["clinic"].value_counts(dropna=False)`.
-    - Expect: 21 spellings of four clinics, such as `mission`, ` Mission`, and `Mission `, plus `NaN`.
-2. Clean the IDs: `labs["patient_id"] = labs["patient_id"].str.strip().str.upper()`.
-3. Clean the clinic names with `labs["clinic"].str.strip().str.title()`, then fill the blanks with `.fillna("Unknown")`, and assign the result back to `labs["clinic"]`.
-4. Map every spelling of gender to one code. A label the dictionary does not list, such as `U`, `unknown`, or `?`, becomes `NaN`:
-
-    ```python
-    gender_codes = {"f": "F", "female": "F", "m": "M", "male": "M", "x": "X", "nb": "X", "nonbinary": "X"}
-    labs["gender"] = labs["gender"].str.strip().str.lower().map(gender_codes)
-    ```
+    - Expect: 22 rows: 21 spellings of four clinics, such as `mission`, ` Mission`, and `Mission `, plus `NaN`.
+2. Clean the IDs with `.str.strip()` and `.str.upper()`, and assign the result back to `labs["patient_id"]`.
+3. Clean the clinic names with `.str.strip()` and `.str.title()`, fill the blanks with `Unknown` using `.fillna()`, and assign the result back to `labs["clinic"]`.
+4. Write a dictionary `gender_codes` from each lower-case spelling to its code:
+    - `f` and `female` to `F`;
+    - `m` and `male` to `M`;
+    - `x`, `nb`, and `nonbinary` to `X`.
+5. Clean `gender` with `.str.strip()` and `.str.lower()`, then `.map(gender_codes)`, and assign the result back. A label the dictionary does not list, such as `U`, `unknown`, or `?`, becomes `NaN`.
 
 ### 3.2 Bin HbA1c and count the categories
 
 HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more is diabetes.
 
-1. Add `a1c_category` with `pd.cut(labs["hba1c_pct"], bins=[0, 5.6, 6.4, 20], labels=["normal", "prediabetes", "diabetes"])`. Each bin includes its right edge, so 5.6 is normal; a slip such as 64 gets no category.
-2. Build one 0/1 column per category: `coded = pd.get_dummies(labs[["clinic", "gender", "a1c_category"]], dtype="int64")`. A blank gets 0 in every column.
-3. Count each indicator's visits with `category_counts = coded.sum()`, then name it: `category_counts.index.name = "indicator"` and `category_counts.name = "visits"`.
+1. Add the column `a1c_category` to `labs` by binning `hba1c_pct` with `pd.cut()`. Pass the edges 0, 5.6, 6.4, and 20 as `bins` and the three band names as `labels`. Each bin includes its right edge, so 5.6 is normal and 5.7 prediabetes; a slip such as 64 gets no category.
+2. Build `coded`, one 0/1 column per category of `clinic`, `gender`, and `a1c_category`, with `pd.get_dummies()` on those three columns and `dtype="int64"`. A blank gets 0 in every column.
+3. Set `category_counts` to the visits per indicator column of `coded`, with `.sum()`. Name its index `indicator` and the Series `visits`, through `.index.name` and `.name`.
     - Expect:
 
     ```text
@@ -204,23 +184,17 @@ HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more
 
 ## Task 4: Flag outliers and count rule failures
 
-1. Compute the quartiles of `labs["glucose_mg_dl"]` with `quantile(0.25)` and `quantile(0.75)`, then `iqr = q3 - q1`, `lower = q1 - 1.5 * iqr`, and `upper = q3 + 1.5 * iqr`.
+1. Set `q1` and `q3` to the quartiles of `glucose_mg_dl` with `quantile()`. Set `iqr` to their difference, and the fences `lower` and `upper` to 1.5 IQRs below Q1 and above Q3.
     - Expect: `Q1 102.0, Q3 153.0, fences 25.5 to 229.5`.
-2. Flag the unusual values, keeping them in the table: `labs["glucose_outlier"] = (labs["glucose_mg_dl"] < lower) | (labs["glucose_mg_dl"] > upper)`.
-3. Build one `True`/`False` column per rule, `True` where the visit passes; a missing value passes the range rules:
-
-    ```python
-    rules = pd.DataFrame({
-        "patient_id_format": labs["patient_id"].str.fullmatch(r"D[0-9]{5}", na=False),
-        "visit_date_present": labs["visit_date"].notna(),
-        "gender_valid": labs["gender"].isin(["F", "M", "X"]),
-        "hba1c_in_range": labs["hba1c_pct"].between(4, 20) | labs["hba1c_pct"].isna(),
-        "weight_in_range": labs["weight_kg"].between(30, 250) | labs["weight_kg"].isna(),
-        "glucose_within_fences": ~labs["glucose_outlier"],
-    })
-    ```
-
-4. Count the failures per rule with `validation_report = (~rules).sum()`, then name it: `validation_report.index.name = "rule"` and `validation_report.name = "failing_rows"`.
+2. Flag the unusual values, keeping them in the table: add `glucose_outlier`, `True` where `glucose_mg_dl` is below `lower` or above `upper`. Join the two comparisons with `|`, each in parentheses. A missing glucose is not an outlier.
+3. Build `rules` with `pd.DataFrame()`: one `True`/`False` column per rule of the data contract, `True` where the visit passes. Pick each test from Lecture 05's validation card. Use these six names in this order:
+    - `patient_id_format`: the whole ID matches `r"D[0-9]{5}"`, and a missing ID fails;
+    - `visit_date_present`: the date is not missing;
+    - `gender_valid`: the code is `F`, `M`, or `X`, so a blank fails;
+    - `hba1c_in_range`: the value is from 4 to 20, or missing;
+    - `weight_in_range`: the weight is from 30 to 250, or missing;
+    - `glucose_within_fences`: the visit is not a glucose outlier.
+4. Set `validation_report` to the number of failing rows per rule: flip `rules` with `~`, then `.sum()`. Name its index `rule` and the Series `failing_rows`.
     - Expect:
 
     ```text
@@ -243,44 +217,33 @@ HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more
 
 ### 5.1 Apply the decisions and log them
 
-1. Work on a copy: `clean = labs.copy()`.
-2. Keep the visits with a valid ID and a real date: `clean = clean[rules["patient_id_format"] & rules["visit_date_present"]]`.
-3. Before blanking, count the impossible values among the kept visits: `hba1c_outside = ((clean["hba1c_pct"] < 4) | (clean["hba1c_pct"] > 20)).sum()`, and `weight_outside` the same way with 30 and 250.
-4. Blank those values, keeping the visit: `clean["hba1c_pct"] = clean["hba1c_pct"].where(clean["hba1c_pct"].between(4, 20))`, and the same for `weight_kg` with 30 and 250.
-5. Number the rows again with `clean = clean.reset_index(drop=True)`.
-6. Log the row counts and the decisions:
-
-    ```python
-    decision_log = pd.Series({
-        "rows_read": rows_read, "rows_with_labs": rows_with_labs, "rows_unique": rows_unique,
-        "visits_dropped": len(labs) - len(clean), "hba1c_blanked": hba1c_outside, "weight_blanked": weight_outside,
-    }, name="rows")
-    decision_log.index.name = "decision"
-    ```
-
+1. Set `clean` to a copy of `labs` with `.copy()`.
+2. Keep the visits with a valid ID and a real date: join `rules["patient_id_format"]` and `rules["visit_date_present"]` with `&`, and select those rows with `clean[mask]`. Assign the result back to `clean`.
+3. Before blanking, count the impossible values among the kept visits in `clean`. Set `hba1c_outside` to the number of `hba1c_pct` values below 4 or above 20: join the two comparisons with `|`, each in parentheses, wrap the whole expression in parentheses, then `.sum()`. Set `weight_outside` the same way with 30 and 250.
+4. Blank those values, keeping the visit: `.where()` keeps the values where its mask is `True` and turns the rest into `NaN`. Give it a mask of the 4 to 20 range, assign the result back to `clean["hba1c_pct"]`, and do the same for `weight_kg` with 30 and 250.
+5. Number the rows again with `reset_index()`, using `drop` so the old index does not become a column. Assign the result back to `clean`.
+6. Build `decision_log` with `pd.Series()` from a dictionary of six counts, in this order, and `name="rows"`:
+    - `rows_read`, `rows_with_labs`, and `rows_unique`, the variables from Task 1;
+    - `visits_dropped`: `len(labs)` minus `len(clean)`;
+    - `hba1c_blanked` and `weight_blanked`: `hba1c_outside` and `weight_outside`.
+7. Name the index `decision`.
     - Expect: `shape: (57618, 10)`; the three counts from Task 1.2, then `visits_dropped` 412 (2 visits fail both rules), `hba1c_blanked` 48, and `weight_blanked` 70.
-7. Save with `decision_log.to_csv(DECISION_PATH)`.
+8. Save with `decision_log.to_csv(DECISION_PATH)`.
 
 > **Checkpoint: `output/decision_log.csv`**
 > Header `decision,rows` and the six counts above.
 
 ### 5.2 Validate, then save the summary
 
-1. Collect the contract's checks in one Series:
-
-    ```python
-    checks = pd.Series({
-        "one row per visit": not clean.duplicated(subset=["patient_id", "visit_date"]).any(),
-        "patient IDs valid": clean["patient_id"].str.fullmatch(r"D[0-9]{5}").all(),
-        "visit dates present": clean["visit_date"].notna().all(),
-        "hba1c in range": clean["hba1c_pct"].dropna().between(4, 20).all(),
-        "weight in range": clean["weight_kg"].dropna().between(30, 250).all(),
-    })
-    ```
-
-2. Stop if any fails: `assert checks.all(), checks[~checks]`.
+1. Build `checks` with `pd.Series()` from a dictionary of five `True`/`False` values, one per rule of the data contract, each tested on `clean`. Each one reduces a column test to one value with `.all()` or `.any()`, as in Lecture 05's validation invariants:
+    - `one row per visit`: no two visits share both `patient_id` and `visit_date`;
+    - `patient IDs valid`: every ID matches `r"D[0-9]{5}"`;
+    - `visit dates present`: no date is missing;
+    - `hba1c in range`: every recorded HbA1c is from 4 to 20;
+    - `weight in range`: every recorded weight is from 30 to 250.
+2. Stop if any check fails, with `assert` on `checks.all()`, and show the failing checks, `checks[~checks]`, as its message.
     - Expect: no output. A failure names the check; fix that step and run the cells again.
-3. Summarize the cleaned number columns: `clean_summary = clean[["age", "weight_kg", "hba1c_pct", "glucose_mg_dl"]].describe().round(2).T`. `.T` makes each column a row.
+3. Set `clean_summary` to `describe()` of the four number columns of `clean` (`age`, `weight_kg`, `hba1c_pct`, `glucose_mg_dl`), rounded to 2 decimals, then turned with `.T` so each column is a row.
     - Expect:
 
     ```text
@@ -300,8 +263,8 @@ HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more
 
 Parquet keeps each column's dtype.
 
-1. The cell sets `parquet_path = Path("data") / "labs_clean.parquet"`. Save with `clean.to_parquet(parquet_path)`.
-2. Read it back with `clean_back = pd.read_parquet(parquet_path)`, then print `clean_back.dtypes` and `clean_back.equals(clean)`.
+1. The cell sets `parquet_path`. Save `clean` there with `to_parquet()`.
+2. Set `clean_back` to the file read back with `pd.read_parquet()`. The cell prints its dtypes and whether it equals `clean`.
     - Expect: `age` is `Int64`, `visit_date` is `datetime64[us]`, `a1c_category` is `category`, `glucose_outlier` is `bool`, and `same as clean: True`.
 
 > **Checkpoint: `data/labs_clean.parquet`**
