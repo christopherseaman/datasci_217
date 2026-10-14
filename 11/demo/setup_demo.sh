@@ -23,4 +23,15 @@ curl -fsSL "$base_url/04_modeling.ipynb" -o 04_modeling.ipynb
 curl -fsSL "$base_url/05_geo_bonus.ipynb" -o 05_geo_bonus.ipynb
 
 echo "Made ~/11-demo with the Lecture 11 demo notebooks, pyproject.toml, and uv.lock."
-echo "Next: cd ~/11-demo"
+
+# The piped script cannot change the student's shell directory, so it builds the environment here.
+command -v uv >/dev/null 2>&1 || { echo "uv is not installed. Install it from https://docs.astral.sh/uv/ and run this script again."; exit 1; }
+uv venv --seed
+uv sync
+
+# VS Code selects the folder's .venv for notebooks.
+if command -v code >/dev/null 2>&1; then
+  code ~/11-demo
+else
+  echo "Open ~/11-demo in VS Code."
+fi

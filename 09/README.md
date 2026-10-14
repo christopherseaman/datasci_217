@@ -17,13 +17,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 ```shell
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/09/demo/setup_demo.sh | sh
-cd ~/09-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
 ```
-
-→ Then open the `09-demo` folder in VS Code.
 
 ![xkcd 2048: Curve-Fitting. One scatter plot, twelve fitted curves, twelve different messages; not every pattern in a time series is meaningful.](media/xkcd_2048.png)
 

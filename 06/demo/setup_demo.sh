@@ -29,4 +29,15 @@ for file in demo1_central_a1c.parquet demo1_labs.parquet demo1_patients.parquet 
 done
 
 echo "Made ~/06-demo with the Lecture 06 demo notebooks and their environment files."
-echo "Next: cd ~/06-demo"
+
+# The piped script cannot change the student's shell directory, so it builds the environment here.
+command -v uv >/dev/null 2>&1 || { echo "uv is not installed. Install it from https://docs.astral.sh/uv/ and run this script again."; exit 1; }
+uv venv --seed
+uv sync
+
+# VS Code selects the folder's .venv for notebooks.
+if command -v code >/dev/null 2>&1; then
+  code ~/06-demo
+else
+  echo "Open ~/06-demo in VS Code."
+fi

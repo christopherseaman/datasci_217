@@ -109,7 +109,7 @@ Opening lines, in order:
 
 1. Notion front matter, then a `#` title line exactly matching `title_line` (the site shows it; publishing omits it; the Notion title is set in Notion).
 2. Exactly `See [BONUS.md](BONUS.md) for the optional extensions.`
-3. The demo link. Lectures 01–03: `[Live Demo Guide](demo/DEMO_GUIDE.md)`. Lectures 04–11: one `**Live notebooks in Colab:**` line linking each demo, then `**Run locally:**`, the five-line block (`curl -fsSL .../NN/demo/setup_demo.sh | sh`, `cd ~/NN-demo`, `uv venv --seed`, `source .venv/bin/activate`, `uv sync`), and the line “→ Then open the `NN-demo` folder in VS Code.” Publishing replaces the BONUS and demo-guide lines with child pages.
+3. The demo link. Lectures 01–03: `[Live Demo Guide](demo/DEMO_GUIDE.md)`. Lectures 04–11: one `**Live notebooks in Colab:**` line linking each demo, then `**Run locally:**`, the one-line block `curl -fsSL .../NN/demo/setup_demo.sh | sh` (the script downloads the files, runs `uv venv --seed` and `uv sync` in `~/NN-demo`, and opens the folder in VS Code). Publishing replaces the BONUS and demo-guide lines with child pages.
 4. Optionally a comic or one-sentence hook.
 5. The readings. One source: `This lecture covers <Author, _Title_ (edition)>:` (for example, `This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):`), then one bullet per section or chapter. Several sources: `This lecture covers:` then one bullet per source with nested bullets per section or chapter.
 

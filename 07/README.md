@@ -17,13 +17,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 ```shell
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/07/demo/setup_demo.sh | sh
-cd ~/07-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
 ```
-
-→ Then open the `07-demo` folder in VS Code.
 
 ![xkcd 1945: Scientific Paper Graph Quality. Chart quality in scientific papers dipped during the PowerPoint/MSPaint era; the tools in this lecture keep you on the rising end of the curve.](media/xkcd_1945.png)
 

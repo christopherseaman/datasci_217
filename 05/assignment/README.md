@@ -67,7 +67,7 @@ Each task changes `labs`, so run the cells in order; after a mistake, **Restart*
 
 ## Task 1: Find missing values and repeats
 
-### 1.1 Count the gaps
+### 1.1 Count missing values
 
 Run the first Task 1 cell as it is; it sets `rows_read`.
 

@@ -25,4 +25,15 @@ curl -fsSL "$base_url/demo3_data_io.ipynb" -o demo3_data_io.ipynb
 curl -fsSL "$base_url/data/clinic_visits.csv" -o data/clinic_visits.csv
 
 echo "Made ~/04-demo with the Lecture 04 demo notebooks, their environment files, and data/clinic_visits.csv."
-echo "Next: cd ~/04-demo"
+
+# The piped script cannot change the student's shell directory, so it builds the environment here.
+command -v uv >/dev/null 2>&1 || { echo "uv is not installed. Install it from https://docs.astral.sh/uv/ and run this script again."; exit 1; }
+uv venv --seed
+uv sync
+
+# VS Code selects the folder's .venv for notebooks.
+if command -v code >/dev/null 2>&1; then
+  code ~/04-demo
+else
+  echo "Open ~/04-demo in VS Code."
+fi

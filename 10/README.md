@@ -17,13 +17,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 ```shell
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/10/demo/setup_demo.sh | sh
-cd ~/10-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
 ```
-
-→ Then open the `10-demo` folder in VS Code.
 
 ![xkcd 1838: Machine Learning. Stirring the pile of linear algebra until the answers look right is not the same as checking them.](media/xkcd_1838.png)
 

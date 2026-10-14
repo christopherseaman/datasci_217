@@ -17,13 +17,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 ```shell
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/05/demo/setup_demo.sh | sh
-cd ~/05-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
 ```
-
-→ Then open the `05-demo` folder in VS Code.
 
 This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 
@@ -53,14 +47,14 @@ _Data scientists spend 80% of their time cleaning data and 20% complaining about
 | `visit_date` | visit day | `datetime64` | a real calendar date |
 | `sbp` | systolic blood pressure (mmHg) | `Int64` | 60-250 when present |
 
-Two dtypes are new: `datetime64` stores calendar dates rather than text, and `Int64` (capital I) stores whole numbers that may be blank. For text, `str` is the pandas 3 default and marks gaps as `NaN`; `string` marks them `<NA>`. `Int64` and `string` are **nullable** dtypes: they store `<NA>` beside real values.
+Two dtypes are new: `datetime64` stores calendar dates rather than text, and `Int64` (capital I) stores whole numbers that may be blank. For text, `str` is the pandas 3 default and marks missing values as `NaN`; `string` marks them `<NA>`. `Int64` and `string` are **nullable** dtypes: they store `<NA>` beside real values.
 
 ![xkcd 2494: Flawed Data. Convincing-looking values do not repair flawed data](media/xkcd_2494.png)
 
 # Handling Missing Data
 
 - **Missing value**: a cell with nothing recorded, which pandas calls NA (_not available_), such as a blood pressure left blank when the cuff failed.
-- pandas statistics skip gaps silently: `pd.Series([140, None, 160]).mean()` returns `150.0` as if only two patients existed, so count the gaps before trusting a summary.
+- pandas statistics skip missing values silently: `pd.Series([140, None, 160]).mean()` returns `150.0` as if only two patients existed, so count the missing values before trusting a summary.
 - **Sentinel values** (sentinels): codes a source system uses for "nothing recorded", such as `-9`, `-999`, or `unknown`. They stay real data to pandas until you convert them, with Lecture 04's `na_values=` at read time or `replace()` afterward.
 - **`np.nan`**: NumPy's constant for a missing number (after `import numpy as np`), used to write a missing value yourself.
 - `isna()` recognizes every NA marker below; `==` does not (`np.nan == np.nan` is `False`).
@@ -78,7 +72,7 @@ Why a value is missing matters more than how many, and only knowing how the data
 - **MAR** (missing at random): explained by something you recorded, like younger patients skipping an optional survey.
 - **MNAR** (missing not at random): related to the missing value itself, like the heaviest drinkers skipping the alcohol question.
 
-![MCAR, MAR, and MNAR: gray cells are missing; shading shows what the gaps depend on](media/data_cleaning_workflow.png)
+![MCAR, MAR, and MNAR: gray cells are missing; shading shows what the missing values depend on](media/data_cleaning_workflow.png)
 
 ## Find and Count Missing Values
 
@@ -96,18 +90,26 @@ Why a value is missing matters more than how many, and only knowing how the data
 
 | Task | Code | Output |
 | --- | --- | --- |
-| Mark gaps | `df.isna()` / `df.notna()` (older aliases: `isnull()` / `notnull()`) | Boolean `DataFrame`, same shape as `df` |
+| Mark missing values | `df.isna()` / `df.notna()` (older aliases: `isnull()` / `notnull()`) | Boolean `DataFrame`, same shape as `df` |
 | Count per column | `df.isna().sum()` | Count `Series` indexed by column |
 | Fraction per column | `df.isna().mean()` | `0.25` means 25% missing |
 | Percent per column | `(df.isna().mean() * 100).round(1)` | `25.0` |
 | Count per row | `df.isna().sum(axis=1)` | Count `Series` indexed by row |
-| Rows with any gap | `df.isna().any(axis=1)` | Boolean `Series`; `.sum()` counts incomplete rows |
+| Rows with any missing value | `df.isna().any(axis=1)` | Boolean `Series`; `.sum()` counts incomplete rows |
 
-### Code Snippet: Count gaps by column and row
+### Code Snippet: Count missing values by column and row
+
+`labs`:
+
+| patient_id | glucose | hba1c |
+| --- | --- | --- |
+| P001 | 98.0 | 5.4 |
+| P002 | NaN | 6.1 |
+| P003 | 110.0 | NaN |
+| P004 | NaN | NaN |
 
 ```python
-display(labs.isna().sum())        # gaps per column
-display(labs.isna().sum(axis=1))  # gaps per row
+display(labs.isna().sum())        # missing per column
 ```
 
 |  | value |
@@ -116,6 +118,10 @@ display(labs.isna().sum(axis=1))  # gaps per row
 | glucose | 2 |
 | hba1c | 2 |
 
+```python
+display(labs.isna().sum(axis=1))  # missing per row
+```
+
 |  | value |
 | --- | --- |
 | 0 | 0 |
@@ -123,12 +129,14 @@ display(labs.isna().sum(axis=1))  # gaps per row
 | 2 | 1 |
 | 3 | 2 |
 
+![xkcd 892: Null Hypothesis. "Null" is easy to misread, in statistics and in data](media/xkcd_892.png)
+
 # When Data Go Bad
 
 - **Repeated rows**: the same visit entered twice; pandas counts it twice.
 - **Sentinels**: `-999` and similar codes still in the data.
 - **Wrong types**: numbers or dates stored as text; `mean()` raises `TypeError`, and `sum()` joins them into one string.
-- **Gaps to drop or fill**: decided last, once sentinels and types have turned bad values into gaps.
+- **Missing values to drop or fill**: decided last, once sentinels and types have turned bad values into missing values.
 
 ## Detecting and Resolving Duplicates
 
@@ -156,11 +164,30 @@ In `visits`:
 
 ### Code Snippet: Tell a repeated entry from a repeat visit
 
+`visits`:
+
+|  | patient_id | visit_date | sbp |
+| --- | --- | --- | --- |
+| 0 | P001 | 2026-01-05 | 120 |
+| 1 | P002 | 2026-01-06 | 135 |
+| 2 | P002 | 2026-01-06 | 135 |
+| 3 | P003 | 2026-01-07 | 118 |
+| 4 | P003 | 2026-02-10 | 122 |
+
 ```python
-print(visits.duplicated().sum())                                   # 1: P002 entered twice
-print(visits.duplicated(keep=False).sum())                         # 2: both P002 rows
+print(visits.duplicated().sum())  # 1: P002 entered twice
+```
+
+```python
+print(visits.duplicated(keep=False).sum())  # 2: both P002 rows
+```
+
+```python
 print(visits.duplicated(subset=['patient_id'], keep=False).sum())  # 4: P002 and P003 repeat an ID
-display(visits.drop_duplicates())                                  # P003's two real visits both stay
+```
+
+```python
+display(visits.drop_duplicates())  # P003's two real visits both stay
 ```
 
 |  | patient_id | visit_date | sbp |
@@ -184,9 +211,16 @@ display(visits.drop_duplicates())                                  # P003's two 
 | `df.replace({'age': {-9: np.nan}})` | Replace a code in one column only, when it is a sentinel there but a real value elsewhere | New `DataFrame`; other columns unchanged |
 | `series.mask(condition)` / `series.where(condition)` | `mask` blanks values where the condition is `True`; `where` keeps values where `True` and blanks the rest | `Series` with missing values in the blanked positions; unlike Lecture 03's `np.where`, no second value is needed |
 
-### Code Snippet: Turn a sentinel into a gap
+### Code Snippet: Turn a sentinel into a missing value
 
-`sbp` contains `[140, -999, 160, -1000]` in mmHg; both negative codes mean missing in this export.
+`sbp` in mmHg; both negative codes mean missing in this export:
+
+|  | value |
+| --- | --- |
+| 0 | 140 |
+| 1 | -999 |
+| 2 | 160 |
+| 3 | -1000 |
 
 ```python
 print(sbp.replace([-999, -1000], np.nan).tolist())  # [140.0, nan, 160.0, nan]
@@ -196,7 +230,13 @@ _Sentinels cut both ways: in 2019 a California driver registered the vanity plat
 
 ### Code Snippet: Blank values that break a rule
 
-`ages` contains `[34, 150, 52]`:
+`ages`:
+
+|  | value |
+| --- | --- |
+| 0 | 34 |
+| 1 | 150 |
+| 2 | 52 |
 
 ```python
 print(ages.mask(ages > 120).tolist())  # [34.0, nan, 52.0]; check 150 against the source
@@ -206,7 +246,7 @@ print(ages.mask(ages > 120).tolist())  # [34.0, nan, 52.0]; check 150 against th
 
 - Numbers often arrive as text: one `?` turns a whole CSV column into `str` (Lecture 04), and so do hand-typed entries such as `'forty'` or `'unknown'`.
 - `errors='coerce'` turns anything a parser cannot read into a missing value instead of stopping with an error.
-- NumPy's `int64` cannot store `<NA>`, which is why a whole-number column with one gap reads as `float64` (`34.0`); nullable `Int64` keeps it whole.
+- NumPy's `int64` cannot store `<NA>`, which is why a whole-number column with one missing value reads as `float64` (`34.0`); nullable `Int64` keeps it whole.
 
 ### Reference Card: Converting messy columns
 
@@ -216,14 +256,20 @@ print(ages.mask(ages > 120).tolist())  # [34.0, nan, 52.0]; check 150 against th
 | Change a clean column's type | `s.astype('float64')` / `s.astype('int64')` | Raises an error if any value cannot convert |
 | Change several columns at once | `df.astype({'patient_id': 'string', 'age': 'Int64'})` | New `DataFrame`; columns not named keep their dtype |
 | Keep only whole numbers | `s.where(s % 1 == 0)` | `s % 1 == 0` is `True` where the value has no fractional part, so `40.5` becomes missing |
-| Whole numbers with gaps | `s.astype('Int64')` | Nullable integers; on `float64` input, `40.5` raises `TypeError`, but nullable `Float64` from `string` text silently truncates `40.5` to `40`, so drop fractions first |
-| Nullable text (`<NA>` for gaps) | `s.astype('string')` | Nullable text; missing shows as `<NA>` |
+| Whole numbers with missing values | `s.astype('Int64')` | Nullable integers; on `float64` input, `40.5` raises `TypeError`, but nullable `Float64` from `string` text silently truncates `40.5` to `40`, so drop fractions first |
+| Nullable text (`<NA>` for missing values) | `s.astype('string')` | Nullable text; missing shows as `<NA>` |
 | Dates in a known format | `pd.to_datetime(s, format='%Y-%m-%d', errors='coerce')` | `%Y` year, `%m` month, `%d` day; `datetime64[us]`; impossible dates such as `2026-02-30` become `NaT`, but single-digit parts such as `2026-7-01` are still accepted (exact check: Data Validation Rules) |
 | True/false with unknowns | `s.astype('boolean')` | Nullable `True` / `False` / `<NA>` |
 
 ### Code Snippet: Convert an export's text columns
 
-In `form`, both columns are text typed into an intake form: `age_text` holds `'34'`, `'unknown'`, and `'52'`, and `visit_date` holds `'2026-01-15'`, `'2026-02-30'` (no such day), and `'2026-03-01'`.
+`form`, both columns text typed into an intake form (`2026-02-30` is no such day):
+
+|  | age_text | visit_date |
+| --- | --- | --- |
+| 0 | 34 | 2026-01-15 |
+| 1 | unknown | 2026-02-30 |
+| 2 | 52 | 2026-03-01 |
 
 ```python
 form['age'] = pd.to_numeric(form['age_text'], errors='coerce').astype('Int64')
@@ -242,8 +288,8 @@ display(form)
 
 ## Drop or Fill Missing Values
 
-- Three choices: leave gaps, drop the rows that have them, or fill them.
-- **Imputation**: filling a gap by a stated rule, such as the column median. Every filled value is a guess, so record the rule and flag which cells were filled.
+- Three choices: leave missing values, drop the rows that have them, or fill them.
+- **Imputation**: filling a missing value by a stated rule, such as the column median. Every filled value is a guess, so record the rule and flag which cells were filled.
 - **Forward fill** copies the last observed value down; **backward fill** copies the next one up.
 
 ```text
@@ -261,22 +307,26 @@ Original Data:        Forward Fill (ffill):           Backward Fill (bfill):
 
 | Task | Code | Output / caution |
 | --- | --- | --- |
-| Drop incomplete rows | `df.dropna()` | New `DataFrame` without any row that has a gap; can remove most rows |
+| Drop incomplete rows | `df.dropna()` | New `DataFrame` without any row that has a missing value; can remove most rows |
 | Drop rows empty in key columns | `df.dropna(subset=['glucose', 'hba1c'], how='all')` | Drops a row only when every listed column is empty; keeps rows with at least one lab |
 | Drop sparse rows | `df.dropna(thresh=n)` | Keeps rows with at least `n` non-missing values |
-| Fill with a constant | `df.fillna(value)` or `df.fillna({'col': value})` | New `DataFrame` with gaps filled |
-| Fill with a column summary | `df.fillna(df.median(numeric_only=True))` | Numeric gaps get their column median (resists extreme values); `mean` works the same way |
+| Fill with a constant | `df.fillna(value)` or `df.fillna({'col': value})` | New `DataFrame` with missing values filled; the original is unchanged, so assign it back: `labs = labs.fillna(0)` |
+| Fill with a column summary | `df.fillna(df.median(numeric_only=True))` | Numeric missing values get their column median (resists extreme values); `mean` works the same way |
 | Fill with the most common value | `df.fillna(df.mode().iloc[0])` | First mode per column; ties are broken by sort order |
-| Fill from neighbors | `df.ffill()` / `df.bfill()` | Previous / next observed value; `limit=1` fills at most one gap in a row |
-| Fill within each patient | `df.groupby('patient_id')['sbp'].ffill()` | Previous value from the same patient only; a patient's first gap stays missing |
-| Fill between neighbors | `df['col'].interpolate()` | Fills each gap on a straight line between its neighbors, so `10, NaN, 20` becomes `10, 15, 20`; numeric columns only, and a `DataFrame` with a `str` column raises `TypeError`; assumes rows are in order and equally spaced |
-
-<callout icon="⚠️" color="yellow_bg">
-	## `fillna()` returns a new table!
-	`dropna()`, `fillna()`, and every cleaning method in this lecture leave the original unchanged, so `labs.fillna(0)` alone changes nothing. Assign the result: `labs = labs.fillna(0)`.
-</callout>
+| Fill from neighbors | `df.ffill()` / `df.bfill()` | Previous / next observed value; `limit=1` fills at most one missing value in a row |
+| Fill within each patient | `df.groupby('patient_id')['sbp'].ffill()` | Previous value from the same patient only; a patient's first missing value stays missing |
+| Fill between neighbors | `df['col'].interpolate()` | Fills each missing value on a straight line between its neighbors, so `10, NaN, 20` becomes `10, 15, 20`; numeric columns only, and a `DataFrame` with a `str` column raises `TypeError`; assumes rows are in order and equally spaced |
 
 ### Code Snippet: Keep visits with at least one lab
+
+`labs`:
+
+|  | patient_id | glucose | hba1c |
+| --- | --- | --- | --- |
+| 0 | P001 | 98.0 | 5.4 |
+| 1 | P002 | NaN | 6.1 |
+| 2 | P003 | 110.0 | NaN |
+| 3 | P004 | NaN | NaN |
 
 ```python
 analysis = labs.dropna(subset=['glucose', 'hba1c'], how='all')
@@ -285,9 +335,20 @@ print(analysis['patient_id'].tolist())  # ['P001', 'P002', 'P003']
 
 ### Code Snippet: Fill one lab with its median
 
+`labs`:
+
+|  | patient_id | glucose | hba1c |
+| --- | --- | --- | --- |
+| 0 | P001 | 98.0 | 5.4 |
+| 1 | P002 | NaN | 6.1 |
+| 2 | P003 | 110.0 | NaN |
+| 3 | P004 | NaN | NaN |
+
 ```python
 print(labs['glucose'].fillna(labs['glucose'].median()).tolist())  # [98.0, 104.0, 110.0, 104.0]
 ```
+
+![xkcd 2435: Geothmetic Meandian. Pick one fill rule, mean or median, and record it](media/xkcd_2435.png)
 
 <callout icon="⚠️" color="yellow_bg">
 	## `ffill()` copies across patients!
@@ -296,11 +357,21 @@ print(labs['glucose'].fillna(labs['glucose'].median()).tolist())  # [98.0, 104.0
 
 ### Code Snippet: Fill within each patient
 
-`readings` lists P001 (SBP 120, then missing) and P002 (missing, then 130), in time order:
+`readings`, in time order:
+
+|  | patient_id | sbp |
+| --- | --- | --- |
+| 0 | P001 | 120.0 |
+| 1 | P001 | NaN |
+| 2 | P002 | NaN |
+| 3 | P002 | 130.0 |
 
 ```python
-print(readings['sbp'].ffill().tolist())                         # [120.0, 120.0, 120.0, 130.0]: P002 got P001's 120
-print(readings.groupby('patient_id')['sbp'].ffill().tolist())   # [120.0, 120.0, nan, 130.0]
+print(readings['sbp'].ffill().tolist())  # [120.0, 120.0, 120.0, 130.0]: P002 got P001's 120
+```
+
+```python
+print(readings.groupby('patient_id')['sbp'].ffill().tolist())  # [120.0, 120.0, nan, 130.0]
 ```
 
 Preview: `groupby('patient_id')` runs the fill separately for each patient, so a value never crosses to the next patient.
@@ -342,13 +413,12 @@ Preview: `groupby('patient_id')` runs the fill separately for each patient, so a
 
 `vitals` holds four rows of a nursing export, with pressures in mmHg:
 
-```text
-   sbp  dbp  pain  smoking
-0  118   76  2/10    never
-1  142   84  7/10  current
-2  134   78  0/10   former
-3  126   92  5/10    never
-```
+|  | sbp | dbp | pain | smoking |
+| --- | --- | --- | --- | --- |
+| 0 | 118 | 76 | 2/10 | never |
+| 1 | 142 | 84 | 7/10 | current |
+| 2 | 134 | 78 | 0/10 | former |
+| 3 | 126 | 92 | 5/10 | never |
 
 ```python
 print(vitals['pain'].apply(lambda text: int(text.split('/')[0])).tolist())  # [2, 7, 0, 5]
@@ -356,11 +426,29 @@ print(vitals['pain'].apply(lambda text: int(text.split('/')[0])).tolist())  # [2
 
 ### Code Snippet: Map labels to codes
 
+`vitals`:
+
+|  | sbp | dbp | pain | smoking |
+| --- | --- | --- | --- | --- |
+| 0 | 118 | 76 | 2/10 | never |
+| 1 | 142 | 84 | 7/10 | current |
+| 2 | 134 | 78 | 0/10 | former |
+| 3 | 126 | 92 | 5/10 | never |
+
 ```python
 print(vitals['smoking'].map({'never': 0, 'former': 1, 'current': 2}).tolist())  # [0, 2, 1, 0]
 ```
 
 ### Code Snippet: Apply a rule to each row
+
+`vitals`:
+
+|  | sbp | dbp | pain | smoking |
+| --- | --- | --- | --- | --- |
+| 0 | 118 | 76 | 2/10 | never |
+| 1 | 142 | 84 | 7/10 | current |
+| 2 | 134 | 78 | 0/10 | former |
+| 3 | 126 | 92 | 5/10 | never |
 
 ```python
 def bp_stage(row):
@@ -401,19 +489,32 @@ display(vitals[['sbp', 'dbp', 'bp_stage']])
 
 ### Code Snippet: Rename columns
 
-`export` has the labels `'Patient ID '` and `'SBP (mmHg)'`:
+`export`, with a trailing space in `'Patient ID '`:
+
+|  | Patient ID  | SBP (mmHg) |
+| --- | --- | --- |
+| 0 | P001 | 120 |
+| 1 | P002 | 135 |
 
 ```python
 print(export.rename(columns={'Patient ID ': 'patient_id', 'SBP (mmHg)': 'sbp'}).columns)  # the labels you name
-print(export.rename(columns=str.strip).rename(columns=str.lower).columns)                 # every label
 ```
 
 ```text
 Index(['patient_id', 'sbp'], dtype='str')
+```
+
+```python
+print(export.rename(columns=str.strip).rename(columns=str.lower).columns)  # every label
+```
+
+```text
 Index(['patient id', 'sbp (mmhg)'], dtype='str')
 ```
 
 # String Manipulation
+
+> People you know and trust will give you data claiming it is already clean. Those people are dirty liars and shouldn’t be trusted.
 
 - **String manipulation**: cleaning and testing text values, such as trimming spaces, fixing letter case, or matching a pattern.
 - **`.str` accessor**: applies Lecture 01's string methods to every value in a column at once, leaving missing values missing.
@@ -427,6 +528,8 @@ Index(['patient id', 'sbp (mmhg)'], dtype='str')
 | `' north'` | 1 | `'north'` | (same group) |
 | `'NORTH'` | 1 | `'north'` | (same group) |
 | `'south'` | 1 | `'south'` | 1 |
+
+![xkcd 2109: Invisible Formatting. A hidden space makes two labels look identical and count as two](media/xkcd_2109.png)
 
 ## Basic String Operations
 
@@ -449,11 +552,22 @@ Index(['patient id', 'sbp (mmhg)'], dtype='str')
 
 ### Code Snippet: Normalize text fields
 
-`names` contains `['  alice smith ', 'BOB JONES', None]`, and `tests` contains `['fasting glucose', 'random glucose', 'HbA1c']`:
+`names` (the first value has leading and trailing spaces) and `tests`:
+
+|  | value |
+| --- | --- |
+| 0 |   alice smith  |
+| 1 | BOB JONES |
+| 2 | None |
+
+|  | value |
+| --- | --- |
+| 0 | fasting glucose |
+| 1 | random glucose |
+| 2 | HbA1c |
 
 ```python
 display(names.str.strip().str.title())
-display(tests.str.contains('fasting'))
 ```
 
 |  | value |
@@ -461,6 +575,10 @@ display(tests.str.contains('fasting'))
 | 0 | Alice Smith |
 | 1 | Bob Jones |
 | 2 | NaN |
+
+```python
+display(tests.str.contains('fasting'))
+```
 
 |  | value |
 | --- | --- |
@@ -497,24 +615,50 @@ Category codes point to labels; they do not mean that one smoking status is twic
 
 ### Code Snippet: Store repeated categories efficiently
 
-`smoking` contains 5,000 labels, repeating `['never', 'former', 'never', 'current', 'former']` 1,000 times.
+`smoking` has 5,000 labels, the same five repeated 1,000 times (first five shown):
+
+|  | value |
+| --- | --- |
+| 0 | never |
+| 1 | former |
+| 2 | never |
+| 3 | current |
+| 4 | former |
 
 ```python
 smoking_cat = smoking.astype('category')
 print(f"As str: {smoking.memory_usage(deep=True)} bytes")
-print(f"As category: {smoking_cat.memory_usage(deep=True)} bytes")
-print(smoking_cat.cat.categories)
-print(smoking_cat.cat.codes[:5].tolist())  # .tolist() makes a plain Python list
 ```
 
 ```text
 As str: 69132 bytes
+```
+
+```python
+print(f"As category: {smoking_cat.memory_usage(deep=True)} bytes")
+```
+
+```text
 As category: 5175 bytes
-Index(['current', 'former', 'never'], dtype='str')
-[2, 1, 2, 0, 1]
 ```
 
 Without `pyarrow`: `274132` and `5297` bytes.
+
+```python
+print(smoking_cat.cat.categories)
+```
+
+```text
+Index(['current', 'former', 'never'], dtype='str')
+```
+
+```python
+print(smoking_cat.cat.codes[:5].tolist())  # .tolist() makes a plain Python list
+```
+
+```text
+[2, 1, 2, 0, 1]
+```
 
 ## Creating Categories
 
@@ -533,7 +677,15 @@ Without `pyarrow`: `274132` and `5297` bytes.
 
 ### Code Snippet: Create ordered categories
 
-`ages` contains `[25, 30, 45, 60, 75]`:
+`ages`:
+
+|  | value |
+| --- | --- |
+| 0 | 25 |
+| 1 | 30 |
+| 2 | 45 |
+| 3 | 60 |
+| 4 | 75 |
 
 ```python
 print(pd.cut(ages, bins=[0, 30, 50, 100], labels=['Young', 'Middle', 'Senior']))  # 30 falls in (0, 30]
@@ -571,11 +723,17 @@ The labels are ordered categories: they sort by band, and comparing the result w
 
 ### Code Snippet: Encode categories
 
-`colors` contains `['red', 'blue', 'red', 'green']`:
+`colors`:
+
+|  | value |
+| --- | --- |
+| 0 | red |
+| 1 | blue |
+| 2 | red |
+| 3 | green |
 
 ```python
 display(pd.get_dummies(colors, prefix='color', dtype='int64'))
-display(pd.get_dummies(colors, prefix='color', drop_first=True, dtype='int64'))  # blue, first, is the reference
 ```
 
 |  | color_blue | color_green | color_red |
@@ -584,6 +742,10 @@ display(pd.get_dummies(colors, prefix='color', drop_first=True, dtype='int64')) 
 | 1 | 1 | 0 | 0 |
 | 2 | 0 | 0 | 1 |
 | 3 | 0 | 1 | 0 |
+
+```python
+display(pd.get_dummies(colors, prefix='color', drop_first=True, dtype='int64'))  # blue, first, is the reference
+```
 
 |  | color_green | color_red |
 | --- | --- | --- |
@@ -622,7 +784,14 @@ display(pd.get_dummies(colors, prefix='color', drop_first=True, dtype='int64')) 
 
 ### Code Snippet: List the rows that break a rule
 
-`patients` holds four rows: `P001` aged 34, `P02` aged 41, `P003` aged 150, and `P004` aged 29.
+`patients`:
+
+|  | patient_id | age |
+| --- | --- | --- |
+| 0 | P001 | 34 |
+| 1 | P02 | 41 |
+| 2 | P003 | 150 |
+| 3 | P004 | 29 |
 
 ```python
 valid_age = patients['age'].between(0, 120)                    # inclusive range
@@ -637,7 +806,13 @@ display(patients[~(valid_age & valid_id)])                     # rows to review
 
 ### Code Snippet: Accept only exact dates
 
-`dates` contains `['2026-01-15', '2026-7-01', '2026-02-30']`:
+`dates`:
+
+|  | value |
+| --- | --- |
+| 0 | 2026-01-15 |
+| 1 | 2026-7-01 |
+| 2 | 2026-02-30 |
 
 ```python
 exact = dates.str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')  # four digits, dash, two, dash, two
@@ -671,7 +846,17 @@ display(parsed)
 
 ### Code Snippet: Flag unusual values
 
-`df['value']` holds 1 to 5 four times over, then one 100:
+`df['value']` holds 1 to 5 four times over, then one 100 (21 rows; first five and last shown):
+
+|  | value |
+| --- | --- |
+| 0 | 1 |
+| 1 | 2 |
+| 2 | 3 |
+| 3 | 4 |
+| 4 | 5 |
+| ... | ... |
+| 20 | 100 |
 
 ```python
 q1 = df['value'].quantile(0.25)
@@ -699,7 +884,15 @@ Exclude it with `df.loc[~iqr_flag]` only after evidence supports that decision.
 
 ### Code Snippet: Draw three rows to inspect
 
-`visits` is the five-row table from Detecting and Resolving Duplicates.
+`visits`:
+
+|  | patient_id | visit_date | sbp |
+| --- | --- | --- | --- |
+| 0 | P001 | 2026-01-05 | 120 |
+| 1 | P002 | 2026-01-06 | 135 |
+| 2 | P002 | 2026-01-06 | 135 |
+| 3 | P003 | 2026-01-07 | 118 |
+| 4 | P003 | 2026-02-10 | 122 |
 
 ```python
 print(visits.sample(n=3, random_state=42).index.tolist())  # [1, 4, 2]
@@ -759,15 +952,21 @@ print(working.equals(raw))  # True: same values and types, a separate table
 
 ### Code Snippet: Fingerprint the source file
 
-`source` is `Path('intake.csv')`, and `hashlib` is imported.
+`source` is `Path('intake.csv')`, the file shown above, and `hashlib` is imported.
 
 ```python
-print(source.name, source.stat().st_size)               # name and size in bytes
-print(hashlib.sha256(source.read_bytes()).hexdigest())  # the same 64 characters every run
+print(source.name, source.stat().st_size)  # name and size in bytes
 ```
 
 ```text
 intake.csv 70
+```
+
+```python
+print(hashlib.sha256(source.read_bytes()).hexdigest())  # the same 64 characters every run
+```
+
+```text
 2a1e54b64ddd61d9768e604e4bc91342b2ee33191ea6902c9ad38b54a2765420
 ```
 
@@ -807,8 +1006,6 @@ checks = pd.Series({
     'ages 0-120 when present': clean['age'].dropna().between(0, 120).all(),
 })
 display(checks)
-assert checks.all(), checks[~checks]  # a False check stops here
-clean.to_csv('clean_patients.csv', index=False)
 ```
 
 |  | value |
@@ -817,14 +1014,27 @@ clean.to_csv('clean_patients.csv', index=False)
 | sites allowed | True |
 | ages 0-120 when present | True |
 
+```python
+assert checks.all(), checks[~checks]  # a False check stops here
+clean.to_csv('clean_patients.csv', index=False)
+```
+
 Change `'south'` to `'South'` and rerun. `sites allowed` becomes `False`, `assert` raises `AssertionError` listing the failed check (`sites allowed    False`), and no file is written.
 
 ### Code Snippet: Read the saved file back
 
+`clean_patients.csv`, saved above:
+
+```text
+patient_id,site,age
+P001,north,34
+P002,south,
+P003,west,52
+```
+
 ```python
 round_trip = pd.read_csv('clean_patients.csv', dtype={'age': 'Int64'})
 display(round_trip.dtypes)
-print(round_trip.equals(clean))  # True: same values, dtypes, and row labels
 ```
 
 |  | value |
@@ -832,6 +1042,10 @@ print(round_trip.equals(clean))  # True: same values, dtypes, and row labels
 | patient_id | str |
 | site | str |
 | age | Int64 |
+
+```python
+print(round_trip.equals(clean))  # True: same values, dtypes, and row labels
+```
 
 ![Work Chronicles: a 210-slide deck read word for word. A lecture page is reference material to come back to, not a script](media/workchronicles_210_slides.png)
 

@@ -18,7 +18,7 @@ jupyter:
 
 # Demo 1: Missing Values, Duplicates, Sentinels, and Types
 
-A clinic sends a small visit export. Before anyone averages a blood pressure, find the gaps, tell a double entry from a repeat visit, turn disguised missing values into real ones, and convert text columns to numbers and dates.
+A clinic sends a small visit export. Before anyone averages a blood pressure, find the missing values, tell a double entry from a repeat visit, turn disguised missing values into real ones, and convert text columns to numbers and dates.
 
 Run the cells from top to bottom; after each step, an **Expect** line says what you should see.
 
@@ -65,16 +65,16 @@ display(visits.dtypes)
 
 **Expect:** 10 rows. `age_text` and `visit_date` are `str`; `sbp` and `cholesterol` are `float64`, and `sbp` shows `-999.0` for P004 and `1420.0` for P005.
 
-### 3. Count the gaps
+### 3. Count missing values
 
 ```python
-display(visits.isna().sum())                    # gaps per column
+display(visits.isna().sum())                    # missing per column
 display((visits.isna().mean() * 100).round(1))  # percent missing per column
-display(visits.isna().sum(axis=1))              # gaps per row
-print('Rows with any gap:', visits.isna().any(axis=1).sum(), 'of', len(visits))
+display(visits.isna().sum(axis=1))              # missing per row
+print('Rows with any missing value:', visits.isna().any(axis=1).sum(), 'of', len(visits))
 ```
 
-**Expect:** gaps of 1 in `visit_date`, 2 in `sbp`, and 4 in `cholesterol` (10.0, 20.0, and 40.0 percent), `P003` and `P006` (labels 2 and 5) each have 2 gaps, and `Rows with any gap: 5 of 10`. These counts miss `-999`, `1420`, `'unknown'`, `'forty'`, and `'2026-02-30'`, because none of them is blank yet.
+**Expect:** 1 missing in `visit_date`, 2 in `sbp`, and 4 in `cholesterol` (10.0, 20.0, and 40.0 percent). `P003` and `P006` (labels 2 and 5) each have 2 missing, and `Rows with any missing value: 5 of 10`. These counts miss `-999`, `1420`, `'unknown'`, `'forty'`, and `'2026-02-30'`, because none of them is blank yet.
 
 ### 4. Double entry or repeat visit?
 
@@ -122,7 +122,7 @@ display(clean[['patient_id', 'sbp']])
 
 ### 6. Convert text columns
 
-`to_numeric(..., errors='coerce')` turns `'unknown'` and `'forty'` into missing values, and `Int64` keeps whole numbers whole even with gaps.
+`to_numeric(..., errors='coerce')` turns `'unknown'` and `'forty'` into missing values, and `Int64` keeps whole numbers whole even with missing values.
 
 ```python
 clean['age'] = pd.to_numeric(clean['age_text'], errors='coerce').astype('Int64')
@@ -130,7 +130,7 @@ clean['sbp'] = clean['sbp'].astype('Int64')
 display(clean[['patient_id', 'age_text', 'age', 'sbp']])
 ```
 
-**Expect:** `age` is `<NA>` for P002 (`'unknown'`) and P005 (`'forty'`), and `sbp` shows whole numbers such as `120` with `<NA>` in the gaps. Read the `age` column: every parsed age falls between 0 and 120.
+**Expect:** `age` is `<NA>` for P002 (`'unknown'`) and P005 (`'forty'`), and `sbp` shows whole numbers such as `120` with `<NA>` in the missing positions. Read the `age` column: every parsed age falls between 0 and 120.
 
 `errors='coerce'` turns a date that does not exist into `NaT`, and `format=` states the expected layout. Separate a blank date (never recorded) from a date that failed to parse (recorded but wrong).
 
@@ -151,7 +151,7 @@ display(clean.dtypes)
 
 **Expect:** `parse_failed` is `True` only for P006 (`2026-02-30`). P003's date is also `NaT`, but it was never recorded, so it is not a parse failure. The dtypes now include `datetime64[us]`, `Int64`, and `boolean`.
 
-### 7. Drop or fill the gaps
+### 7. Drop or fill missing values
 
 The disguised problems are now real missing values, so the counts go up.
 
@@ -219,7 +219,7 @@ display(wrong)
 
 **Expect:** P003, P004, and P005 stay `<NA>` in `sbp_by_patient`. Each has one visit, so there is no earlier reading of their own to copy.
 
-**Exercise:** check that the grouped fill still fills a gap inside one patient. Give P008 a missing second SBP on a copy of `analysis`, then compare `.ffill()` with `.groupby('patient_id')['sbp'].ffill()`.
+**Exercise:** check that the grouped fill still fills a missing value inside one patient. Give P008 a missing second SBP on a copy of `analysis`, then compare `.ffill()` with `.groupby('patient_id')['sbp'].ffill()`.
 
 ```python
 # Copy analysis, set P008's second sbp to missing, then add 'plain' and 'by_patient' ffill columns and show the last 3 rows

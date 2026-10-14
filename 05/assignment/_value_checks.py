@@ -974,7 +974,7 @@ def check_missing_count(root: Path) -> None:
              for column, cell in cells.items() if not _same(cell, expected[column])]
     rows = len(raw_rows())
     if all(_same(cell, rows - expected[column]) for column, cell in cells.items()):
-        cause = "Each count is of the values present: isna().sum() counts the gaps, and notna() or count() the values."
+        cause = "Each count is of the values present: isna().sum() counts the missing values, and notna() or count() the values."
     elif all(_same(cell, expected[column] / rows * 100, PCT_TOLERANCE) for column, cell in cells.items()):
         cause = "The counts are percents; missing_count is labs.isna().sum(), and missing_pct holds the percent."
     else:
@@ -1663,7 +1663,7 @@ def check_decision_no_lab(root: Path) -> None:
                  'labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="all"), which drops only the no-lab visits.')
     else:
         cause = ('In Task 1.2, drop with labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="all"); a plain '
-                 "dropna() drops every row with any gap.")
+                 "dropna() drops every row with any missing value.")
     raise AssertionError(f"{DECISION_FILE}: rows_with_labs is {_show(with_labs)}, expected {expected.rows_with_labs}; "
                          f"{cause}")
 

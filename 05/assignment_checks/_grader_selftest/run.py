@@ -68,10 +68,10 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
     labs = pd.read_csv(data, na_values=[-999]) if "na-values-read" in wrong else pd.read_csv(data)
 
     # Task 1
-    gaps = labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="all") if "count-after-dropna" in wrong else labs
+    missing = labs.dropna(subset=["hba1c_pct", "glucose_mg_dl"], how="all") if "count-after-dropna" in wrong else labs
     missing_report = pd.DataFrame({
-        "missing_count": gaps.notna().sum() if "count-present" in wrong else gaps.isna().sum(),
-        "missing_pct": (gaps.isna().mean() * (1 if "pct-as-fraction" in wrong else 100)).round(1),
+        "missing_count": missing.notna().sum() if "count-present" in wrong else missing.isna().sum(),
+        "missing_pct": (missing.isna().mean() * (1 if "pct-as-fraction" in wrong else 100)).round(1),
     })
     missing_report.index.name = "column"
     missing_report.to_csv(output / "missing_report.csv")
@@ -454,7 +454,7 @@ def run() -> None:
             return root
 
         mistake("count-after-dropna", {"missing report: missing_count"}, "before Task 1.2's dropna()")
-        mistake("count-present", {"missing report: missing_count"}, "isna().sum() counts the gaps")
+        mistake("count-present", {"missing report: missing_count"}, "isna().sum() counts the missing values")
         mistake("pct-as-fraction", {"missing report: missing_pct"}, "multiply it by 100")
         mistake("no-dropna", {"decision log: no-lab visits dropped"}, "nothing was dropped")
         mistake("dropna-any", {"decision log: no-lab visits dropped"}, 'how="any"')

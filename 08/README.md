@@ -17,13 +17,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 ```shell
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/demo/setup_demo.sh | sh
-cd ~/08-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
 ```
-
-→ Then open the `08-demo` folder in VS Code.
 
 _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is what a groupby does with scattered rows._
 

@@ -17,13 +17,7 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 ```shell
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo/setup_demo.sh | sh
-cd ~/11-demo
-uv venv --seed
-source .venv/bin/activate
-uv sync
 ```
-
-→ Then open the `11-demo` folder in VS Code.
 
 ![xkcd 3172: Fifteen Years. Every row of a health record is part of someone's story, which is why a result has to be one you can defend.](media/fifteen_years_2x.png)
 
