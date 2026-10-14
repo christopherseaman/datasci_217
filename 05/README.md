@@ -99,7 +99,7 @@ Why a value is missing matters more than how many, and only knowing how the data
 | Mark gaps | `df.isna()` / `df.notna()` (older aliases: `isnull()` / `notnull()`) | Boolean `DataFrame`, same shape as `df` |
 | Count per column | `df.isna().sum()` | Count `Series` indexed by column |
 | Fraction per column | `df.isna().mean()` | `0.25` means 25% missing |
-| Percent per column | `(df.isna().mean() * 100).round(1)` | `25.0`; `.round(1)` keeps one decimal, like Python's `round(x, 1)` for one number |
+| Percent per column | `(df.isna().mean() * 100).round(1)` | `25.0` |
 | Count per row | `df.isna().sum(axis=1)` | Count `Series` indexed by row |
 | Rows with any gap | `df.isna().any(axis=1)` | Boolean `Series`; `.sum()` counts incomplete rows |
 
@@ -125,7 +125,7 @@ display(labs.isna().sum(axis=1))  # gaps per row
 
 ## Drop or Fill Missing Values
 
-- Three choices: leave gaps (pandas statistics skip them), drop the rows that have them, or fill them.
+- Three choices: leave gaps, drop the rows that have them, or fill them.
 - **Imputation**: filling a gap by a stated rule, such as the column median. Every filled value is a guess, so record the rule and flag which cells were filled.
 - **Forward fill** copies the last observed value down; **backward fill** copies the next one up.
 
@@ -171,14 +171,6 @@ print(analysis['patient_id'].tolist())  # ['P001', 'P002', 'P003']
 print(labs['glucose'].fillna(labs['glucose'].median()).tolist())  # [98.0, 104.0, 110.0, 104.0]
 ```
 
-### Code Snippet: Carry one reading forward
-
-`readings` contains `[10.0, NaN, NaN, 15.0]` from one sensor, in time order:
-
-```python
-print(readings.ffill(limit=1).tolist())  # [10.0, 10.0, nan, 15.0]: only the first gap filled
-```
-
 <callout icon="⚠️" color="yellow_bg">
 	## `ffill()` copies across patients!
 	Forward and backward fill copy whatever row sits above or below. Use them only on rows in time order for one patient or one sensor.
@@ -208,7 +200,6 @@ Three problems hide beside blanks:
 ## Detecting and Resolving Duplicates
 
 - **Exact duplicate**: a row identical to an earlier row in every column, usually a double entry.
-- Two rows that share a `patient_id` may be two real visits, so check repeats against the contract's candidate identifier before deleting anything.
 
 In `visits`:
 
@@ -233,16 +224,10 @@ In `visits`:
 ### Code Snippet: Tell a repeated entry from a repeat visit
 
 ```python
-print(visits.duplicated().sum())                                   # P002 entered twice
-print(visits.duplicated(keep=False).sum())                         # both P002 rows
-print(visits.duplicated(subset=['patient_id'], keep=False).sum())  # P002 and P003 repeat an ID
+print(visits.duplicated().sum())                                   # 1: P002 entered twice
+print(visits.duplicated(keep=False).sum())                         # 2: both P002 rows
+print(visits.duplicated(subset=['patient_id'], keep=False).sum())  # 4: P002 and P003 repeat an ID
 display(visits.drop_duplicates())                                  # P003's two real visits both stay
-```
-
-```text
-1
-2
-4
 ```
 
 |  | patient_id | visit_date | sbp |
@@ -262,9 +247,7 @@ display(visits.drop_duplicates())                                  # P003's two 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
 | `df.replace(old, new)` | Replace one exact value | New `DataFrame` with replacements |
-| `df.replace([val1, val2], new)` | Replace several values with one value | New `DataFrame` with replacements |
-| `df.replace([val1, val2], [new1, new2])` | Pair old and new values by position | New `DataFrame`; lists must have equal lengths |
-| `df.replace({val1: new1, val2: new2})` | Map old values to replacements | New `DataFrame` with replacements |
+| `df.replace([val1, val2], new)` / `([val1, val2], [new1, new2])` / `({val1: new1, val2: new2})` | Several values to one value, paired by position, or mapped by a dictionary | Paired lists must have equal lengths |
 | `df.replace({'age': {-9: np.nan}})` | Replace a code in one column only, when it is a sentinel there but a real value elsewhere | New `DataFrame`; other columns unchanged |
 | `series.mask(condition)` / `series.where(condition)` | `mask` blanks values where the condition is `True`; `where` keeps values where `True` and blanks the rest | `Series` with missing values in the blanked positions; unlike Lecture 03's `np.where`, no second value is needed |
 
@@ -297,7 +280,7 @@ print(ages.mask(ages > 120).tolist())  # [34.0, nan, 52.0]; check 150 against th
 | Task | Code | Output / note |
 | --- | --- | --- |
 | Text to number, invalid to missing | `pd.to_numeric(s, errors='coerce')` | Numbers (`float64` once any value becomes `NaN`); `'forty'` becomes `NaN` |
-| Change a clean column's type | `s.astype('float64')` / `s.astype('int64')` | Raises an error if any value cannot convert; `int64` cannot hold missing values |
+| Change a clean column's type | `s.astype('float64')` / `s.astype('int64')` | Raises an error if any value cannot convert |
 | Change several columns at once | `df.astype({'patient_id': 'string', 'age': 'Int64'})` | New `DataFrame`; columns not named keep their dtype |
 | Keep only whole numbers | `s.where(s % 1 == 0)` | `s % 1 == 0` is `True` where the value has no fractional part, so `40.5` becomes missing |
 | Whole numbers with gaps | `s.astype('Int64')` | Nullable integers; a fraction such as `40.5` may raise or be silently truncated, so drop fractions first |
@@ -321,20 +304,6 @@ display(form)
 | 0 | 34 | 2026-01-15 | 34 | False |
 | 1 | unknown | NaT | <NA> | True |
 | 2 | 52 | 2026-03-01 | 52 | False |
-
-### Code Snippet: Set several dtypes at once
-
-`intake` has `patient_id` as `str` (`'P001'`, `'P002'`, `'P003'`) and `age` as `float64` (`34.0`, `NaN`, `52.0`).
-
-```python
-intake = intake.astype({'patient_id': 'string', 'age': 'Int64'})
-display(intake.dtypes)
-```
-
-|  | value |
-| --- | --- |
-| patient_id | string |
-| age | Int64 |
 
 ![xkcd 1179: ISO 8601. Pass format='%Y-%m-%d' and every date has one spelling](media/xkcd_1179.png)
 
@@ -403,7 +372,7 @@ def bp_stage(row):
     else:
         return 'below stage 1'
 
-vitals['bp_stage'] = vitals.apply(bp_stage, axis=1)  # axis=1 passes each row, so one rule reads two columns
+vitals['bp_stage'] = vitals.apply(bp_stage, axis=1)  # axis=1: one row at a time
 display(vitals[['sbp', 'dbp', 'bp_stage']])
 ```
 
@@ -426,10 +395,8 @@ display(vitals[['sbp', 'dbp', 'bp_stage']])
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
-| `df.rename(index={old: new})` | Rename rows | `DataFrame` with revised labels |
-| `df.rename(columns={old: new})` | Rename columns | `DataFrame` with revised labels |
-| `df.rename(columns=str.lower)` | Lowercase every string column label | `DataFrame` with revised labels |
-| `df.rename(columns=str.strip)` | Remove leading/trailing whitespace from each column label | `DataFrame` with revised labels |
+| `df.rename(index={old: new}, columns={old: new})` | Rename the listed row or column labels | `DataFrame` with revised labels |
+| `df.rename(columns=str.lower)` / `columns=str.strip` | Lowercase / trim whitespace from every column label | `DataFrame` with revised labels |
 | `series.rename('new_name')` | Set a Series' name, which prints as `Name: new_name` below its values | `Series` with the new name |
 
 ### Code Snippet: Rename columns
@@ -460,8 +427,6 @@ Index(['patient id', 'sbp (mmhg)'], dtype='str')
 | `pd.cut(series, bins=[...])` | Cut at explicitly supplied edges (not necessarily equal-width) | Categorical Series of bins |
 | `pd.qcut(series, q)` | Use quantiles to target equal-frequency bins | Categorical `Series`; duplicate edges raise by default |
 | `pd.qcut(series, q, duplicates='drop')` | Merge repeated edges caused by tied values instead of raising | Fewer than `q` bins; leave out `labels`, whose count must match the bins |
-| `bins=[0, 30, 50, 100]` | Supply three explicit intervals | `(0, 30]`, `(30, 50]`, `(50, 100]` by default |
-| `labels=['Young', 'Middle', 'Senior']` | Name the three bins | One label per bin is required |
 
 ### Code Snippet: Create ordered categories
 
@@ -584,11 +549,10 @@ Index(['current', 'former', 'never'], dtype='str')
 [2, 1, 2, 0, 1]
 ```
 
-With `pyarrow` installed, as in Colab, the counts read `69132` and `5175` bytes; the category version is far smaller either way.
+With `pyarrow` installed, as in Colab: `69132` and `5175` bytes.
 
 ## Creating Indicator (Dummy) Variables
 
-- `pd.get_dummies()`: one column per label, `True` (1) for rows with that label, `False` (0) otherwise.
 - **Reference category**: with `drop_first=True`, one label gets no column; its rows are 0 in every indicator, so the model carries no redundant column.
 
 ![One-hot encoding: each category becomes its own 0/1 column](media/categorical_encoding_diagram.png)
@@ -636,15 +600,6 @@ display(pd.get_dummies(colors, prefix='color', drop_first=True, dtype='int64')) 
 - **Validation**: checking a table against its data contract, where inspection only describes it.
 - **Validation rule**: a yes/no question asked of every row, such as "is the age between 0 and 120?"
 - List failing rows for review rather than deleting them: an age of 150 is almost certainly a typo, while a systolic pressure of 220 may be a real emergency.
-
-| Issue | Detection | Possible response after investigation |
-| --- | --- | --- |
-| Missing Values | `df.isna().sum()` plus sentinel checks | Retain, flag, impute, or drop by meaning and purpose |
-| Duplicate Candidates | exact-row and candidate-identifier checks | Confirm row meaning; remove only proven redundancy |
-| Wrong Data Type | `df.dtypes` plus `pd.to_numeric(..., errors='coerce')` | Parse with a failure policy, then check dtype |
-| Outliers | `df.describe()`, IQR rule (below), domain rules | Verify at source; keep, flag, correct, cap, or filter, and document |
-| Inconsistent Categories | `df['col'].unique()` | Map documented aliases explicitly |
-
 - Run the inspection checks (`isna().sum()`, `duplicated().sum()`, `value_counts()`, `nunique()`, `dtypes`, `describe()`) before and after cleaning; counts should change only where you meant them to.
 
 ![xkcd 2239: Data Error. A clean-looking analysis cannot rescue corrupted source data](media/xkcd_2239.png)
@@ -657,10 +612,9 @@ display(pd.get_dummies(colors, prefix='color', drop_first=True, dtype='int64')) 
 | --- | --- | --- |
 | Inclusive range | `series.between(low, high)` | Boolean `Series`; `True` when `low <= value <= high` |
 | Allowed list | `series.isin(['north', 'south', 'west'])` | Boolean `Series`; `True` for listed values |
-| Describe a pattern | `r'P[0-9]{3}'` | `P` plus three digits, used by the rules below |
 | Whole-value pattern | `series.str.fullmatch(pattern, na=False)` | `True` only when the whole value matches; `na=False` makes a missing value fail the rule |
 | Start-only pattern | `series.str.match(pattern)` | Checks the start only, so `'P0012'` passes `P[0-9]{3}`; prefer `fullmatch` for rules |
-| Exact date text | `series.str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')` | `True` only for exact `YYYY-MM-DD` text; needed because `to_datetime(..., format='%Y-%m-%d')` still accepts `2026-7-01` |
+| Exact date text | `series.str.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')` | `True` only for exact `YYYY-MM-DD` text |
 | Length and digits | `series.str.len()` / `series.str.isdigit()` | Characters per value / `True` when every character is a digit |
 | Combine rules | `rule_a & rule_b` / `rule_a \| rule_b` | Both must pass / either passes |
 | Rows that fail | `df[~mask]` | `~` flips `True` and `False`, so this keeps the rows that fail |
@@ -710,10 +664,8 @@ display(parsed)
 
 | Item | Purpose / arguments | Output / note |
 | --- | --- | --- |
-| `df[df['col'] > threshold]` | Filter by threshold | Filtered DataFrame |
 | `s.quantile(0.25)` / `s.quantile(0.75)` | Quartiles `q1` and `q3` for the IQR method; `iqr = q3 - q1` | A single number each |
 | `(s < q1 - 1.5 * iqr) \| (s > q3 + 1.5 * iqr)` | Flag values beyond 1.5 IQRs from the quartiles | Boolean `Series` |
-| `df[df['col'].between(lower, upper)]` | Keep rows whose selected value is within inclusive bounds | Filtered `DataFrame` |
 | `df.clip(lower, upper)` | Cap comparable values at bounds; `df['value'].clip(lower=0, upper=10)` turns 100 into 10 | Values changed to the bounds rather than rows dropped; record why each bound fits |
 
 ### Code Snippet: Flag unusual values
@@ -801,8 +753,6 @@ working = raw.copy(deep=True)
 print(working.equals(raw))  # True: same values and types, a separate table
 ```
 
-Changes such as `working['site'] = working['site'].str.strip().str.lower()` affect only the copy.
-
 ### Code Snippet: Fingerprint the source file
 
 `source` is `Path('intake.csv')`, and `hashlib` is imported.
@@ -817,13 +767,9 @@ intake.csv 70
 2a1e54b64ddd61d9768e604e4bc91342b2ee33191ea6902c9ad38b54a2765420
 ```
 
-Change one letter in `intake.csv` and the hash is completely different, even though the size stays 70 bytes.
-
 ## Validate Before You Save
 
 - **Validation invariant**: a rule that must hold for the whole table before it counts as clean: IDs are unique, every site is on the allowed list, every recorded age is between 0 and 120.
-- Write each invariant as one `True`/`False` check and collect the checks in a Series, so they print as a report.
-- `assert condition, message` (Lecture 02) directly before `to_csv()` turns the report into a gate: a failed check means no file is written.
 - Passing checks show the table matches its contract; they cannot show that the cleaning decisions were wise.
 
 ### Reference Card: Validation checks
@@ -836,7 +782,7 @@ Change one letter in `intake.csv` and the hash is completely different, even tho
 - `assert checks.all(), checks[~checks]`: Stops with `AssertionError` listing the failed rules; nothing after it runs.
 - `clean.reset_index(drop=True)`: Renumber rows 0, 1, 2, ... after rows were dropped. A CSV saved with `index=False` reads back numbered this way.
 - `pd.read_csv(path, dtype={'patient_id': 'string', 'age': 'Int64', 'needs_review': 'boolean'}, parse_dates=['visit_date'])`: Read a saved file back with the intended types. Dates go in `parse_dates` because `dtype=` cannot parse them.
-- `round_trip.equals(clean)`: `True` only when values, dtypes, and row labels all match. A `str` column read back as `string` compares unequal.
+- `round_trip.equals(clean)`: Also compares row labels; a `str` column read back as `string` compares unequal.
 
 ### Code Snippet: Stop before saving a bad table
 
@@ -873,7 +819,7 @@ Change `'south'` to `'South'` and rerun. `sites allowed` becomes `False`, `asser
 ```python
 round_trip = pd.read_csv('clean_patients.csv', dtype={'age': 'Int64'})
 display(round_trip.dtypes)
-print(round_trip.equals(clean))  # same values, dtypes, and row labels
+print(round_trip.equals(clean))  # True: same values, dtypes, and row labels
 ```
 
 |  | value |
@@ -881,10 +827,6 @@ print(round_trip.equals(clean))  # same values, dtypes, and row labels
 | patient_id | str |
 | site | str |
 | age | Int64 |
-
-```text
-True
-```
 
 ![Work Chronicles: a 210-slide deck read word for word. A lecture page is reference material to come back to, not a script](media/workchronicles_210_slides.png)
 
