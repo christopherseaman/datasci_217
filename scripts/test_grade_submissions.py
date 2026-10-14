@@ -598,7 +598,7 @@ def test_private_roster(work: Path) -> None:
     output = io.StringIO()
     with redirect_stdout(output):
         assert grade_submissions.main(["01", "--dest", str(destination), "--fork", url, "--roster", str(path)]) == 0
-    assert "Alice Example alice@example.com" in output.getvalue()
+    assert "alice@example.com Alice Example" in output.getvalue()
     saved = read_grades(destination)["alice"]
     assert (destination / "grades.csv").stat().st_mode & 0o777 == 0o600
     assert [saved[key] for key in grade_submissions.IDENTITY_COLUMNS] == ["alice@example.com", "Alice", "Example"]

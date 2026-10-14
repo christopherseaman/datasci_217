@@ -444,7 +444,7 @@ def main(argv: list[str] | None = None) -> int:
     for fork in forks:
         row = write_grades(grade_fork(fork, checks, destination, version), grades, roster)
         label, details = row["github_user"], row.get("details", "")
-        identity = " ".join(str(row.get(key, "")) for key in ["first_name", "last_name", "email"]).strip()
+        identity = " ".join(str(row.get(key, "")) for key in IDENTITY_COLUMNS).strip()
         identity = f"  {printable(identity)}" if identity else ""
         if row["status"] == "graded":
             print(f"{label:<24} {row['score']:>3}/{row['max_score']:<3} {row['commit'][:7]}  "
