@@ -1,6 +1,6 @@
 # Handoff
 
-Updated 2026-10-14. Read [AGENTS.md](AGENTS.md) for the authoring and verification rules and [TODO.md](TODO.md) for open work. This brief describes the current course; older review reports record the state when their reviews ran.
+Updated 2026-10-14. Read [AGENTS.md](AGENTS.md) for the authoring and verification rules. This brief describes the current course; older review reports record the state when their reviews ran.
 
 ## Overall goal
 
@@ -54,7 +54,7 @@ Still unverified: actual classroom timing, hosted Colab runtime/UI, native macOS
 
 ## Next work and publication boundaries
 
-[TODO.md](TODO.md) tracks open work. Completed work and context belong here or in review reports. Historical deferred demo bugs are resolved; do not revive them as new TODOs without reproducing a current defect.
+The completed TODO tracker and stale FIXME pointer were removed on October 14; recreate a tracker when there is new work to record. Completed work and context belong here or in review reports. Historical deferred demo bugs are resolved; do not revive them as new TODOs without reproducing a current defect.
 
 ### October 14 follow-through
 
