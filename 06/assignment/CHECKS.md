@@ -2,7 +2,7 @@
 
 ## Completion contract
 
-The midterm totals 100 points: 75 points graded from your committed files after the deadline, 25 by human review. Each file is graded on its own, so a wrong value costs only its own points. The expected values come from the data `generate_data.py` writes, the same tables on every computer.
+The midterm totals 100 points: 75 points graded from your committed files after the deadline, 25 by human review. Each file is graded on its own, against the tables `generate_data.py` writes.
 
 | File | What earns the points | Points |
 | --- | --- | ---: |
@@ -22,7 +22,7 @@ The midterm totals 100 points: 75 points graded from your committed files after 
 
 - Line endings, blank lines, spaces at the end of a line or around a header name, a comma, semicolon, or tab between cells, column order, extra columns, a leading column of row numbers, and number format (`6`, `6.0`) do not matter. Letter case and surrounding spaces in labels, codes, IDs, and text values do not cost points: `f` reads as `F`. A spelling that still needs its dictionary, such as `woman`, `N-01`, or `wk12`, does.
 - An empty field, `NaN`, and `<NA>` all read as missing; a date may carry a `00:00:00` time after it or use `/` in place of `-`; a mean within 0.01 of the exact one is right.
-- A file missing from `output/` earns 0 points. A `MergeError` in the Task 4.4 join or a failed Task 5.1 check stops the notebook before `analysis_sample.csv` is written. That costs its 9 points on top of the earlier file that shows the mistake. The gate stays: fix the upstream cause, then run again. [HINTS.md](HINTS.md) shows how to find it. Every other file is saved before the join.
+- A file missing from `output/` earns 0 points. A `MergeError` in the Task 4.4 join or a failed Task 5.1 check leaves `analysis_sample.csv` unwritten, which costs its 9 points on top of the earlier file that shows the mistake.
 - One mistake is charged once, in the file that first shows it. A later file is also right when it follows from your own earlier ones:
     - `patients_summary.csv` and `gender_categories.csv` counts made with the exact registry repeats left in cost only `patients`.
     - When `visits` in `visits_summary.csv` is off by some rows, its other counts may be off by at most that many; counts made with the earlier reading of each recheck cost only `sbp_wide_sample.csv`.
@@ -32,7 +32,7 @@ The midterm totals 100 points: 75 points graded from your committed files after 
 
 ## Human review
 
-Human review reads the notebook, the decision reasons, and your commit history, 5 points for each category:
+5 points for each category:
 
 | Category | What it reads | Full credit (5) | Partial credit |
 | --- | --- | --- | --- |

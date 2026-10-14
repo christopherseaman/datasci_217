@@ -11,7 +11,7 @@ Course-side QA for the midterm checks, not a second grading mode. `run.py` gener
 - each of 29 single mistakes, from a gender spelling left out of the dictionary or swapped melt labels to a recheck's earlier reading kept, carried through every later file as the student's own pipeline would carry it, costs exactly its own points, and the feedback names the fix.
 
 ```bash
-uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 python 06/assignment_checks/_grader_selftest/run.py
+uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with pyarrow==25.0.0 python 06/assignment_checks/_grader_selftest/run.py
 ```
 
 It takes about two minutes.

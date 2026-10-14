@@ -73,7 +73,7 @@ assignment/
     └── clean_summary.csv       # you generate in Task 5.2
 ```
 
-Later tasks build on earlier ones, so run the cells in order.
+Each task changes `labs`, so run the cells in order; after a mistake, click **Restart**, then **Run All**.
 
 ## Task 1: Find and drop missing values
 
@@ -109,7 +109,7 @@ The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)`, sets 
     glucose_mg_dl           3484          5.9
     ```
 
-4. Save with `missing_report.to_csv(MISSING_PATH)`, keeping the index: it holds the column names.
+4. Save with `missing_report.to_csv(MISSING_PATH)`.
 
 > **Checkpoint: `output/missing_report.csv`**
 > The header line `column,missing_count,missing_pct`, then the eight rows above.
@@ -221,7 +221,7 @@ The first Task 1 cell reads the file with `labs = pd.read_csv(DATA_PATH)`, sets 
 
 HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more is diabetes.
 
-1. Add `a1c_category` with `pd.cut(labs["hba1c_pct"], bins=[0, 5.6, 6.4, 20], labels=["normal", "prediabetes", "diabetes"])`. A value outside every bin, such as a slip of 64, gets no category.
+1. Add `a1c_category` with `pd.cut(labs["hba1c_pct"], bins=[0, 5.6, 6.4, 20], labels=["normal", "prediabetes", "diabetes"])`. Each bin includes its right edge, so 5.6 is normal and 5.7 prediabetes. A value outside every bin, such as a slip of 64, gets no category.
 2. Count it with `a1c_counts = labs["a1c_category"].value_counts(dropna=False)` and save with `a1c_counts.to_csv(A1C_PATH)`.
     - Expect: `diabetes` 25763, `prediabetes` 14827, `normal` 14045, and `NaN` 3395: the 3347 blank HbA1c values plus the 48 above 20.
 
@@ -270,7 +270,7 @@ HbA1c bands: below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.5% or more
     Name: failing_rows, dtype: int64
     ```
 
-4. Save with `validation_report.to_csv(VALIDATION_PATH)`, keeping the index.
+4. Save with `validation_report.to_csv(VALIDATION_PATH)`.
 
 > **Checkpoint: `output/validation_report.csv`**
 > The header line `rule,failing_rows`, then the five rows above.
@@ -313,7 +313,7 @@ Flag unusual glucose values; keep them in the table.
     decision_log.index.name = "decision"
     ```
 
-    - Expect: `shape: (57618, 15)`, and `visits_dropped` 412, `hba1c_blanked` 48, `weight_blanked` 70.
+    - Expect: `shape: (57618, 15)`, and `visits_dropped` 412, `hba1c_blanked` 48, `weight_blanked` 70. 412, not 414: 2 visits fail both rules.
 7. Save with `decision_log.to_csv(DECISION_PATH)`.
 
 > **Checkpoint: `output/decision_log.csv`**
@@ -335,7 +335,7 @@ Flag unusual glucose values; keep them in the table.
 
 2. Stop if any fails: `assert checks.all(), checks[~checks]`.
     - Expect: the `assert` prints nothing. If it stops, the message names the failing check; fix that step and run the cells again.
-3. Summarize the cleaned number columns: `clean_summary = clean[["age", "weight_kg", "hba1c_pct", "glucose_mg_dl"]].describe().round(2).T`. Round before `.T`, which turns each column of `clean` into a row.
+3. Summarize the cleaned number columns: `clean_summary = clean[["age", "weight_kg", "hba1c_pct", "glucose_mg_dl"]].describe().round(2).T`. `.T` turns each column of `clean` into a row.
     - Expect:
 
     ```text
@@ -353,7 +353,7 @@ Flag unusual glucose values; keep them in the table.
 
 ### 5.3 Save the cleaned table as Parquet
 
-Parquet keeps each column's dtype. The file goes in `data/`, so it is not committed or checked.
+Parquet keeps each column's dtype.
 
 1. The cell sets `parquet_path = Path("data") / "labs_clean.parquet"`. Save with `clean.to_parquet(parquet_path)`.
 2. Read it back with `clean_back = pd.read_parquet(parquet_path)`, then print `clean_back.dtypes` and `clean_back.equals(clean)`.
