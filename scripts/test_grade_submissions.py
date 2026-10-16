@@ -666,6 +666,76 @@ def test_private_roster(work: Path) -> None:
             raise AssertionError("invalid roster was accepted")
 
 
+def test_music_and_ta_exclusions(work: Path) -> None:
+    folder = work / "music"
+    folder.mkdir()
+    completed = copy_tracked("01", folder / "completed")
+    complete_as_written(completed)
+    urls = {}
+    for user, day in (("assistant", 1), ("alice", 2), ("bob", 3)):
+        urls[user] = publish_fork(folder / "forks", user, completed)
+        fork = folder / "forks" / user / "ds217-26f-01"
+        date = f"2026-10-{day:02d}T12:00:00+00:00"
+        subprocess.run(["git", *GIT_IDENTITY, "commit", "--amend", "--no-edit", "--quiet"], cwd=fork,
+                       env={**os.environ, "GIT_AUTHOR_DATE": date, "GIT_COMMITTER_DATE": date}, check=True)
+    path = folder / "roster.tsv"
+    path.write_text("github_user\temail\tlast_name\tfirst_name\texclude\n"
+                    "assistant\t\t\t\tyes\n"
+                    "alice\talice@example.com\tExample\tAlice\t\n"
+                    "bob\tbob@example.com\tExample\tBob\t\n")
+    destination = folder / "results"
+    command = ["01", "--dest", str(destination), *(f"--fork={url}" for url in urls.values())]
+    previous_cwd = Path.cwd()
+    try:
+        os.chdir(folder)
+        # An explicit TA-only request never clones or grades the account, even with no results yet.
+        output = io.StringIO()
+        with redirect_stdout(output):
+            assert grade_submissions.main(["01", "--dest", str(destination), "--fork", urls["assistant"]]) == 0
+        assert not (destination / "assistant").exists() and "⭐" not in output.getvalue()
+        output = io.StringIO()
+        with redirect_stdout(output):
+            assert grade_submissions.main(command) == 0
+        assert "⭐ First 100/100: alice " in output.getvalue()
+        original = read_grades(destination)
+        assert set(original) == {"alice", "bob"} and all(row["score"] == "100" for row in original.values())
+        # Prior CSV rows are preserved, but a TA's earlier full score cannot win.
+        grade_submissions.write_grades(original["alice"] | {
+            "github_user": "assistant", "email": "", "commit_date": "2026-10-01T12:00:00+00:00"
+        }, destination / "grades.csv")
+        (folder / "music.lst").write_text("\ufeff  ALICE@EXAMPLE.COM  \n\n")
+        output = io.StringIO()
+        with redirect_stdout(output):
+            assert grade_submissions.main(command) == 0
+        assert "⭐ First 100/100: bob " in output.getvalue()
+        saved = read_grades(destination)
+        assert saved["alice"]["score"] == saved["bob"]["score"] == "100"
+        assert "assistant" in saved and not (destination / "assistant").exists()
+        (folder / "music.lst").write_text("alice@example.com\nbob@example.com\n")
+        output = io.StringIO()
+        with redirect_stdout(output):
+            assert grade_submissions.main(command) == 0
+        assert "⭐" not in output.getvalue()
+        # Automatic fork discovery applies the same TA exclusion as --fork.
+        forks = [grade_submissions.named_fork(url) for url in urls.values()]
+        with redirect_stdout(io.StringIO()), patched(list_forks=lambda repository, token: forks):
+            assert grade_submissions.main(["01", "--dest", str(destination)]) == 0
+        assert not (destination / "assistant").exists()
+        grades = destination / "grades.csv"
+        grade_submissions.write_grades({"github_user": "bob", "status": "error", "details": "offline"}, grades)
+        assert grade_submissions.first_full_score(grades, {"alice@example.com"}, {"assistant"}) is None
+        for bad in ("not-an-email", "@example.com", "name@", "two@@example.com", "two names@example.com"):
+            (folder / "music.lst").write_text(bad)
+            try:
+                grade_submissions.load_music_exclusions(folder / "music.lst")
+            except SystemExit as error:
+                assert "line 1" in str(error) and bad not in str(error)
+            else:
+                raise AssertionError("invalid music email was accepted")
+    finally:
+        os.chdir(previous_cwd)
+
+
 def main() -> None:
     assert sys.version_info[:2] == (3, 13), (
         f"The checks pin Python 3.13 and exact dependency versions; this is {sys.version.split()[0]}. "
@@ -683,6 +753,7 @@ def main() -> None:
         test_course_repo_warnings(work)
         test_every_assignment_through_the_script(work)
         test_private_roster(work)
+        test_music_and_ta_exclusions(work)
     print("grade_submissions: Assignment 01 completed as written scores 100/100 from 01/assignment_checks and "
           "from its own local run; partial, untouched, forged, plausible-but-wrong, running-total, other-Python "
           "and symlinked forks score as intended from the course checks; TA edits, renamed URLs, "

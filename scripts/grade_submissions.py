@@ -343,7 +343,12 @@ def load_roster(path: Path) -> dict[str, dict]:
                 identity = {key: row[key].strip() for key in IDENTITY_COLUMNS}
                 email = identity["email"].casefold()
                 user = row["github_user"].strip().casefold()
-                if not identity["first_name"] or not identity["last_name"]:
+                exclude = row.get("exclude", "").strip().casefold()
+                if exclude not in ("", "no", "yes"):
+                    raise ValueError(f"row {line} exclude must be blank, no, or yes")
+                if exclude == "yes" and not user:
+                    raise ValueError(f"row {line} needs a GitHub login to exclude")
+                if exclude != "yes" and (not identity["first_name"] or not identity["last_name"]):
                     raise ValueError(f"row {line} needs both names")
                 if email and (email.count("@") != 1 or any(c.isspace() for c in email)):
                     raise ValueError(f"row {line} has an invalid email")
@@ -354,7 +359,7 @@ def load_roster(path: Path) -> dict[str, dict]:
                 if user:
                     if user in roster:
                         raise ValueError(f"row {line} repeats a GitHub login")
-                    roster[user] = identity
+                    roster[user] = identity | ({"exclude": True} if exclude == "yes" else {})
     except (OSError, UnicodeError, ValueError, csv.Error) as error:
         raise SystemExit(f"Could not read private roster {path}: {error}") from None
     return roster
@@ -395,11 +400,38 @@ def write_grades(row: dict, path: Path, roster: dict | None = None) -> dict:
     return row
 
 
-def first_full_score(path: Path) -> dict | None:
-    """The saved row with full marks and the earliest commit date, or None."""
-    with path.open(newline="", encoding="utf-8-sig") as handle:
-        full = [row for row in csv.DictReader(handle)
-                if row.get("score") and row["score"] == row.get("max_score")]
+def load_music_exclusions(path: Path) -> set[str]:
+    """Emails already offered music, or an empty set when the optional file is absent."""
+    try:
+        lines = path.read_text(encoding="utf-8-sig").splitlines()
+    except FileNotFoundError:
+        return set()
+    except (OSError, UnicodeError):
+        raise SystemExit("Could not read music exclusions; check the file's permissions and UTF-8 encoding.") from None
+    emails = set()
+    for number, line in enumerate(lines, 1):
+        email = line.strip().casefold()
+        if not email:
+            continue
+        if email.count("@") != 1 or any(char.isspace() for char in email) or not all(email.split("@")):
+            raise SystemExit(f"Invalid music exclusions line {number}; enter one email with a local part and domain, without whitespace.")
+        emails.add(email)
+    return emails
+
+
+def first_full_score(path: Path, excluded_emails: set[str] | None = None,
+                     excluded_users: set[str] | None = None) -> dict | None:
+    """The eligible graded row with full marks and the earliest saved commit date, or None."""
+    emails = {email.strip().casefold() for email in (excluded_emails or set())}
+    users = {user.strip().casefold() for user in (excluded_users or set())}
+    try:
+        with path.open(newline="", encoding="utf-8-sig") as handle:
+            full = [row for row in csv.DictReader(handle)
+                    if row.get("status") == "graded" and row.get("score") and row["score"] == row.get("max_score")
+                    and row.get("github_user", "").strip().casefold() not in users
+                    and row.get("email", "").strip().casefold() not in emails]
+    except FileNotFoundError:
+        return None
     return min(full, key=lambda row: datetime.fromisoformat(row["commit_date"]), default=None)
 
 
@@ -414,6 +446,10 @@ def main(argv: list[str] | None = None) -> int:
 
     roster_path = args.roster or Path("roster.tsv")
     roster = load_roster(roster_path) if args.roster or roster_path.exists() else None
+    excluded_users = {user for user, student in (roster or {}).items() if student.pop("exclude", False)}
+    music_exclusions = load_music_exclusions(Path("music.lst"))
+    music_users = excluded_users | {user for user, student in (roster or {}).items()
+                                     if student["email"].casefold() in music_exclusions}
     number = args.assignment.zfill(2)
     assignment = load_assignment(number)
     local = in_course_clone()
@@ -431,6 +467,8 @@ def main(argv: list[str] | None = None) -> int:
         forks = [named_fork(name) for name in args.fork]
     else:
         forks = list_forks(assignment["repository"], github_token())
+    forks = [fork for fork in forks if fork["user"].casefold() not in excluded_users]
+    if not args.fork:
         print(f"{len(forks)} forks of {assignment['repository']}")
     if local:
         for warning in course_repo_warnings():
@@ -456,7 +494,7 @@ def main(argv: list[str] | None = None) -> int:
             errors += 1
             print(f"{label:<24} ERROR  {details}{identity}")
     print(f"Updated {grades}: {len(forks) - errors} graded, {errors} not graded")
-    if first := first_full_score(grades):
+    if first := first_full_score(grades, music_exclusions, music_users):
         print(f"\n⭐ First {first['score']}/{first['max_score']}: {first['github_user']}  {first['commit'][:7]}  "
               f"{local_time(first['commit_date'])}")
     return 1 if errors else 0

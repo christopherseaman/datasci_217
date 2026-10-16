@@ -70,4 +70,5 @@ work/tufte/
 
 # Private student identities and LMS roster exports
 /roster.tsv
+/music.lst
 /ds217-f26-roster.xlsx

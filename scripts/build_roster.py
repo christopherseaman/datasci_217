@@ -20,7 +20,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 REPO = Path(__file__).resolve().parents[1]
-COLUMNS = ["github_user", "email", "last_name", "first_name", "course"]
+COLUMNS = ["github_user", "email", "last_name", "first_name", "course", "exclude"]
 NS = {"s": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
 spec = importlib.util.spec_from_file_location("course_process_email", REPO / "01/assignment/process_email.py")
 identity = importlib.util.module_from_spec(spec)
