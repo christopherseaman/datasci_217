@@ -32,6 +32,8 @@ Run the cells from top to bottom; each **Expect** line says what the output shou
 
 ## Part 1: One Row per Group
 
+The live core runs through Part 4. Stop at **Independent practice after class**; the remaining variations use the core results and can be completed later.
+
 The visit log has one row per visit. Every question in this part has an answer with one row per department, so each answer is a split (by `department`), an apply (mean, count, ...), and a combine.
 
 ### Build the Visit Log
@@ -105,42 +107,9 @@ display(visits.head())
 # One mean per department: split by department, average wait_min, combine
 dept_wait = visits.groupby("department")["wait_min"].mean()
 display(dept_wait.round(1))
-
-# Several summaries per column: a dictionary gives two-level column labels
-dept_stats = visits.groupby("department").agg({
-    "wait_min": ["mean", "median", "std", "min", "max"],
-    "age": ["mean", "max"],
-    "satisfaction": "mean",
-})
-dept_stats.round(1)
 ```
 
-**Expect:** six rows in alphabetical order. Orthopedics has the longest mean wait (38.1 minutes) and Pediatrics the shortest (14.9). Pediatrics' mean age is 8.5 and its oldest patient is 17, because only children go there. Satisfaction runs opposite to wait: 4.4 in Pediatrics, 3.0 in Orthopedics. The columns have two levels (`wait_min` over `mean`, `median`, ...) because `.agg()` received a dictionary.
-
-```python
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-# Two views of the same groups (Lecture 07): the means, and the spread behind them
-fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-
-dept_wait.sort_values().plot(kind="bar", ax=axes[0], color="steelblue")
-axes[0].set_title("Mean wait by department")
-axes[0].set_ylabel("Mean wait (minutes)")
-axes[0].set_xlabel("")
-axes[0].tick_params(axis="x", rotation=45)
-
-sns.boxplot(data=visits, x="department", y="wait_min", ax=axes[1])
-axes[1].set_title("Wait distribution by department")
-axes[1].set_ylabel("Wait (minutes)")
-axes[1].set_xlabel("")
-axes[1].tick_params(axis="x", rotation=45)
-
-plt.tight_layout()
-plt.show()
-```
-
-**Expect:** two panels. The bars climb from Pediatrics (shortest mean wait) to Orthopedics (longest). In the box plot, Family Medicine's box and whiskers are the widest: its mean is middling, but its waits are the least predictable.
+**Expect:** six rows in alphabetical order. Orthopedics has the longest mean wait (38.1 minutes) and Pediatrics the shortest (14.9).
 
 ### Named Aggregation: One Flat Row per Department
 
@@ -203,45 +172,6 @@ wait_grid.round(1)
 
 **Expect:** a 6 × 5 grid with clinics in alphabetical order (Central, East, North, South, West). Each row is nearly flat: clinic was assigned at random, so the department, not the clinic, sets the wait.
 
-### A Small Table You Can Read Row by Row
-
-The 100,000-row result is too tall to check by eye. Two days of visit counts from two clinics make the same structure easy to follow.
-
-```python
-daily = pd.DataFrame({
-    "day": ["Mon", "Mon", "Mon", "Mon", "Tue", "Tue", "Tue", "Tue"],
-    "clinic": ["North", "North", "South", "South", "North", "North", "South", "South"],
-    "department": ["Cardiology", "Pediatrics", "Cardiology", "Pediatrics",
-                   "Cardiology", "Pediatrics", "Cardiology", "Dermatology"],
-    "visits": [42, 35, 38, 51, 40, 30, 36, 18],
-    "no_shows": [3, 5, 2, 6, 4, 2, 1, 2],
-})
-display(daily)
-
-# Select the numeric columns first: summing "day" would glue the text together
-two_day = daily.groupby(["clinic", "department"])[["visits", "no_shows"]].sum()
-display(two_day)
-display(two_day["visits"].unstack())
-```
-
-**Expect:** 8 input rows become 5 groups, one per observed clinic and department pair. North Cardiology shows `82` visits and `7` no-shows (42 + 40 and 3 + 4). In the grid, North–Dermatology is `NaN`: North logged no Dermatology visits on either day, which is not the same as a count someone recorded as zero.
-
-### Work with the MultiIndex
-
-`two_day` has two index levels: `clinic` on the outside, `department` inside.
-
-```python
-# .loc on the outer level keeps the inner level as the index
-display(Markdown("**North only**"))
-display(two_day.loc["North"])
-
-# reset_index() (Lecture 06) turns both levels back into ordinary columns
-display(Markdown("**Flattened**"))
-display(two_day.reset_index())
-```
-
-**Expect:** North's two departments, Cardiology and Pediatrics, with `department` as the index; then 5 rows with `clinic` and `department` as ordinary columns and a `0..4` index.
-
 ## Part 3: Pivot Tables
 
 A pivot table is the two-key grouping from Part 2 in one call: `index` picks the row key, `columns` the column key, and `aggfunc` the summary in each cell.
@@ -266,6 +196,126 @@ print("Row order with sort=False:", list(unsorted.index))
 
 **Expect:** the same 6 × 5 grid as `wait_grid`, then `True`. `sort=True` lists departments alphabetically; `sort=False` lists them in the order each first appears in the rows: Family Medicine, Dermatology, Pediatrics, Orthopedics, Cardiology, Endocrinology. Pass `sort=` when a reader will compare your table with another one.
 
+### Totals with `margins`
+
+```python
+# Total patient-minutes spent waiting, with a Total row and column
+wait_totals = pd.pivot_table(
+    visits, values="wait_min", index="department", columns="clinic",
+    aggfunc="sum", margins=True, margins_name="Total",
+)
+display(wait_totals)
+
+# Checkpoint: the corner cell is every minute of waiting in the log
+print(f"\nCorner cell:     {wait_totals.loc['Total', 'Total']:,.0f}")
+print(f"Sum of wait_min: {visits['wait_min'].sum():,.0f}")
+```
+
+**Expect:** a `Total` row and column, and `2,485,272` on both checkpoint lines. Totals come from the raw rows, not from adding up rounded cells.
+
+## Part 4: Cross-Tabulations
+
+`pd.crosstab()` is the counting special case: hand it two columns and it reports how many rows fall in each combination.
+
+### Count Every Combination
+
+```python
+visit_counts = pd.crosstab(visits["department"], visits["clinic"], margins=True)
+display(visit_counts)
+print("\nGrand total:", visit_counts.loc["All", "All"])
+```
+
+**Expect:** six department rows plus an `All` row, five clinic columns plus an `All` column; the grand total is `100000`. An absent combination would show `0` here, not `NaN`: crosstab counts rows, and no rows is a count of zero.
+
+
+## Independent practice after class
+
+Run the core first. These variations retain the same visit log and summaries.
+
+### Several Summaries per Column
+
+```python
+# Several summaries per column: a dictionary gives two-level column labels
+dept_stats = visits.groupby("department").agg({
+    "wait_min": ["mean", "median", "std", "min", "max"],
+    "age": ["mean", "max"],
+    "satisfaction": "mean",
+})
+dept_stats.round(1)
+```
+
+**Expect:** six rows in alphabetical order. Orthopedics has the longest mean wait (38.1 minutes) and Pediatrics the shortest (14.9). Pediatrics' mean age is 8.5 and its oldest patient is 17, because only children go there. Satisfaction runs opposite to wait: 4.4 in Pediatrics, 3.0 in Orthopedics. The columns have two levels (`wait_min` over `mean`, `median`, ...) because `.agg()` received a dictionary.
+
+
+### Plot Means and Distributions
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Two views of the same groups (Lecture 07): the means, and the spread behind them
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+dept_wait.sort_values().plot(kind="bar", ax=axes[0], color="steelblue")
+axes[0].set_title("Mean wait by department")
+axes[0].set_ylabel("Mean wait (minutes)")
+axes[0].set_xlabel("")
+axes[0].tick_params(axis="x", rotation=45)
+
+sns.boxplot(data=visits, x="department", y="wait_min", order=dept_wait.sort_values().index, ax=axes[1])
+axes[1].set_title("Wait distribution by department")
+axes[1].set_ylabel("Wait (minutes)")
+axes[1].set_xlabel("")
+axes[1].tick_params(axis="x", rotation=45)
+
+plt.tight_layout()
+plt.show()
+```
+
+**Expect:** two panels. The bars climb from Pediatrics (shortest mean wait) to Orthopedics (longest). In the box plot, Family Medicine's box and whiskers are the widest: its mean is middling, but its waits are the least predictable.
+
+
+### A Small Table You Can Read Row by Row
+
+The 100,000-row result is too tall to check by eye. Two days of visit counts from two clinics make the same structure easy to follow.
+
+```python
+daily = pd.DataFrame({
+    "day": ["Mon", "Mon", "Mon", "Mon", "Tue", "Tue", "Tue", "Tue"],
+    "clinic": ["North", "North", "South", "South", "North", "North", "South", "South"],
+    "department": ["Cardiology", "Pediatrics", "Cardiology", "Pediatrics",
+                   "Cardiology", "Pediatrics", "Cardiology", "Dermatology"],
+    "visits": [42, 35, 38, 51, 40, 30, 36, 18],
+    "no_shows": [3, 5, 2, 6, 4, 2, 1, 2],
+})
+display(daily)
+
+# Select the numeric columns first: summing "day" would glue the text together
+two_day = daily.groupby(["clinic", "department"])[["visits", "no_shows"]].sum()
+display(two_day)
+display(two_day["visits"].unstack())
+```
+
+**Expect:** 8 input rows become 5 groups, one per observed clinic and department pair. North Cardiology shows `82` visits and `7` no-shows (42 + 40 and 3 + 4). In the grid, North–Dermatology is `NaN`: North logged no Dermatology visits on either day, which is not the same as a count someone recorded as zero.
+
+
+### Work with the MultiIndex
+
+Run the preceding small-table practice first. `two_day` has two index levels: `clinic` on the outside, `department` inside.
+
+```python
+# .loc on the outer level keeps the inner level as the index
+display(Markdown("**North only**"))
+display(two_day.loc["North"])
+
+# reset_index() (Lecture 06) turns both levels back into ordinary columns
+display(Markdown("**Flattened**"))
+display(two_day.reset_index())
+```
+
+**Expect:** North's two departments, Cardiology and Pediatrics, with `department` as the index; then 5 rows with `clinic` and `department` as ordinary columns and a `0..4` index.
+
+
 ### Several Summaries at Once
 
 ```python
@@ -284,22 +334,6 @@ print("\nTotal visits counted:", wait_multi["count"].sum().sum())
 
 **Expect:** two tables with the same shape, and `Total visits counted: 100000`. The smallest cell is Dermatology at North with 1,647 visits, so every mean rests on well over a thousand visits. Read the two tables together: a mean is only as trustworthy as the count underneath it.
 
-### Totals with `margins`
-
-```python
-# Total patient-minutes spent waiting, with a Total row and column
-wait_totals = pd.pivot_table(
-    visits, values="wait_min", index="department", columns="clinic",
-    aggfunc="sum", margins=True, margins_name="Total",
-)
-display(wait_totals)
-
-# Checkpoint: the corner cell is every minute of waiting in the log
-print(f"\nCorner cell:     {wait_totals.loc['Total', 'Total']:,.0f}")
-print(f"Sum of wait_min: {visits['wait_min'].sum():,.0f}")
-```
-
-**Expect:** a `Total` row and column, and `2,485,272` on both checkpoint lines. Totals come from the raw rows, not from adding up rounded cells.
 
 ### Absent Cells: `NaN` or Zero?
 
@@ -323,9 +357,13 @@ display(filled)
 
 **Expect:** Dermatology–South is `NaN` in the first table and `0` in the second, and the other cells are unchanged. For a count of nurses, zero is the true answer, so `fill_value=0` is right here. It would be wrong for a mean wait: filling an empty cell with 0 would report a zero-minute wait that never happened.
 
+
 ### Read a Pivot Table as a Heatmap
 
 ```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 # A pivot table is already the shape sns.heatmap() wants (Lecture 07)
 fig, ax = plt.subplots(figsize=(9, 5))
 # fmt=".1f" writes each value with one decimal, like an f-string's :.1f
@@ -339,6 +377,7 @@ plt.show()
 
 **Expect:** horizontal bands of color: Orthopedics darkest, Pediatrics palest, and each row nearly one color across the clinics. A heatmap makes that pattern obvious in a way a table of 30 numbers does not.
 
+
 ### Back to Long Form
 
 ```python
@@ -351,19 +390,6 @@ print("Round trip back to the grid?", long_form.unstack().equals(wait_pivot))
 
 **Expect:** 30 rows (six departments × five clinics) and `True`: wide and long are two layouts of the same summary.
 
-## Part 4: Cross-Tabulations
-
-`pd.crosstab()` is the counting special case: hand it two columns and it reports how many rows fall in each combination.
-
-### Count Every Combination
-
-```python
-visit_counts = pd.crosstab(visits["department"], visits["clinic"], margins=True)
-display(visit_counts)
-print("\nGrand total:", visit_counts.loc["All", "All"])
-```
-
-**Expect:** the same counts as the `count` table above, plus an `All` row and column; the grand total is `100000`. An absent combination would show `0` here, not `NaN`: crosstab counts rows, and no rows is a count of zero.
 
 ### Summarize a Third Column Instead of Counting
 
@@ -376,6 +402,7 @@ print("\nSame numbers as the pivot table?", mean_wait.round(6).equals(wait_pivot
 ```
 
 **Expect:** the same grid as the pivot table, and `True`.
+
 
 ### Two-Level Rows
 

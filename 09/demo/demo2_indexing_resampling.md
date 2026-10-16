@@ -38,6 +38,8 @@ import numpy as np
 import pandas as pd
 ```
 
+The core walkthrough is sections 1–8. Sections 9–11 are independent practice for outside class: section 9 reuses `monitor` from section 1; sections 10 and 11 each build their own data.
+
 ## 1. One patient's monitor export
 
 The monitor writes one row per hour for January 1 to 28, 2024, with heart rate (bpm), temperature (°F), and oxygen saturation (`spo2`, %). `rng` makes the same "random" values on every run (Lecture 03). Two events are built in for the summaries to reveal:
@@ -129,6 +131,8 @@ display(hourly.isna().sum())
 ```
 
 **Expect:** 21 hourly rows, 00:00 through 20:00. `asfreq` leaves `15` slots empty; `ffill(limit=2)` carries each reading two hours forward and still leaves `5` empty (the third hour after each reading); `interpolate` fills all of them with a straight line, such as `99.2` at 02:00. The filled values are estimates, not measurements.
+
+The 02:00 interpolated estimate uses the 04:00 reading, which had not happened at 02:00. It describes the completed record; it is not an input available to a score running at 02:00.
 
 
 ## 4. Two patients: resample each separately
@@ -257,24 +261,7 @@ display(smooth.loc['2024-01-11':'2024-01-21'].round(1))
 - `centered_7` starts rising on January 12 (`80.2`), three days before the fever began, because each value averages three later days.
 
 
-## 8. Count window versus time window across the gap
-
-On the hourly readings, a count window and a time window differ exactly where the monitor was unplugged.
-
-```python
-hr = monitor['heart_rate']
-windows = pd.DataFrame({
-    'heart_rate': hr,
-    'last_3_readings': hr.rolling(3).mean(),
-    'last_3_hours': hr.rolling('3h').mean(),
-})
-display(windows.loc['2024-01-05 05:00':'2024-01-05 20:00'].round(1))
-```
-
-**Expect:** at `2024-01-05 18:00`, `last_3_readings` is `78.7`, averaging the 06:00 and 07:00 readings from 11 hours earlier, while `last_3_hours` is `78.0`, the 18:00 reading alone. They differ again at 19:00, while the count window still reaches back to 07:00, and agree from 20:00 on.
-
-
-## 9. Plot the counts and the smoothers
+## 8. Plot the counts and the smoothers
 
 The top panel shows the reading counts, so the gap is visible; the bottom panel shows the daily means with the 7-day rolling mean, the EWM, and a band of plus or minus one rolling standard deviation.
 
@@ -300,7 +287,24 @@ plt.show()
 **Expect:** in the top panel, 27 bars of height 24 and one short bar (14) on January 5. In the bottom panel, the daily means form a three-day plateau near 93 bpm; the dashed EWM climbs and falls sooner than the solid rolling mean, and the shaded band widens while the fever days are inside the 7-day window.
 
 
-## 10. Home weights: calendar, weekly, and monthly reports
+## 9. Independent practice: count window versus time window across the gap
+
+Use `monitor` from section 1. On the hourly readings, a count window and a time window differ exactly where the monitor was unplugged.
+
+```python
+hr = monitor['heart_rate']
+windows = pd.DataFrame({
+    'heart_rate': hr,
+    'last_3_readings': hr.rolling(3).mean(),
+    'last_3_hours': hr.rolling('3h').mean(),
+})
+display(windows.loc['2024-01-05 05:00':'2024-01-05 20:00'].round(1))
+```
+
+**Expect:** at `2024-01-05 18:00`, `last_3_readings` is `78.7`, averaging the 06:00 and 07:00 readings from 11 hours earlier, while `last_3_hours` is `78.0`, the 18:00 reading alone. They differ again at 19:00, while the count window still reaches back to 07:00, and agree from 20:00 on.
+
+
+## 10. Independent practice: home-weight reports
 
 Build a daily home-weight history for one heart-failure patient.
 
@@ -332,7 +336,7 @@ display(home_weights['weight_kg'].resample('ME').agg(['mean', 'max']).round(2))
 **Expect:** `(29, 1)` for February, then a one-row table of nine March weights from `81.9` to `82.1`. Weekly means are labeled with the Sunday that ends each week: `2024-01-07`, `2024-01-14`, `2024-01-21`. The monthly table has three rows; March's `max` is `84.4`, against `82.3` in January and `82.2` in February.
 
 
-## 11. ICU summaries and exact bin boundaries
+## 11. Independent practice: ICU summaries and exact bin boundaries
 
 Build a one-week hourly ICU monitor.
 

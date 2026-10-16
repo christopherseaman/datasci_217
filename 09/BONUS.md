@@ -21,6 +21,8 @@ _Periods represent time spans, not specific moments. Understanding periods is cr
 
 ## Period Basics
 
+A **fiscal year** is an organization's reporting year, which may end outside December. `Q-JAN` names quarters by the fiscal year ending in January: fiscal 2012 Q4 runs from November 2011 through January 2012.
+
 ### Reference Card: Period Creation and Arithmetic
 
 | Function | Description |
@@ -61,6 +63,8 @@ print(ts)
 ```
 
 ## Converting Between Timestamps and Periods
+
+Converting a timestamp to a period keeps the containing span, not the original instant. Converting back chooses its start by default; `how='end'` chooses its final instant. Multiple dates can become the same monthly period, so conversion alone does not produce a monthly summary.
 
 ### Reference Card: Timestamp-Period Conversion
 
@@ -113,6 +117,10 @@ The lecture sorts series by spacing, regular or irregular. A series can also be 
 
 ## Seasonal Decomposition
 
+- **Trend**: the slow change in the level; **seasonality**: a repeating cycle; **residual**: what remains after those components are removed.
+- **Additive**: observed = trend + seasonal + residual; seasonal swings have roughly constant size. **Multiplicative**: observed = trend × seasonal × residual; swings grow with the level, and all values must be positive.
+- `period` counts observations per cycle: 7 for a weekly cycle in daily data, 12 for an annual cycle in monthly data. Use regular spacing, no missing values, and at least two complete cycles.
+
 ### Reference Card: Seasonal Decomposition
 
 ```python
@@ -148,6 +156,7 @@ noise = rng.normal(0, 5, len(dates))
 values = trend + seasonal + noise
 
 ts = pd.Series(values, index=dates)
+disease_counts = ts
 
 # Decompose time series
 decomposition = seasonal_decompose(ts, model='additive', period=365)
@@ -162,7 +171,11 @@ plt.tight_layout()
 plt.show()
 ```
 
+The panels show a rising trend, a repeated annual wave, and the remaining noise. The default centered trend uses future observations and leaves gaps at the ends; these components describe a completed series, not features available in real time.
+
 ## STL Decomposition
+
+**STL** separates seasonality and trend using local smoothing: curves fitted to nearby observations. `robust=True` reduces the influence of extreme values; it does not make the result safe for prediction-time features. Here `period=365` approximates the annual cycle of daily data.
 
 ### Reference Card: STL Decomposition
 
@@ -187,6 +200,10 @@ result.resid     # Residual component
 _Forecasting uses historical patterns to predict future values. Always be honest about uncertainty and prediction intervals._
 
 ## ARIMA Models
+
+**ARIMA** combines past values (**autoregression**, `p`), repeated differences to remove changes in level (**integration**, `d`), and past prediction errors (**moving average**, `q`). `order=(1, 1, 1)` is an example, not a rule for every series. Fit on the earlier chronological block and assess forecasts on later observations.
+
+The **augmented Dickey–Fuller (ADF) test** asks whether the series has a unit root, a source of persistent drift. A small p-value rejects that particular explanation; it does not prove every property is stationary or establish forecast accuracy. Use a nonconstant numeric series with no missing values.
 
 ### Reference Card: ARIMA Models and Stationarity Checks
 
@@ -221,6 +238,8 @@ def fit_arima(series, order=(1, 1, 1)):
 
 ## Exponential Smoothing
 
+These forecasting models extend a smoothed level with a trend (Holt) or trend and seasonality (Holt–Winters). Here `ts` is the daily series from the decomposition example; its annual cycle is approximately 365 observations. A monthly series would use `seasonal_periods=12`. Forecast steps count observations, so 30 steps here means 30 days. The examples use fixed smoothing coefficients of 0.3 (`optimized=False`), chosen for illustration rather than forecast accuracy.
+
 ### Reference Card: Exponential Smoothing Variants
 
 ```python
@@ -228,17 +247,17 @@ from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 # Simple exponential smoothing
 model = ExponentialSmoothing(ts, trend=None, seasonal=None)
-fitted = model.fit(smoothing_level=0.3)
+fitted = model.fit(smoothing_level=0.3, optimized=False)
 forecast = fitted.forecast(steps=30)
 
 # Holt's method (trend)
 model = ExponentialSmoothing(ts, trend='add', seasonal=None)
-fitted = model.fit(smoothing_level=0.3, smoothing_trend=0.3)
+fitted = model.fit(smoothing_level=0.3, smoothing_trend=0.3, optimized=False)
 forecast = fitted.forecast(steps=30)
 
 # Holt-Winters (trend + seasonal)
-model = ExponentialSmoothing(ts, trend='add', seasonal='add', seasonal_periods=12)
-fitted = model.fit(smoothing_level=0.3, smoothing_trend=0.3, smoothing_seasonal=0.3)
+model = ExponentialSmoothing(ts, trend='add', seasonal='add', seasonal_periods=365)
+fitted = model.fit(smoothing_level=0.3, smoothing_trend=0.3, smoothing_seasonal=0.3, optimized=False)
 forecast = fitted.forecast(steps=30)
 ```
 
@@ -331,6 +350,8 @@ _High-frequency data requires special handling for irregular intervals and tick 
 
 ## Tick Data Processing
 
+**Tick data** records an individual event or sensor reading whenever it arrives. A minute bin can contain many readings or none: `last_value` takes the final nonmissing reading, `total_volume` adds the recorded amounts, and `n_obs` counts rows even when a reading's value is missing. Empty bins have no last value and zero rows; their summed volume is zero by pandas' default, not evidence that the sensor measured zero.
+
 ### Reference Card: Tick Data Processing
 
 ```python
@@ -396,7 +417,11 @@ DatetimeIndex(['2024-03-10 03:00:00-04:00'], dtype='datetime64[us, America/New_Y
 
 `'infer'` relies on the readings being in recording order: it raises `ValueError` when it cannot see the clock repeat, and it can guess wrong if the rows were shuffled. Do not sort the naive wall-clock times first: that loses the order of the two passes through the repeated hour. `ambiguous='NaT'` from the lecture is the safer default.
 
+`nonexistent='shift_forward'` changes the recorded clock time; it can put several readings at the same instant. Use it only when that correction is justified by the source system, and retain the original time for review.
+
 ## Operations Between Different Time Zones
+
+Arithmetic aligns aware indexes by instant, even when their displayed clocks differ. An instant present in only one series produces `NaN` with ordinary addition.
 
 ### Reference Card: Combining Series Across Time Zones
 
@@ -414,7 +439,7 @@ print(result.index.tz)  # UTC
 
 # Custom Frequency Classes
 
-_For specialized time series needs, you can create custom frequency classes, though this is rarely necessary._
+A **custom business-day frequency** follows a weekday rule plus a list of excluded holidays. Use pandas' existing `CustomBusinessDay` class to represent a clinic calendar; the example skips weekends and Christmas without defining a new class.
 
 ## Custom Business Day Frequencies
 
@@ -433,6 +458,8 @@ dates = pd.date_range('2023-12-01', '2023-12-31', freq=custom_bday)
 
 ## Interactive Time Series Plots
 
+Plotly adds hover labels and zoom to a line plot. `disease_counts` below is the three-year daily series created in the decomposition example.
+
 ### Reference Card: Interactive Time Series Plot with Plotly
 
 ```python
@@ -442,8 +469,8 @@ from plotly.subplots import make_subplots
 # Create interactive plot
 fig = go.Figure()
 fig.add_trace(go.Scatter(
-    x=ts.index,
-    y=ts.values,
+    x=disease_counts.index,
+    y=disease_counts.values,
     mode='lines',
     name='Time Series'
 ))
@@ -451,6 +478,10 @@ fig.show()
 ```
 
 ## Autocorrelation and Partial Autocorrelation
+
+- **Autocorrelation (ACF)**: correlation between a series and its earlier values at each lag.
+- **Partial autocorrelation (PACF)**: the association at one lag after accounting for the shorter lags. Both plots help describe serial dependence; peaks alone do not identify a reliable forecasting model.
+- Use the regular, nonmissing `disease_counts` series above, not the four-row time-zone example. Forty PACF lags need more than 80 observations. Its trend can cause high correlations even without useful short-term predictability.
 
 ### Reference Card: ACF and PACF Plots
 
@@ -460,13 +491,11 @@ from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 # Plot ACF and PACF
 fig, axes = plt.subplots(2, 1, figsize=(12, 8))
-plot_acf(ts, lags=40, ax=axes[0])
-plot_pacf(ts, lags=40, ax=axes[1])
+plot_acf(disease_counts, lags=40, ax=axes[0])
+plot_pacf(disease_counts, lags=40, ax=axes[1])
 plt.tight_layout()
 plt.show()
 ```
-
-These advanced topics will help you handle complex time series analysis scenarios in specialized applications. For most daily data science work, the content in the main lecture is sufficient.
 
 # Calendar Schedule Examples
 
@@ -488,7 +517,7 @@ DatetimeIndex(['2024-01-01', '2024-02-01', '2024-03-01'], dtype='datetime64[us]'
 DatetimeIndex(['2024-01-31', '2024-02-29', '2024-03-31'], dtype='datetime64[us]', freq='ME')
 ```
 
-The business-day range skips the weekend of January 6-7. The default business-day rule skips weekends, but keeps holidays; custom holiday calendars are in `BONUS.md`.
+The business-day range skips the weekend of January 6-7. The default business-day rule skips weekends, but keeps holidays; the custom business-day example above excludes Christmas too.
 
 # Time-of-Day Selection Example
 

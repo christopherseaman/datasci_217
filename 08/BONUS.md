@@ -11,6 +11,13 @@ notion:
 
 # Advanced GroupBy Operations
 
+Custom aggregations answer questions beyond built-in means and counts. The function receives one group's selected column as a Series and must return one value; `apply` is the choice when the answer needs several rows.
+
+| Input values for one group | Calculation | One returned value |
+| --- | --- | --- |
+| 10, 12, 18 | range: maximum minus minimum | 8 |
+| 10, 12, 18 | interquartile range: 75th minus 25th percentile | 4 |
+
 ## Custom Aggregation Functions
 
 ### Reference Card: Named Aggregations with `.agg()`
@@ -72,6 +79,8 @@ df.groupby('category').agg({
 
 ## GroupBy with Time Windows
 
+`pd.Grouper` builds a grouping key from dates: `ME` collects rows into calendar months and labels each group by its month-end date. The timestamps must first be datetime values; setting the date index tells the grouper which timestamps to use. A seven-day window is a fixed duration, unlike a calendar month.
+
 ### Reference Card: Grouping by Time Windows
 
 ```python
@@ -100,6 +109,8 @@ df.groupby(pd.Grouper(freq='7D')).agg({
 ```
 
 # Advanced Pivot Table Operations
+
+Multiple row or column keys give each cell a more specific meaning. With region and product down the rows and quarter and year across the columns, one cell describes exactly one region–product–quarter–year combination. Select a level before comparing values with different units, such as sales totals and mean profit.
 
 ## Multi-Level Pivot Tables
 
@@ -134,6 +145,8 @@ pivot.columns = ['_'.join(map(str, col)).rstrip('_') for col in pivot.columns]
 ```
 
 ## Pivot Table with Custom Functions
+
+The **weighted mean** is `sum(value × weight) / sum(weight)`: a value with twice the weight contributes twice as much. Values 10 and 20 with weights 1 and 3 give 17.5, not the ordinary mean 15. This example assumes complete, finite values and weights; missing measurements need an explicit policy before either sum is calculated.
 
 ### Reference Card: Weighted-Mean Pivot Workaround
 
@@ -219,6 +232,8 @@ Forward-filling or interpolating fabricates values the same way: `means.ffill()`
 - `pd.Categorical(values, categories=[...])` turns a value missing from `categories=` into `NaN`, with a warning that a future pandas will raise an error instead, so list every value that occurs.
 
 # Hierarchical Grouping and MultiIndex
+
+A **MultiIndex** stores several labels for each row, such as clinic and department. Grouping by one level combines rows sharing that label while ignoring the others: North–Cardiology 4 and North–Pediatrics 6 become North 10. `swaplevel` changes label order; `sort_index` changes row order; neither aggregates values.
 
 ## MultiIndex Operations
 
@@ -372,7 +387,11 @@ Keeping the full result lets a later analysis distinguish a recorded missing val
 
 # Advanced Statistical Aggregations
 
+Grouped statistics keep populations separate. A percentile describes the distribution inside one group; a rolling statistic instead depends on the sequence of rows inside it.
+
 ## Rolling Statistics
+
+A **rolling window** uses the latest fixed number of rows; an **expanding window** uses every row so far. For values 10, 20, 30, a two-row rolling mean is `NaN, 15, 25`, while the expanding mean is `10, 15, 20`. Sort by the relevant time column before using either on dated observations. The examples below operate in their existing row order.
 
 ### Reference Card: Rolling and Expanding Statistics
 
@@ -428,6 +447,8 @@ df.groupby('category')['value'].apply(percentile_agg)
 
 ## Statistical Tests in Groups
 
+The normality test asks whether each group's measurements are compatible with a normal distribution. Its p-value is evidence about that assumption, not proof that a group is normal; running many group tests also creates more chances for small p-values. The example reports missing results for groups below the test's minimum sample size.
+
 This optional example requires SciPy, which is not part of Lecture 08's recorded core environment. Add it to the project with `uv add scipy` (in Colab, run `%pip install scipy` in a cell) before running the example.
 
 ### Reference Card: Statistical Tests in Groups
@@ -467,6 +488,8 @@ df.groupby('category').apply(statistical_tests)
 ```
 
 # Advanced Pivot Table Features
+
+The row key need not already be a column: `pd.cut` can supply intervals directly. Equal-width intervals group nearby measurements; extracting year and month instead produces calendar groups. These choices change what a row represents, while the aggregation still decides what each cell means.
 
 ## Pivot Table with Custom Index
 
@@ -538,6 +561,8 @@ Lecture 09 teaches grouped lags and rolling windows for time-ordered rows, inclu
 
 ## Ranking Within Groups
 
+**Rank** is a value's position within its group. For values 10, 10, 30, the default ranks are 1.5, 1.5, 3 because tied positions are averaged; `dense` gives 1, 1, 2, `min` gives 1, 1, 3, and `max` gives 2, 2, 3. `ascending=False` puts the largest value first; `pct=True` expresses the rank relative to the group's size.
+
 ### Reference Card: Ranking Within Groups
 
 ```python
@@ -561,6 +586,8 @@ df['rank_max'] = df.groupby('category')['value'].rank(method='max')
 ```
 
 ## Lag and Lead Operations
+
+A **lag** brings an earlier row's value onto the current row; a **lead** brings a later one. Within values 10, 15, 20, `shift(1)` gives `NaN, 10, 15`, and `diff()` gives `NaN, 5, 5`. Sort each group's observations into time order first. A lead uses future information, so it cannot be a predictor available at the current time.
 
 ### Reference Card: Lag and Lead Within Groups
 
@@ -609,6 +636,8 @@ df['expanding_mean'] = grouped_values.transform(lambda s: s.expanding().mean())
 ```
 
 # Custom GroupBy Classes
+
+This optional class keeps a DataFrame and its grouping together and exposes methods for repeated use. Each method delegates to pandas; it adds no new grouping behavior. Direct calls are simpler for a single analysis. Use the class example to trace which object is stored and which pandas method ultimately runs.
 
 ## Custom GroupBy Aggregator
 
@@ -772,6 +801,8 @@ ssh -N -L 8888:127.0.0.1:8888 username@server.example
 
 ## Distributed Computing
 
+**Distributed computing** divides work into partitions that can run on several workers. Dask records the requested operations first; `.compute()` executes them and collects the summary as a pandas object. The collected result must still fit in memory, even if the input does not.
+
 Dask is not part of Lecture 08's core environment. Add it to the project with `uv add "dask[dataframe]"` (in Colab, `%pip install "dask[dataframe]"`) before running this example.
 
 ### Reference Card: Distributed Computing with Dask
@@ -793,6 +824,8 @@ result.to_csv('distributed_results.csv')
 ```
 
 ## Cloud Computing
+
+**S3** is cloud object storage: a bucket contains named objects such as CSV files. Reading an `s3://` path changes where bytes come from, not where pandas computes; the DataFrame still occupies the current computer's memory. Writing a result back to S3 sends that result to the named bucket.
 
 pandas reads and writes `s3://` paths directly once the `s3fs` package is installed (`uv add s3fs`; in Colab, `%pip install s3fs`) and your AWS credentials are configured. Without `s3fs`, `pd.read_csv('s3://...')` raises `ImportError: Install s3fs to access S3`.
 
@@ -915,6 +948,8 @@ def memory_intensive_analysis(df):
 ```
 
 ## Advanced Debugging Patterns
+
+The decorator below wraps a pipeline step to log its input shape, elapsed time, and memory change. `PipelineDebugger` records checkpoints and evaluates explicit Boolean validation rules. A failed rule raises an error; a saved checkpoint is a CSV snapshot, not an automatic resume mechanism. These examples write copies of data to the current folder, so use synthetic data for practice.
 
 ### Debugging Complex Data Pipelines
 
@@ -1098,6 +1133,8 @@ def clean_data(df):
 
 ## Performance Profiling
 
+**Profiling** records which function calls consume time. `cProfile` measures calls inside one run; the comparison helper repeats entire operations. Compare operations only after confirming that their outputs agree, and compare input sizes to distinguish a fixed startup cost from work that grows with each row.
+
 ### Advanced Profiling Techniques
 
 ```python
@@ -1249,6 +1286,8 @@ def performance_comparison_example(df):
 ```
 
 ## Enterprise-Level Data Validation
+
+This extended example separates a rule from its result: a rule checks a DataFrame, a result records pass/fail and a severity, and the report collects all results. **Severity** describes the importance of a finding. Here, even a critical result is recorded rather than raised: the caller must inspect the results before deciding whether to continue. The 1,000-row rule is only an example requirement, not a universal minimum for analysis.
 
 ### Comprehensive Data Validation Framework
 

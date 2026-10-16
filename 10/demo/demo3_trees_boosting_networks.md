@@ -34,6 +34,8 @@ Run the cells from top to bottom.
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
+**Core route:** Parts 1–5, 7, 8, 10, and 11, skipping the subsections marked independent practice. Part 6, Part 9, and those subsections are independent practice for outside class. The comparison includes only candidates you ran. Run any independent practice before the final test; after seeing test results, do not use these variants to make a new selection on that test set.
+
 ## 1. Load the biopsy measurements
 
 `load_breast_cancer(as_frame=True)` ships with scikit-learn and returns the table in its `.frame`, the label in its `.target`, and the 30 measurement names in its `.feature_names`. Each row is one biopsy; the 30 columns are ten nucleus measurements (radius, texture, perimeter, area, smoothness, compactness, concavity, concave points, symmetry, fractal dimension), each summarized three ways across the cells in the image: the `mean`, the standard error (`error`), and the `worst` (mean of the three largest values). Its target codes malignant as 0, so flip it to make **malignant = 1**, the class we want to catch.
@@ -128,6 +130,8 @@ lr = LogisticRegression(max_iter=1000, random_state=42)
 lr.fit(X_train_scaled, y_train)
 lr_pred = lr.predict(X_valid_scaled)
 lr_acc = accuracy_score(y_valid, lr_pred)
+candidate_accuracy = {'Majority-class baseline': baseline_acc, 'Logistic regression': lr_acc}
+valid_predictions = {'Logistic regression': lr_pred}
 print(f"Logistic regression validation accuracy: {lr_acc:.4f}")
 display(Markdown('**Confusion matrix**'))
 display(confusion_table(y_valid, lr_pred))
@@ -170,6 +174,8 @@ rf_model = RandomForestClassifier(
 rf_model.fit(X_train, y_train)
 
 rf_acc = accuracy_score(y_valid, rf_model.predict(X_valid))
+candidate_accuracy['Random forest'] = rf_acc
+valid_predictions['Random forest'] = rf_model.predict(X_valid)
 print(f"Training accuracy:   {accuracy_score(y_train, rf_model.predict(X_train)):.4f}")
 print(f"Validation accuracy: {rf_acc:.4f}")
 display(confusion_table(y_valid, rf_model.predict(X_valid)))
@@ -192,6 +198,8 @@ actual malignant                 2                   41
 ```
 
 Nearly perfect on the rows it learned and 111 of 114 on rows it has never seen, the same count as logistic regression, but with a different mix of mistakes: one false alarm and two missed malignancies instead of two and one.
+
+### Independent practice: two importance measures
 
 Which columns does the forest lean on? There are two answers, measured on different data. `feature_importances_` comes from the _training_ fit and exists only for tree models. `permutation_importance` shuffles one validation column at a time and measures how far accuracy falls, so it reports held-out reliance for any fitted model.
 
@@ -226,7 +234,7 @@ The two columns agree at the top: `worst concave points` and `worst area` matter
 
 ## 5. XGBoost
 
-XGBoost builds its trees in sequence, each one aimed at what the ensemble so far still gets wrong. It follows the same fit/predict pattern. Colab's XGBoost version can shift the importances and early-stopping round slightly, not the accuracies.
+XGBoost builds its trees in sequence, each one aimed at what the ensemble so far still gets wrong. It follows the same fit/predict pattern. Versions can change importances, early-stopping rounds, and predictions; the outputs below are one reference run, not required exact scores.
 
 ```python
 import xgboost as xgb
@@ -238,6 +246,8 @@ xgb_model = xgb.XGBClassifier(
 )
 xgb_model.fit(X_train, y_train)
 xgb_acc = accuracy_score(y_valid, xgb_model.predict(X_valid))
+candidate_accuracy['XGBoost (100 rounds)'] = xgb_acc
+valid_predictions['XGBoost (100 rounds)'] = xgb_model.predict(X_valid)
 print(f"XGBoost validation accuracy: {xgb_acc:.4f}")
 display(confusion_table(y_valid, xgb_model.predict(X_valid)))
 ```
@@ -253,7 +263,9 @@ actual malignant                 2                   41
 
 XGBoost gets 110 of 114, one fewer than the forest.
 
-The fit above stands alone. After class, run Part 4's permutation-importance cell before this comparison plot.
+### Independent practice: compare tree importances
+
+The fit above stands alone. Run Part 4's independent-practice importance cell before this comparison plot.
 
 ```python
 top_features = rf_importance.index[:8].tolist()
@@ -288,7 +300,7 @@ worst radius                  0.062    0.152
 
 In the bar chart XGBoost leans hardest on `worst perimeter` (0.251), which the forest ranks fourth, and it ignores `mean perimeter` entirely. Each library computes importance its own way, and among near-twin columns a model can pick any one, so compare rankings, not numbers.
 
-## 6. Early stopping
+## 6. Independent practice: early stopping
 
 Early stopping scores the validation rows after every boosting round and stops when the score stops improving, so you can set a generous round budget. Because the validation rows now help _fit_ this model, its validation score is no longer on equal footing with the others.
 
@@ -301,6 +313,8 @@ xgb_early_stop = xgb.XGBClassifier(
 )
 xgb_early_stop.fit(X_train, y_train, eval_set=[(X_valid, y_valid)], verbose=False)
 xgb_early_acc = accuracy_score(y_valid, xgb_early_stop.predict(X_valid))
+candidate_accuracy['XGBoost (early stopped)'] = xgb_early_acc
+valid_predictions['XGBoost (early stopped)'] = xgb_early_stop.predict(X_valid)
 
 print(f"Best iteration: {xgb_early_stop.best_iteration} (of a 500-round budget)")
 print(f"Best validation loss: {xgb_early_stop.best_score:.4f}")
@@ -329,7 +343,7 @@ keras.utils.set_random_seed(42)
 tf.config.experimental.enable_op_determinism()
 ```
 
-The seed and deterministic operations make this notebook's CPU numbers repeat.
+The seed and deterministic operations help repeat a run in the same environment. TensorFlow versions and hardware can still change the numbers below.
 
 A `Sequential` model is a straight stack of layers. Two hidden ReLU layers followed by one sigmoid unit is a standard starting point for a yes/no target. Compiling attaches the **optimizer** that updates the weights (Adam), the **loss** it minimizes (`binary_crossentropy` for a yes/no target), and the metrics reported each epoch.
 
@@ -371,6 +385,8 @@ valid_loss, valid_accuracy = model.evaluate(X_valid_scaled, y_valid, verbose=0)
 print(f"Validation loss after epoch 50: {valid_loss:.4f}")
 print(f"Validation accuracy: {valid_accuracy:.4f}")
 nn_pred = (model.predict(X_valid_scaled, verbose=0) > 0.5).astype(int).flatten()
+candidate_accuracy['Neural net 64-32'] = accuracy_score(y_valid, nn_pred)
+valid_predictions['Neural net 64-32'] = nn_pred
 display(confusion_table(y_valid, nn_pred))
 ```
 
@@ -407,7 +423,7 @@ plt.close(fig)
 
 **Expect:** both curves fall steeply for the first ten epochs. After that, training loss keeps falling toward 0, while validation loss bottoms out at epoch 20 (0.0726) and then creeps back up to 0.0903. That widening gap is overfitting starting: the network is memorizing its 341 training rows, and it is the signal early stopping watches for. Accuracy has not suffered yet, but the model is growing more confident than the validation rows justify.
 
-## 9. Two variants
+## 9. Independent practice: two network variants
 
 Depth, width, and regularization are settings to validate, not upgrades. Train one variant with more layers and units, and one with **dropout** (randomly masking 30% of a layer's outputs during training) plus an L2 penalty on the weights. Same epochs and batch size, so the comparison is fair.
 
@@ -441,6 +457,10 @@ history_reg = model_reg.fit(X_train_scaled, y_train, epochs=50, batch_size=32,
                             validation_data=(X_valid_scaled, y_valid), verbose=0)
 reg_loss, reg_acc = model_reg.evaluate(X_valid_scaled, y_valid, verbose=0)
 reg_pred = (model_reg.predict(X_valid_scaled, verbose=0) > 0.5).astype(int).flatten()
+candidate_accuracy['Neural net 128-64-32-16'] = accuracy_score(y_valid, deep_pred)
+candidate_accuracy['Neural net 64-32 + dropout/L2'] = accuracy_score(y_valid, reg_pred)
+valid_predictions['Neural net 128-64-32-16'] = deep_pred
+valid_predictions['Neural net 64-32 + dropout/L2'] = reg_pred
 
 display(pd.DataFrame({
     'network': ['64-32', '128-64-32-16', '64-32 + dropout/L2'],
@@ -478,16 +498,10 @@ More than three times the weights buys one _fewer_ correct validation row (110 o
 
 ## 10. Compare every candidate
 
-One validation set, one metric, and every model this notebook fitted, including the early-stopped XGBoost, whose score had help from the validation rows.
+One validation set, one metric, and every model you fitted. The core route has five rows. Independent practice adds three candidates, including the early-stopped XGBoost, whose round count was chosen using validation rows.
 
 ```python
-comparison = pd.DataFrame({
-    'model': ['Majority-class baseline', 'Logistic regression', 'Random forest',
-              'XGBoost (100 rounds)', 'XGBoost (early stopped)', 'Neural net 64-32',
-              'Neural net 128-64-32-16', 'Neural net 64-32 + dropout/L2'],
-    'valid_accuracy': [baseline_acc, lr_acc, rf_acc, xgb_acc, xgb_early_acc,
-                       valid_accuracy, deep_acc, reg_acc],
-})
+comparison = pd.Series(candidate_accuracy, name='valid_accuracy').rename_axis('model').reset_index()
 comparison['correct_of_114'] = (comparison['valid_accuracy'] * len(y_valid)).round().astype(int)
 display(comparison.set_index('model').round(4))
 ```
@@ -507,21 +521,13 @@ Neural net 128-64-32-16                0.9649             110
 Neural net 64-32 + dropout/L2          0.9737             111
 ```
 
-Every model clears the baseline by a wide margin, and all seven land within two rows of each other.
+This reference run includes independent practice. The core table omits early-stopped XGBoost and the two network variants. In this run every candidate clears the baseline by a wide margin, and all seven land within two rows of each other.
+
+### Independent practice: compare individual errors
 
 Identical scores do not mean identical predictions. List the validation rows each model gets wrong, and which of those are missed malignancies.
 
 ```python
-valid_predictions = {
-    'Logistic regression': lr_pred,
-    'Random forest': rf_model.predict(X_valid),
-    'XGBoost (100 rounds)': xgb_model.predict(X_valid),
-    'XGBoost (early stopped)': xgb_early_stop.predict(X_valid),
-    'Neural net 64-32': nn_pred,
-    'Neural net 128-64-32-16': deep_pred,
-    'Neural net 64-32 + dropout/L2': reg_pred,
-}
-
 row_numbers = np.arange(len(y_valid))
 for name, pred in valid_predictions.items():
     wrong = row_numbers[pred != y_valid]
@@ -545,7 +551,13 @@ Neural net 64-32 + dropout/L2  wrong on rows [9, 10, 75], missed malignant [9]
 - **Same score, different mistakes:** logistic regression and the forest both get 111 right, but the forest misses a second malignancy (row 45) where logistic regression raises a false alarm (row 75). For a screening tool that difference matters more than the tie in accuracy.
 - **The early-stopped XGBoost** is right on rows 10, 45, and 75, and its 112 of 114 is the best in the table. Those same 114 rows chose its round count, so its score also reflects selection of the round count; that is another reason to reserve the independent test.
 
-Now apply Part 2's rule. The best candidate (112) and the runners-up (111) differ by one validation row, so they are tied, and the tie goes to the simplest candidate: **logistic regression**, 30 coefficients and an intercept, fitted in milliseconds. That follows the predeclared tie rule. This one small split does not establish that the model families perform equally well.
+### Apply the selection rule (core)
+
+Now apply Part 2's rule to your table. In the reference core run, logistic regression ties for best at 111; with independent practice the best candidate (112) and logistic regression (111) differ by one validation row. Either way the tie goes to **logistic regression**, 30 coefficients and an intercept. This one small split does not establish that the model families perform equally well. If your versions give a different result, apply the same predeclared rule before opening the test set; the final cell below is specifically the logistic-regression choice.
+
+```python
+assert max(candidate_accuracy.values()) - lr_acc <= 1 / len(y_valid) + 1e-12, 'Apply the selection rule to this run before opening the test set.'
+```
 
 ## 11. Freeze, then test once
 

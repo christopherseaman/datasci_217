@@ -105,6 +105,7 @@ sns.scatterplot(data=health, x='Spending_USD', y='Life_Expectancy',
                 hue='Country', style='Country', ax=ax)
 ax.set(title='Health spending and life expectancy, six countries, 1970-2020',
        xlabel='Health spending per person (USD)', ylabel='Life expectancy (years)')
+ax.legend(title='Country', loc='upper left', bbox_to_anchor=(1, 1))
 plt.show()
 ```
 

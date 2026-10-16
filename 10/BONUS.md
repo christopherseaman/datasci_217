@@ -17,7 +17,7 @@ The lecture's main path uses linear models, random forests, and gradient boostin
 - Unsupervised work: `KMeans` for clustering and `PCA` for dimensionality reduction. Neither uses a target column.
 - Selection: `GridSearchCV` for hyperparameter tuning within the training data (examples under Hyperparameter Tuning Strategies below).
 - Independent rows: `cv=5` uses `StratifiedKFold` for classifiers with binary or multiclass targets, and `KFold` otherwise. Each fold takes a turn as the scored block; neither protects time order like `TimeSeriesSplit`.
-- Delayed targets: `TimeSeriesSplit(gap=n)` leaves `n` rows out between each training block and the block it scores, so training labels not yet known at the fold's first prediction cutoff stay out.
+- Delayed targets: `TimeSeriesSplit(gap=n)` leaves `n` rows out between each training block and the block it scores. Choose a gap large enough that every retained label was available at that fold's first prediction cutoff; a row count is not a fixed time delay with irregular visits.
 
 _Let validation evidence decide, not a favorite algorithm. Blue steel is a style, not a model-selection rule._
 
@@ -49,6 +49,8 @@ _Benchmark them under the same split, measure, and budget. Blue steel, magnum, a
 # Hyperparameter Tuning Strategies
 
 ## Grid Search and Random Search
+
+**Grid search** tries every listed combination of settings; **random search** samples combinations from specified ranges. Each compares cross-validation scores within training data, keeping the final test out of tuning. A larger search costs more fits and gives more chances to select a lucky validation result.
 
 ### Reference Card: Grid and Random Search Tools
 
@@ -86,6 +88,8 @@ print(f"Best score: {grid_search.best_score_}")
 ```
 
 ## Bayesian Optimization
+
+**Bayesian optimization** uses scores from earlier trials to choose promising settings for the next trial. Here it minimizes negative cross-validation accuracy, so a smaller objective means a better score; the test rows stay unused.
 
 This optional example requires `scikit-optimize`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add scikit-optimize` (Lecture 03), or run `%pip install scikit-optimize` in Colab, before running the example.
 
@@ -132,6 +136,8 @@ print(f"Best parameters: {result.x}")
 
 ## SHAP Values
 
+**SHAP values** allocate a model's prediction among its input features relative to a reference prediction. A positive value raises the explained output and a negative one lowers it; the output scale depends on the model and explainer. These explain fitted predictions, not causal effects, and correlated features complicate the allocation.
+
 This optional example requires SHAP, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add shap` (Lecture 03), or run `%pip install shap` in Colab, before running the example.
 
 ### Reference Card: SHAP Tools
@@ -171,6 +177,8 @@ shap.plots.bar(shap_values)
 ```
 
 ## Partial Dependence Plots
+
+**Partial dependence** varies one or two features while averaging predictions over the other columns. It shows the fitted response shape, not what changing a patient's feature would cause. Strongly correlated columns can create unrealistic combinations, such as a large radius with a tiny area.
 
 ### Reference Card: Partial Dependence Tools
 
@@ -215,6 +223,8 @@ Linear regression suits a numeric outcome that scatters evenly around the fitted
 
 ## Mixed Effects Models
 
+**Mixed effects** combine shared slopes with group-specific variation, such as different baseline SBP across clinics. The example gives each clinic a **random intercept**, allowing rows in the same clinic to share an offset instead of assuming all rows are independent.
+
 ### Reference Card: Mixed Effects Model Tools
 
 - `from statsmodels.regression.mixed_linear_model import MixedLM`: Mixed linear models
@@ -245,6 +255,8 @@ print(result.summary())
 ```
 
 ## Generalized Additive Models (GAMs)
+
+A **generalized additive model** adds smooth curves for individual features instead of requiring every relationship to be a straight line. The default model below can learn a curved contribution from the first feature and a nearly linear one from the second; interactions require additional terms.
 
 This optional example requires `pygam`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add pygam` (Lecture 03), or run `%pip install pygam` in Colab, before running the example.
 
@@ -283,6 +295,8 @@ for i in range(X_train.shape[1]):
 # Advanced Deep Learning
 
 ## Transfer Learning
+
+**Transfer learning** reuses features learned on a large source dataset. Here VGG16 supplies frozen image features, and a small new classifier learns the task; ImageNet features are a starting point, not evidence of medical-image accuracy.
 
 ### Reference Card: Transfer Learning Tools
 
@@ -326,6 +340,8 @@ model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val))
 ```
 
 ## Sequence attention with a documented Keras layer
+
+**Self-attention** lets each position in a sequence combine information from other positions. Several **heads** learn different combinations. The example averages the resulting positions into one classification; ordered tasks also need information about position, and forecasting needs a mask that blocks future positions.
 
 ### Reference Card: Keras Attention Layer
 
@@ -404,6 +420,8 @@ Deep Learning Frameworks
 
 ## Stacking
 
+**Stacking** trains a final model on predictions from other models. The final model must learn from predictions made when each row was held out of the base model's fit; `StackingClassifier(cv=5)` constructs these cross-validation predictions within training data.
+
 ### Reference Card: Stacking Tools
 
 - `from sklearn.ensemble import StackingClassifier`: Stacking ensemble
@@ -444,6 +462,8 @@ predictions = stacker.predict(X_test)
 ```
 
 ## Blending
+
+This example blends class probabilities with weights fixed in advance. The models' probability columns must represent the same classes in the same order. If choosing the weights from scores, use validation rows and reserve the test for the final combination.
 
 ### Reference Card: Blending Approach
 
@@ -496,6 +516,8 @@ On a complete elapsed-hour grid, `shift(168)` gives the value 168 hours earlier;
 
 ## Prophet for Time Series
 
+**Prophet** combines a trend with seasonal and optional holiday effects. Its `ds` column holds times and `y` the observations; the generated random walk below demonstrates the interface, not evidence that seasonal forecasting will work. Judge any forecast against persistence on later, held-out dates.
+
 This optional example requires `prophet`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add prophet` (Lecture 03), or run `%pip install prophet` in Colab, before running the example.
 
 ### Reference Card: Prophet Tools
@@ -536,6 +558,8 @@ model.plot(forecast)
 # Production Deployment Considerations
 
 ## Model Serialization
+
+**Serialization** saves a fitted model so another session can use it. Keep its preprocessing, ordered feature names, and environment versions with it: the same weights with differently scaled or reordered inputs give different predictions.
 
 ### Reference Card: Model Serialization Tools
 
@@ -581,6 +605,8 @@ Pickle/joblib files can execute arbitrary code while loading. Load them only fro
 
 ## Model Versioning
 
+**Versioning** records which data, settings, environment, and fitted model produced a result. An experiment log makes comparisons reproducible; a logged model is not automatically approved for deployment.
+
 This optional example requires `mlflow`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add mlflow` (Lecture 03), or run `%pip install mlflow` in Colab, before running the example.
 
 ### Reference Card: Model Versioning Approach
@@ -623,6 +649,8 @@ with mlflow.start_run():
 # Advanced Feature Engineering
 
 ## Automated Feature Engineering
+
+**Feature engineering** turns raw records into model inputs. Featuretools can aggregate related tables, such as transactions per customer, automatically. The example summarizes a completed historical dataset; prospective use must set a prediction cutoff so later transactions cannot enter a feature.
 
 This optional example requires `featuretools`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add featuretools` (Lecture 03), or run `%pip install featuretools` in Colab, before running the example.
 
@@ -685,6 +713,8 @@ feature_matrix, feature_defs = ft.dfs(
 
 ## Polynomial and Interaction Features
 
+**Polynomial features** add powers such as `x1²`; **interaction features** add products such as `x1 * x2`, letting one feature's contribution depend on another. The first transformer below makes only products; the pipeline also includes squares. Validate this extra flexibility against the original linear model.
+
 ### Reference Card: Polynomial Feature Tools
 
 - `from sklearn.preprocessing import PolynomialFeatures`: Polynomial features
@@ -719,6 +749,8 @@ pipeline.fit(X_train, y_train)
 # Model Monitoring and Maintenance
 
 ## Drift Detection
+
+**Data drift** is a change in input distributions; **concept drift** is a change in the relationship between inputs and outcomes. The two-sample **Kolmogorov–Smirnov (KS) test** below checks one numeric input distribution at a time. It cannot establish concept drift or a loss of predictive performance; small repeated samples and testing many columns also produce false alarms.
 
 ### Reference Card: Drift Detection Approach
 

@@ -37,7 +37,7 @@ This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 | Question | Example | Judge it by |
 | --- | --- | --- |
 | **Inference**: how are the variables related? | Is BMI associated with SBP among patients of the same age, and how sure are we? | Coefficients, their uncertainty, and the model's assumptions |
-| **Prediction**: what will the outcome be? | What will this patient's SBP be at the next visit? | Error on patients the model has never seen |
+| **Prediction**: what will the outcome be? | What will this patient's SBP be at the next visit? | Error on held-out observations representing the intended use |
 
 ## The Modeling Landscape
 
@@ -229,7 +229,7 @@ plt.close(fig)
 
 # Prediction: Features, Targets, and Honest Splits
 
-- **Prediction**: estimating the outcome for patients a model has not seen, such as _this_ patient's SBP at the next visit.
+- **Prediction**: estimating an unknown outcome, such as _this_ patient's SBP at the next visit. Future readings from known patients and readings from entirely new patients are different tasks: keep whole patients out of training when evaluating the latter.
 - A model can always describe the rows it was fitted on, so its error there says nothing about the next patient; a prediction model is judged only on rows kept out of its fitting.
 
 ## Feature Availability
@@ -388,7 +388,14 @@ Create estimator and choose settings
 
 - **Regularization**: a penalty that shrinks coefficients and can reduce overfitting when features are many or correlated. It treats every coefficient alike, so scale features first (`StandardScaler`, below).
 - **Ridge** (L2) penalizes the sum of squared coefficients.
-- **Lasso** (L1) penalizes the sum of absolute values, which can set some to exactly zero and so drops those features.
+- **Lasso** (L1) penalizes the sum of absolute values, which can set some fitted contributions to exactly zero. The pipeline still expects every original input column.
+
+**Regression** predicts a number, such as next-visit SBP. **Classification** predicts a category, such as readmitted or not. Despite its name, **logistic regression** is a classifier: it converts a weighted sum of features to a probability between 0 and 1, then a threshold turns that probability into a label.
+
+```text
+Age, BMI, today's SBP → linear regression → 146.2 mmHg
+Discharge measurements → logistic regression → 0.72 probability → flag 1 at a 0.5 threshold
+```
 
 ### Reference Card: Linear Estimators
 
@@ -466,12 +473,12 @@ print(model.predict(clinic_valid).round(1))  # [141.6 147.7]
 
 - **Metric**: turns a column of errors into one number. Choose it before comparing models, and compute it the same way for the baseline, every candidate, and the final test.
 - Numeric target: each error is actual minus predicted.
-- **Classification** (a yes/no target, here 1 = readmitted within 30 days): a **confusion matrix** counts the four outcomes:
+- For classification (here 1 = readmitted within 30 days), a **confusion matrix** counts the four outcomes:
     - True positives (TP): flagged and readmitted.
     - False positives (FP): flagged but not readmitted.
     - False negatives (FN): readmitted but not flagged.
     - True negatives (TN): neither.
-- **Logistic regression** (`LogisticRegression` on the linear-estimator card) turns a linear score into a probability between 0 and 1 and labels rows above 0.5 as 1.
+- Lowering a probability threshold flags more patients: it can catch more true cases while also creating more false alarms. Choose that tradeoff on validation data, then freeze the threshold with the model.
 
 ### Reference Card: `sklearn.metrics`
 
@@ -527,7 +534,7 @@ print((-scores).round(1))
 [4.  0.7 9.6]
 ```
 
-![xkcd 534: Genetic Algorithms. Before optimizing a score, check whether larger or smaller is better.](media/xkcd_534.png)
+![xkcd 534: Genetic Algorithms. A score can improve while an unmeasured consequence gets much worse; include the costs that matter.](media/xkcd_534.png)
 
 ### Code Snippet: Accuracy Hides Missed Readmissions
 
@@ -614,16 +621,18 @@ _"Did you ever think that maybe there's more to life than being really, really, 
 
 # Trees and Forests
 
-- **Decision tree**: predicts by asking yes/no questions about the features ("Is age > 60?", then "Is BMI > 30?") and reporting the average outcome of the training patients in the same final group, a **leaf**.
+- **Decision tree**: predicts by asking yes/no questions about the features ("Is age > 60?", then "Is BMI > 30?"). The final group is a **leaf**: regression reports its training outcomes' mean; classification uses their class proportions and predicts the most common class.
 - It can bend where a linear model's straight line cannot, but one tree is jumpy: change a few training rows and its questions change.
 
 ## From One Tree to a Forest
 
-- **Random forest**: grows many trees, each on a random resample of the rows, then averages their predictions.
+- **Random forest**: grows many trees, each on a random resample of the rows, then averages their numeric predictions for regression or class probabilities for classification.
 - **Ensemble**: a group of models combined into one prediction; averaging many jumpy trees gives a steadier answer than any one of them: wisdom of crowds.
 - Forests capture **nonlinear** (curved) relationships and **interactions**, where one feature's effect depends on another (age might matter more at high BMI), usually without scaling. Categorical text columns still need encoding.
 
 ![Decision tree: one model, one prediction. Random forest: trees trained in parallel on resampled rows, predictions averaged. XGBoost: trees trained in sequence, each learning from the previous error.](media/trees.webp)
+
+When `max_features` selects fewer than all columns, the forest considers a fresh random subset at each split; the diagram does not mean each tree keeps one fixed subset. The regressor defaults to considering all columns. XGBoost's feature sampling is optional.
 
 ### Reference Card: Random Forests
 

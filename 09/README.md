@@ -75,6 +75,11 @@ P2          2024-03-01 10:00           86   ┘
 
 ## Python datetime Module
 
+| Operation | Input | Output |
+| --- | --- | --- |
+| Parse with `strptime()` | Text `'2024-03-01 14:30'` | A datetime for March 1 at 14:30; arithmetic is now possible |
+| Format with `strftime()` | That datetime | Text such as `'March 01, 2024'`; the underlying datetime is unchanged |
+
 ### Reference Card: Python `datetime`
 
 - `datetime(year, month, day, hour, minute)`: Create a specific date and time; hour and minute default to 0.
@@ -464,7 +469,7 @@ The `count` column shows that the first weekly mean describes one day and the se
 - `ts.resample('h').ffill(limit=2)`: Carry the last reading forward, at most 2 slots.
 - `ts.resample('h').interpolate()`: Straight-line fill between known readings.
 
-Filled values are estimates, not measurements; keep a flag or the original column if later steps need to know which values were observed.
+Filled values are estimates, not measurements; keep a flag or the original column if later steps need to know which values were observed. Interpolation uses the later endpoint: the 09:00 estimate below needs the 11:00 reading, so it cannot be used by a score running at 09:00.
 
 ### Code Snippet: Upsampling Choices
 
@@ -551,7 +556,7 @@ True
 | 4 | P2 | 2024-03-01 09:00:00 | 90.0 | False | False |
 | 5 | P2 | 2024-03-01 10:00:00 | 94.0 | False | False |
 
-P1's three `NaN` rows look alike; only the flags show that the grid created 09:00 and 10:00, while 11:00 is a real reading with no heart rate.
+P1's three `NaN` rows look alike; only the flags show that the grid created 09:00 and 10:00, while 11:00 is a real reading with no heart rate. This grid requires one row per patient and timestamp; duplicate keys must be resolved before `asfreq()` can assign one value to each slot.
 
 ### Reference Card: Gap Runs
 
@@ -606,8 +611,8 @@ A patient with no gaps has no rows in `runs`; report 0 runs for them rather than
 ### Reference Card: Rolling Windows
 
 - `ts.rolling(window=5)`: A **count window**: the current row and the 4 before it, however far apart; like `resample()`, it needs an aggregation after it
-- `ts.rolling(window=5).mean()`, `.std()`, `.sum()`, `.min()`, `.max()`: One value per row; the first 4 rows are `NaN` until the window is full
-- `ts.rolling('7D').mean()`: A **time window**: the readings in the 7 days ending at each row, which suits irregular data such as clinic visits; needs a sorted DatetimeIndex; the first rows are not `NaN`
+- `ts.rolling(window=5).mean()`, `.std()`, `.sum()`, `.min()`, `.max()`: One value per row; `NaN` unless the window has 5 nonmissing readings, so the first 4 rows are `NaN`
+- `ts.rolling('7D').mean()`: A **time window**: the readings in the 7 days ending at each row, which suits irregular data such as clinic visits; needs a sorted DatetimeIndex; starts once one nonmissing reading is present
 - `ts.rolling('2h', closed='left').mean()`: Time window that excludes the current row (a past-only window)
 - `ts.rolling(window=7, min_periods=3).mean()`: Start once the window holds 3 readings instead of waiting for all 7
 - `ts.rolling(window=7, center=True).mean()`: A **centered window**: 3 rows before, the current row, and 3 after, so each value uses later readings
@@ -728,7 +733,7 @@ display(vitals)  # the table above
 
 ### Code Snippet: Grouped Past-Only Windows
 
-Keep the three original columns. `transform()` preserves row alignment; the time window returns keys to merge back (Lecture 06).
+Keep the three original columns. `transform()` preserves row alignment; the time window returns keys to merge back (Lecture 06). Each patient and timestamp pair is unique here, so `validate='one_to_one'` checks that every feature matches exactly one reading.
 
 ```python
 vitals = vitals[['patient_id', 'recorded_at', 'heart_rate']].copy()
@@ -802,6 +807,8 @@ display(vitals[['patient_id', 'recorded_at', 'block']])
 | 5 | P2 | 2024-03-01 11:00:00 | later_holdout |
 
 P2's 11:00 reading falls in the holdout, because `<` keeps the cutoff itself out of `earlier`.
+
+A chronological split permits earlier history from the same patient on both sides; it tests later readings, not performance on entirely unseen patients.
 
 # Time Series Visualization
 

@@ -370,6 +370,26 @@ display(with_context[['clinic', 'patient_id', 'wait_min', 'clinic_mean_wait', 'w
 
 East's one visit sits exactly at its clinic's mean: it is easy to be average when you are the whole group.
 
+### Code Snippet: Put Differences on a Common Scale
+
+Divide each difference by its clinic's standard deviation to compare waits across clinics with different spreads.
+
+```python
+clinic_sd = visits.groupby('clinic')['wait_min'].transform('std')
+display((with_context['wait_vs_clinic'] / clinic_sd).round(2))
+```
+
+| Visit row | z-score |
+| --- | --- |
+| 0 | 0.22 |
+| 1 | 0.87 |
+| 2 | -1.09 |
+| 3 | -0.71 |
+| 4 | 0.71 |
+| 5 | NaN |
+
+East's single visit has no sample standard deviation, so its z-score is undefined. A group whose waits are all identical also has no usable scale: its standard deviation is zero. Keep these z-scores missing rather than reporting them as average waits.
+
 ### Code Snippet: Fill Missing Scores with the Clinic Median
 
 ```python
@@ -387,6 +407,8 @@ display(visits['satisfaction'].fillna(clinic_median))
 | 5 | 4.0 |
 
 North's missing score becomes 4.5, the median of North's 4.0 and 5.0, and South's becomes 3.0. A whole-column `fillna(visits['satisfaction'].median())` would give both 4.0.
+
+If a clinic has no recorded scores, its median is missing too; the fill leaves those scores missing.
 
 <callout icon="⚠️" color="yellow_bg">
 	## A group summary does not line up with the rows

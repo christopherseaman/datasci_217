@@ -34,6 +34,8 @@ Run the cells from top to bottom.
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
+**Core route:** Parts 1, 2, 4–7, 10, and 11. Parts 3, 8, and 9 are independent practice for outside class; skip their cells on the core route. Running every cell from the top also works. Finish all validation exploration before the one final test.
+
 ## 1. Load the diabetes records
 
 Ten baseline measurements per patient (age, sex, BMI, average blood pressure, and six blood tests) and the progression score one year later, which runs from 25 to 346. Every error below is in those score points.
@@ -95,7 +97,7 @@ Mean progression, training: 149.8, validation: 165.4
 
 A 60/20/20 split. By chance, the validation patients progressed more on average than the training patients; Part 4 shows what that does to a baseline.
 
-## 3. Preprocessing inside the pipeline
+## 3. Independent practice: mixed-column preprocessing
 
 The diabetes table is all numbers with no gaps, but many clinic tables mix numbers with categories and have missing values. This small standalone table shows the pattern: `ColumnTransformer` sends the numeric columns to an imputer and a scaler, and the site column to an imputer and a one-hot encoder. Every step learns from the training rows only, and a site it never saw becomes all zeros instead of an error.
 
@@ -217,7 +219,7 @@ glu     3.8
 
 ## 6. Ridge and Lasso
 
-Regularization adds a penalty that shrinks coefficients. Ridge (L2) shrinks them all toward zero; Lasso (L1) can set some to exactly zero, which drops those features. Both treat every coefficient alike, so the scaler stays in front of them in the pipeline. The `alpha` values here are fixed in advance, not tuned.
+Regularization adds a penalty that shrinks coefficients. Ridge (L2) shrinks them all toward zero; Lasso (L1) can set some contributions to exactly zero. The fitted pipeline still expects all ten input columns. Both penalties depend on feature scale, so the scaler stays in front of them in the pipeline. The `alpha` values here are fixed in advance, not tuned.
 
 ```python
 ridge = Pipeline([('scale', StandardScaler()), ('model', Ridge(alpha=10.0))])
@@ -281,7 +283,7 @@ lasso (alpha=2)       42.451      51.034     0.525              7
 
 Apply Part 4's rule. The Lasso has the lowest MAE, 42.451. Linear regression (42.939) and Ridge (42.620) are within 1 point of it, so all three count as tied: the predeclared 1-point tolerance treats these small gaps as ties, without claiming a statistical test of equal performance. The tie goes to the fewest nonzero coefficients, which is the Lasso with 7 of 10. **Selected: the Lasso pipeline with `alpha=2`.** All three cut the baseline's typical miss by about a third.
 
-## 8. Look at the validation predictions
+## 8. Independent practice: validation diagnostics
 
 Two plots of the selected pipeline's validation predictions: predicted against actual, where perfect predictions would sit on the dashed diagonal, and residuals against predictions, where we hope for a shapeless cloud around zero.
 
@@ -308,7 +310,7 @@ plt.close(fig)
 - **Left:** the points follow the diagonal but more flatly. The highest actual scores are predicted too low and the lowest too high, as expected from a model that explains about half the variation.
 - **Right:** no curve and no funnel, but more points above the zero line than below. That is the 14.2-point average shift: these validation patients progressed more than the training mean suggested.
 
-## 9. What does the pipeline rely on?
+## 9. Independent practice: permutation importance
 
 A metric says how well the pipeline predicts, not which columns carry the prediction. Permutation importance shuffles one validation column at a time and measures how much worse the MAE gets. scikit-learn scorers count higher as better, so MAE is `'neg_mean_absolute_error'`, and each result below is the increase in validation MAE after shuffling.
 
@@ -349,6 +351,7 @@ Predictions usually end in a decision. Suppose the clinic wants to schedule an e
 ```python
 threshold = 200
 actual_high = (y_valid > threshold).astype(int)
+lasso_valid_pred = lasso.predict(X_valid)
 lasso_flag = (lasso_valid_pred > threshold).astype(int)
 never_flag = np.full(len(actual_high), 0)
 

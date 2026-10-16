@@ -70,6 +70,8 @@ plt.show()
 
 # matplotlib Configuration
 
+**Global defaults** apply to figures created afterward. Use them for a consistent report; set a property on an individual Axes when only one chart should change.
+
 ## Global Configuration
 
 ### Reference Card: rcParams Basics
@@ -104,6 +106,8 @@ ax.plot(data)
 
 ## Style Sheets
 
+**Style sheets** bundle defaults for fonts, colors, grids, and backgrounds. Applying several styles in sequence lets later settings replace earlier ones.
+
 ### Reference Card: Built-in and Custom Style Sheets
 
 ```python
@@ -130,6 +134,8 @@ plt.style.use({
 
 ## Subplot Layouts
 
+`layout=(rows, columns)` arranges one panel per numeric column. Shared scales make values comparable across panels; separate scales emphasize each series' own variation.
+
 ### Reference Card: Advanced Subplot Layouts
 
 ```python
@@ -149,6 +155,8 @@ df.plot(subplots=True, figsize=(12, 8), title='Custom Title')
 
 ## Stacked and Grouped Plots
 
+**Stacked bars** emphasize the total and its parts; **grouped bars** put each clinic beside the others on a common baseline. An **area plot** fills the space under each series; stacking areas emphasizes how the total changes over time.
+
 ### Reference Card: Stacked, Grouped, and Area Plots
 
 ```python
@@ -163,11 +171,7 @@ df = pd.DataFrame({
 df.plot.bar(stacked=True, alpha=0.7)
 
 # Grouped bar plots
-grouped = pd.DataFrame({
-    'category': ['A', 'B', 'C'],
-    'value': [10, 15, 7],
-})
-grouped.plot.bar(x='category', y='value', color=['red', 'blue', 'green'])
+df.plot.bar()
 
 # Area plots
 df.plot.area(alpha=0.7, stacked=True)
@@ -194,6 +198,8 @@ df.plot.area(alpha=0.7, stacked=True)
 
 ## Facet Grids and Categorical Plots
 
+**Faceting** splits a table into panels using `row=` and `col=`. Each panel shows only its matching rows; the example includes every category/group/time combination so empty panels do not hide the comparison.
+
 ### Reference Card: Facet Grids and Categorical Plots
 
 ```python
@@ -204,8 +210,8 @@ import seaborn as sns
 rng = np.random.default_rng(42)
 df = pd.DataFrame({
     'category': ['A', 'B'] * 8,
-    'group': ['low', 'high'] * 8,
-    'time': ['AM', 'PM'] * 8,
+    'group': ['low', 'low', 'high', 'high'] * 4,
+    'time': ['AM'] * 8 + ['PM'] * 8,
     'value': rng.normal(50, 10, 16),
     'x': rng.normal(0, 1, 16),
     'y': rng.normal(0, 1, 16),
@@ -245,6 +251,8 @@ sns.set_style("white", rc=custom_style)
 ```
 
 # Advanced matplotlib Customization
+
+A publication figure needs readable units, labels, and marks at its final printed size. Font settings and export resolution support that goal; they cannot repair a misleading comparison.
 
 ## Publication-Quality Plots
 
@@ -299,16 +307,15 @@ from matplotlib.colors import LinearSegmentedColormap
 colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
 plt.rcParams['axes.prop_cycle'] = plt.cycler(color=colors)
 
-# Or use colormap
-# Create custom colormap
-colors = ['#FF0000', '#FFFF00', '#00FF00', '#00FFFF', '#0000FF']
+# A diverging colormap puts a light midpoint between negative and positive values.
+colors = ['#2166AC', '#F7F7F7', '#B2182B']
 n_bins = 100
 cmap = LinearSegmentedColormap.from_list('custom', colors, N=n_bins)
 
 # Use in plot
 rng = np.random.default_rng(42)
 data = rng.normal(0, 1, (10, 10))  # 10x10 grid of values to color
-plt.imshow(data, cmap=cmap)
+plt.imshow(data, cmap=cmap, vmin=-3, vmax=3)
 plt.colorbar()
 ```
 
@@ -336,6 +343,8 @@ This survey names alternatives to the lecture's tools; the same visible-context 
 
 ## Altair for Declarative Interactive Charts
 
+**Layering** draws several marks on the same axes. A regression transform replaces the observations with fitted values; `groupby=['category']` fits one line per category and keeps that field available to the color encoding.
+
 ### Reference Card: Altair Layered Chart with Regression
 
 ```python
@@ -360,7 +369,7 @@ base = alt.Chart(df).encode(
 # Layer points with a fitted line, then enable pan and zoom.
 chart = (
     base.mark_circle()
-    + base.transform_regression('x', 'y').mark_line()
+    + base.transform_regression('x', 'y', groupby=['category']).mark_line()
 ).interactive()
 
 chart.save('interactive_chart.html')
@@ -427,6 +436,8 @@ fig.show()
 
 # Animation and Dynamic Plots
 
+**Animation** redraws a figure across frames to show change. A saved GIF plays independently of Python; a live plot instead needs Python and an interactive plotting window.
+
 ## matplotlib Animation
 
 ### Reference Card: matplotlib FuncAnimation
@@ -457,6 +468,8 @@ anim.save('sine_wave.gif', writer='pillow', fps=20)
 ```
 
 ## Real-time Data Visualization
+
+Run this example as a script with an interactive matplotlib window. A notebook's default inline backend produces static images, so `plt.pause()` alone does not turn its output into a live display.
 
 ### Reference Card: Real-Time Plot Updates
 
@@ -515,6 +528,8 @@ sns.set_palette(palettes['colorblind'])
 
 ## Color Psychology in Data Visualization
 
+Color associations depend on the audience and context: red may mean danger, a negative change, or a named group. The dictionary below is an example design convention, not a universal meaning; keep labels or symbols alongside color.
+
 ### Reference Card: Color Associations by Context
 
 ```python
@@ -539,6 +554,8 @@ def choose_color_for_data(data_type, value):
 ```
 
 # Performance Optimization
+
+When points overlap or rendering becomes slow, show a reproducible sample or count observations in bins. Sampling hides some observations; a **hexbin** plot keeps all observations but replaces individual points with counts in hexagonal cells.
 
 ## Large Dataset Visualization
 
@@ -599,6 +616,8 @@ memory_efficient_plotting()
 ```
 
 # Export and Sharing
+
+**Raster** formats such as PNG and JPEG store pixels; **vector** formats such as SVG and PDF preserve drawn shapes when enlarged. HTML keeps browser interaction, but a reader still needs visible labels and a text alternative.
 
 ## Multiple Format Export
 
@@ -690,6 +709,8 @@ def add_statistical_annotations(ax, x, y):
 
 ## Waterfall Charts
 
+**Waterfall charts** show signed changes accumulating into a running total, such as admissions minus discharges. Each bar starts where the previous change ended; supply a list of changes and one label per change.
+
 ### Reference Card: Waterfall Chart Function
 
 ```python
@@ -717,6 +738,8 @@ def create_waterfall_chart(data, labels):
 ```
 
 ## Sankey Diagrams
+
+**Sankey diagrams** show flows between stages; link width represents the amount moving between two nodes. In the example, C receives 8 and sends 8, while D receives 6 and sends 6.
 
 ### Reference Card: Sankey Diagram Function
 
@@ -776,6 +799,8 @@ def test_plot_properties(fig, expected_properties):
 ```
 
 ## Plot Quality Metrics
+
+These flags record whether chart elements exist. They do not establish that a title is accurate, a scale is honest, or a grid is useful; inspect the rendered chart against its contract too.
 
 ### Reference Card: Plot Quality Metrics Function
 

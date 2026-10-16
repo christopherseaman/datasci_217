@@ -435,7 +435,7 @@ Each plotting function below takes the DataFrame as `data=` and column names for
 | `sns.load_dataset(name)` | Download a small example table, such as `'healthexp'` (needs internet) | `DataFrame` |
 | `sns.set_style(name)` / `sns.set_palette(name)` | Set defaults for readable plots | Updated seaborn defaults |
 | `sns.scatterplot(data=df, x=..., y=..., hue=..., style=...)` | Show relationships and optional groups; `style=` gives one marker shape per category, a redundant cue to pair with `hue=` | `Axes` |
-| `sns.lineplot(data=df, x=..., y=..., hue=..., style=...)` | Show ordered trends; averages rows that share an x value; `style=` gives one dash pattern per category | `Axes` |
+| `sns.lineplot(data=df, x=..., y=..., hue=..., style=...)` | Show ordered trends; averages repeated x values within each hue/style group; `style=` gives one dash pattern per category | `Axes` |
 | `sns.barplot(data=df, x=..., y=..., hue=...)` | One bar per category showing the mean of y, with an error bar | `Axes` |
 | `sns.histplot(data=df, x=..., kde=True)` | Show distribution, optionally with density | `Axes` |
 | `sns.boxplot(data=df, x=..., y=...)` | Compare distributions and outliers | `Axes` |
@@ -464,7 +464,8 @@ Each point is one country-year; country uses both color and shape.
 
 ## Watch the Grain
 
-- When several rows share an x value, `sns.lineplot()` and `sns.barplot()` draw the **mean** of those rows plus an error band showing its uncertainty, not the rows themselves.
+- When several rows share an x value within a group, `sns.lineplot()` and `sns.barplot()` draw their **mean**. `hue=` separates groups before averaging; `style=` also separates lines.
+- Their default **95% confidence interval** shows uncertainty in the estimated mean, not the spread of individual readings. Lines use a shaded band; bars use error bars. `errorbar=None` hides this interval without changing the mean.
 - The unit displayed silently changes from one reading to an average, so say so in the axis label or title.
 
 ### Code Snippet: seaborn Averages Repeated x Values

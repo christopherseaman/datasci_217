@@ -20,7 +20,7 @@ jupyter:
 
 One million synthetic fasting-glucose results, then a practice session for a remote server.
 
-- **Parts 1 and 2** run in this notebook: a custom `apply` summary per clinic, then timings of grouped summaries and the memory a repeated text key costs.
+- **Parts 1 and 2** run in this notebook: `apply` keeps the highest results per clinic, then timings of grouped summaries and the memory a repeated text key costs.
 - **Part 3** runs in a terminal on your own computer: it creates a practice SSH key pair and keeps a long job alive in tmux, the steps you repeat on a remote server.
 
 Run the notebook cells from top to bottom; each **Expect** line says what the output should show. Timings depend on the computer, so compare the ratio between two timings, not the exact milliseconds. Patient IDs and values are synthetic.
@@ -31,6 +31,8 @@ Run the notebook cells from top to bottom; each **Expect** line says what the ou
 ```
 
 ## Part 1: Apply Runs Your Own Function per Group
+
+The live core runs through Part 2: keep the highest glucose rows, compare three calls with one aggregation, and measure categorical memory. Stop at **Independent practice after class**. Part 3 is a separate terminal practice route.
 
 `apply` hands each group to your function as a small DataFrame and stitches the results together. Use it when no built-in aggregation fits; its output shape depends on what your function returns.
 
@@ -56,32 +58,6 @@ display(labs.head())
 
 **Expect:** `(1000000, 4)`, `Patients: 10,000`, and five rows with patient number, age (18 to 95), clinic, and a glucose value around 100 mg/dL. The grain is one row per lab result.
 
-### A Custom Summary per Clinic
-
-```python
-def glucose_summary(group):
-    """Summarize one clinic's fasting glucose (mg/dL) as a Series."""
-    q25 = group["glucose"].quantile(0.25)
-    q75 = group["glucose"].quantile(0.75)
-    return pd.Series({
-        "results": len(group),
-        "median": group["glucose"].median(),
-        "q25": q25,
-        "q75": q75,
-        "iqr": q75 - q25,
-        "over_126": (group["glucose"] > 126).sum(),
-    })
-
-clinic_summary = labs.groupby("clinic").apply(glucose_summary, include_groups=False)
-display(clinic_summary)
-
-# Checkpoint: the medians match the built-in aggregation
-builtin = labs.groupby("clinic")["glucose"].median()
-print("Same medians as agg('median')?", clinic_summary["median"].equals(builtin))
-```
-
-**Expect:** one row per clinic, like `agg`, with the columns your function named. Counts show `.0` because a `Series` that holds a median stores all its values as floats. Each clinic has about 250,000 results (East 249,785, North 249,815, South 250,430, West 249,970), a median near 100 mg/dL, an interquartile range of about 20 mg/dL, and about 10,300 to 10,450 results over 126 mg/dL. Then `True`.
-
 ### The Highest Glucose in Each Clinic
 
 ```python
@@ -92,7 +68,7 @@ display(highest[["patient_id", "age", "glucose"]])
 print("Rows:", len(highest))
 ```
 
-**Expect:** 8 rows: the two highest glucose results in each clinic, with the clinic as the outer index level and each result's original row number as the inner one. North has the highest value, 175.0 mg/dL (patient 9336, age 84). When the function returns whole rows, `apply` returns rows; when it returns one `Series` per group, it returns one row per group. When `agg` or `transform` can do the job, prefer them: they run as compiled code instead of once per group.
+**Expect:** 8 rows: the two highest glucose results in each clinic, with the clinic as the outer index level and each result's original row number as the inner one. North has the highest value, 175.0 mg/dL (patient 9336, age 84). This function returns whole rows, so `apply` returns rows. The custom-summary practice instead returns one `Series` per group, producing one row per group. When `agg` or `transform` can do the job, prefer them: they run as compiled code instead of once per group.
 
 ## Part 2: Measure, Then Optimize
 
@@ -127,6 +103,51 @@ print(mean.equals(together["mean"]), sd.equals(together["std"]), count.equals(to
 
 **Expect:** two lines such as `55.8 ms ± 217 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)` and `32.2 ms ± 112 μs per loop (...)`. The single `.agg()` is about 1.5 to 2 times faster, because every `groupby()` call splits the million rows again.
 
+### Memory: Text Key vs `category`
+
+```python
+display(labs.memory_usage(deep=True))
+
+text_mb = labs["clinic"].memory_usage(deep=True) / 1e6
+labs["clinic"] = labs["clinic"].astype("category")
+category_mb = labs["clinic"].memory_usage(deep=True) / 1e6
+print(f"\nclinic as text:     {text_mb:.1f} MB")
+print(f"clinic as category: {category_mb:.1f} MB")
+```
+
+**Expect:** `clinic` is the largest column: 53,500,245 bytes (about 12.5 million in Colab, as explained below), against 8,000,000 for each number column. Then `53.5 MB` as text and `1.0 MB` as a category: four labels stored once, plus one small code per row. Colab has the `pyarrow` package installed, which stores text more compactly, so there the text line reads about `12.5 MB`; the category version is still far smaller.
+
+## Independent practice after class
+
+Run Parts 1 and 2 first.
+
+### A Custom Summary per Clinic
+
+```python
+def glucose_summary(group):
+    """Summarize one clinic's fasting glucose (mg/dL) as a Series."""
+    q25 = group["glucose"].quantile(0.25)
+    q75 = group["glucose"].quantile(0.75)
+    return pd.Series({
+        "results": len(group),
+        "median": group["glucose"].median(),
+        "q25": q25,
+        "q75": q75,
+        "iqr": q75 - q25,
+        "over_126": (group["glucose"] > 126).sum(),
+    })
+
+clinic_summary = labs.groupby("clinic").apply(glucose_summary, include_groups=False)
+display(clinic_summary)
+
+# Checkpoint: the medians match the built-in aggregation
+builtin = labs.groupby("clinic")["glucose"].median()
+print("Same medians as agg('median')?", clinic_summary["median"].equals(builtin))
+```
+
+**Expect:** one row per clinic, like `agg`, with the columns your function named. Counts show `.0` because a `Series` that holds a median stores all its values as floats. Each clinic has about 250,000 results (East 249,785, North 249,815, South 250,430, West 249,970), a median near 100 mg/dL, an interquartile range of about 20 mg/dL, and about 10,300 to 10,450 results over 126 mg/dL. Then `True`.
+
+
 ### Built-in Aggregations vs a Lambda
 
 ```python
@@ -145,9 +166,11 @@ print("Largest difference:", (fast - slow).abs().max())
 
 **Expect:** about 10 ms against about 450 ms, so the lambda is roughly 50 times slower. It runs as Python once for each of the 10,000 patients; `"std"` runs as one compiled loop over all of them.
 
+
 ### `transform`: Built-in vs Lambda
 
 ```python
+by_patient = labs.groupby("patient_id")["glucose"]
 centered_fast = labs["glucose"] - by_patient.transform("mean")
 centered_slow = by_patient.transform(lambda s: s - s.mean())
 print("Largest difference:", (centered_fast - centered_slow).abs().max())
@@ -163,21 +186,10 @@ print("Same index as labs?", centered_fast.index.equals(labs.index))
 
 **Expect:** about 10 ms against more than a second: over 100 times slower.
 
-### Memory: Text Key vs `category`
-
-```python
-display(labs.memory_usage(deep=True))
-
-text_mb = labs["clinic"].memory_usage(deep=True) / 1e6
-labs["clinic"] = labs["clinic"].astype("category")
-category_mb = labs["clinic"].memory_usage(deep=True) / 1e6
-print(f"\nclinic as text:     {text_mb:.1f} MB")
-print(f"clinic as category: {category_mb:.1f} MB")
-```
-
-**Expect:** `clinic` is the largest column: 53,500,245 bytes (about 12.5 million in Colab, as explained below), against 8,000,000 for each number column. Then `53.5 MB` as text and `1.0 MB` as a category: four labels stored once, plus one small code per row. Colab has the `pyarrow` package installed, which stores text more compactly, so there the text line reads about `12.5 MB`; the category version is still far smaller.
 
 ## Part 3: Keep a Long Job Running (Terminal)
+
+Independent practice after class; keep all notebook cells above separate from these terminal commands.
 
 This part runs on your own computer, which plays the server: you run the commands you would type after `ssh`, and closing a terminal window stands in for a dropped connection. This rehearses key creation and tmux locally; it does not test an SSH login, file copy, or tunnel. Those need an actual server account and its administrator's connection instructions. Type the commands below into a terminal, not into this notebook.
 

@@ -39,6 +39,8 @@ import pandas as pd
 import seaborn as sns
 ```
 
+The core walkthrough is sections 1–6. Sections 7–9 are independent practice for outside class: sections 7 and 8 build their own data, and section 9 uses section 8's `daily` and `alerts`.
+
 ## 1. Rebuild the ICU panel
 
 Demo 1, section 7 built this table with two extra columns here, `unit` and `spo2` (oxygen saturation, %): three patients' heart rates from the night of November 2 to 3, 2024, localized in New York, with the one ambiguous 01:30 reading set aside, then converted to UTC.
@@ -162,6 +164,8 @@ display(pd.crosstab(vitals['patient_id'], vitals['block']))
 
 **Expect:** 9 `earlier` rows and 4 `later_holdout` rows: 3 and 2 for P01 (its 08:00 reading is held out, because `<` keeps the cutoff itself out of `earlier`), 3 and 1 for P02, and 3 and 1 for P03.
 
+The same patients appear in both blocks: this tests later readings for these patients, not generalization to patients the score has never seen.
+
 
 ## 6. Plot the panel in UTC
 
@@ -181,7 +185,7 @@ plt.show()
 **Expect:** P01's line climbs across the dashed line between 03:30 and 04:30 UTC and keeps rising to 118; P03's starts above it and falls below; P02's stays near 70. There is no P02 point between 04:00 and 07:00 UTC, where the ambiguous reading was set aside.
 
 
-## 7. Three years of flu-like illness visits
+## 7. Independent practice: three years of flu-like illness visits
 
 The emergency department counts visits for influenza-like illness (fever with cough or sore throat) every day. Visits peak each winter. The reporting feed failed for two weeks in February 2023, so those days have no rows at all.
 
@@ -224,12 +228,12 @@ plt.show()
 
 **Expect:** the top panel shows a straight segment from January 31 to February 15; the bottom panel shows the same data with a two-week break.
 
-Over all three years, a 28-day time window smooths the daily counts. A time window uses whatever days were reported in the last 28 days, so the outage does not shift it the way a 28-row window would.
+Over all three years, a 28-day time window smooths the daily counts. A time window uses whatever days were reported in the last 28 days, so the outage does not shift it the way a 28-row window would. Add the daily grid after calculating the mean to leave the smoother visibly broken on unreported days too.
 
 ```python
 fig, ax = plt.subplots(figsize=(10, 4))
 ili.asfreq('D').plot(ax=ax, color='gray', alpha=0.5, label='Daily visits')
-ili.rolling('28D').mean().plot(ax=ax, color='blue', linewidth=2, label='28-day mean')
+ili.rolling('28D').mean().asfreq('D').plot(ax=ax, color='blue', linewidth=2, label='28-day mean')
 ax.axhline(55, color='red', linestyle='--', label='Winter surge level (55 per day)')
 ax.set(title='Influenza-like illness visits', xlabel='Date', ylabel='Visits per day', ylim=(0, 100))
 ax.legend()
@@ -237,7 +241,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-**Expect:** three winter peaks near 60 visits per day and three summer troughs near 20; the blue 28-day mean crosses the dashed surge line each winter.
+**Expect:** three winter peaks near 60 visits per day and three summer troughs near 20; the blue 28-day mean crosses the dashed surge line each winter. Both lines break over February 1–14, 2023; after the outage, the mean uses fewer than 28 reported days.
 
 Averaging by calendar month shows the seasonal pattern directly. Bars go on a new Axes of their own, and they start at zero, which suits counts.
 
@@ -256,7 +260,7 @@ plt.show()
 **Expect:** January is highest (`60.2`) and July lowest (`20.6`); the bars fall from January to July and rise again toward December (`56.8`).
 
 
-## 8. Daily weights: lags, leads, and a fluid-gain alert
+## 8. Independent practice: daily weights and a fluid-gain alert
 
 Heart-failure patients are commonly told to call the clinic if their weight rises by more than about 1 kg in a day or 2 kg in a week, because fluid is building up. This section builds one patient's daily weight for January through March, with a fluid-gain episode in March.
 
@@ -312,7 +316,7 @@ print('Largest daily change before March 9:', daily.loc[:'2024-03-08', 'change_1
 **Expect:** three alert days: March 10 (the 1-day rule, `1.3` kg) and March 11 and 12 (the 7-day rule, `2.3` kg). Before the episode, no day moved more than `0.4` kg, so ordinary scale noise never trips the rule.
 
 
-## 9. Plot the home-weight alerts
+## 9. Independent practice: plot the home-weight alerts
 
 Use `daily` and `alerts` from section 8. Marking the alert days on the raw series shows both the size of the change and when it happened.
 

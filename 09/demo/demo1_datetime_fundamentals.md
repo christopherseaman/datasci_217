@@ -40,6 +40,8 @@ import numpy as np
 import pandas as pd
 ```
 
+The core walkthrough is sections 1–8. Sections 9–10 are independent practice for outside class; section 9 reuses the core's `weekly_calls` and `log`, and section 10 builds its own data.
+
 ## 1. One date at a time with `datetime`
 
 A discharge time arrives as text. `strptime()` parses it, `strftime()` formats it for a letter, and a `timedelta` moves it forward to the follow-up contacts.
@@ -59,7 +61,7 @@ print('Age in days:', age.days)
 print('Age in years:', round(age.days / 365.25, 1))
 ```
 
-**Expect:** `2024-03-01 14:30:00`, then `March 01, 2024 at 02:30 PM`. The phone call falls on `2024-03-08` and the clinic visit on `2024-03-31` (2024 is a leap year, so February has 29 days). Age: `23982` days, `65.7` years.
+**Expect:** `2024-03-01 14:30:00`, then `March 01, 2024 at 02:30 PM`. The phone call falls on `2024-03-08` and the clinic visit on `2024-03-31`. Age: `23982` days, approximately `65.7` years; dividing by 365.25 does not calculate completed birthdays.
 
 
 ## 2. A text column becomes a DatetimeIndex
@@ -235,7 +237,7 @@ print('Set aside:', spring.isna().sum())
 **Expect:** `hours` is `23` for `2024-03-10`, `25` for `2024-11-03`, and `24` for `2024-11-04`. The 02:30 dose becomes `NaT` (`Set aside: 1`); the 01:30 and 03:30 doses keep offsets of `-05:00` and `-04:00`, one hour of elapsed time apart.
 
 
-## 9. Optional extension: clinic days and frequency inference
+## 9. Independent practice: clinic days and frequency inference
 
 Prerequisite: BONUS.md, Frequency Inference and Specialized Schedules. Uses `weekly_calls` from section 3 and `log` from section 2.
 
@@ -251,7 +253,7 @@ print('Home weigh-ins:', pd.infer_freq(log.index))
 **Expect:** `Clinic days: 10` (two weekends skipped). `infer_freq` returns `W-MON` for the calls and `None` for the weigh-ins: the patient steps on the scale at a slightly different minute each morning, so the log has no single frequency.
 
 
-## 10. Optional extension: select by clock time
+## 10. Independent practice: select by clock time
 
 Prerequisite: BONUS.md, Time-of-Day Selection Example. Builds its own data.
 

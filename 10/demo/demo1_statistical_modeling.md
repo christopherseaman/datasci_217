@@ -31,6 +31,8 @@ Run the cells from top to bottom.
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
+**Core route:** Parts 1, 2, 4, 5, and 8. Parts 3, 6, and 7 are independent practice for outside class; skip their cells on the core route. Running every cell from the top also works.
+
 ## 1. Load the diabetes records
 
 scikit-learn ships a few small real datasets. `load_diabetes(scaled=False, as_frame=True)` returns this one in its original units, with the table as a DataFrame in its `.frame` and the six blood tests named `s1` to `s6`; rename them so the formulas below read clearly.
@@ -143,7 +145,7 @@ Read each coefficient as an association, holding the other two predictors fixed:
 
 These are observational records, so none of this says that lowering a patient's BMI _would_ slow progression; that needs additional causal evidence, such as a trial. R² of 0.396 means the three predictors explain about 40% of the variation in progression.
 
-## 3. The array API
+## 3. Independent practice: the array API
 
 The array API asks you to build the table of predictors yourself, including the intercept column that `sm.add_constant()` adds. Both interfaces run the same least-squares fit.
 
@@ -256,7 +258,7 @@ display(intervals.drop(columns='mean_se').round(1))
 
 Under the model assumptions, the mean-response interval for patients like the second one is about 160 to 173, while an individual's prediction interval is about 48 to 285: it adds person-to-person variation. The first prediction interval starts at -16.5, below every observed score in these data. The model allows values outside the observed range; judging whether they are clinically possible requires the outcome's definition, which this dataset does not supply.
 
-## 6. Compare models
+## 6. Independent practice: compare models
 
 Add predictors one step at a time and compare the fits. All four models use the same 442 rows, so their AIC and BIC are comparable (lower is better).
 
@@ -295,7 +297,7 @@ Model 4: all ten             11  0.5177  0.5066  4793.9857  4838.9901
 
 Whether six blood tests are worth drawing for every patient is a separate, clinical judgement; the criteria only say the extra columns explain more than they cost.
 
-## 7. A categorical predictor
+## 7. Independent practice: a categorical predictor
 
 Clinics often report BMI in bands. `pd.cut()` makes the bands; `C()` in the formula treats them as categories, with the first band as the reference. The top edge, 60, sits above the largest BMI (42.2), so every patient lands in a band.
 

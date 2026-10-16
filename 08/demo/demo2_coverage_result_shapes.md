@@ -22,7 +22,7 @@ A clinic network's quarterly report groups 100,000 synthetic visits by clinic an
 
 - **Part 1:** which visits and clinics the default report silently leaves out.
 - **Part 2:** `transform` adds department context to every visit.
-- **Part 3 (independent practice after class):** `filter` keeps or drops whole departments.
+- **Independent practice after class:** plot coverage, find within-department quartiles, and use `filter` to keep or drop whole departments.
 
 Run the cells from top to bottom; each **Expect** line says what the output should show. Patient IDs and values are synthetic.
 
@@ -32,6 +32,8 @@ Run the cells from top to bottom; each **Expect** line says what the output shou
 ```
 
 ## Part 1: Which Groups Appear in a Summary
+
+The live core runs through Part 2. Stop at **Independent practice after class**; the remaining variations use the core results and can be completed later.
 
 This demo builds the same visit log Demo 1 used, so it runs on its own. Rerun the next cell even if you still have Demo 1 open.
 
@@ -100,7 +102,7 @@ display(visits.head())
 ### Two Realities the Default Summary Hides
 
 ```python
-# Work on a copy so `visits` stays unchanged for Parts 2 and 3
+# Work on a copy so `visits` stays unchanged for transform and filter
 reported = visits.copy()
 
 # 1. Some visits were logged without a clinic (sample, Lecture 05, picks the same 250 every run)
@@ -166,28 +168,6 @@ print("Rows:", len(counts_kept))
 
 **Expect:** 7 rows: the `NaN` group comes first here, then the five open clinics and Bayview with six zeros. A count of `0` is a real value, so `fill_value=0` is right here. Find the `NaN` row by its label, not by its position.
 
-### Show the Difference
-
-```python
-import matplotlib.pyplot as plt
-
-# Every group the data can produce, from the observed=False, dropna=False table above
-full_counts = every_clinic["count"]
-# One label and color per row, in the same order; red marks the two the default report hides
-labels = ["North", "South", "East", "West", "Central", "Bayview", "(not recorded)"]
-colors = ["steelblue", "steelblue", "steelblue", "steelblue", "steelblue", "red", "red"]
-
-fig, ax = plt.subplots(figsize=(9, 4))
-bars = ax.bar(labels, full_counts, color=colors)
-ax.bar_label(bars)
-ax.set_title("Visits per clinic; red bars are missing from the default report")
-ax.set_ylabel("Visits counted")
-plt.tight_layout()
-plt.show()
-```
-
-**Expect:** five blue bars of about 20,000 visits each, then Bayview labelled `0` with no bar at all and a thin red bar labelled `250` for the visits with no clinic. Neither would appear in a default report, and neither is easy to see even here, which is why a report needs `observed=False` and `dropna=False` to list them.
-
 ## Part 2: Transform Keeps Every Row
 
 `transform` computes a statistic per group and copies it back to every row of that group, so the result has the same length and index as the input and can become a new column. The rest of the demo uses `visits`, which still has every clinic recorded.
@@ -234,6 +214,33 @@ display(thirty.groupby("department")["wait_z"].mean().round(2))
 
 **Expect:** the same 30-minute wait is ordinary in Cardiology (z = 0.01), about 3 standard deviations above the Pediatrics mean (2.99), and shorter than usual in Orthopedics (-0.8). Group context changes what one number means.
 
+## Independent practice after class
+
+Run Parts 1 and 2 first.
+
+### Show the Difference
+
+```python
+import matplotlib.pyplot as plt
+
+# Every group the data can produce, from the observed=False, dropna=False table above
+full_counts = every_clinic["count"]
+# One label and color per row, in the same order; red marks the two the default report hides
+labels = ["North", "South", "East", "West", "Central", "Bayview", "(not recorded)"]
+colors = ["steelblue", "steelblue", "steelblue", "steelblue", "steelblue", "red", "red"]
+
+fig, ax = plt.subplots(figsize=(9, 4))
+bars = ax.bar(labels, full_counts, color=colors)
+ax.bar_label(bars)
+ax.set_title("Visits per clinic; red bars are missing from the default report")
+ax.set_ylabel("Visits counted")
+plt.tight_layout()
+plt.show()
+```
+
+**Expect:** five blue bars of about 20,000 visits each, then Bayview labelled `0` with no bar at all and a thin red bar labelled `250` for the visits with no clinic. Neither would appear in a default report, and neither is easy to see even here, which is why a report needs `observed=False` and `dropna=False` to list them.
+
+
 ### Quartiles Within Each Department
 
 ```python
@@ -246,9 +253,8 @@ display(pd.crosstab(visits["department"], visits["wait_quartile"], margins=True)
 
 **Expect:** each department split into Q1 to Q4 by its own waits, with row totals equal to its visit counts and 100,000 in the corner. The quarters are not exactly equal (Pediatrics Q1 has 4,628 visits, Q3 has 3,153) because many visits share the same whole-minute wait, and tied waits always land in the same quartile.
 
-## Part 3: Filter Keeps or Drops Whole Groups
 
-Independent practice after class.
+### Filter Keeps or Drops Whole Groups
 
 `filter` tests each whole group and keeps every row of the groups that pass. Rows are never changed, only kept or dropped.
 
