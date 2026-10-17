@@ -49,20 +49,21 @@ Points are awarded only for documented student grading materials, not supplied n
 
 For grading another submission, run the trusted assignment's `check_assignment.py /path/to/submission --json`. Use the published assignment version and its dependencies, not checker code supplied by the submission. The JSON report contains the same milestone results and automated score shown to students; batch collection and reporting do not change grading criteria.
 
-For TA batch grading, run `uv run scripts/grade_submissions.py 02`. To prepare LMS identities, build the private roster once from the class spreadsheet and the collected Assignment 01 clones:
+For TA batch grading, keep the private configuration in `grading/` and run from that folder as shown below. To prepare LMS identities, build the private roster once from the class spreadsheet and the collected Assignment 01 clones:
 
 ```bash
-python3 scripts/build_roster.py ds217-f26-roster.xlsx --submissions scratch/submissions/01
+python3 scripts/build_roster.py ds217-f26-roster.xlsx --submissions scratch/submissions/01 --output grading/roster.tsv
 ```
 
-This creates `roster.tsv` in the current directory, with `github_user`, `email`, `last_name`, `first_name`, `course`, and `exclude` columns. The course includes the semester, such as `ds217-26f`, matching the assignment repository prefix in `assignments.json`; keep one roster per course offering. Matching uses committed Assignment 01 identity hashes internally, with the same email normalization as `process_email.py`; hashes are omitted from the export. Unmatched or ambiguous students keep a blank `github_user`; fill missing logins or emails manually in the TSV. Add TA logins with `exclude` set to `yes` to skip their forks, including explicit `--fork` requests; their other identity fields may be blank. Existing CSV rows are preserved, but excluded users cannot receive the star. The builder refuses to overwrite an existing map, preserving manual corrections.
+This creates `grading/roster.tsv`, with `github_user`, `email`, `last_name`, `first_name`, `course`, and `exclude` columns. The course includes the semester, such as `ds217-26f`, matching the assignment repository prefix in `assignments.json`; keep one roster per course offering. Matching uses committed Assignment 01 identity hashes internally, with the same email normalization as `process_email.py`; hashes are omitted from the export. Unmatched or ambiguous students keep a blank `github_user`; fill missing logins or emails manually in the TSV. Add TA logins with `exclude` set to `yes` to skip their forks, including explicit `--fork` requests; their other identity fields may be blank. Existing CSV rows are preserved, but excluded users cannot receive the star. The builder refuses to overwrite an existing map, preserving manual corrections.
 
-Share the TSV with TAs through an access-restricted channel. The workbook and repo-root `roster.tsv` are Git-ignored; neither belongs in a public repository. The grader expects `roster.tsv` in the directory where grading is invoked, or accepts `--roster /path/to/roster.tsv`. It reads that edited file directly, shows aligned email, last-name, and first-name columns beside terminal results, and appends `email`, `last_name`, and `first_name` after the grading columns in `grades.csv`. Missing mappings leave identity fields blank without warnings. Existing rows also get refreshed identities when any fork is graded. Grade exports contain personal information and must also stay private.
+Share the updated TSV with TAs through an access-restricted channel. Keep `roster.tsv` and `music.lst` together in `grading/`; that folder and the source workbook are Git-ignored. The grader expects `roster.tsv` in the directory where grading is invoked, or accepts `--roster /path/to/roster.tsv`. It reads that edited file directly, shows aligned email, last-name, and first-name columns beside terminal results, and appends `email`, `last_name`, and `first_name` after the grading columns in `grades.csv`. Missing mappings leave identity fields blank without warnings. Existing rows also get refreshed identities when any fork is graded. Grade exports contain personal information and must also stay private.
 
 TAs can also run the grader without cloning this repository. In the directory containing their privately shared `roster.tsv`, run:
 
 ```bash
-uv run https://raw.githubusercontent.com/christopherseaman/datasci_217/main/scripts/grade_submissions.py 02
+cd grading
+uv run https://g217.badmath.org 02
 ```
 
 This downloads the current course checks and saves submission clones and `grades.csv` under `./ds217-26f-02/`.
