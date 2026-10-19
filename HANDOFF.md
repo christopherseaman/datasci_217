@@ -12,7 +12,7 @@ Each ordinary class has 90 minutes: about 60 of lecture and 30 of core demo walk
 
 - As of October 16, `main` holds all reviewed work through [`49602ac`](https://github.com/christopherseaman/datasci_217/commit/49602ac), and all 16 mapped lecture and BONUS pages for 04 to 11 match it in Notion. Check `git status` and `git log` on arrival.
 - Handout repositories `UCSF-DataSci/ds217-26f-04` through `-11` received the October 2 release; 05 and 06 were updated on October 14. Pushing the course updates the checks that forks download from `main`, never the handouts themselves.
-- Assignment 05 is live with student forks. Its course source (`05/assignment/`) now names the row-count artifact `output/row_counts.csv`, while the published handout still says `output/decision_log.csv`. The checks accept either name; do not publish the 05 handout this term.
+- Assignment 05 is live with student forks. On October 19 its handout renamed the row-count artifact to `output/row_counts.csv` with the index `step`; forks made earlier save `output/decision_log.csv` with the index `decision`. The checks accept both until the November cleanup in [TODO.md](TODO.md).
 - Assignments 08 and 10 had no forks on October 19. Their scaffolds and README steps now name methods and arguments without paste-ready answers; republish each handout before it opens.
 
 ## Decisions to preserve

@@ -219,7 +219,7 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
     row_counts = pd.Series({"rows_read": rows_read, "rows_with_labs": rows_with_labs, "rows_unique": rows_unique,
                               "visits_dropped": len(labs) - len(clean), "hba1c_blanked": hba1c_outside,
                               "weight_blanked": weight_outside}, name="rows")
-    row_counts.index.name = "decision"
+    row_counts.index.name = "step"
     row_counts.to_csv(output / "row_counts.csv")
     checks = pd.Series({
         "one row per visit": not clean.duplicated(subset=["patient_id", "visit_date"]).any(),
@@ -401,9 +401,13 @@ def run() -> None:
 
         full_marks("sideways-category-counts", sideways_counts)
 
-        # A submission from the earlier handout saves the row counts as decision_log.csv and scores the same.
-        full_marks("legacy-decision-log-name",
-                   lambda root: (root / DECISION_FILE).rename(root / LEGACY_DECISION_FILE))
+        def legacy_decision_log(root: Path) -> None:
+            # The earlier handout saved these counts as decision_log.csv with the index named decision.
+            text = (root / DECISION_FILE).read_text().replace("step,rows", "decision,rows", 1)
+            (root / LEGACY_DECISION_FILE).write_text(text)
+            (root / DECISION_FILE).unlink()
+
+        full_marks("legacy-decision-log-name", legacy_decision_log)
 
         def without_index(root: Path) -> None:
             # index=False drops the labels; rows in the README's order are read in that order.

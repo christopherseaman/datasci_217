@@ -217,7 +217,7 @@ HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.
 
 ## Task 5: Clean and summarize
 
-### 5.1 Apply the decisions and log them
+### 5.1 Apply the decisions and count the rows
 
 1. Set `clean` to a copy of `labs` with `.copy()`.
 2. Keep the visits that pass both the ID rule and the date rule from Task 4: join the two `rules` columns with `&` and select those rows. Assign the result back to `clean`.
@@ -229,12 +229,12 @@ HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.
     - `rows_read`, `rows_with_labs`, and `rows_unique`, the variables from Task 1;
     - `visits_dropped`: `len(labs)` minus `len(clean)`;
     - `hba1c_blanked` and `weight_blanked`: `hba1c_outside` and `weight_outside`.
-7. Name the index `decision`.
+7. Name the index `step`.
     - Expect: `shape: (59071, 10)`; `rows_read` 60918, `rows_with_labs` 59977, `rows_unique` 59486, then `visits_dropped` 415 (116 bad IDs plus 299 undated visits), `hba1c_blanked` 61, and `weight_blanked` 46. Each is one fewer than Task 4's 62 and 47 because one bad HbA1c and one bad weight sit on visits dropped in step 2.
 8. Save with `row_counts.to_csv(ROW_COUNTS_PATH)`.
 
 > **Checkpoint: `output/row_counts.csv`**
-> Header `decision,rows` and the six counts above.
+> Header `step,rows` and the six counts above.
 
 ### 5.2 Validate, then save the summary
 
