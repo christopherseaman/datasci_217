@@ -24,7 +24,7 @@ How the files are read:
 - Each check is scored on its own, so one mistake costs only the checks it gets wrong.
 - If the Task 5.2 `assert` stops the cell, `clean_summary.csv` is not written and only its checks lose points.
 - `-999` may become missing before Task 1.2, with `pd.read_csv(DATA_PATH, na_values=[-999])` or an earlier `replace()`: the missing report may count it, and later files are judged against the rows that leaves.
-- A file is judged against your own other files: if `typed_profile.csv` shows `-999` kept, only the `-999 read as missing` check loses points, and the validation report, decision log, and summary built from that data still count.
+- A file is judged against your own other files: if `typed_profile.csv` shows `-999` kept, only the `-999 read as missing` check loses points, and the validation report, row counts, and summary built from that data still count.
 - Line endings, quoting, letter case, spaces around a cell, column order, row order, number format (`54`, `54.0`), and date format (`2024-01-02`, `2024/01/02`) never cost points; a percent may be unrounded or rounded to a whole number, a blank may be written as `missing` (`to_csv(na_rep="missing")`), and `clean_summary.csv` may be saved with or without `.T`.
 - A leading column of row numbers, which `to_csv()` writes without `index=False`, is ignored. A file saved with `index=False`, which drops its row labels, is read in the README's row order and costs nothing.
 - A mean passes within 0.01 of the expected value, or rounded to one decimal.
@@ -54,11 +54,11 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | `output/validation_report.csv` | `patient_id_format` counts the IDs that fail `D` and five digits after Task 3.1 strips and upper-cases them. | validation report: patient IDs cleaned | 4 |
 | `output/validation_report.csv` | The date, gender, HbA1c, and weight rules count the visits that break them. | validation report: failing rows | 5 |
 | `output/validation_report.csv` | `glucose_within_fences` counts the glucose values outside the 1.5 * IQR fences, blanks not included. | validation report: glucose outliers flagged | 3 |
-| `output/decision_log.csv` | `rows_read` is the rows of the file, and `rows_with_labs` the rows left after dropping the visits with neither lab result. | decision log: no-lab visits dropped | 4 |
-| `output/decision_log.csv` | `rows_unique` is the rows left after removing exact repeats, keeping one copy of each. | decision log: exact repeats removed | 5 |
-| `output/decision_log.csv` | `rows_unique` keeps every patient's repeat visits. | decision log: repeat visits kept | 3 |
-| `output/decision_log.csv` | `visits_dropped` counts the visits without a valid ID or a real date. | decision log: failing visits dropped | 5 |
-| `output/decision_log.csv` | `hba1c_blanked` and `weight_blanked` count the kept values outside the contract's ranges. | decision log: out-of-range values counted | 3 |
+| `output/row_counts.csv` | `rows_read` is the rows of the file, and `rows_with_labs` the rows left after dropping the visits with neither lab result. | row counts: no-lab visits dropped | 4 |
+| `output/row_counts.csv` | `rows_unique` is the rows left after removing exact repeats, keeping one copy of each. | row counts: exact repeats removed | 5 |
+| `output/row_counts.csv` | `rows_unique` keeps every patient's repeat visits. | row counts: repeat visits kept | 3 |
+| `output/row_counts.csv` | `visits_dropped` counts the visits without a valid ID or a real date. | row counts: failing visits dropped | 5 |
+| `output/row_counts.csv` | `hba1c_blanked` and `weight_blanked` count the kept values outside the contract's ranges. | row counts: out-of-range values counted | 3 |
 | `output/clean_summary.csv` | Every HbA1c and weight `min` and `max` is inside the contract's range. | clean summary: impossible values blanked | 5 |
 | `output/clean_summary.csv` | Each `count` is the values present in the cleaned column, blanks not filled. | clean summary: blanks kept | 3 |
 | `output/clean_summary.csv` | Each `mean`, `min`, `50%`, and `max` matches the cleaned table, saved once. | clean summary: statistics | 4 |

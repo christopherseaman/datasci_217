@@ -59,7 +59,7 @@ assignment/
     ├── typed_profile.csv       # you generate in Task 2
     ├── category_counts.csv     # you generate in Task 3.2
     ├── validation_report.csv   # you generate in Task 4
-    ├── decision_log.csv        # you generate in Task 5.1
+    ├── row_counts.csv          # you generate in Task 5.1
     └── clean_summary.csv       # you generate in Task 5.2
 ```
 
@@ -225,15 +225,15 @@ HbA1c bands: from 0 to below 5.7% is normal, 5.7% to 6.4% is prediabetes, and 6.
 4. Blank those values, keeping the visit: `.where()` keeps the values where its mask is `True` and turns the rest into `NaN`. Give it a mask of the 4 to 20 range, assign the result back to `clean["hba1c_pct"]`, and do the same for `weight_kg` with 30 and 250.
     - Recompute `clean["a1c_category"]` from the cleaned HbA1c with Task 3.2's `pd.cut()` bins and labels. Expect: a blanked value such as 3.9 now has a missing category, not `normal`. Keep `category_counts.csv` as the Task 3 snapshot.
 5. Number the rows again with `reset_index()`, using `drop` so the old index does not become a column. Assign the result back to `clean`.
-6. Build `decision_log` with `pd.Series()` from a dictionary of six counts, in this order, and `name="rows"`:
+6. Build `row_counts` with `pd.Series()` from a dictionary of six counts, in this order, and `name="rows"`:
     - `rows_read`, `rows_with_labs`, and `rows_unique`, the variables from Task 1;
     - `visits_dropped`: `len(labs)` minus `len(clean)`;
     - `hba1c_blanked` and `weight_blanked`: `hba1c_outside` and `weight_outside`.
 7. Name the index `decision`.
     - Expect: `shape: (59071, 10)`; `rows_read` 60918, `rows_with_labs` 59977, `rows_unique` 59486, then `visits_dropped` 415 (116 bad IDs plus 299 undated visits), `hba1c_blanked` 61, and `weight_blanked` 46. Each is one fewer than Task 4's 62 and 47 because one bad HbA1c and one bad weight sit on visits dropped in step 2.
-8. Save with `decision_log.to_csv(DECISION_PATH)`.
+8. Save with `row_counts.to_csv(ROW_COUNTS_PATH)`.
 
-> **Checkpoint: `output/decision_log.csv`**
+> **Checkpoint: `output/row_counts.csv`**
 > Header `decision,rows` and the six counts above.
 
 ### 5.2 Validate, then save the summary

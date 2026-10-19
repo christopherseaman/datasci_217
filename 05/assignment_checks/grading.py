@@ -12,7 +12,7 @@ from _value_checks import run_checks
 
 
 # One value per check in _value_checks.CHECKS, in the same order: the missing report (Task 1.1), the typed
-# profile (Task 2), the category counts (Task 3.2), the validation report (Task 4), and the decision log and
+# profile (Task 2), the category counts (Task 3.2), the validation report (Task 4), and the row counts and
 # clean summary (Task 5).
 POINTS = (
     4, 5, 4,

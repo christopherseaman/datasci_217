@@ -84,7 +84,7 @@ Is higher BMI associated with higher systolic blood pressure among patients of t
 
 Lecture 10's "Code Snippet: OLS with the Formula API" and "Code Snippet: Uncertainty and a New-Patient Interval" show each step. In the Task 1.1 cell:
 
-1. Fit `results = smf.ols("sbp ~ age + bmi", data=patients).fit()`. It prints `rows used: 20.0` and `R-squared: 0.744`.
+1. Fit `results`: build the model with `smf.ols()`, a formula with outcome `sbp` and predictors `age` and `bmi`, and `data=patients`, then call `.fit()`. It prints `rows used: 20.0` and `R-squared: 0.744`.
 2. Build `coefficients`, a DataFrame with four columns: `coef` from `results.params`, `std_err` from `results.bse`, and `ci_lower` and `ci_upper` from columns `0` and `1` of `results.conf_int()`. Its index holds the three terms.
 3. Name that index with `coefficients.index.name = "term"` (Lecture 04), then save `coefficients` to `COEFFICIENTS_PATH` keeping the index: leave out `index=False`, so the terms become the first column, headed `term`.
 
@@ -97,8 +97,8 @@ Read the `bmi` row as: at the same age, each 1 kg/m² higher BMI goes with about
 
 A new patient is 60 years old with a BMI of 31.0. In the Task 1.2 cell:
 
-1. Get `intervals = results.get_prediction(new_patient).summary_frame(alpha=0.05)`; `new_patient` is already built for you.
-2. Put the patient's `age` and `bmi` beside the intervals with `pd.concat([new_patient, intervals], axis=1)` (Lecture 06) and name the result `new_patient_intervals`. It prints `rows: 1`.
+1. Get `intervals`: call `results.get_prediction()` on `new_patient`, then `.summary_frame()` with `alpha=0.05`. `new_patient` is already built for you.
+2. Put the patient's `age` and `bmi` beside the intervals: combine `new_patient` and `intervals` side by side with `pd.concat()` and `axis=1` (Lecture 06), and name the result `new_patient_intervals`. It prints `rows: 1`.
 3. Save `new_patient_intervals` to `INTERVALS_PATH` with `index=False`.
 
 > **Checkpoint: `output/new_patient_intervals.csv`**
@@ -112,7 +112,7 @@ A residual is observed minus fitted SBP. Lecture 10's "Code Snippet: Residuals V
 
 1. Build `residual_table` with four columns: `patient_id` from `patients["patient_id"]`, `observed` from `patients["sbp"]`, `fitted` from `results.fittedvalues`, and `residual` from `results.resid`. It prints `rows: 20`.
 2. Save `residual_table` to `RESIDUALS_PATH` with `index=False`.
-3. In the plot cell, scatter `results.fittedvalues` (x) against `results.resid` (y), add the dashed line `ax.axhline(0, color="gray", linestyle="--")`, label both axes, and save with `fig.savefig(RESIDUAL_PLOT_PATH, dpi=150, bbox_inches="tight")` before `plt.show()`.
+3. In the plot cell, draw `results.fittedvalues` (x) against `results.resid` (y) with `ax.scatter()`. Add a gray dashed horizontal line at 0 with `ax.axhline()`. Label the x axis `Fitted SBP (mmHg)` and the y axis `Residual (observed - fitted)`. Save to `RESIDUAL_PLOT_PATH` with `fig.savefig()`, `dpi=150`, and `bbox_inches="tight"`, before `plt.show()`.
 
 > **Checkpoint: `output/ols_residuals.csv`**
 > The header line `patient_id,observed,fitted,residual`, then 20 rows, `P01` to `P20`. P01 reads about `P01,149,142.71,6.29`. Values may be rounded to one decimal.
@@ -131,10 +131,10 @@ The follow-up program wants to predict `sbp_followup` for each visit (the **pred
 A feature the model will not have at prediction time is **leakage**, however useful it looks. Lecture 10's "Feature Availability" table and Demo 1's "Audit the candidate features" step run this check. In the Task 2.1 cell:
 
 1. Make `decisions`, a `.copy()` of `candidates`.
-2. Add the column `available`: `decisions["hours_after_visit"] <= 0`, which is `True` for a feature known by the end of the visit.
-3. Add the column `decision`: `np.where(decisions["available"], "Keep", "Exclude (leakage)")`.
+2. Add the column `available`: `True` when `hours_after_visit` is 0 or less, so the feature is known by the end of the visit.
+3. Add the column `decision` with `np.where()`: `"Keep"` where `available` is `True`, `"Exclude (leakage)"` where it is `False`.
 4. Save `decisions` to `AVAILABILITY_PATH` with `index=False`.
-5. Set `FEATURES` to the kept feature names: `decisions.loc[decisions["available"], "candidate_feature"].tolist()`. It prints `features: ['age', 'bmi', 'sbp_today']`.
+5. Set `FEATURES` to the kept feature names: select the `candidate_feature` values of the available rows with `.loc` and a mask (Lecture 04), then turn them into a list with `.tolist()`. It prints `features: ['age', 'bmi', 'sbp_today']`.
 
 > **Checkpoint: `output/availability_decisions.csv`**
 > The header line `candidate_feature,hours_after_visit,available,decision`, then five rows, one per candidate. `a1c_result` reads `a1c_result,24,False,Exclude (leakage)`. `available` may be written `True`/`False`, `true`/`false`, or `1`/`0`, and any `decision` starting with `keep` or `exclude`, in any letter case, counts.
@@ -158,11 +158,11 @@ Split on when each **target** is measured, `followup_time`, so no training outco
 
 A model has to beat a guess. Lecture 10's "Code Snippet: A Baseline and a Linear Pipeline" and "Code Snippet: Comparing on Validation Rows" show every step. In the Task 3.1 cell:
 
-1. Fit `baseline = DummyRegressor(strategy="mean")` on `train[FEATURES]` and `train[TARGET]`; it predicts the training mean for everyone.
-2. Fit `pipeline = Pipeline([("scale", StandardScaler()), ("model", LinearRegression())])` on the same training rows.
-3. In the loop, predict the validation rows with each fitted approach and record its `mae` (`mean_absolute_error`), `rmse` (`np.sqrt(mean_squared_error(...))`), and `r2` (`r2_score`), each comparing `valid[TARGET]` with the predictions.
+1. Create `baseline`, a `DummyRegressor` with `strategy="mean"`, and fit it on `train[FEATURES]` and `train[TARGET]`; it predicts the training mean for everyone.
+2. Create `pipeline`, a `Pipeline` of two named steps, `"scale"` (a `StandardScaler`) then `"model"` (a `LinearRegression`), and fit it on the same training rows.
+3. In the loop, predict the validation rows with each fitted approach and record its `mae` (`mean_absolute_error`), `rmse` (the square root, `np.sqrt()`, of `mean_squared_error`), and `r2` (`r2_score`), each comparing `valid[TARGET]` with the predictions.
 4. Save `validation_metrics` to `VALIDATION_PATH` with `index=False`.
-5. Freeze the winner, the approach with the lower validation MAE: `winner = validation_metrics.loc[validation_metrics["mae"].idxmin(), "approach"]`. It prints `frozen choice: linear_pipeline`.
+5. Freeze the winner, the approach with the lower validation MAE: `.idxmin()` on the `mae` column gives that row's label (Lecture 04), and `.loc` reads its `approach` into `winner`. It prints `frozen choice: linear_pipeline`.
 
 > **Checkpoint: `output/validation_metrics.csv`**
 > The header line `approach,mae,rmse,r2`, then two rows: `mean_baseline` and `linear_pipeline`. The pipeline's MAE is about 3.34 mmHg. Numbers may keep every digit or be rounded to one or two decimals.
@@ -173,11 +173,11 @@ The baseline's R² is below 0 on the validation rows: its training mean misses t
 
 Lecture 10's "Freeze, Then Test Once" section and Demo 2 Part 11 show this step: same steps and settings, one test prediction, and that number goes in the report. In the Task 3.2 cell:
 
-1. Create `final`, the frozen pipeline: `Pipeline([("scale", StandardScaler()), ("model", LinearRegression())])`.
-2. Fit it on the training rows, or refit it on the training plus validation rows as the lecture and Demo 2 do: `train_valid = pd.concat([train, valid])`, then `final.fit(train_valid[FEATURES], train_valid[TARGET])`. Either counts.
-3. Predict the test rows once: `test_predicted = final.predict(test[FEATURES])`.
+1. Create `final`, the frozen pipeline: a new `Pipeline` with the same `"scale"` and `"model"` steps as Task 3.1.
+2. Fit it on the training rows, or refit it on the training plus validation rows as the lecture and Demo 2 do: stack `train` and `valid` into `train_valid` with `pd.concat()`, then fit on its `FEATURES` and `TARGET`. Either counts.
+3. Predict the test rows once with `final.predict()` on `test[FEATURES]`, and name the result `test_predicted`.
 4. Build `test_metrics`, one row with `approach` `"linear_pipeline"` and its `mae`, `rmse`, and `r2` for `test[TARGET]` and `test_predicted`. Put each value in a one-item list, as in `"approach": ["linear_pipeline"]`; a dictionary of single values makes `pd.DataFrame()` stop with `If using all scalar values, you must pass an index`.
-5. Build `test_predictions` from `test[["visit_id", "followup_time", TARGET]].copy()` and add the column `predicted_sbp`, holding `test_predicted`.
+5. Build `test_predictions`, a `.copy()` of the `visit_id`, `followup_time`, and `TARGET` columns of `test`, and add the column `predicted_sbp`, holding `test_predicted`.
 6. Save both with `index=False`: `test_metrics` to `TEST_METRICS_PATH` and `test_predictions` to `TEST_PREDICTIONS_PATH`.
 
 > **Checkpoint: `output/test_metrics.csv`**

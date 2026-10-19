@@ -39,6 +39,7 @@ from _value_checks import (  # noqa: E402
     CATEGORY_FILE,
     CHECKS as VALUE_CHECKS,
     DECISION_FILE,
+    LEGACY_DECISION_FILE,
     MISSING_FILE,
     PROFILE_FILE,
     SUMMARY_FILE,
@@ -215,11 +216,11 @@ def solve(root: Path, data: Path, wrong: frozenset = frozenset()) -> None:
     if "fill-weight-mean" in wrong:
         clean["weight_kg"] = clean["weight_kg"].fillna(clean["weight_kg"].mean())
     clean = clean.reset_index(drop=True)
-    decision_log = pd.Series({"rows_read": rows_read, "rows_with_labs": rows_with_labs, "rows_unique": rows_unique,
+    row_counts = pd.Series({"rows_read": rows_read, "rows_with_labs": rows_with_labs, "rows_unique": rows_unique,
                               "visits_dropped": len(labs) - len(clean), "hba1c_blanked": hba1c_outside,
                               "weight_blanked": weight_outside}, name="rows")
-    decision_log.index.name = "decision"
-    decision_log.to_csv(output / "decision_log.csv")
+    row_counts.index.name = "decision"
+    row_counts.to_csv(output / "row_counts.csv")
     checks = pd.Series({
         "one row per visit": not clean.duplicated(subset=["patient_id", "visit_date"]).any(),
         "patient IDs valid": clean["patient_id"].str.fullmatch(r"D[0-9]{5}").all(),
@@ -400,6 +401,10 @@ def run() -> None:
 
         full_marks("sideways-category-counts", sideways_counts)
 
+        # A submission from the earlier handout saves the row counts as decision_log.csv and scores the same.
+        full_marks("legacy-decision-log-name",
+                   lambda root: (root / DECISION_FILE).rename(root / LEGACY_DECISION_FILE))
+
         def without_index(root: Path) -> None:
             # index=False drops the labels; rows in the README's order are read in that order.
             for name in FILES:
@@ -456,12 +461,12 @@ def run() -> None:
         mistake("count-after-dropna", {"missing report: missing_count"}, "before Task 1.2's dropna()")
         mistake("count-present", {"missing report: missing_count"}, "isna().sum() counts the missing values")
         mistake("pct-as-fraction", {"missing report: missing_pct"}, "multiply it by 100")
-        mistake("no-dropna", {"decision log: no-lab visits dropped"}, "nothing was dropped")
-        mistake("dropna-any", {"decision log: no-lab visits dropped"}, 'how="any"')
-        mistake("no-dedupe", {"decision log: exact repeats removed"}, "nothing was removed", gate=False)
-        mistake("dedupe-keep-false", {"decision log: exact repeats removed"}, "keep=False drops every copy")
-        mistake("dedupe-by-patient", {"decision log: repeat visits kept"}, "one row per patient")
-        mistake("dedupe-by-visit", {"decision log: exact repeats removed"}, "treats two blanks as equal")
+        mistake("no-dropna", {"row counts: no-lab visits dropped"}, "nothing was dropped")
+        mistake("dropna-any", {"row counts: no-lab visits dropped"}, 'how="any"')
+        mistake("no-dedupe", {"row counts: exact repeats removed"}, "nothing was removed", gate=False)
+        mistake("dedupe-keep-false", {"row counts: exact repeats removed"}, "keep=False drops every copy")
+        mistake("dedupe-by-patient", {"row counts: repeat visits kept"}, "one row per patient")
+        mistake("dedupe-by-visit", {"row counts: exact repeats removed"}, "treats two blanks as equal")
         mistake("sentinel-kept", {"typed profile: -999 read as missing"}, "-999, the export's code")
         mistake("age-text", {"typed profile: age as numbers"}, 'errors="coerce"')
         mistake("age-fill-zero", {"typed profile: unreadable ages left blank"}, "fillna() with 0")
@@ -487,10 +492,10 @@ def run() -> None:
         mistake("iqr-multiplier-1", {"validation report: glucose outliers flagged"}, "1 * IQR")
         mistake("outlier-blank-flagged", {"validation report: glucose outliers flagged"}, "~between() is True for NaN")
         mistake("outlier-not-negated", {"validation report: glucose outliers flagged"}, '~labs["glucose_outlier"]')
-        mistake("keep-bad-ids", {"decision log: failing visits dropped"}, "drops only the undated visits", gate=False)
-        mistake("drop-bad-gender", {"decision log: failing visits dropped"}, "visits without a valid ID")
-        mistake("drop-every-failure", {"decision log: failing visits dropped"}, "fails any rule")
-        mistake("count-after-blanking", {"decision log: out-of-range values counted"}, "Count them before blanking")
+        mistake("keep-bad-ids", {"row counts: failing visits dropped"}, "drops only the undated visits", gate=False)
+        mistake("drop-bad-gender", {"row counts: failing visits dropped"}, "visits without a valid ID")
+        mistake("drop-every-failure", {"row counts: failing visits dropped"}, "fails any rule")
+        mistake("count-after-blanking", {"row counts: out-of-range values counted"}, "Count them before blanking")
         mistake("fill-median", {"clean summary: blanks kept"}, "keeps blanks as blanks")
         # One count mistake in one column costs the blanks-kept check only, not the statistics too.
         mistake("fill-weight-mean", {"clean summary: blanks kept"}, "count is the values present")
@@ -550,7 +555,7 @@ def run() -> None:
                 return
             raise AssertionError("Task 5.2's checks should stop a submission that keeps exact repeats")
 
-        mistake("no-dedupe-stopped", {"decision log: exact repeats removed"}, "nothing was removed", repeats_stop)
+        mistake("no-dedupe-stopped", {"row counts: exact repeats removed"}, "nothing was removed", repeats_stop)
 
         def stopped(wrong: str):
             """Solve with `wrong`, which Task 5.2's assert stops before clean_summary.csv is saved."""
@@ -564,12 +569,12 @@ def run() -> None:
             return change
 
         # A stop that a mistake an earlier check charged explains costs nothing more.
-        mistake("keep-bad-ids-stopped", {"decision log: failing visits dropped"}, "drops only the undated visits",
+        mistake("keep-bad-ids-stopped", {"row counts: failing visits dropped"}, "drops only the undated visits",
                 stopped("keep-bad-ids"))
-        mistake("either-filter", {"decision log: failing visits dropped"}, "| means or", stopped("either-filter"))
+        mistake("either-filter", {"row counts: failing visits dropped"}, "| means or", stopped("either-filter"))
         mistake("ids-contains", {"validation report: patient IDs cleaned"}, "str.contains()", stopped("ids-contains"))
-        mistake("bare-dropna", {"decision log: no-lab visits dropped"}, "a plain dropna()")
-        mistake("extra-dropna-weight", {"decision log: exact repeats removed"}, "a blank weight_kg")
+        mistake("bare-dropna", {"row counts: no-lab visits dropped"}, "a plain dropna()")
+        mistake("extra-dropna-weight", {"row counts: exact repeats removed"}, "a blank weight_kg")
         mistake("clinic-missing-label", {"category counts: missing clinic filled"}, "names them Unknown")
         mistake("dummies-drop-first", {"category counts: indicator columns"}, "drop_first=True")
         mistake("dummies-na", {"category counts: indicator columns"}, "dummy_na=True")
@@ -608,7 +613,7 @@ def run() -> None:
         assert report.count("is missing; run the Task") == len(FILES), report
         assert report.rstrip().endswith(
             "Left to fix (100 points): missing report (all 3 checks); typed profile (all 6 checks); category "
-            "counts (all 5 checks); validation report (all 5 checks); decision log (all 5 checks); clean summary "
+            "counts (all 5 checks); validation report (all 5 checks); row counts (all 5 checks); clean summary "
             "(all 3 checks)."), report
         report = printed(workspace / "sentinel-kept")
         assert report.rstrip().endswith("Score: 96/100\nLeft to fix (4 points): typed profile: -999 read as missing."), report

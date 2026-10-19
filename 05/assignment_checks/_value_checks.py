@@ -41,7 +41,9 @@ MISSING_FILE = "output/missing_report.csv"
 PROFILE_FILE = "output/typed_profile.csv"
 CATEGORY_FILE = "output/category_counts.csv"
 VALIDATION_FILE = "output/validation_report.csv"
-DECISION_FILE = "output/decision_log.csv"
+DECISION_FILE = "output/row_counts.csv"
+# Handouts published before the rename told students to save this name; it is graded when the new one is absent.
+LEGACY_DECISION_FILE = "output/decision_log.csv"
 SUMMARY_FILE = "output/clean_summary.csv"
 # The notebook step and the call that save each artifact.
 SAVED_BY = {
@@ -49,7 +51,7 @@ SAVED_BY = {
     PROFILE_FILE: ("Task 2", "typed_profile.to_csv(PROFILE_PATH)"),
     CATEGORY_FILE: ("Task 3.2", "category_counts.to_csv(CATEGORY_PATH)"),
     VALIDATION_FILE: ("Task 4", "validation_report.to_csv(VALIDATION_PATH)"),
-    DECISION_FILE: ("Task 5.1", "decision_log.to_csv(DECISION_PATH)"),
+    DECISION_FILE: ("Task 5.1", "row_counts.to_csv(ROW_COUNTS_PATH)"),
     SUMMARY_FILE: ("Task 5.2", "clean_summary.to_csv(SUMMARY_PATH)"),
 }
 
@@ -484,6 +486,14 @@ def _csv_rows(text: str) -> list[list[str]]:
 
 
 def _artifact(root: Path, name: str) -> Path | None:
+    """The artifact's path, or None. The row counts may be saved under their earlier name."""
+    path = _artifact_exact(root, name)
+    if path is None and name == DECISION_FILE:
+        return _artifact_exact(root, LEGACY_DECISION_FILE)
+    return path
+
+
+def _artifact_exact(root: Path, name: str) -> Path | None:
     """The artifact's path, matching its file name in any letter case, or None.
 
     macOS and Windows disks ignore letter case, so matching in any case makes a local run there agree with
@@ -763,7 +773,7 @@ def _value(cells: dict[str, str], *words: str) -> str | None:
 
 
 def _step_label(cell: str) -> str | None:
-    """The Task 5.1 decision-log entry a label names: a row count or a decision."""
+    """The Task 5.1 row-count entry a label names: a row count or a decision."""
     name = _header(cell)
     if "hba1c" in name or "a1c" in name:
         return "hba1c"
@@ -1622,7 +1632,7 @@ def check_validation_glucose(root: Path) -> None:
     )
 
 
-# Task 5.1: output/decision_log.csv
+# Task 5.1: output/row_counts.csv
 
 
 def _decisions(root: Path, *needed: str) -> dict[str, float | None]:
@@ -1632,7 +1642,7 @@ def _decisions(root: Path, *needed: str) -> dict[str, float | None]:
     _assert(
         not absent,
         f"{DECISION_FILE} has no count for {_join(absent)} (its rows are "
-        f"{_join(raw or 'blank' for raw in report.raw_labels) or 'none'}). In Task 5.1, save decision_log = "
+        f"{_join(raw or 'blank' for raw in report.raw_labels) or 'none'}). In Task 5.1, save row_counts = "
         'pd.Series({"rows_read": rows_read, "rows_with_labs": rows_with_labs, "rows_unique": rows_unique, '
         '"visits_dropped": ..., "hba1c_blanked": ..., "weight_blanked": ...}, name="rows").',
     )
@@ -1713,7 +1723,7 @@ EITHER = "patient_id_format|visit_date_present"
 
 
 def _task5_options(root: Path):
-    """upstream() with the README's Task 5.1 rows, then with any rows that give the decision log's visits_dropped.
+    """upstream() with the README's Task 5.1 rows, then with any rows that give the row counts' visits_dropped.
 
     The other rows keep the visits that pass a set of rules, such as the README's two plus gender_valid.
     """
@@ -1806,7 +1816,7 @@ def _summary_options(root: Path):
 
 
 def _summary_stopped(root: Path) -> bool:
-    """Whether clean_summary.csv is missing while decision_log.csv is saved: Task 5.2's assert stopped the cell."""
+    """Whether clean_summary.csv is missing while row_counts.csv is saved: Task 5.2's assert stopped the cell."""
     return _artifact(root, SUMMARY_FILE) is None and _artifact(root, DECISION_FILE) is not None
 
 
@@ -1966,11 +1976,11 @@ CHECKS = (
     Check("validation report: patient IDs cleaned", check_validation_ids),
     Check("validation report: failing rows", check_validation_counts),
     Check("validation report: glucose outliers flagged", check_validation_glucose),
-    Check("decision log: no-lab visits dropped", check_decision_no_lab),
-    Check("decision log: exact repeats removed", check_decision_repeats),
-    Check("decision log: repeat visits kept", check_decision_repeat_visits),
-    Check("decision log: failing visits dropped", check_decision_dropped),
-    Check("decision log: out-of-range values counted", check_decision_outside),
+    Check("row counts: no-lab visits dropped", check_decision_no_lab),
+    Check("row counts: exact repeats removed", check_decision_repeats),
+    Check("row counts: repeat visits kept", check_decision_repeat_visits),
+    Check("row counts: failing visits dropped", check_decision_dropped),
+    Check("row counts: out-of-range values counted", check_decision_outside),
     Check("clean summary: impossible values blanked", check_summary_blanked),
     Check("clean summary: blanks kept", check_summary_counts),
     Check("clean summary: statistics", check_summary_stats),

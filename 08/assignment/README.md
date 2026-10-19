@@ -63,8 +63,8 @@ The visit log has one row per visit, and every answer in Tasks 1 and 2.1 has one
 
 This step saves nothing. The clinic manager lists clinics as Mission, Sunset, Bayview, Excelsior, which is not alphabetical, and wants to see that Excelsior has had no visits. Lecture 08's "A Reporting Order and an Unused Clinic" snippet does the same. In the Task 1.1 cell:
 
-1. Replace `visits["clinic"]` with an ordered categorical: `pd.Categorical(visits["clinic"], categories=CLINIC_ORDER, ordered=True)`. It prints `clinic dtype: category`.
-2. Count the visits at each clinic with `groupby("clinic", observed=False).size()` and name the result `visits_per_clinic`. It lists Mission 6, Sunset 5, Bayview 4, and Excelsior 0, in that order.
+1. Replace `visits["clinic"]` with an ordered categorical: `pd.Categorical()` with `CLINIC_ORDER` as its `categories` and `ordered=True`. It prints `clinic dtype: category`.
+2. Count the visits at each clinic with `groupby()` on `clinic`, `observed=False`, and `.size()`, and name the result `visits_per_clinic`. It lists Mission 6, Sunset 5, Bayview 4, and Excelsior 0, in that order.
 
 The rest of the assignment groups with `observed=True`, which lists only the three clinics that have visits, still in this order.
 
@@ -73,9 +73,9 @@ The rest of the assignment groups with `observed=True`, which lists only the thr
 In the Task 1.2 cell:
 
 1. Group `visits` by `clinic` with `as_index=False` and `observed=True`, and build `clinic_counts` with named aggregation, as Lecture 08's "Count and Summarize Each Clinic" snippet does:
-    - `visit_count=("visit_id", "size")`: every visit at the clinic.
-    - `satisfaction_count=("satisfaction", "count")`: the visits with a survey score; `count` skips the blanks.
-    - `patient_count=("patient_id", "nunique")`: each patient once, however many times they came.
+    - `visit_count`: `"size"` of `visit_id`, every visit at the clinic.
+    - `satisfaction_count`: `"count"` of `satisfaction`, the visits with a survey score; `count` skips the blanks.
+    - `patient_count`: `"nunique"` of `patient_id`, each patient once, however many times they came.
 
     It prints `rows: 3`.
 2. Save `clinic_counts` to `CLINIC_COUNTS_PATH` with `index=False`.
@@ -100,7 +100,7 @@ In the Task 2.1 cell:
 `transform` gives every visit its own clinic's mean, so the result keeps one row per visit, as Lecture 08's "Compare Each Visit with Its Clinic" snippet shows. In the Task 2.2 cell:
 
 1. Make `visits_with_context`, a `.copy()` of `visits`, so `visits` itself stays unchanged.
-2. Add the column `clinic_mean_wait`: `visits.groupby("clinic", observed=True)["wait_min"].transform("mean")`.
+2. Add the column `clinic_mean_wait`: group `visits` by `clinic` with `observed=True`, select `wait_min`, and call `transform()` with `"mean"`.
 3. Add the column `wait_vs_clinic`: `wait_min` minus `clinic_mean_wait`. A visit that waited longer than its clinic's mean gets a positive number.
 
     It prints `rows: 15` and `visits unchanged: True`.
@@ -113,7 +113,7 @@ In the Task 2.1 cell:
 
 Grouping by two keys gives one row per observed pair, as Lecture 08's "Grouping by Two Keys" section shows. In the Task 2.3 cell:
 
-1. Group `visits` by `["clinic", "visit_type"]` with `as_index=False` and `observed=True`, and build `clinic_type_summary` with two named aggregations: `visit_count=("visit_id", "size")` and `mean_wait_min=("wait_min", "mean")`. It prints `rows: 8`: Sunset had no telehealth visits, so it has two pairs instead of three.
+1. Group `visits` by `["clinic", "visit_type"]` with `as_index=False` and `observed=True`, and build `clinic_type_summary` with two named aggregations: `visit_count`, the `"size"` of `visit_id`, and `mean_wait_min`, the `"mean"` of `wait_min`. It prints `rows: 8`: Sunset had no telehealth visits, so it has two pairs instead of three.
 2. Save `clinic_type_summary` to `CLINIC_TYPE_PATH` with `index=False`.
 
 > **Checkpoint: `output/clinic_visit_type_summary.csv`**
@@ -125,8 +125,8 @@ Grouping by two keys gives one row per observed pair, as Lecture 08's "Grouping 
 
 A pivot table lays Task 2.3's means out as a grid, one row per clinic and one column per visit type, as Lecture 08's "A Pivot Table and Its GroupBy Twin" snippet shows. In the Task 3.1 cell:
 
-1. Build `mean_wait_pivot` with `pd.pivot_table(visits, values="wait_min", index="clinic", columns="visit_type", aggfunc="mean", observed=True)`.
-2. Build its twin, `groupby_twin`: `visits.groupby(["clinic", "visit_type"], observed=True)["wait_min"].mean().unstack()`. It prints `pivot matches its groupby twin: True` and `empty cells: 1`. That empty cell is Sunset's `Telehealth`: no telehealth visit happened there, so there is no wait to average.
+1. Build `mean_wait_pivot` with `pd.pivot_table()` on `visits`: `wait_min` as `values`, `clinic` as `index`, `visit_type` as `columns`, `aggfunc="mean"`, and `observed=True`.
+2. Build its twin, `groupby_twin`: group `visits` by `clinic` and `visit_type` with `observed=True`, take the mean of `wait_min`, and move `visit_type` into columns with `.unstack()`. It prints `pivot matches its groupby twin: True` and `empty cells: 1`. That empty cell is Sunset's `Telehealth`: no telehealth visit happened there, so there is no wait to average.
 3. Save `mean_wait_pivot` to `PIVOT_PATH` with its index, so leave out `index=False`: the clinic names are the index, and saving it writes them as the first column. Leave the empty cell empty. `fill_value=0` would report a zero-minute wait that never happened.
 
 > **Checkpoint: `output/mean_wait_pivot.csv`**
@@ -134,7 +134,7 @@ A pivot table lays Task 2.3's means out as a grid, one row per clinic and one co
 
 ### 3.2 Count the visits in each pair
 
-This step saves nothing. In the Task 3.2 cell, count the visits in each clinic and visit type pair with `pd.crosstab(visits["clinic"], visits["visit_type"])` and name the result `visit_counts`. Sunset's `Telehealth` cell shows `0`: zero visits is a real count, while the pivot of means leaves the same cell empty.
+This step saves nothing. In the Task 3.2 cell, count the visits in each clinic and visit type pair with `pd.crosstab()`, `clinic` down the rows and `visit_type` across the columns, and name the result `visit_counts`. The same Lecture 08 snippet ends with one. Sunset's `Telehealth` cell shows `0`: zero visits is a real count, while the pivot of means leaves the same cell empty.
 
 ## Check your work
 
