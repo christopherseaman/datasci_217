@@ -19,30 +19,21 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/05/demo/setup_demo.sh | sh
 ```
 
-# Overview
-
-## What This Lecture Covers
-
-- **Data contract and missing data**: what clean means for a table, and how to find and count missing values.
-- **When data go bad**: duplicates, sentinel codes, type conversion, and dropping or filling missing values.
-- **Transformation, strings, and categories**: custom functions, renaming, text normalization, categorical dtype, binning, and indicator columns.
-- **Validation and the cleaning pipeline**: rules, outliers, spot checks, and a raw-to-clean workflow that checks before it saves.
-
-### Readings
-
-McKinney, _Python for Data Analysis_ (3rd ed.):
-
-- 3.2 (anonymous `lambda` functions)
-- 5.2 (function application and mapping)
-- Chapter 7 (data cleaning and preparation)
-
-## What You Will Be Able to Do
-
-- Write a data contract for a clinic visit table: row meaning, identifier, and allowed values per column.
-- Load a clinic visit export, find repeated entries and sentinel codes such as `-999`, and fix them with pandas.
-- Convert text columns to numbers and dates, then drop or fill missing labs with `dropna()`, `fillna()`, or a per-patient fill.
-- Normalize messy intake text with `.str` methods, band ages or blood pressures with `pd.cut()`, and build indicator columns with `pd.get_dummies()`.
-- List the rows that break a validation rule, log each cleaning decision, and save a clean table only after its checks pass.
+<callout icon="🧭" color="blue_bg">
+	# This Lecture
+	## Covers
+	- **Data contract and missing data**: what clean means for a table, and how to find and count missing values.
+	- **When data go bad**: duplicates, sentinel codes, type conversion, and dropping or filling missing values.
+	- **Transformation, strings, and categories**: custom functions, renaming, text normalization, categorical dtype, binning, and indicator columns.
+	- **Validation and the cleaning pipeline**: rules, outliers, spot checks, and a raw-to-clean workflow that checks before it saves.
+	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 3.2, 5.2, and Chapter 7.
+	## Enables
+	- Write a data contract for a clinic visit table: row meaning, identifier, and allowed values per column.
+	- Load a clinic visit export, find repeated entries and sentinel codes such as `-999`, and fix them with pandas.
+	- Convert text columns to numbers and dates, then drop or fill missing labs with `dropna()`, `fillna()`, or a per-patient fill.
+	- Normalize messy intake text with `.str` methods, band ages or blood pressures with `pd.cut()`, and build indicator columns with `pd.get_dummies()`.
+	- List the rows that break a validation rule, log each cleaning decision, and save a clean table only after its checks pass.
+</callout>
 
 # What Clean Means: The Data Contract
 

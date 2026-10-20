@@ -172,6 +172,7 @@ def build(rng: random.Random) -> dict[str, list[list[str]]]:
                 row[1] = choice(rng, VISIT_SPELLINGS[row[6]])
         # A second reading 10 to 30 minutes later, listed before or after the first.
         candidates = [i for i, row in enumerate(rows) if 90 <= int(row[4]) <= 215]
+        paired = set()  # ids of rechecked rows and their rechecks, whose dates stay as written
         planted = [i for i in candidates if rows[i][0] in ("P00001", "P00004", "P00088") and rows[i][6] == "baseline"]
         for index in sorted(planted + sample(rng, [i for i in candidates if i not in planted], 60 - len(planted)), reverse=True):
             first = rows[index]
@@ -182,17 +183,21 @@ def build(rng: random.Random) -> dict[str, list[list[str]]]:
             recheck = [first[0], label, first[2], first[3] + choice(rng, (10, 15, 20, 25, 30)), str(repeat),
                        first[5], first[6]]
             rows.insert(index + choice(rng, (0, 1)), recheck)
+            paired.update((id(first), id(recheck)))
         for row in rows:
             day = row[2]
             draw = rng.random()
+            # The draws stay the same for a recheck pair, so every other row is unchanged; both its rows
+            # keep the one exact date.
+            row[2] = day.isoformat()
             if draw < 0.0015:
-                row[2] = choice(rng, IMPOSSIBLE_DATES)
+                bad = choice(rng, IMPOSSIBLE_DATES)
             elif draw < 0.003:
-                row[2] = choice(rng, (f"{day.year}-{day.month}-{day.day:02d}",
-                                     f"{day.year}-{day.month:02d}-{day.day}",
-                                     f"{day.year}/{day.month:02d}/{day.day:02d}"))
-            else:
-                row[2] = day.isoformat()
+                bad = choice(rng, (f"{day.year}-{day.month}-{day.day:02d}",
+                                   f"{day.year}-{day.month:02d}-{day.day}",
+                                   f"{day.year}/{day.month:02d}/{day.day:02d}"))
+            if draw < 0.003 and id(row) not in paired:
+                row[2] = bad
             row[3] = clock(row[3])
             if row[6] == "baseline":
                 if row[0] in ("P00260", "P00446", "P00487", "P00851"):

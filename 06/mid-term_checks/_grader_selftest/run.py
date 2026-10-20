@@ -161,11 +161,13 @@ def metrics(names: list[str], values: list) -> str:
 def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, site_rule="full",
           rename_wt=True, visit_map=VISIT_MAP, recheck_keep="last", exact_dates=True, sbp_range=True,
           melt_map=None, melt_dropna=True, a1c_how="left", site_table="current", reverse_change=False,
-          audit_rules=True, references: dict | None = None, visit_lower=True, gender_strip=True) -> dict[str, str]:
+          audit_rules=True, references: dict | None = None, visit_lower=True, gender_strip=True,
+          dropna_sbp=False) -> dict[str, str]:
     """Answer the midterm with lecture methods, with any one mistake carried through; return each file's text.
 
     With `audit_rules`, the issue audit counts with the site code, date, and visit label rules the cleaning
-    uses, as Task 2.3 asks; without it, the audit uses the correct rules whatever the cleaning does.
+    uses, as Task 2.3 asks; without it, the audit uses the correct rules whatever the cleaning does. A
+    `visit_map` of None keeps each normalized label unmapped.
     """
     raw = {name: pd.read_parquet(DATA / file) if file.endswith(".parquet")
            else pd.read_csv(DATA / file, dtype="string", keep_default_na=False) for name, file in FILES.items()}
@@ -192,7 +194,8 @@ def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, si
     parsed = pd.to_datetime(dates.where(dates.str.fullmatch(EXACT_DATE)) if exact else dates, format="%Y-%m-%d",
                             errors="coerce")
     labels = visits_raw["visit"].str.strip()
-    labels = (labels.str.lower() if visit_lower else labels).map(visit_map if audit_rules else VISIT_MAP)
+    labels = labels.str.lower() if visit_lower else labels
+    labels = labels if audit_rules and visit_map is None else labels.map(visit_map if audit_rules else VISIT_MAP)
     audit = {
         "patients: gender values that are not a code":
             (gender.ne("") & ~patients["gender"].isin(["F", "M", "X"])).sum(),
@@ -232,7 +235,8 @@ def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, si
 
     v = visits_raw.copy(deep=True).drop_duplicates(keep="first")
     v["visit"] = v["visit"].str.strip()
-    v["visit"] = (v["visit"].str.lower() if visit_lower else v["visit"]).map(visit_map)
+    v["visit"] = v["visit"].str.lower() if visit_lower else v["visit"]
+    v["visit"] = v["visit"] if visit_map is None else v["visit"].map(visit_map)
     sbp = pd.to_numeric(v["sbp_mmhg"], errors="coerce")
     v["sbp_mmhg"] = (sbp.where(sbp.between(70, 250)) if sbp_range else sbp).astype("Int64")
     v["weight_kg"] = pd.to_numeric(v["weight_kg"], errors="coerce").astype("float64")
@@ -241,6 +245,8 @@ def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, si
                                      format="%Y-%m-%d", errors="coerce")
     repeated = v[v.duplicated(subset=["patient_id", "visit"], keep=False)]
     v = v.sort_values("visit_time").drop_duplicates(subset=["patient_id", "visit"], keep=recheck_keep)
+    if dropna_sbp:
+        v = v.dropna(subset=["sbp_mmhg"])
     v = v.sort_values(["patient_id", "visit"]).reset_index(drop=True)[VISIT_COLUMNS]
     files["visits_summary.csv"] = metrics(VISIT_METRICS, [
         len(v), v["visit"].eq("baseline").sum(), v["visit"].eq("week12").sum(), v["visit_date"].isna().sum(),
@@ -364,6 +370,11 @@ def confirm_reference(files: dict[str, str], found: dict) -> None:
     assert v["sbp_mmhg"].eq(70).any() and v["sbp_mmhg"].eq(250).any(), "no SBP exactly on a limit"
     pairs = found["repeated"].groupby(["patient_id", "visit"]).size()
     assert len(found["repeated"]) == 2 * len(pairs) and pairs.eq(2).all(), pairs.value_counts()
+    raw_pairs = found["visits_raw"].drop_duplicates().assign(
+        visit=lambda t: t["visit"].str.strip().str.lower().map(VISIT_MAP))
+    dates_per_pair = raw_pairs[raw_pairs.duplicated(subset=["patient_id", "visit"], keep=False)].groupby(
+        ["patient_id", "visit"])["visit_date"].nunique()
+    assert dates_per_pair.eq(1).all(), dates_per_pair[dates_per_pair.gt(1)]
     extra = raw["patients"][raw["patients"].duplicated()]
     assert (extra["gender"].str.strip().ne("") & ~extra["gender"].isin(["F", "M", "X"])).any(), \
         "no exact patient repeat changes an audit count"
@@ -646,7 +657,18 @@ def run() -> None:
             solve(visit_lower=False), {"issue_audit.csv": 1},
             ("repeated patient_id and visit pairs", "map the visit labels")),
         "every recheck reading dropped with keep=False": (
-            solve(recheck_keep=False), {"visits_summary.csv: rows": 4}, ("keep='last'",)),
+            solve(recheck_keep=False), {"visits_summary.csv: rows": 4}, ("keep='last'", "keep=False")),
+        "visits with a missing SBP dropped from visits_clean": (
+            solve(dropna_sbp=True), {"visits_summary.csv: rows": 4}, ("dropna()",)),
+        "visit labels never mapped, in the audit and the cleaning": (
+            solve(visit_map=None), {"issue_audit.csv": 1},
+            ("repeated patient_id and visit pairs", "map the visit labels")),
+        "visits one too many and the rechecked visits left out of the extract": (
+            {"visits_summary.csv": edit(files["visits_summary.csv"], lambda t: t.assign(value=t["value"].mask(
+                t["metric"].eq("visits"), str(grading.VISIT_SUMMARY["visits"] + 1)))),
+             "analysis_sample.csv": edit(analysis_csv, lambda t: t[~pd.Series(list(zip(t["patient_id"], t["visit"])),
+                                                                              index=t.index).isin(grading.REPEATED_PAIRS)])},
+            {"visits_summary.csv: rows": 2, "analysis_sample.csv: rows": 1}, ("keep='last'",)),
         "gender lowercased but never stripped": (
             solve(gender_strip=False), {"gender_categories.csv: counts": 2}, (".str.strip()",)),
         "the earlier reading of each recheck kept": (

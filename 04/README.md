@@ -19,32 +19,22 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/04/demo/setup_demo.sh | sh
 ```
 
-# Overview
-
-## What This Lecture Covers
-
-- **Jupyter notebooks**: run cells, manage kernel state and execution order, use magic commands, and commit notebooks cleanly.
-- **Introduction to pandas**: build Series and DataFrames, select columns, select with `.loc` and `.iloc`, and filter rows with masks.
-- **Summarizing data**: descriptive statistics down columns and across rows, and counting values.
-- **Deriving and ordering data**: add and drop columns and rows, sort and rank, and use the index for lookups and alignment.
-- **Data loading and storage**: read and write CSV files, handle missing-value markers and `read_csv` options, and keep types with Parquet.
-
-### Readings
-
-McKinney, _Python for Data Analysis_ (3rd ed.):
-
-- 2.2 (running the Jupyter notebook)
-- Chapter 5 (getting started with pandas)
-- Chapter 6 (data loading, storage, and file formats)
-- Appendix B.2 and B.5 (magic commands, and timing code with `%timeit`)
-
-## What You Will Be Able to Do
-
-- Run a notebook top to bottom on a fresh kernel and find a cell that uses a name defined below it.
-- Load a clinic visit CSV with `pd.read_csv()`, marking codes such as `?` and `NULL` as missing with `na_values`.
-- Select the patients with a fever with a boolean mask and `.loc`, and count visits per clinic with `value_counts()`.
-- Add a derived column such as a fever flag in one `.loc` step, then sort the visits with a unique ID breaking ties.
-- Save a result table to CSV, or to Parquet to keep its column types, and read it back to check it.
+<callout icon="🧭" color="blue_bg">
+	# This Lecture
+	## Covers
+	- **Jupyter notebooks**: run cells, manage kernel state and execution order, use magic commands, and commit notebooks cleanly.
+	- **Introduction to pandas**: build Series and DataFrames, select columns, select with `.loc` and `.iloc`, and filter rows with masks.
+	- **Summarizing data**: descriptive statistics down columns and across rows, and counting values.
+	- **Deriving and ordering data**: add and drop columns and rows, sort and rank, and use the index for lookups and alignment.
+	- **Data loading and storage**: read and write CSV files, handle missing-value markers and `read_csv` options, and keep types with Parquet.
+	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 2.2, Chapters 5 and 6, and Appendix B.2 and B.5.
+	## Enables
+	- Run a notebook top to bottom on a fresh kernel and find a cell that uses a name defined below it.
+	- Load a clinic visit CSV with `pd.read_csv()`, marking codes such as `?` and `NULL` as missing with `na_values`.
+	- Select the patients with a fever with a boolean mask and `.loc`, and count visits per clinic with `value_counts()`.
+	- Add a derived column such as a fever flag in one `.loc` step, then sort the visits with a unique ID breaking ties.
+	- Save a result table to CSV, or to Parquet to keep its column types, and read it back to check it.
+</callout>
 
 # Jupyter Notebooks: Interactive Data Analysis
 

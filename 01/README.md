@@ -13,38 +13,24 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 [Live Demo Guide](demo/DEMO_GUIDE.md)
 
-# Overview
+<callout icon="🧭" color="blue_bg">
+	# This Lecture
+	## Covers
+	- **Getting Started**: the terminal, Python 3.13, VS Code, and forking, cloning, and syncing a GitHub repository.
+	- **Command Line Essentials**: paths, navigation, file operations, redirection, pasted shell scripts, and shell shortcuts.
+	- **Python Basics**: interactive and script mode, indentation, values and types, strings, lists, arithmetic, and comparisons.
+	- **Control Structures**: `if` decisions, `for` loops over readings, and `while` loops with `break` and `continue`.
+	- **Debugging**: reading a traceback and fixing `IndentationError`, `NameError`, `TypeError`, and `ValueError`.
+	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 2.1 and 2.3; Shotts, _The Linux Command Line_, Chapters 1 to 4, 6, and 24; MIT _Missing Semester_, "Course Overview + The Shell" and "Version Control (Git)".
+	## Enables
+	- Fork and clone a GitHub repository in VS Code, edit a file, then commit and sync the change back to GitHub.
+	- Set up a project folder from the terminal with `mkdir`, `cp`, and `mv`, and peek at a clinic CSV with `head` and `cat`.
+	- Paste a shell script into a file with `cat > file.sh` and run it with `bash file.sh`.
+	- Write and run a Python script that computes BMI, then read its traceback to fix a misspelled name or a text-to-number error.
+	- Classify systolic readings against blood-pressure cutoffs with `if`/`elif`, and average them with a `for` loop.
+</callout>
 
-## What This Lecture Covers
-
-- **Getting Started**: the terminal, Python 3.13, VS Code, and forking, cloning, and syncing a GitHub repository.
-- **Command Line Essentials**: paths, navigation, file operations, redirection, pasted shell scripts, and shell shortcuts.
-- **Python Basics**: interactive and script mode, indentation, values and types, strings, lists, arithmetic, and comparisons.
-- **Control Structures**: `if` decisions, `for` loops over readings, and `while` loops with `break` and `continue`.
-- **Debugging**: reading a traceback and fixing `IndentationError`, `NameError`, `TypeError`, and `ValueError`.
-
-### Readings
-
-- McKinney, _Python for Data Analysis_ (3rd ed.), Chapter 2:
-    - 2.1 (the Python interpreter)
-    - 2.3 (Python language basics: syntax, scalar types, and control flow)
-- Shotts, _The Linux Command Line_:
-    - Chapters 1 to 4 (the shell, navigation, exploring files, and file operations)
-    - Chapter 6 (output redirection)
-    - Chapter 24 (a first shell script)
-- MIT _Missing Semester_:
-    - Course Overview + The Shell
-    - Version Control (Git), the basic Git/GitHub workflow
-
-## What You Will Be Able to Do
-
-- Fork and clone a GitHub repository in VS Code, edit a file, then commit and sync the change back to GitHub.
-- Set up a project folder from the terminal with `mkdir`, `cp`, and `mv`, and peek at a clinic CSV with `head` and `cat`.
-- Paste a shell script into a file with `cat > file.sh` and run it with `bash file.sh`.
-- Write and run a Python script that computes BMI, then read its traceback to fix a misspelled name or a text-to-number error.
-- Classify systolic readings against blood-pressure cutoffs with `if`/`elif`, and average them with a `for` loop.
-
-## Quick References
+# Quick References
 
 - [Command-line (Bash) cheat sheet](https://cheatsheets.zip/bash)
 - [Python cheat sheet](https://cheatsheets.zip/python)

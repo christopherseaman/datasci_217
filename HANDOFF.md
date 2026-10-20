@@ -17,18 +17,18 @@ Each ordinary class has 90 minutes: about 60 of lecture and 30 of core demo walk
 
 ## Recent work, October 19 to 20
 
-- Every lecture opens with `# Overview`: what it covers, its readings, and 3 to 5 practical skills taught in the main lecture or demos. AGENTS.md defines the shape. Lecture 01's Quick References now sit inside the Overview as a `##` section.
+- Every lecture opens with a blue 🧭 callout, `# This Lecture`, holding `## Covers` (topics plus one Readings bullet) and `## Enables` (3 to 5 practical skills taught in the main lecture or demos). AGENTS.md defines the shape. Lecture 01's `# Quick References` follows the callout.
 - Assignments 08 and 10: README steps and notebook TODOs name methods and arguments without paste-ready answer expressions. Grading is unchanged.
-- Lecture 06 and the midterm had an adversarial review (six lenses, each claim checked by a skeptic). 7 of 11 claims were confirmed and fixed:
-    - The grader charged one cleaning-rule mistake twice (in `issue_audit.csv` and a summary). `06/mid-term_checks/grading.py` now accepts summary values that follow from the student's own audit counts, so each such mistake costs 1 point; the self-test has 33 single-mistake cases.
-    - `generate_data.py` moved all weekend week-12 follow-ups to Monday; follow-ups now count clinic days, about 5,500 per weekday. Fixture v7; data hashes and one count (date parse failures 169 to 170) changed.
-    - HINTS.md credits Lecture 05 for `duplicated(keep=False)` and `isna().all()`, and names `one_to_one` for the A1c join; Task 2.2 copies both visit tables; Lecture 06 defines aggregation in bold at first use.
-    - Refuted claims: integer values in the concat diagram, the `%%bash` file count, comic spacing, and follow-up noise size.
-- The repo was cleaned of caches and build outputs (`__pycache__`, `.checks/`, demo `output/`, `_site/`, `dist/`).
+- Lecture 06 and the midterm had three adversarial review rounds on October 20, each claim checked by a skeptic. Fixes:
+    - Charge-once grading: summaries follow the student's own audit counts (`OWN_RULES`), including labels never mapped, stripped but not lowercased, or not stripped. When the visit count is below expected and already charged, up to that many missing rows in `analysis_sample.csv` and `sbp_wide_sample.csv` are excused. The self-test has 39 cases and takes about 15 minutes.
+    - Data fixture v8: weekday follow-ups spread over clinic days (about 5,500 per weekday), and recheck pairs share one date.
+    - Handout wording: HINTS names `patients_clean` and `one_to_one`; Task 1.2 loops over `manifest["files"]`; summary dates may carry a time.
+    - Lecture 06 gained the `rechecked` input table, the full `MergeError` text, and a `pivot_table()` card. Demo wording fixes; every `setup_demo.sh` (03 to 11) explains a rerun instead of a bare `mkdir` error.
+- `scratch/` was emptied on October 20.
 
 ## Coming up
 
-- A further review of Lecture 06, its three demos, and the midterm before the midterm opens. The October 20 demo reviewer reported no defects but recorded no execution evidence, so rerun all three notebooks fresh. Untested: a student-style completion of the midterm from the handout alone after the v7 data change, the HINTS wording against the new grader, and the 25 human-review points.
+- A final re-review of Lecture 06, its demos, and the midterm (round 3) before the midterm opens. Untested: the 25 human-review points and a live Colab runtime.
 - November: remove the Assignment 05 legacy file name (TODO.md).
 - Republish each handout only after a fresh reconcile, and only when the instructor asks.
 

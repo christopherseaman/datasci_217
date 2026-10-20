@@ -77,21 +77,14 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 ![xkcd 1987: Python Environment. Virtual environments prevent package chaos](media/xkcd_1987.png)
 
-# Overview
-
-## What This Lecture Covers
-
-- **NumPy arrays**: one line on what the topic teaches.
-
-### Readings
-
-McKinney, _Python for Data Analysis_ (3rd ed.):
-
-- 4.1 (NumPy arrays)
-
-## What You Will Be Able to Do
-
-- Build an array of blood pressure readings and summarize it with NumPy.
+<callout icon="🧭" color="blue_bg">
+	# This Lecture
+	## Covers
+	- **NumPy arrays**: one line on what the topic teaches.
+	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 4.1.
+	## Enables
+	- Build an array of blood pressure readings and summarize it with NumPy.
+</callout>
 
 # First Topic
 
@@ -123,14 +116,13 @@ Opening lines, in order:
 2. Exactly `See [BONUS.md](BONUS.md) for the optional extensions.`
 3. The demo link. Lectures 01–03: `[Live Demo Guide](demo/DEMO_GUIDE.md)`. Lectures 04–11: one `**Live notebooks in Colab:**` line linking each demo, then `**Run locally:**`, the one-line block `curl -fsSL .../NN/demo/setup_demo.sh | sh` (the script downloads the files, runs `uv venv --seed` and `uv sync` in `~/NN-demo`, and opens the folder in VS Code). Publishing replaces the BONUS and demo-guide lines with child pages.
 4. Optionally a comic or one-sentence hook.
-5. `# Overview`, which grounds the lecture before its first topic:
-    - `## What This Lecture Covers`: 3 to 5 bullets in lecture order, each `**Topic**: what it teaches`.
-    - `### Readings`: one source as `<Author, _Title_ (edition)>:` (for example, `McKinney, _Python for Data Analysis_ (3rd ed.):`), then one bullet per section or chapter; several sources as one bullet per source with nested bullets per section or chapter.
-    - `## What You Will Be Able to Do`: 3 to 5 practical tasks, verb first, naming the tool or method, each taught in the main lecture or its demos. No mention of assignments, BONUS, or other pages.
+5. A `<callout icon="🧭" color="blue_bg">` that grounds the lecture before its first topic, as a `# This Lecture` heading with two parts:
+    - `## Covers`: 3 to 5 bullets in lecture order, each `**Topic**: what it teaches`, then one `**Readings**:` bullet naming each source's sections or chapters (for example, `McKinney, _Python for Data Analysis_ (3rd ed.) 4.1 to 4.4; Shotts, _The Linux Command Line_, Chapter 6`).
+    - `## Enables`: 3 to 5 practical tasks, verb first, naming the tool or method, each taught in the main lecture or its demos. No mention of assignments, BONUS, or other pages.
 
-    Lecture 01's Quick references follow the Overview.
+    Lecture 01's `# Quick References` follows the callout.
 
-Beyond the Overview, no outline, learning-objective, or recap lists (Notion's outline lists the headings).
+Beyond this callout, no outline, learning-objective, or recap lists (Notion's outline lists the headings).
 
 Headings and Markdown (Notion-native):
 

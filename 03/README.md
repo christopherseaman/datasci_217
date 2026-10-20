@@ -13,38 +13,22 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 [Live Demo Guide](demo/DEMO_GUIDE.md)
 
-# Overview
-
-## What This Lecture Covers
-
-- **Virtual environments**: give each project its own Python and packages with uv, recorded in `pyproject.toml` and `uv.lock`.
-- **Shell pipelines and scripts**: count and search a CSV with pipes, wildcards, `grep`, variables, and a saved script.
-- **Checking types and looping over lists**: check types with `isinstance()`, pair lists with `zip()`, and build lists with comprehensions.
-- **NumPy basics**: create arrays, set data types, calculate without loops, and index and slice rows and columns.
-- **Selecting, reshaping, and analyzing arrays**: aliases and copies, boolean and fancy indexing, reshaping, summaries by axis, labels by rule, and sorting.
-
-### Readings
-
-- McKinney, _Python for Data Analysis_ (3rd ed.):
-    - 2.3 (`isinstance`, variables and argument passing, mutable and immutable objects)
-    - 3.1 (built-in sequence functions and list comprehensions)
-    - 4.1 to 4.4 (NumPy arrays, random numbers, universal functions, and array-oriented programming)
-- Shotts, _The Linux Command Line_:
-    - Chapter 4 (wildcards)
-    - Chapter 6 (redirection, pipelines, and `grep`)
-    - Chapter 7 (command substitution)
-    - Chapter 19 (regular expressions, through anchors)
-    - Chapter 20 (text processing with `cut`, `sort`, and `uniq`)
-    - Chapter 24 (writing your first script)
-    - Chapter 25 (shell variables)
-
-## What You Will Be Able to Do
-
-- Set up a project with `uv venv --seed`, `uv add`, and `uv sync`, then rebuild the same environment on another computer.
-- Count encounters per clinic in a CSV export with a `tail`, `cut`, `sort`, and `uniq -c` pipeline, saved as a timestamped script.
-- Find matching records in an encounter file with `grep` and regular expressions, such as every Cardiology visit.
-- Convert readings stored as text to numbers and compute a mean blood pressure per patient or per visit with NumPy `axis`.
-- Flag high blood pressure readings with a boolean mask, label them by stage with `np.select`, and rank the highest values.
+<callout icon="🧭" color="blue_bg">
+	# This Lecture
+	## Covers
+	- **Virtual environments**: give each project its own Python and packages with uv, recorded in `pyproject.toml` and `uv.lock`.
+	- **Shell pipelines and scripts**: count and search a CSV with pipes, wildcards, `grep`, variables, and a saved script.
+	- **Checking types and looping over lists**: check types with `isinstance()`, pair lists with `zip()`, and build lists with comprehensions.
+	- **NumPy basics**: create arrays, set data types, calculate without loops, and index and slice rows and columns.
+	- **Selecting, reshaping, and analyzing arrays**: aliases and copies, boolean and fancy indexing, reshaping, summaries by axis, labels by rule, and sorting.
+	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 2.3, 3.1, and 4.1 to 4.4; Shotts, _The Linux Command Line_, Chapters 4, 6, 7, 19, 20, 24, and 25.
+	## Enables
+	- Set up a project with `uv venv --seed`, `uv add`, and `uv sync`, then rebuild the same environment on another computer.
+	- Count encounters per clinic in a CSV export with a `tail`, `cut`, `sort`, and `uniq -c` pipeline, saved as a timestamped script.
+	- Find matching records in an encounter file with `grep` and regular expressions, such as every Cardiology visit.
+	- Convert readings stored as text to numbers and compute a mean blood pressure per patient or per visit with NumPy `axis`.
+	- Flag high blood pressure readings with a boolean mask, label them by stage with `np.select`, and rank the highest values.
+</callout>
 
 # Virtual Environments
 

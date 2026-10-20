@@ -56,7 +56,7 @@ DATA_FILES = ("patients.parquet", "sites.csv", "visits_north.csv", "visits_south
 DATA_SHA256 = {
     "patients.parquet": "aa795b05777565cce6af68602e3fc7c286a2483f53f9a6d99a44da410c1214dd",
     "sites.csv": "daaa4f3fc475900db905590faf6524f34143e78b73633b1794de4c6cf4b56a77",
-    "visits_north.csv": "5f56ec107a04c430a65fdb1bad23cacf76adaf31f06c07567b70474ec2c1b288",
+    "visits_north.csv": "f05014a1d281ee5e7732559d31fcf7a0e6e2b44f027b66e31229097484226a79",
     "visits_south.csv": "c19644241228ba7ef007d1aa7386516d80af5340b633401da67e9f59f3383214",
     "a1c_wide.parquet": "934dc120b78d492666b7fbc7872d5fc4d0f20ab9a678bdb7559f00536a2cfa6a",
 }
@@ -361,7 +361,12 @@ OWN_RULES: dict[tuple[str, str], tuple[str, list[tuple[int, list[dict[str, objec
     ("visits_summary.csv", "rows"): ("visits: rows in repeated patient_id and visit pairs", [
         (repeats([(row["patient_id"], visit_map.get(normal(row["visit"]))) for row in _raw_visits]),
          [_visit_summary({key: _clean_visit(row) for key, row in _latest_by(visit_map, normal).items()})])
-        for visit_map in _VISIT_MAPS for normal in _VISIT_NORMALS]),
+        for visit_map in _VISIT_MAPS for normal in _VISIT_NORMALS] + [
+        # No dictionary at all: each label kept as normalized, so only exact baseline and week12 count as visits.
+        (repeats([(row["patient_id"], normal(row["visit"])) for row in _raw_visits]),
+         [_visit_summary({key: _clean_visit(row) for key, row in _latest_by(
+             {normal(row["visit"]): normal(row["visit"]) for row in _raw_visits}, normal).items()})])
+        for normal in _VISIT_NORMALS]),
     ("visits_summary.csv", "visit_date"): ("visits: date parse failures", [
         (sum(row["visit_date"].strip() != "" and _loose_day(row["visit_date"]) is None for row in _raw_visits),
          [_visit_summary({key: _clean_visit(row, _loose_day) for key, row in _latest.items()})])]),
@@ -887,21 +892,24 @@ def normal_key(key: Key) -> Key:
 
 def score_rows(grouped: dict[Key, list[dict[str, str]]], expected: Sequence[Key], columns: Sequence[str],
                ignore: Callable[[dict[str, str]], bool] = lambda row: False,
-               hints: dict[str, str] | None = None) -> Outcome:
+               hints: dict[str, str] | None = None, excused: int = 0) -> Outcome:
     """Each expected key present as often as `expected` lists it (once, or as often as the student's own earlier
-    table holds it); a repeated or unexpected row cancels a matched one. `hints` adds advice to the `missing`,
-    `repeated`, or `unexpected` problem."""
+    table holds it); a repeated or unexpected row cancels a matched one. Up to `excused` missing keys, rows an
+    earlier summary already charged as dropped, cost nothing. `hints` adds advice to the `missing`, `repeated`, or
+    `unexpected` problem."""
     wanted: dict[Key, Key] = {}
     times: dict[Key, int] = {}
     for key in expected:
         wanted.setdefault(normal_key(key), key)
         times[normal_key(key)] = times.get(normal_key(key), 0) + 1
     missing = [key for norm, key in wanted.items() if norm not in grouped]
+    missing = missing if len(missing) > excused else []
     repeated = [key for norm, key in wanted.items() if len(grouped.get(norm, ())) > times[norm]]
     # Unexpected rows are listed by their key cells exactly as the file writes them.
     unexpected = [tuple(row[column] for column in columns) for key, rows in grouped.items() if key not in wanted
                   for row in rows if not ignore(row)]
-    outcome = Outcome(total=len(wanted), right=max(0, len(wanted) - len(missing) - len(repeated) - len(unexpected)))
+    outcome = Outcome(total=len(wanted), right=max(0, len(wanted) - max(0, len(missing) - excused) - len(repeated)
+                                                   - len(unexpected)))
     hints = hints or {}
 
     def listed(keys: Sequence[Key]) -> str:
@@ -1111,6 +1119,17 @@ def visit_row_gap(root: Path) -> float:
     return 0 if own is None else abs(own - VISIT_SUMMARY["visits"])
 
 
+def visit_shortfall(root: Path) -> int:
+    """How many visits the student's own `visits` count lacks, when visits_summary.csv: rows charges that count.
+
+    0 when the count is right, above the expected one, unreadable, or what a wrong rule the audit charged gives.
+    """
+    own = own_metrics(root, "visits_summary.csv", ("visits",)).get("visits")
+    accepted = {summary["visits"] for summary in (VISIT_SUMMARY, *own_rule_summaries(root, "visits_summary.csv",
+                                                                                     "rows"))}
+    return 0 if own is None or own in accepted else max(0, int(VISIT_SUMMARY["visits"] - own))
+
+
 def visits_summary(part: str) -> Callable[[Path], Outcome]:
     def check(root: Path) -> Outcome:
         labels = VISIT_PARTS[part]
@@ -1136,7 +1155,18 @@ def visits_summary(part: str) -> Callable[[Path], Outcome]:
                 return number(cell) == want
             return close(number(cell), want, gap)
 
-        return score_metrics(cells, labels, right, VISIT_SUMMARY.get, VISIT_HINTS.get, "Task 3.2")
+        hints = dict(VISIT_HINTS)
+        counts = {name: number(cell) for name, cell in cells.items()}
+        if part == "rows" and all(counts.get(name) is not None and counts[name] < VISIT_SUMMARY[name]
+                                  for name in labels) \
+                and counts["baseline visits"] + counts["week12 visits"] == counts["visits"]:
+            # Every label maps, yet every count is low: rows were dropped, not left unmapped.
+            for name in ("baseline visits", "week12 visits"):
+                hints[name] = ("every label maps but visits is low too, so rows were dropped: "
+                               "drop_duplicates(subset=['patient_id', 'visit'], keep='last') keeps one reading of each "
+                               "rechecked pair where keep=False drops both, and dropna() on visits_clean drops every "
+                               "visit with a missing value")
+        return score_metrics(cells, labels, right, VISIT_SUMMARY.get, hints.get, "Task 3.2")
     return check
 
 
@@ -1292,10 +1322,12 @@ def analysis_rows(root: Path) -> Outcome:
     ignore: Callable[[dict[str, str]], bool] = lambda row: False  # noqa: E731
     if visit_rows_differ(root):
         # A recheck or exact repeat kept in visits_clean is charged there; its pair may repeat here. A label
-        # left unmapped is charged there too: its row has no visit here, and its pair is not expected.
+        # left unmapped is charged there too: its row has no visit here, and its pair is not expected when the
+        # extract holds that patient's row with an unmapped label.
         repeated = {normal_key(pair) for pair in REPEATED_PAIRS}
         grouped = {key: rows[:1] if key in repeated else rows for key, rows in grouped.items()}
-        expected = [key for key in SAMPLE_VISITS if key not in RELABELED_PAIRS]
+        unmapped = {key[0] for key, rows in grouped.items() for row in rows if label(row["visit"]) not in VISIT_MAP}
+        expected = [key for key in SAMPLE_VISITS if key not in RELABELED_PAIRS or label(key[0]) not in unmapped]
         relabeled = {normal_key(pair) for pair in RELABELED_PAIRS}
         ignore = lambda row: label(row["visit"]) not in VISIT_MAP or sample_key(row) in relabeled  # noqa: E731
     if own_metrics(root, "patients_summary.csv", ("patients",)).get("patients", PATIENT_SUMMARY["patients"]) != \
@@ -1303,20 +1335,18 @@ def analysis_rows(root: Path) -> Outcome:
         # Exact registry repeats kept are charged once in patients_summary.csv; their visits may repeat here.
         repeated = {label(pid) for pid in REPEATED_PATIENTS}
         grouped = {key: rows[:1] if key[0] in repeated else rows for key, rows in grouped.items()}
-    options = [expected]
-    if visit_rows_differ(root):
-        # Rechecked pairs dropped from visits_clean (keep=False) are charged there; they may be missing here.
-        options.append([key for key in expected if key not in REPEATED_PAIRS])
-    return best_rows(grouped, options, {
+    # Visits dropped from visits_clean are charged in visits_summary.csv: rows, so up to that many may be missing.
+    return best_rows(grouped, [expected], {
         "missing": "keep every visit of the SAMPLE_IDS patients: an inner or right merge drops the visits with no "
                    "match, so merge onto visits_clean with how='left', then filter with "
-                   "analysis['patient_id'].isin(SAMPLE_IDS); if visits_clean itself lacks rechecked visits, "
-                   "drop_duplicates(keep='last') keeps one reading of each where keep=False drops them all",
+                   "analysis['patient_id'].isin(SAMPLE_IDS); rows dropped from visits_clean itself are missing "
+                   "too: drop_duplicates(keep='last') keeps one reading of each recheck where keep=False drops "
+                   "both, and dropna() drops every visit with a missing value",
         "repeated": "a lookup table still repeats a key, such as an exact repeat left in patients_clean or a "
                     "site_code listed twice in sites.csv; keep only current sites and pass validate= to each merge",
         "unexpected": "every row should be a visit of a SAMPLE_IDS patient from visits_clean; filter with "
                       "analysis['patient_id'].isin(SAMPLE_IDS) and merge onto visits_clean with how='left'",
-    }, VISIT_KEYS, ignore=ignore)
+    }, VISIT_KEYS, ignore=ignore, excused=visit_shortfall(root))
 
 
 def score_sample(grouped: dict[Key, list[dict[str, str]]], column: str, keys: Sequence[Key],
@@ -1429,14 +1459,12 @@ def own_rows_differ_gender(root: Path) -> bool:
 
 def sbp_wide_rows(root: Path) -> Outcome:
     _, grouped = read_sample(root, "sbp_wide_sample.csv", ("patient_id",))
-    options = [[(pid,) for pid in SAMPLE_WIDE]]
-    if visit_rows_differ(root):
-        # A patient whose every visit was a dropped recheck pair is charged in visits_summary.csv.
-        options.append([(pid,) for pid in SAMPLE_WIDE
-                        if any(key[0] == pid and key not in REPEATED_PAIRS for key in SAMPLE_VISITS)])
-    return best_rows(grouped, options,
+    # A patient whose every visit was dropped from visits_clean is charged in visits_summary.csv: rows, so up to
+    # that many visits' patients may be missing.
+    return best_rows(grouped, [[(pid,) for pid in SAMPLE_WIDE]],
                      "pivot visits_clean with index='patient_id', so each patient with a visit gets one row, then "
-                     "keep the rows whose patient_id is in SAMPLE_IDS", ("patient_id",))
+                     "keep the rows whose patient_id is in SAMPLE_IDS; a patient whose visits were all dropped "
+                     "from visits_clean has no row", ("patient_id",), excused=visit_shortfall(root))
 
 
 def sbp_wide_visit(visit: str) -> Callable[[Path], Outcome]:
