@@ -21,9 +21,29 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 
 ![xkcd 3172: Fifteen Years. Every row of a health record is part of someone's story, which is why a result has to be one you can defend.](media/fifteen_years_2x.png)
 
-This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
+# Overview
+
+## What This Lecture Covers
+
+- **Capstone checklist**: the stages from one question to a checkable result, and the evidence to keep at each.
+- **Question and candidate claim**: how unit, outcome, and time frame make a question answerable.
+- **Grain, keys, and complete panels**: row meaning, UTC time keys, and true zeros versus missing readings.
+- **Prediction time, baselines, and one honest test**: leakage, a simple baseline, and a chronological train, validation, and test split.
+- **The worked example and transfer**: NYC taxi pickups carried through four notebooks, and how each decision changes for sensor data.
+
+### Readings
+
+McKinney, _Python for Data Analysis_ (3rd ed.):
 
 - Chapter 13 (data analysis examples: five public datasets carried from loading through cleaning, reshaping, aggregation, and plots)
+
+## What You Will Be Able to Do
+
+- Turn a vague goal such as "analyze ED visits" into a question with a unit, an outcome, a time frame, and a claim the data could contradict.
+- Verify a data release against its JSON manifest with SHA-256 hashes and row counts before using it.
+- Build a complete hourly panel with a cross merge and a validated left merge, filling true zeros and flagging missing readings with `source_observed`.
+- Create past-only features with `groupby().shift()` and split rows chronologically on a local-midnight boundary compared in UTC.
+- Compare a model pipeline with a same-hour-last-week baseline on validation, then report MAE and RMSE from one frozen test run.
 
 # A flexible capstone checklist
 

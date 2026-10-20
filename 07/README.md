@@ -21,7 +21,17 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 
 ![xkcd 1945: Scientific Paper Graph Quality. Chart quality in scientific papers dipped during the PowerPoint/MSPaint era; the tools in this lecture keep you on the rising end of the curve.](media/xkcd_1945.png)
 
-This lecture covers:
+# Overview
+
+## What This Lecture Covers
+
+- **Visualization contract**: what a chart must let its reader compare, written before any plotting code.
+- **matplotlib**: Figures, Axes, and the methods that draw, label, style, annotate, and save a chart.
+- **pandas and seaborn**: quick `.plot()` exploration, statistical plots from long data, and density plots.
+- **Tufte's principles and accessibility**: data-ink, chartjunk, the lie factor, small multiples, color palettes, and redundant cues.
+- **Altair**: declarative charts built from data, a mark, and typed encodings, saved with a JSON record.
+
+### Readings
 
 - McKinney, _Python for Data Analysis_ (3rd ed.):
     - 6.1 (JSON data)
@@ -33,6 +43,14 @@ This lecture covers:
     - Chapter 4 (data-ink)
     - Chapter 5 (chartjunk)
     - Chapter 8 (small multiples)
+
+## What You Will Be Able to Do
+
+- Write a visualization contract for a clinic blood pressure chart, then draw it in matplotlib with units, a legend, and an annotation, and save it as a PNG.
+- Explore a health table with pandas `.plot()`, a seaborn scatter or line plot, and a density plot of its readings.
+- Critique a misleading clinic bar chart with Tufte's checks, including its lie factor, and redraw it with a zero baseline and values on the bars.
+- Make a chart readable without color by adding markers, line styles, hatching, and direct labels.
+- Build an Altair chart and save its Vega-Lite specification plus a JSON record of its contract and text alternative.
 
 # Start with a visualization contract
 

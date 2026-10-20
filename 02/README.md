@@ -13,7 +13,16 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 
 [Live Demo Guide](demo/DEMO_GUIDE.md)
 
-This lecture covers:
+# Overview
+
+## What This Lecture Covers
+
+- **VS Code Basics**: the Command Palette, Quick Open, command-line editing shortcuts, and settings.
+- **Git Version Control**: commits, branches, merges, merge conflicts, GitHub, and `.gitignore`.
+- **Python Fundamentals**: f-strings, keyboard input, lists, tuples, dictionaries, sets, functions, and imports.
+- **Files and Reusable Scripts**: string methods, reading and writing files, exceptions, assertions, `__main__`, and a Markdown README.
+
+### Readings
 
 - McKinney, _Python for Data Analysis_ (3rd ed.):
     - 2.3 (strings and modules)
@@ -24,6 +33,14 @@ This lecture covers:
     - Chapter 8 (editing command lines)
 - MIT, _The Missing Semester_:
     - Version Control (Git), through branches, merging, and merge conflicts
+
+## What You Will Be Able to Do
+
+- Commit work in VS Code, try a change on a branch, merge it, and resolve a merge conflict.
+- Keep a raw patient export and `__pycache__/` out of Git with a `.gitignore`, then publish the repository to GitHub.
+- Store encounters as a list of dictionaries and write functions in your own module that pull out systolic readings and average them.
+- Read a clinic vitals CSV, skip blank or unparseable rows with `try`/`except`, and save a formatted report with f-strings.
+- Check the saved report with `assert`, guard the script with `if __name__ == "__main__":`, and document how to run it in a README.
 
 # VS Code Basics
 

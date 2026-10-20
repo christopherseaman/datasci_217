@@ -21,12 +21,31 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 
 ![xkcd 1838: Machine Learning. Stirring the pile of linear algebra until the answers look right is not the same as checking them.](media/xkcd_1838.png)
 
-This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
+# Overview
+
+## What This Lecture Covers
+
+- **Statistical modeling with `statsmodels`**: OLS formulas, coefficients, confidence intervals, p-values, residual plots, and new-patient intervals.
+- **Prediction setup**: features, targets, leakage, cyclic time features, and training, validation, and test rows split on target time.
+- **scikit-learn**: the estimator pattern, baselines, pipelines, metrics, time-ordered cross-validation, permutation importance, and the one final test.
+- **Trees, boosting, and neural networks**: random forests, XGBoost with early stopping, and a small Keras classifier.
+
+### Readings
+
+McKinney, _Python for Data Analysis_ (3rd ed.):
 
 - 12.1 (interfacing between pandas and model code)
 - 12.2 (model descriptions with Patsy formulas: transforms, interactions, and categorical data with `C()`)
 - 12.3 (estimating linear models with statsmodels)
 - 12.4 (introduction to scikit-learn, including cross-validation)
+
+## What You Will Be Able to Do
+
+- Fit `sbp ~ age + bmi` with `statsmodels`, read each coefficient with its 95% confidence interval, and give a new patient a prediction interval for SBP.
+- Drop features that arrive after prediction time and split visits into training, validation, and test rows by target time.
+- Compare a baseline, a linear pipeline, and Ridge or Lasso on validation MAE, then freeze the winner and score the test set once.
+- Check a readmission classifier's confusion matrix and recall, since accuracy alone hides missed readmissions.
+- Fit a random forest, XGBoost, and a Keras network on biopsy measurements and compare them on the same validation rows.
 
 # What Is a Model?
 

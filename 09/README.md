@@ -21,7 +21,19 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 
 ![xkcd 2048: Curve-Fitting. One scatter plot, twelve fitted curves, twelve different messages; not every pattern in a time series is meaningful.](media/xkcd_2048.png)
 
-This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
+# Overview
+
+## What This Lecture Covers
+
+- **Time series data and date types**: timestamps, periods, panels, Python `datetime`, and a pandas DatetimeIndex.
+- **Date ranges, selection, and time zones**: frequency grids, calendar slicing, UTC conversion, and clock-change nights.
+- **Resampling**: daily or hourly summaries, bin edges, upsampling, per-patient grids, and gap runs.
+- **Rolling windows and past-only features**: count and time windows, EWM, grouped lags, and availability at prediction time.
+- **Time series visualization**: raw readings with a smoother, gaps, and time zones on the plot.
+
+### Readings
+
+McKinney, _Python for Data Analysis_ (3rd ed.):
 
 - 9.2 (line and bar plots)
 - 11.1 (date and time data types and tools)
@@ -30,6 +42,14 @@ This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
 - 11.4 (time zone handling)
 - 11.6 (resampling and frequency conversion)
 - 11.7 (moving window functions)
+
+## What You Will Be Able to Do
+
+- Parse a text timestamp column from a monitor export into a DatetimeIndex and select one day or one week of readings.
+- Convert two clinics' local visit times to UTC and flag repeated or skipped times on clock-change nights.
+- Resample one patient's heart rate into daily means, maxima, and reading counts, then build an hourly grid per patient and count its gap runs.
+- Build previous-reading and past-only rolling-mean features per patient with `groupby()`, `shift()`, and `rolling(..., closed='left')`, keeping later rows out.
+- Smooth daily readings with a 7-day rolling mean and plot it over the raw values in matplotlib.
 
 # Understanding Time Series Data
 

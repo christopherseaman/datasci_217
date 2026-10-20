@@ -19,9 +19,26 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/setup_demo.sh | sh
 ```
 
-This lecture covers McKinney, _Python for Data Analysis_ (3rd ed.):
+# Overview
+
+## What This Lecture Covers
+
+- **Database-style joins**: keys, cardinality, `pd.merge()`, the join types, overlapping columns, multi-column keys, and cross joins.
+- **Reshaping**: wide and long formats with `melt()`, `pivot()`, and `pivot_table()`, two-level row labels, and `stack()` and `unstack()`.
+- **Concatenation**: stacking rows and aligning columns with `concat()`, and patching gaps with `combine_first()`.
+
+### Readings
+
+McKinney, _Python for Data Analysis_ (3rd ed.):
 
 - Chapter 8 (data wrangling: join, combine, and reshape)
+
+## What You Will Be Able to Do
+
+- Join a patient table to lab results with `pd.merge()`, and see which patients drop out under each join type with `indicator=True`.
+- Catch a merge that duplicates rows by checking cardinality with `validate=`.
+- Reshape wide blood-pressure visits to long with `melt()` and back with `pivot()`, and find the repeated pair that stops a pivot.
+- Stack monthly admission extracts with `concat()`, record which file each row came from, and fill gaps from a second source with `combine_first()`.
 
 # Database-Style DataFrame Joins
 

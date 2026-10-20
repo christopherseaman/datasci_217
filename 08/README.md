@@ -21,7 +21,17 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 
 _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is what a groupby does with scattered rows._
 
-This lecture covers:
+# Overview
+
+## What This Lecture Covers
+
+- **Split-apply-combine and GroupBy**: `groupby()` aggregation by one or two keys, including named aggregation.
+- **Pivot tables and cross-tabulations**: `pivot_table()` and `pd.crosstab()`, with totals and fills for absent cells.
+- **Group coverage and result shapes**: missing keys, unused categories, and `transform`, `filter`, and `apply`.
+- **Performance optimization**: measuring speed with `%timeit` and memory with `memory_usage()`.
+- **Remote computing with SSH**: `ssh`, `scp`, key pairs, and `tmux` sessions for long jobs.
+
+### Readings
 
 - McKinney, _Python for Data Analysis_ (3rd ed.):
     - 7.5 (computations with categoricals)
@@ -30,6 +40,14 @@ This lecture covers:
     - Chapter 16 (secure communication with remote hosts: `ssh` and `scp`)
 - MIT, _The Missing Semester of Your CS Education_:
     - "Command-line Environment" (terminal multiplexers and remote machines)
+
+## What You Will Be Able to Do
+
+- Summarize a visit log into one row per clinic with mean wait, visit count, and other named aggregations.
+- Build a pivot table or crosstab of visits by department and clinic, with totals and zeros where no visits occurred.
+- Keep visits with no clinic recorded and clinics with no visits in a report using `dropna=False`, `pd.Categorical`, and `observed=False`.
+- Compare each visit's wait with its own department's mean using `transform`, and keep only departments that pass a size or mean rule with `filter`.
+- Copy data to a server with `scp`, run an analysis inside `tmux`, and reattach after the connection drops.
 
 # The Split-Apply-Combine Paradigm
 
