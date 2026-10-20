@@ -60,7 +60,7 @@ Each ordinary class has 90 minutes: about 60 of lecture and 30 of core demo walk
 - `NN/assignment/` and `NN/assignment_checks/` (06: `06/mid-term/` and `06/mid-term_checks/`); `05/mid-term/` and `06/assignment/` are inactive. `assignments.json` names each handout folder. Homework checkers are byte-identical in both locations; change both together and judge by emitted JSON.
 - Older forks may run older workflows; do not assume every fork fetches current checks.
 - TA grading: `uv run scripts/grade_submissions.py NN`, run from the ignored `grading/` folder. Live fork collection has not been exercised.
-- Use ignored `scratch/` or `tmp/` for trials. `scratch/py313-demo-env` is shared verification infrastructure; treat it as read-only. `work/tufte/` holds local reference PDFs, not for redistribution.
+- Use ignored `scratch/` or `tmp/` for trials. `scratch/` was emptied on October 20; build each verification env fresh there with uv. `work/tufte/` holds local reference PDFs, not for redistribution.
 
 ## Still unverified
 

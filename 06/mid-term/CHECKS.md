@@ -13,7 +13,7 @@ The midterm totals 100 points: 75 points graded from your committed files after 
 | `output/gender_categories.csv` | 2 for the counts of `F`, `M`, `X`, and missing, and 2 for their category codes (each code its own whole number from 0, missing `-1`), each in proportion | 4 |
 | `output/visits_summary.csv` | 4 for the three visit counts; 3 for the `visit_date` metrics and 3 for the `sbp_mmhg` metrics; 2 for the `weight_kg` metrics and 2 for the `source_file` counts; each in proportion (rounded down) | 14 |
 | `output/decision_log.csv` | 2 for one row for each of the nine issues, matched by `table` and `issue`, in proportion (rounded down); 1 for a `decision` and 1 for a `reason` on every row | 4 |
-| `output/a1c_summary.csv` | 2 for each visit's `results` and 3 for each visit's `a1c_pct_mean`, in proportion | 5 |
+| `output/a1c_summary.csv` | 2 for the two visits' `results` and 3 for their `a1c_pct_mean`, in proportion | 5 |
 | `output/merge_audit.csv` | 1 for each check's count | 7 |
 | `output/sbp_wide_sample.csv` | 2 for one row per sample patient with a visit; 1 each for `baseline` and `week12`; 2 for `sbp_change`, in proportion to the right patients | 6 |
 | `output/analysis_sample.csv` | 3 for one row per visit of a sample patient; 2 each for `site_name`, `a1c_pct`, and `gender` with `birth_year`, in proportion to the right visits | 9 |

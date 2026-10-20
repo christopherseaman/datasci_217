@@ -161,7 +161,7 @@ def metrics(names: list[str], values: list) -> str:
 def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, site_rule="full",
           rename_wt=True, visit_map=VISIT_MAP, recheck_keep="last", exact_dates=True, sbp_range=True,
           melt_map=None, melt_dropna=True, a1c_how="left", site_table="current", reverse_change=False,
-          audit_rules=True, references: dict | None = None) -> dict[str, str]:
+          audit_rules=True, references: dict | None = None, visit_lower=True, gender_strip=True) -> dict[str, str]:
     """Answer the midterm with lecture methods, with any one mistake carried through; return each file's text.
 
     With `audit_rules`, the issue audit counts with the site code, date, and visit label rules the cleaning
@@ -191,7 +191,8 @@ def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, si
     exact = exact_dates or not audit_rules
     parsed = pd.to_datetime(dates.where(dates.str.fullmatch(EXACT_DATE)) if exact else dates, format="%Y-%m-%d",
                             errors="coerce")
-    labels = visits_raw["visit"].str.strip().str.lower().map(visit_map if audit_rules else VISIT_MAP)
+    labels = visits_raw["visit"].str.strip()
+    labels = (labels.str.lower() if visit_lower else labels).map(visit_map if audit_rules else VISIT_MAP)
     audit = {
         "patients: gender values that are not a code":
             (gender.ne("") & ~patients["gender"].isin(["F", "M", "X"])).sum(),
@@ -213,7 +214,7 @@ def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, si
     pc = patients.copy(deep=True)
     if not keep_patient_repeats:
         pc = pc.drop_duplicates(keep="first")
-    stripped = pc["gender"].str.strip()
+    stripped = pc["gender"].str.strip() if gender_strip else pc["gender"]
     pc["gender"] = (stripped.str.lower().map(gender_map) if gender_map is not None
                     else stripped.replace("", pd.NA)).astype("category")
     pc["birth_year"] = pd.to_numeric(pc["birth_year"] if keep_9999 else pc["birth_year"].replace("9999", pd.NA)
@@ -230,7 +231,8 @@ def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, si
     files["gender_categories.csv"] = gender_counts.to_csv(index=False)
 
     v = visits_raw.copy(deep=True).drop_duplicates(keep="first")
-    v["visit"] = v["visit"].str.strip().str.lower().map(visit_map)
+    v["visit"] = v["visit"].str.strip()
+    v["visit"] = (v["visit"].str.lower() if visit_lower else v["visit"]).map(visit_map)
     sbp = pd.to_numeric(v["sbp_mmhg"], errors="coerce")
     v["sbp_mmhg"] = (sbp.where(sbp.between(70, 250)) if sbp_range else sbp).astype("Int64")
     v["weight_kg"] = pd.to_numeric(v["weight_kg"], errors="coerce").astype("float64")
@@ -640,6 +642,13 @@ def run() -> None:
                                                 ("repeated patient_id and visit pairs", "map the visit labels")),
         "BL left out of the visit dictionary in the cleaning only": (
             solve(visit_map=no_bl, audit_rules=False), {"visits_summary.csv: rows": 3}, ("dictionary",)),
+        "visit labels stripped but never lowercased, in the audit and the cleaning": (
+            solve(visit_lower=False), {"issue_audit.csv": 1},
+            ("repeated patient_id and visit pairs", "map the visit labels")),
+        "every recheck reading dropped with keep=False": (
+            solve(recheck_keep=False), {"visits_summary.csv: rows": 4}, ("keep='last'",)),
+        "gender lowercased but never stripped": (
+            solve(gender_strip=False), {"gender_categories.csv: counts": 2}, (".str.strip()",)),
         "the earlier reading of each recheck kept": (
             solve(recheck_keep="first"), {"sbp_wide_sample.csv: baseline": 1},
             ("keep='last'",)),

@@ -312,7 +312,7 @@ North's 9:00 `NaN` means no report arrived; its 10:00 `0.0` is a real report of 
 | Missing keys | Missing (`NA`) keys match each other: two missing-key rows on each side make four false matches | `df['key'].notna().all()` on both tables before merging; this does not reject empty strings or whitespace, which need separate cleaning |
 | Match audit | Show `left_only`, `right_only`, `both` | `indicator=True` |
 
-### Code Snippet: Catch a Broken Merge Contract
+### Code Snippet: Catch a broken merge contract
 
 Each visit should get exactly one clinic, but the lookup lists K2 twice:
 
@@ -329,7 +329,7 @@ V4        K9
 pd.merge(visits, clinics, on='clinic_id', how='left', validate='many_to_one')
 ```
 
-- Expected error: `MergeError: Merge keys are not unique in right dataset; not a many-to-one merge`.
+- Expected error: the message starts `MergeError: Merge keys are not unique in right dataset; not a many-to-one merge`, then lists the repeated key under `Duplicates in right:` (here `K2`).
 - Without `validate=`, four visits become six rows: V2 and V3 each match twice.
 - Fix: list the repeated keys, apply a documented lookup rule (here, keep `record_status == 'current'`), and merge again with `validate=` and `indicator=True`: four rows, with V4's K9 `left_only`.
 
@@ -456,9 +456,19 @@ print(back.equals(wide))   # True: the round trip rebuilt the wide table exactly
 
 If an `index`/`columns` pair identifies more than one value, `pivot()` cannot choose a cell value and stops with `ValueError: Index contains duplicate entries, cannot reshape`. List the repeated pairs with `duplicated(subset=[...], keep=False)` (Lecture 05), then decide whether they are data errors or real repeated observations.
 
-### Code Snippet: Find the Pair that Stops a Pivot
+### Code Snippet: Find the pair that stops a pivot
 
-`rechecked` holds one baseline reading per patient and two follow-up readings for P002, so `rechecked.pivot(index='patient_id', columns='visit', values='sbp')` raises the repeated-pair error:
+`rechecked` holds one baseline reading per patient and two follow-up readings for P002:
+
+|  | patient_id | visit | sbp | reading_time |
+| --- | --- | --- | --- | --- |
+| 0 | P001 | baseline | 150 | 09:00 |
+| 1 | P002 | baseline | 140 | 09:30 |
+| 2 | P003 | baseline | 145 | 09:45 |
+| 3 | P002 | followup | 148 | 10:15 |
+| 4 | P002 | followup | 136 | 10:22 |
+
+`rechecked.pivot(index='patient_id', columns='visit', values='sbp')` raises the repeated-pair error. List the rows that share a pair:
 
 ```python
 display(rechecked[rechecked.duplicated(subset=['patient_id', 'visit'], keep=False)])
@@ -474,9 +484,10 @@ display(rechecked[rechecked.duplicated(subset=['patient_id', 'visit'], keep=Fals
 
 ### Code Snippet: Summarize repeated readings with `pivot_table()`
 
-For just the two P002 rechecks shown above, stored in `repeat_readings`, the mean is `(148 + 136) / 2 = 142` mmHg.
+For just the two P002 rechecks shown above, the mean is `(148 + 136) / 2 = 142` mmHg.
 
 ```python
+repeat_readings = rechecked.loc[[3, 4]]
 display(repeat_readings.pivot_table(index='patient_id', columns='visit',
                                    values='sbp', aggfunc='mean'))
 ```

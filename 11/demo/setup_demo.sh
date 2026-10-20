@@ -9,7 +9,11 @@ set -eu
 
 base_url="https://raw.githubusercontent.com/christopherseaman/datasci_217/main/11/demo"
 
-# mkdir without -p stops the script here if ~/11-demo already exists, so earlier work is never overwritten.
+# Stop if ~/11-demo already exists, so earlier work is never overwritten.
+if [ -e ~/11-demo ]; then
+  echo "~/11-demo already exists. Rename or remove it, then run this script again."
+  exit 1
+fi
 mkdir ~/11-demo
 cd ~/11-demo
 

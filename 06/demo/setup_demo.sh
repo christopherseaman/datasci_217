@@ -9,7 +9,11 @@ set -eu
 # Where the files come from: the course repository's 06/demo folder on GitHub.
 base_url="https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo"
 
-# mkdir without -p stops the script here if ~/06-demo already exists, so earlier work is never overwritten.
+# Stop if ~/06-demo already exists, so earlier work is never overwritten.
+if [ -e ~/06-demo ]; then
+  echo "~/06-demo already exists. Rename or remove it, then run this script again."
+  exit 1
+fi
 mkdir ~/06-demo
 cd ~/06-demo
 

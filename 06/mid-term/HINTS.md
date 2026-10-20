@@ -13,7 +13,7 @@
 
 ## Task 3: Clean
 
-- After `map()`, `isna().sum()` should equal the empty and `unknown` entries, not more. A larger gap means a spelling is missing from the dictionary, or the values were not stripped and lowercased first (Lecture 05).
+- After `map()`, `patients_clean["gender"].isna().sum()` should equal the empty and `unknown` entries left after removing exact repeats, not more; count them in the deduplicated table, since `raw["patients"]` still holds the repeats. A larger gap means a spelling is missing from the dictionary, or the values were not stripped and lowercased first (Lecture 05).
 - `patients_clean["site_code"].unique()` should hold only codes like `N01`, never `n-01`.
 - Repeated visit pairs: map the `visit` labels first, so `wk12` and `week12` identify the same visit. Remove exact repeats before looking for readings taken at different times.
 - After cleaning, `visits_clean.duplicated(subset=["patient_id", "visit"]).sum()` should be 0.

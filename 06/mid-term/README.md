@@ -270,8 +270,8 @@ visits,<count>
 baseline visits,<count>
 week12 visits,<count>
 visit_date missing,<count>
-visit_date min,<date>
-visit_date max,<date>
+visit_date min,<date (a time after it is fine)>
+visit_date max,<date (a time after it is fine)>
 sbp_mmhg missing,<count>
 sbp_mmhg min,<mmHg>
 sbp_mmhg max,<mmHg>

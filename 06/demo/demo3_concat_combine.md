@@ -54,7 +54,7 @@ for filename in ["demo3_jan_admissions.parquet", "demo3_feb_admissions.parquet",
     path = data_dir / filename
     if not path.exists():
         urlretrieve(f"{REPO_RAW}/{filename}", path)
-print(len(sorted(data_dir.glob("demo3_*.parquet"))))
+print(len(list(data_dir.glob("demo3_*.parquet"))))
 ```
 
 **Expect:** `12`, the number of `demo3_*.parquet` files in `data/`.

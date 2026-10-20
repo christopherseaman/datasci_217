@@ -229,11 +229,12 @@ for _row in _patients:
 
 
 
-def _latest_by(visit_map: dict[str, str]) -> dict[tuple[str, str | None], dict[str, str]]:
+def _latest_by(visit_map: dict[str, str], normal: Callable[[str], str] = lambda text: text.strip().lower()
+               ) -> dict[tuple[str, str | None], dict[str, str]]:
     """The exact repeats dropped, each label mapped (unmapped ones missing), and each pair's last row by visit_time."""
     latest: dict[tuple[str, str | None], dict[str, str]] = {}
     for row in sorted(_first_copies(_raw_visits), key=lambda row: row["visit_time"]):
-        latest[(row["patient_id"], visit_map.get(row["visit"].strip().lower()))] = row
+        latest[(row["patient_id"], visit_map.get(normal(row["visit"])))] = row
     return latest
 
 
@@ -347,7 +348,9 @@ _SITE_STEPS = (str.upper, str.strip, lambda text: text.replace("-", ""), lambda 
 _SITE_RULES = [_site_rule([step for bit, step in enumerate(_SITE_STEPS) if mask >> bit & 1]) for mask in range(16)]
 # Every way of leaving spellings out of the visit dictionary.
 _VISIT_MAPS = [{key: value for key, value in VISIT_MAP.items() if key not in left_out}
-               for size in (1, 2, 3) for left_out in combinations(("bl", "week 12", "wk12"), size)]
+               for size in (0, 1, 2, 3) for left_out in combinations(("bl", "week 12", "wk12"), size)]
+# Every way of skipping .str.strip() or .str.lower() before the map.
+_VISIT_NORMALS = (lambda text: text.strip().lower(), str.strip, str.lower, lambda text: text)
 _audit = dict(ISSUE_AUDIT)
 OWN_RULES: dict[tuple[str, str], tuple[str, list[tuple[int, list[dict[str, object]]]]]] = {
     ("patients_summary.csv", "site_code"): ("patients: site codes needing normalization", [
@@ -356,9 +359,9 @@ OWN_RULES: dict[tuple[str, str], tuple[str, list[tuple[int, list[dict[str, objec
           for rows in (_first_copies(_patients), _patients)])
         for rule in _SITE_RULES]),
     ("visits_summary.csv", "rows"): ("visits: rows in repeated patient_id and visit pairs", [
-        (repeats([(row["patient_id"], visit_map.get(row["visit"].strip().lower())) for row in _raw_visits]),
-         [_visit_summary({key: _clean_visit(row) for key, row in _latest_by(visit_map).items()})])
-        for visit_map in _VISIT_MAPS]),
+        (repeats([(row["patient_id"], visit_map.get(normal(row["visit"]))) for row in _raw_visits]),
+         [_visit_summary({key: _clean_visit(row) for key, row in _latest_by(visit_map, normal).items()})])
+        for visit_map in _VISIT_MAPS for normal in _VISIT_NORMALS]),
     ("visits_summary.csv", "visit_date"): ("visits: date parse failures", [
         (sum(row["visit_date"].strip() != "" and _loose_day(row["visit_date"]) is None for row in _raw_visits),
          [_visit_summary({key: _clean_visit(row, _loose_day) for key, row in _latest.items()})])]),
@@ -1036,8 +1039,9 @@ def check_gender_counts(root: Path) -> Outcome:
                          if code_of(row["gender"]) not in (*(label(c) for c in GENDER_CODES), None)})
         cause = (f"; rows for {', '.join(repr(other) for other in others[:4])} mean some spellings never mapped "
                  "to F, M, or X (strip and lowercase, then Series.map with a dictionary)" if others else
-                 "; a spelling left out of the dictionary becomes missing, so list every spelling with "
-                 "value_counts() first: female ones are F, male M, nonbinary X, and empty or unknown missing")
+                 "; a spelling left out of the dictionary, or one with spaces left on because .str.strip() was "
+                 "skipped, becomes missing, so strip and lowercase, then list every spelling with value_counts(): "
+                 "female ones are F, male M, nonbinary X, and empty or unknown missing")
         outcome.problems.append(
             f"gender {code or 'missing'} should count {expected}, found "
             f"{'no row' if not found else 'blank' if count is None else f'{count:g}'} "
@@ -1299,10 +1303,15 @@ def analysis_rows(root: Path) -> Outcome:
         # Exact registry repeats kept are charged once in patients_summary.csv; their visits may repeat here.
         repeated = {label(pid) for pid in REPEATED_PATIENTS}
         grouped = {key: rows[:1] if key[0] in repeated else rows for key, rows in grouped.items()}
-    return best_rows(grouped, [expected], {
+    options = [expected]
+    if visit_rows_differ(root):
+        # Rechecked pairs dropped from visits_clean (keep=False) are charged there; they may be missing here.
+        options.append([key for key in expected if key not in REPEATED_PAIRS])
+    return best_rows(grouped, options, {
         "missing": "keep every visit of the SAMPLE_IDS patients: an inner or right merge drops the visits with no "
                    "match, so merge onto visits_clean with how='left', then filter with "
-                   "analysis['patient_id'].isin(SAMPLE_IDS)",
+                   "analysis['patient_id'].isin(SAMPLE_IDS); if visits_clean itself lacks rechecked visits, "
+                   "drop_duplicates(keep='last') keeps one reading of each where keep=False drops them all",
         "repeated": "a lookup table still repeats a key, such as an exact repeat left in patients_clean or a "
                     "site_code listed twice in sites.csv; keep only current sites and pass validate= to each merge",
         "unexpected": "every row should be a visit of a SAMPLE_IDS patient from visits_clean; filter with "
@@ -1420,7 +1429,12 @@ def own_rows_differ_gender(root: Path) -> bool:
 
 def sbp_wide_rows(root: Path) -> Outcome:
     _, grouped = read_sample(root, "sbp_wide_sample.csv", ("patient_id",))
-    return best_rows(grouped, [[(pid,) for pid in SAMPLE_WIDE]],
+    options = [[(pid,) for pid in SAMPLE_WIDE]]
+    if visit_rows_differ(root):
+        # A patient whose every visit was a dropped recheck pair is charged in visits_summary.csv.
+        options.append([(pid,) for pid in SAMPLE_WIDE
+                        if any(key[0] == pid and key not in REPEATED_PAIRS for key in SAMPLE_VISITS)])
+    return best_rows(grouped, options,
                      "pivot visits_clean with index='patient_id', so each patient with a visit gets one row, then "
                      "keep the rows whose patient_id is in SAMPLE_IDS", ("patient_id",))
 
