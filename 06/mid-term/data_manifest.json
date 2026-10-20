@@ -1,5 +1,5 @@
 {
-  "fixture_id": "a06-clinic-midterm-v6",
+  "fixture_id": "a06-clinic-midterm-v7",
   "provenance": "course-authored synthetic teaching data; no real patients",
   "generator": "generate_data.py",
   "sha256": "of each table as CSV text with \\n line endings, as to_csv(index=False) writes it",
@@ -11,10 +11,10 @@
       "sha256": "daaa4f3fc475900db905590faf6524f34143e78b73633b1794de4c6cf4b56a77"
     },
     "visits_north.csv": {
-      "sha256": "c4e866329e952f88a63d737cb7e68f752c2d1ab1a4167322ed766c649cce1473"
+      "sha256": "5f56ec107a04c430a65fdb1bad23cacf76adaf31f06c07567b70474ec2c1b288"
     },
     "visits_south.csv": {
-      "sha256": "10b506822983fe0b955711a0af3314c0ee49bbdeff8078c2c8d16e2447d42641"
+      "sha256": "c19644241228ba7ef007d1aa7386516d80af5340b633401da67e9f59f3383214"
     },
     "a1c_wide.parquet": {
       "sha256": "934dc120b78d492666b7fbc7872d5fc4d0f20ab9a678bdb7559f00536a2cfa6a"

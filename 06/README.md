@@ -353,7 +353,7 @@ display(checked[['visit_id', 'clinic_id', 'clinic_name', '_merge']])
 
 # Reshaping: Wide vs Long Format
 
-- **Reshaping**: changing the layout of a table. A lossless reshape preserves every measurement; aggregation combines measurements and cannot recover the originals.
+- **Reshaping**: changing the layout of a table. A lossless reshape preserves every measurement; **aggregation** reduces several values to one summary and cannot recover the originals.
 - **Wide**: measurements of one kind spread across columns, such as a systolic blood pressure (SBP) column per visit.
 - **Long**: one row per measurement, such as one row per patient-visit; grouping and plotting tools usually want this layout.
 
@@ -474,7 +474,7 @@ display(rechecked[rechecked.duplicated(subset=['patient_id', 'visit'], keep=Fals
 
 ### Code Snippet: Summarize repeated readings with `pivot_table()`
 
-**Aggregation** reduces several values to one summary. For just the two P002 rechecks shown above, stored in `repeat_readings`, the mean is `(148 + 136) / 2 = 142` mmHg.
+For just the two P002 rechecks shown above, stored in `repeat_readings`, the mean is `(148 + 136) / 2 = 142` mmHg.
 
 ```python
 display(repeat_readings.pivot_table(index='patient_id', columns='visit',

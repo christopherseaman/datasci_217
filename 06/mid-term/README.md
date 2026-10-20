@@ -116,7 +116,7 @@ In the notebook's Task 2.1 Markdown cell, state the intended grain (what one row
 Build `visits_raw`, one table of every raw visit row from both sites:
 
 1. Rename `wt_kg` to `weight_kg` in a copy of `raw["visits_south"]` with `rename(columns={...})`.
-2. Add a `source_file` column to each table holding its file name, `visits_north.csv` or `visits_south.csv`, before stacking.
+2. Add a `source_file` column to a copy of each table (`copy(deep=True)`) holding its file name, `visits_north.csv` or `visits_south.csv`, before stacking.
 3. Stack them with `pd.concat([...], ignore_index=True)`, north first.
 
 - Expect: the two raw visit row counts added together and 7 columns, with no column of only missing values.

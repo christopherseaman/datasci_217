@@ -27,6 +27,7 @@ The midterm totals 100 points: 75 points graded from your committed files after 
     - A `MergeError` in the Task 4.4 join or a failed Task 5.1 check leaves `analysis_sample.csv` unwritten (9 points).
 - One mistake is charged once, in the file that first shows it. A later file is also right when it follows from your own earlier ones:
     - `patients_summary.csv` and `gender_categories.csv` counts made with the exact registry repeats left in cost only `patients`.
+    - A site code, date, or visit label rule that your own `issue_audit.csv` count already shows costs only that count: the `site_code` values in `patients_summary.csv`, and the visit counts or `visit_date` values in `visits_summary.csv`, that the same rule gives are right.
     - When `visits` in `visits_summary.csv` is off by some rows, its other counts may be off by at most that many; counts made with the earlier reading of each recheck cost only `sbp_wide_sample.csv`.
     - An `a1c_pct_mean` is right for the results its row counts, so swapped labels cost only `results`.
     - The first three `merge_audit.csv` counts are judged against your own `visits` and A1c `results` when those differ from the expected ones (`both` plus `left_only` equals your visits, `both` plus `right_only` your results, or every A1c result when your summary counts none); the patient counts against your own `patients_summary.csv`.

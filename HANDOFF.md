@@ -1,6 +1,6 @@
 # Handoff
 
-Updated 2026-10-19. Read [AGENTS.md](AGENTS.md) for the authoring and verification rules. This brief holds the current state, standing decisions, and open items; Git history and `work/reviews/` hold completed work.
+Updated 2026-10-20. Read [AGENTS.md](AGENTS.md) for the authoring and verification rules. This brief holds the current state, standing decisions, and open items; Git history and `work/reviews/` hold completed work.
 
 ## Overall goal
 
@@ -10,14 +10,37 @@ Each ordinary class has 90 minutes: about 60 of lecture and 30 of core demo walk
 
 ## Repo and release state
 
-- As of October 16, `main` holds all reviewed work through [`49602ac`](https://github.com/christopherseaman/datasci_217/commit/49602ac), and all 16 mapped lecture and BONUS pages for 04 to 11 match it in Notion. Check `git status` and `git log` on arrival.
-- Handout repositories `UCSF-DataSci/ds217-26f-04` through `-11` received the October 2 release; 05 and 06 were updated on October 14. Pushing the course updates the checks that forks download from `main`, never the handouts themselves.
-- Assignment 05 is live with student forks. On October 19 its handout renamed the row-count artifact to `output/row_counts.csv` with the index `step`; forks made earlier save `output/decision_log.csv` with the index `decision`. The checks accept both until the November cleanup in [TODO.md](TODO.md).
-- Assignments 08 and 10 had no forks on October 19. Their scaffolds and README steps now name methods and arguments without paste-ready answers; republish each handout before it opens.
+- As of October 20, `main` holds all work, and all mapped lecture and BONUS pages for 01 to 11 match it in Notion. Check `git status` and `git log` on arrival.
+- Handout repositories `UCSF-DataSci/ds217-26f-04` through `-11` match their course folders as of their last publish: 05, 08, and 10 on October 19; 06 on October 20; the rest October 2 or 14. Pushing the course updates the checks that homework forks download from `main`, never the handouts themselves.
+- Assignment 05 is live with 8 forks. On October 19 its handout renamed the row-count artifact to `output/row_counts.csv` with the index `step`; earlier forks save `output/decision_log.csv` with the index `decision`. The checks accept both until the November cleanup in [TODO.md](TODO.md).
+- Assignments 06 (the midterm), 08, and 10 had no forks on October 20.
+
+## Recent work, October 19 to 20
+
+- Every lecture opens with `# Overview`: what it covers, its readings, and 3 to 5 practical skills taught in the main lecture or demos. AGENTS.md defines the shape. Lecture 01's Quick References now sit inside the Overview as a `##` section.
+- Assignments 08 and 10: README steps and notebook TODOs name methods and arguments without paste-ready answer expressions. Grading is unchanged.
+- Lecture 06 and the midterm had an adversarial review (six lenses, each claim checked by a skeptic). 7 of 11 claims were confirmed and fixed:
+    - The grader charged one cleaning-rule mistake twice (in `issue_audit.csv` and a summary). `06/mid-term_checks/grading.py` now accepts summary values that follow from the student's own audit counts, so each such mistake costs 1 point; the self-test has 33 single-mistake cases.
+    - `generate_data.py` moved all weekend week-12 follow-ups to Monday; follow-ups now count clinic days, about 5,500 per weekday. Fixture v7; data hashes and one count (date parse failures 169 to 170) changed.
+    - HINTS.md credits Lecture 05 for `duplicated(keep=False)` and `isna().all()`, and names `one_to_one` for the A1c join; Task 2.2 copies both visit tables; Lecture 06 defines aggregation in bold at first use.
+    - Refuted claims: integer values in the concat diagram, the `%%bash` file count, comic spacing, and follow-up noise size.
+- The repo was cleaned of caches and build outputs (`__pycache__`, `.checks/`, demo `output/`, `_site/`, `dist/`).
+
+## Coming up
+
+- A further review of Lecture 06, its three demos, and the midterm before the midterm opens. The October 20 demo reviewer reported no defects but recorded no execution evidence, so rerun all three notebooks fresh. Untested: a student-style completion of the midterm from the handout alone after the v7 data change, the HINTS wording against the new grader, and the 25 human-review points.
+- November: remove the Assignment 05 legacy file name (TODO.md).
+- Republish each handout only after a fresh reconcile, and only when the instructor asks.
+
+## Working agreements
+
+- Quick, well-specified edits go to a light model with exact instructions, followed by one check (lint or the single relevant test). Add review or completion passes only when the instructor asks.
+- Commit, push, and publish changed lecture pages together; never leave Notion behind `main`.
+- Subagent prompts must quote the instructor's request: agents see only their prompt, and they refused once when they lacked it.
 
 ## Decisions to preserve
 
-- Keep non-repeated Git guidance, including website upload, and some duck typing in 01; keep Markdown as required communication material and non-repeated Git in 02. Students struggle with Git. Lecture 02's debugger stays an optional BONUS exercise; 02 keeps its Command-Line Catalog. VS Code commit and sync screenshots stay in 01 and 02, with Microsoft's merge-conflict link. Lecture 01 keeps its Quick references opening.
+- Keep non-repeated Git guidance, including website upload, and some duck typing in 01; keep Markdown as required communication material and non-repeated Git in 02. Students struggle with Git. Lecture 02's debugger stays an optional BONUS exercise; 02 keeps its Command-Line Catalog. VS Code commit and sync screenshots stay in 01 and 02, with Microsoft's merge-conflict link. Lecture 01 keeps its Quick references.
 - In 03, mention venv/Conda in main and keep their workflows in BONUS. 2-D boolean indexing (steps, mask diagram, card, IndexError), the instructor's Examples of Wildcards table, and 2-D sorting (`np.sort(axis=)`, `argsort`, ordering rows) stay in main; 3-D and deeper selection stays in BONUS. The instructor accepted 03's length; do not reopen it for exceeding a soft size target.
 - Keep Parquet in 04 and all cleaning functionality in 05. The 04 demo project pins pyarrow for real Parquet round trips.
 - Keep Lecture 06's join-type comparison and cross-join audit; building both shapes is mentioned in the lecture and shown in Demo 2. Keep the accepted 06 compaction and only genuine repetition cleanup in 07.

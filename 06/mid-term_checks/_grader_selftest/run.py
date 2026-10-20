@@ -161,8 +161,12 @@ def metrics(names: list[str], values: list) -> str:
 def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, site_rule="full",
           rename_wt=True, visit_map=VISIT_MAP, recheck_keep="last", exact_dates=True, sbp_range=True,
           melt_map=None, melt_dropna=True, a1c_how="left", site_table="current", reverse_change=False,
-          references: dict | None = None) -> dict[str, str]:
-    """Answer the midterm with lecture methods, with any one mistake carried through; return each file's text."""
+          audit_rules=True, references: dict | None = None) -> dict[str, str]:
+    """Answer the midterm with lecture methods, with any one mistake carried through; return each file's text.
+
+    With `audit_rules`, the issue audit counts with the site code, date, and visit label rules the cleaning
+    uses, as Task 2.3 asks; without it, the audit uses the correct rules whatever the cleaning does.
+    """
     raw = {name: pd.read_parquet(DATA / file) if file.endswith(".parquet")
            else pd.read_csv(DATA / file, dtype="string", keep_default_na=False) for name, file in FILES.items()}
     files = {"file_inventory.txt": subprocess.run("wc -l data/*.csv", shell=True, cwd=WORK, check=True,
@@ -180,10 +184,14 @@ def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, si
     patients, sites = raw["patients"], raw["sites"]
     gender = patients["gender"].str.strip()
     site_codes = patients["site_code"].str.upper().str.replace("-", "").str.replace(" ", "")
+    if audit_rules and site_rule != "full":
+        site_codes = patients["site_code"].str.upper().str.strip()
     sbp_raw = pd.to_numeric(visits_raw["sbp_mmhg"], errors="coerce")
     dates = visits_raw["visit_date"].str.strip()
-    parsed = pd.to_datetime(dates.where(dates.str.fullmatch(EXACT_DATE)), format="%Y-%m-%d", errors="coerce")
-    labels = visits_raw["visit"].str.strip().str.lower().map(VISIT_MAP)
+    exact = exact_dates or not audit_rules
+    parsed = pd.to_datetime(dates.where(dates.str.fullmatch(EXACT_DATE)) if exact else dates, format="%Y-%m-%d",
+                            errors="coerce")
+    labels = visits_raw["visit"].str.strip().str.lower().map(visit_map if audit_rules else VISIT_MAP)
     audit = {
         "patients: gender values that are not a code":
             (gender.ne("") & ~patients["gender"].isin(["F", "M", "X"])).sum(),
@@ -624,15 +632,21 @@ def run() -> None:
                                            {"patients_summary.csv: patients": 2}, ("drop_duplicates",)),
         "birth_year 9999 kept": (solve(keep_9999=True), {"patients_summary.csv: birth_year": 2}, ("9999",)),
         "site codes uppercased but hyphens and inner spaces kept": (
-            solve(site_rule="upper"), {"patients_summary.csv: site_code": 2}, ("hyphen",)),
+            solve(site_rule="upper"), {"issue_audit.csv": 1}, ("site codes needing normalization", "hyphen")),
+        "site codes uppercased but hyphens and inner spaces kept in the cleaning only": (
+            solve(site_rule="upper", audit_rules=False), {"patients_summary.csv: site_code": 2}, ("hyphen",)),
         "wt_kg never renamed": (solve(rename_wt=False), {"visits_summary.csv: weight_kg": 2}, ("wt_kg",)),
-        "BL left out of the visit dictionary": (solve(visit_map=no_bl), {"visits_summary.csv: rows": 3},
-                                                ("dictionary",)),
+        "BL left out of the visit dictionary": (solve(visit_map=no_bl), {"issue_audit.csv": 1},
+                                                ("repeated patient_id and visit pairs", "map the visit labels")),
+        "BL left out of the visit dictionary in the cleaning only": (
+            solve(visit_map=no_bl, audit_rules=False), {"visits_summary.csv: rows": 3}, ("dictionary",)),
         "the earlier reading of each recheck kept": (
             solve(recheck_keep="first"), {"sbp_wide_sample.csv: baseline": 1},
             ("keep='last'",)),
         "dates accepted without the exact-text check": (
-            solve(exact_dates=False), {"visits_summary.csv: visit_date": 1}, ("fullmatch",)),
+            solve(exact_dates=False), {"issue_audit.csv": 1}, ("date parse failures", "fullmatch")),
+        "dates accepted without the exact-text check in the cleaning only": (
+            solve(exact_dates=False, audit_rules=False), {"visits_summary.csv: visit_date": 1}, ("fullmatch",)),
         "sbp range rule skipped, 999 kept": (solve(sbp_range=False), {"visits_summary.csv: sbp_mmhg": 3},
                                              ("999",)),
         "melt labels swapped": (solve(melt_map={"a1c_baseline": "week12", "a1c_week12": "baseline"}),

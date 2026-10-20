@@ -24,7 +24,8 @@ unambiguous way of writing a date, and the common spellings of missing values
 never cost points. Each check scores the units it can verify on its own, so one
 wrong value costs only its own share, and no check depends on another passing.
 A later artifact is also judged against the student's own earlier summaries
-(the merge counts against their own visit, A1c, and patient summaries; the
+(the summaries against the site code, date, and visit label rules their own
+audit counts show; the merge counts against their own visit, A1c, and patient summaries; the
 extracts accept the values an upstream mistake already charged would carry),
 so one mistake is charged once.
 """
@@ -38,6 +39,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from difflib import SequenceMatcher
 from functools import lru_cache
+from itertools import combinations
 import hashlib
 import io
 import math
@@ -54,8 +56,8 @@ DATA_FILES = ("patients.parquet", "sites.csv", "visits_north.csv", "visits_south
 DATA_SHA256 = {
     "patients.parquet": "aa795b05777565cce6af68602e3fc7c286a2483f53f9a6d99a44da410c1214dd",
     "sites.csv": "daaa4f3fc475900db905590faf6524f34143e78b73633b1794de4c6cf4b56a77",
-    "visits_north.csv": "c4e866329e952f88a63d737cb7e68f752c2d1ab1a4167322ed766c649cce1473",
-    "visits_south.csv": "10b506822983fe0b955711a0af3314c0ee49bbdeff8078c2c8d16e2447d42641",
+    "visits_north.csv": "5f56ec107a04c430a65fdb1bad23cacf76adaf31f06c07567b70474ec2c1b288",
+    "visits_south.csv": "c19644241228ba7ef007d1aa7386516d80af5340b633401da67e9f59f3383214",
     "a1c_wide.parquet": "934dc120b78d492666b7fbc7872d5fc4d0f20ab9a678bdb7559f00536a2cfa6a",
 }
 # The patients whose rows the extracts hold, as the README and the notebook's first cell list them. They
@@ -225,10 +227,18 @@ for _row in _patients:
     RAW_GENDER.setdefault(_row["patient_id"], set()).add(_row["gender"])
     RAW_YEAR.setdefault(_row["patient_id"], set()).add(whole_number(_row["birth_year"]))
 
+
+
+def _latest_by(visit_map: dict[str, str]) -> dict[tuple[str, str | None], dict[str, str]]:
+    """The exact repeats dropped, each label mapped (unmapped ones missing), and each pair's last row by visit_time."""
+    latest: dict[tuple[str, str | None], dict[str, str]] = {}
+    for row in sorted(_first_copies(_raw_visits), key=lambda row: row["visit_time"]):
+        latest[(row["patient_id"], visit_map.get(row["visit"].strip().lower()))] = row
+    return latest
+
+
 # A recheck keeps the later reading: the last row of each pair once sorted by visit_time.
-_latest: dict[tuple[str, str], dict[str, str]] = {}
-for _row in sorted(_first_copies(_raw_visits), key=lambda row: row["visit_time"]):
-    _latest[(_row["patient_id"], VISIT_MAP[_row["visit"].strip().lower()])] = _row
+_latest = _latest_by(VISIT_MAP)
 # Pairs the raw files list more than once (rechecks and exact repeats), whose rows a skipped step repeats.
 REPEATED_PAIRS = frozenset(key for key, count in Counter(
     (row["patient_id"], VISIT_MAP[row["visit"].strip().lower()]) for row in _raw_visits).items() if count > 1)
@@ -240,9 +250,9 @@ RELABELED_PAIRS = frozenset((row["patient_id"], VISIT_MAP[row["visit"].strip().l
 REPEATED_PATIENTS = frozenset(pid for pid, count in Counter(row["patient_id"] for row in _patients).items()
                               if count > 1)
 
-def _clean_visit(row: dict[str, str]) -> dict[str, object]:
+def _clean_visit(row: dict[str, str], day: Callable[[str], date | None] = exact_day) -> dict[str, object]:
     sbp = whole_number(row["sbp_mmhg"])
-    return {"visit_date": exact_day(row["visit_date"]),
+    return {"visit_date": day(row["visit_date"]),
             "sbp_mmhg": int(sbp) if sbp is not None and SBP_RANGE[0] <= sbp <= SBP_RANGE[1] else None,
             "weight_kg": whole_number(row["weight_kg"]), "source_file": row["source_file"]}
 
@@ -311,6 +321,51 @@ _earlier: dict[tuple[str, str], dict[str, str]] = {}
 for _row in sorted(_first_copies(_raw_visits), key=lambda row: row["visit_time"]):
     _earlier.setdefault((_row["patient_id"], VISIT_MAP[_row["visit"].strip().lower()]), _row)
 VISIT_SUMMARY_EARLIER = _visit_summary({key: _clean_visit(_earlier[key]) for key in sorted(_earlier)})
+
+
+# Task 2.3 counts three issues with the rule Task 3.1 or 3.2 cleans with, so a wrong rule shows first in
+# issue_audit.csv. Each common wrong rule is listed with the audit count it gives and the summaries it leads
+# to; a summary part accepts those values when the student's own audit row holds that count.
+def _loose_day(text: str) -> date | None:
+    """The date format='%Y-%m-%d' alone gives: 2026-5-10 parses, impossible and slashed dates do not."""
+    try:
+        return datetime.strptime(text.strip(), "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def _site_rule(steps: Sequence[Callable[[str], str]]) -> Callable[[str], str]:
+    def rule(text: str) -> str:
+        for step in steps:
+            text = step(text)
+        return text
+    return rule
+
+
+# Every combination of uppercasing, stripping, and removing hyphens or every space.
+_SITE_STEPS = (str.upper, str.strip, lambda text: text.replace("-", ""), lambda text: text.replace(" ", ""))
+_SITE_RULES = [_site_rule([step for bit, step in enumerate(_SITE_STEPS) if mask >> bit & 1]) for mask in range(16)]
+# Every way of leaving spellings out of the visit dictionary.
+_VISIT_MAPS = [{key: value for key, value in VISIT_MAP.items() if key not in left_out}
+               for size in (1, 2, 3) for left_out in combinations(("bl", "week 12", "wk12"), size)]
+_audit = dict(ISSUE_AUDIT)
+OWN_RULES: dict[tuple[str, str], tuple[str, list[tuple[int, list[dict[str, object]]]]]] = {
+    ("patients_summary.csv", "site_code"): ("patients: site codes needing normalization", [
+        (sum(rule(row["site_code"]) != row["site_code"] for row in _patients),
+         [_patient_summary([{**_clean_patient(row), "site_code": rule(row["site_code"])} for row in rows])
+          for rows in (_first_copies(_patients), _patients)])
+        for rule in _SITE_RULES]),
+    ("visits_summary.csv", "rows"): ("visits: rows in repeated patient_id and visit pairs", [
+        (repeats([(row["patient_id"], visit_map.get(row["visit"].strip().lower())) for row in _raw_visits]),
+         [_visit_summary({key: _clean_visit(row) for key, row in _latest_by(visit_map).items()})])
+        for visit_map in _VISIT_MAPS]),
+    ("visits_summary.csv", "visit_date"): ("visits: date parse failures", [
+        (sum(row["visit_date"].strip() != "" and _loose_day(row["visit_date"]) is None for row in _raw_visits),
+         [_visit_summary({key: _clean_visit(row, _loose_day) for key, row in _latest.items()})])]),
+}
+# A wrong rule whose count equals the right one's cannot be told apart from it, so it earns nothing extra.
+OWN_RULES = {part: (issue, [option for option in options if option[0] != _audit[issue]])
+             for part, (issue, options) in OWN_RULES.items()}
 # Each pair's earlier clean SBP, which a pivot carries when an unmapped label kept a recheck apart.
 EARLIER_SBP = {key: _clean_visit(row)["sbp_mmhg"] for key, row in _earlier.items()}
 VISIT_PARTS = {
@@ -762,10 +817,27 @@ def check_table_profile(root: Path) -> Outcome:
 
 # Task 2: the audit
 
-def check_issue_audit(root: Path) -> Outcome:
+def audit_rows(root: Path) -> dict[str, dict[str, str]]:
     table = read_table(root, "issue_audit.csv", index_name="issue", value_name="count")
     table.require("issue", "count")
-    rows = match_labels(table.rows, "issue", tuple(issue for issue, _ in ISSUE_AUDIT))
+    return match_labels(table.rows, "issue", tuple(issue for issue, _ in ISSUE_AUDIT))
+
+
+def own_rule_summaries(root: Path, name: str, part: str) -> list[dict[str, object]]:
+    """The summaries the wrong rule behind the student's own issue_audit.csv count gives (see OWN_RULES)."""
+    issue, options = OWN_RULES.get((name, part), ("", []))
+    if not options:
+        return []
+    try:
+        row = audit_rows(root).get(issue)
+    except ArtifactProblem:
+        return []
+    count = number(row["count"]) if row else None
+    return [summary for found, summaries in options if found == count for summary in summaries]
+
+
+def check_issue_audit(root: Path) -> Outcome:
+    rows = audit_rows(root)
     outcome = Outcome(total=len(ISSUE_AUDIT))
     for issue, expected in ISSUE_AUDIT:
         row = rows.get(issue)
@@ -925,12 +997,14 @@ def patients_summary(part: str) -> Callable[[Path], Outcome]:
     def check(root: Path) -> Outcome:
         labels = PATIENT_PARTS[part]
         cells = read_metrics(root, "patients_summary.csv", labels)
+        # A site rule the audit already charged is right here too.
+        own = own_rule_summaries(root, "patients_summary.csv", part)
 
         def right(wanted: str, cell: str) -> bool:
             # Counted with the exact repeats left in is right too: the patients count charges that once.
             accepted = {PATIENT_SUMMARY[wanted]} if part == "rows" else {PATIENT_SUMMARY[wanted],
                                                                          PATIENT_SUMMARY_KEPT[wanted]}
-            return number(cell) in accepted
+            return number(cell) in accepted | {summary[wanted] for summary in own}
 
         return score_metrics(cells, labels, right, PATIENT_SUMMARY.get, PATIENT_HINTS.get, "Task 3.1")
     return check
@@ -1040,11 +1114,14 @@ def visits_summary(part: str) -> Callable[[Path], Outcome]:
         # Rows the student kept or dropped by mistake are charged once, in the rows part: each one can move a
         # later count by at most one and a mean by at most one row's share.
         gap = 0 if part == "rows" else visit_row_gap(root)
+        # A visit label or date rule the audit already charged is right here too.
+        own = own_rule_summaries(root, "visits_summary.csv", part)
 
         def right(wanted: str, cell: str) -> bool:
             if part == "rows":
-                return number(cell) == VISIT_SUMMARY[wanted]
-            return any(fits(wanted, cell, summary[wanted]) for summary in (VISIT_SUMMARY, VISIT_SUMMARY_EARLIER))
+                return number(cell) in {summary[wanted] for summary in (VISIT_SUMMARY, *own)}
+            return any(fits(wanted, cell, summary[wanted])
+                       for summary in (VISIT_SUMMARY, VISIT_SUMMARY_EARLIER, *own))
 
         def fits(wanted: str, cell: str, want: object) -> bool:
             if isinstance(want, date):

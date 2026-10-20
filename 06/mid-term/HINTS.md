@@ -2,14 +2,14 @@
 
 ## Gated Files
 
-- `frame[frame.duplicated(subset=[...], keep=False)].sort_values([...])` shows every row of a repeated key (Lecture 06).
+- `frame[frame.duplicated(subset=[...], keep=False)].sort_values([...])` shows every row of a repeated key (Lecture 05).
 - A row count that differs from the earlier summary points to the step that added or dropped rows. Compare with `visits_summary.csv`, `patients_summary.csv`, and `merge_audit.csv`.
 - An assert or error that stops the notebook points to an earlier step. Fix that step, then Restart and Run All; never edit the check. For example, a raw table that no longer equals its snapshot from the first code cell was changed in place: work on `copy(deep=True)`.
 
 ## Task 2: Contract, stack, and audit
 
 - Task 2.1 describes the intended cleaned tables. Raw rechecks and retired site records can repeat those keys without being exact duplicate rows.
-- A stack with a column of only missing values means a column name still differs: print `visits_raw.isna().all()` (Lecture 06).
+- A stack with a column of only missing values means a column name still differs: print `visits_raw.isna().all()` (Lecture 05).
 
 ## Task 3: Clean
 
@@ -29,7 +29,7 @@
 - Task 4.4 `MergeError`: the error names the side that repeats.
     - `many_to_one` on `patients_clean` fails when a `patient_id` repeats there: exact registry repeats were not removed in Task 3.1.
     - `many_to_one` on `sites_current` fails when a `site_code` repeats there: a retired record was kept in Task 4.2.
-    - `many_to_one` on `a1c_long` fails when a `["patient_id", "visit"]` pair repeats there: check for repeated patient rows before melting or rows stacked twice.
+    - `one_to_one` on `a1c_long` fails when a `["patient_id", "visit"]` pair repeats there: check for repeated patient rows before melting or rows stacked twice.
 - A larger `len(analysis)` means the table just merged repeated a key; run the `duplicated()` check on it.
 - Dtypes: `analysis.dtypes` should match the table in Task 4.4. `str` (or `object`) where `string` is expected means the `astype()` dictionary missed a column.
 

@@ -151,9 +151,9 @@ def build(rng: random.Random) -> dict[str, list[list[str]]]:
         rows = [[pid, "baseline", baseline, appointment(rng), str(round(sbp)), f"{weight:.1f}",
                  "baseline"]]
         if rng.random() >= 0.07:
-            follow = baseline + timedelta(days=round(within(rng, 84, 6, 63, 112)))
-            while follow.weekday() >= 5:
-                follow += timedelta(days=1)
+            # About 12 weeks later, counted in clinic days (5 per 7 calendar days) so no weekday is favored.
+            gap = round(within(rng, 84, 6, 63, 112) * 5 / 7)
+            follow = clinic_days(baseline + timedelta(days=1), 2 * gap)[gap - 1]
             rows.append([pid, "week12", follow, appointment(rng),
                          str(round(follow_sbp)), f"{weight + change:.1f}",
                          "week12"])
