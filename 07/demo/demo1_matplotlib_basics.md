@@ -215,9 +215,6 @@ ax.legend(title='Clinic', loc='upper left', bbox_to_anchor=(1, 1), frameon=False
 
 fig.savefig('weekly_flu_visits.png', dpi=150, bbox_inches='tight')
 plt.show()
-
-from pathlib import Path
-
 print(Path('weekly_flu_visits.png').exists())
 ```
 

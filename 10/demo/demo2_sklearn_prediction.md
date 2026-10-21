@@ -34,7 +34,7 @@ Run the cells from top to bottom.
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Core route:** Parts 1, 2, 4–7, 10, and 11. Parts 3, 8, and 9 are independent practice for outside class; skip their cells on the core route. Running every cell from the top also works. Finish all validation exploration before the one final test.
+**Core route:** Parts 1, 2, 4 to 7, 10, and 11. Parts 3, 8, and 9 are independent practice for outside class; skip their cells on the core route. Running every cell from the top also works. Finish all validation exploration before the one final test.
 
 ## 1. Load the diabetes records
 

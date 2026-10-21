@@ -230,7 +230,7 @@ DatetimeIndex(['2024-01-01 08:00:00', '2024-01-01 09:00:00',
 
 ### Code Snippet: Calendar Selection
 
-`study_day` numbers the dates in January–February 2024, starting at 1.
+`study_day` numbers the dates in January and February 2024, starting at 1.
 
 ```python
 print(study_day.loc['2024-02'].shape)  # leap year: 29 days
@@ -378,7 +378,7 @@ _Time series analysis is 90% datetime wrangling, 5% actual analysis, and 5% swea
 
 ### Code Snippet: Basic Resampling
 
-`day_num` holds the values 1–30 on January 1–30, 2023.
+`day_num` holds the values 1 to 30 on January 1 to 30, 2023.
 
 ```python
 display(day_num.resample('W').mean())
@@ -452,7 +452,7 @@ Any aggregation that works after `groupby()` works after `resample()`, including
 
 ### Code Snippet: Resampling Aggregations
 
-`daily` has eight rows, January 1–8, 2023, indexed by date, with `temperature` (°F) and `heart_rate` (bpm).
+`daily` has eight rows, January 1 to 8, 2023, indexed by date, with `temperature` (°F) and `heart_rate` (bpm).
 
 ```python
 display(daily.resample('W').agg({'temperature': ['mean', 'max'], 'heart_rate': ['mean', 'count']}).round(1))
@@ -833,12 +833,12 @@ A chronological split permits earlier history from the same patient on both side
 - `ts.plot()`: Line plot with the DatetimeIndex on the x-axis; returns the `Axes` (`ax = ts.plot()`) for further customization
 - `ts.plot(figsize=(12, 6), title='Title', marker='o')`: Figure size, title, and a marker at each reading
 - `ts.asfreq('D').plot()`: Inserts `NaN` for missing days, so the line breaks at gaps instead of bridging them; `ts.asfreq('D')` is the shortcut for `ts.resample('D').asfreq()`
-- `ts.groupby(ts.index.month).mean().plot(kind='bar', ax=ax)`: Calendar-month averages as bars, to show a seasonal pattern; besides column names, `groupby()` accepts an array of keys as long as the series, such as `ts.index.month`; draw them on a new `fig, ax = plt.subplots()`, because bars on the dated line's Axes raise `AttributeError`. Bars start at zero (Lecture 07), which suits counts; for a reading such as temperature, plot the difference from a baseline such as 98.6 °F
+- `ts.groupby(ts.index.month).mean().plot(kind='bar', ax=ax)`: Calendar-month means as bars, to show a seasonal pattern; `groupby()` also accepts an array of keys as long as the series, such as `ts.index.month`. Draw them on a new `fig, ax = plt.subplots()`: bars on the dated line's Axes raise `AttributeError`. Bars start at zero (Lecture 07), which suits counts; for a reading such as temperature, plot the difference from a baseline such as 98.6 °F
 - `ax.axhline(98.6, linestyle='--', label='Normal')`: Horizontal reference line for a clinical threshold
 
 ### Code Snippet: Time-Series Plotting
 
-`ts` is a year of daily influenza-like illness visits at a clinic, with a DatetimeIndex. The calendar-month bars need separate Axes.
+`ts` is a year of daily influenza-like illness visits at a clinic, with a DatetimeIndex.
 
 ```python
 ax = ts.plot(alpha=0.5, label='Daily', color='gray')

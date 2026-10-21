@@ -203,7 +203,7 @@ _Forecasting uses historical patterns to predict future values. Always be honest
 
 **ARIMA** combines past values (**autoregression**, `p`), repeated differences to remove changes in level (**integration**, `d`), and past prediction errors (**moving average**, `q`). `order=(1, 1, 1)` is an example, not a rule for every series. Fit on the earlier chronological block and assess forecasts on later observations.
 
-The **augmented Dickey–Fuller (ADF) test** asks whether the series has a unit root, a source of persistent drift. A small p-value rejects that particular explanation; it does not prove every property is stationary or establish forecast accuracy. Use a nonconstant numeric series with no missing values.
+The **augmented Dickey-Fuller (ADF) test** asks whether the series has a unit root, a source of persistent drift. A small p-value rejects that particular explanation; it does not prove every property is stationary or establish forecast accuracy. Use a nonconstant numeric series with no missing values.
 
 ### Reference Card: ARIMA Models and Stationarity Checks
 
@@ -238,7 +238,7 @@ def fit_arima(series, order=(1, 1, 1)):
 
 ## Exponential Smoothing
 
-These forecasting models extend a smoothed level with a trend (Holt) or trend and seasonality (Holt–Winters). Here `ts` is the daily series from the decomposition example; its annual cycle is approximately 365 observations. A monthly series would use `seasonal_periods=12`. Forecast steps count observations, so 30 steps here means 30 days. The examples use fixed smoothing coefficients of 0.3 (`optimized=False`), chosen for illustration rather than forecast accuracy.
+These forecasting models extend a smoothed level with a trend (Holt) or trend and seasonality (Holt-Winters). Here `ts` is the daily series from the decomposition example; its annual cycle is approximately 365 observations. A monthly series would use `seasonal_periods=12`. Forecast steps count observations, so 30 steps here means 30 days. The examples use fixed smoothing coefficients of 0.3 (`optimized=False`), chosen for illustration rather than forecast accuracy.
 
 ### Reference Card: Exponential Smoothing Variants
 

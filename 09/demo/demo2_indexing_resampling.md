@@ -38,7 +38,7 @@ import numpy as np
 import pandas as pd
 ```
 
-The core walkthrough is sections 1–8. Sections 9–11 are independent practice for outside class: section 9 reuses `monitor` from section 1; sections 10 and 11 each build their own data.
+The core walkthrough is sections 1 to 8. Sections 9 to 11 are independent practice for outside class: section 9 reuses `monitor` from section 1; sections 10 and 11 each build their own data.
 
 ## 1. One patient's monitor export
 

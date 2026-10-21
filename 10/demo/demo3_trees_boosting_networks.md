@@ -34,7 +34,7 @@ Run the cells from top to bottom.
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
-**Core route:** Parts 1–5, 7, 8, 10, and 11, skipping the subsections marked independent practice. Part 6, Part 9, and those subsections are independent practice for outside class. The comparison includes only candidates you ran. Run any independent practice before the final test; after seeing test results, do not use these variants to make a new selection on that test set.
+**Core route:** Parts 1 to 5, 7, 8, 10, and 11, skipping the subsections marked independent practice. Part 6, Part 9, and those subsections are independent practice for outside class. The comparison includes only candidates you ran. Run any independent practice before the final test; after seeing test results, do not use these variants to make a new selection on that test set.
 
 ## 1. Load the biopsy measurements
 

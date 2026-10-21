@@ -420,6 +420,8 @@ axes = monthly.plot(subplots=True, sharey=True, ylabel='Visits')
 
 Expected result: three stacked panels with matching y-limits.
 
+![xkcd 688: Self-Description. A pie, a bar chart, and a plot of the comic's own ink: one set of numbers, three views, like swapping `kind=`.](media/xkcd_688.png)
+
 # seaborn: Statistical Graphics
 
 - **seaborn**: draws statistical graphics from a long DataFrame in one call, computing summaries such as group means for you.

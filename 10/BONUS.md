@@ -306,7 +306,7 @@ for i in range(X_train.shape[1]):
 
 ### Code Snippet: Training a Classifier on Frozen VGG16 Features
 
-Only the added classifier learns; **fine-tuning** would also update pretrained weights. These random images demonstrate the API, not useful image classification. VGG16 expects RGB pixels on a 0–255 scale passed through its own `preprocess_input`, which changes channel order and subtracts the ImageNet channel means.
+Only the added classifier learns; **fine-tuning** would also update pretrained weights. These random images demonstrate the API, not useful image classification. VGG16 expects RGB pixels on a 0 to 255 scale passed through its own `preprocess_input`, which changes channel order and subtracts the ImageNet channel means.
 
 ```python
 from tensorflow.keras.applications import VGG16
@@ -750,7 +750,7 @@ pipeline.fit(X_train, y_train)
 
 ## Drift Detection
 
-**Data drift** is a change in input distributions; **concept drift** is a change in the relationship between inputs and outcomes. The two-sample **Kolmogorov–Smirnov (KS) test** below checks one numeric input distribution at a time. It cannot establish concept drift or a loss of predictive performance; small repeated samples and testing many columns also produce false alarms.
+**Data drift** is a change in input distributions; **concept drift** is a change in the relationship between inputs and outcomes. The two-sample **Kolmogorov-Smirnov (KS) test** below checks one numeric input distribution at a time. It cannot establish concept drift or a loss of predictive performance; small repeated samples and testing many columns also produce false alarms.
 
 ### Reference Card: Drift Detection Approach
 

@@ -244,7 +244,7 @@ dept_stats = visits.groupby("department").agg({
 dept_stats.round(1)
 ```
 
-**Expect:** six rows in alphabetical order. Orthopedics has the longest mean wait (38.1 minutes) and Pediatrics the shortest (14.9). Pediatrics' mean age is 8.5 and its oldest patient is 17, because only children go there. Satisfaction runs opposite to wait: 4.4 in Pediatrics, 3.0 in Orthopedics. The columns have two levels (`wait_min` over `mean`, `median`, ...) because `.agg()` received a dictionary.
+**Expect:** six rows in alphabetical order. Pediatrics' mean age is 8.5 and its oldest patient is 17, because only children go there. Satisfaction runs opposite to wait: 4.4 in Pediatrics, 3.0 in Orthopedics. The columns have two levels (`wait_min` over `mean`, `median`, ...) because `.agg()` received a dictionary.
 
 
 ### Plot Means and Distributions
@@ -296,7 +296,7 @@ display(two_day)
 display(two_day["visits"].unstack())
 ```
 
-**Expect:** 8 input rows become 5 groups, one per observed clinic and department pair. North Cardiology shows `82` visits and `7` no-shows (42 + 40 and 3 + 4). In the grid, North–Dermatology is `NaN`: North logged no Dermatology visits on either day, which is not the same as a count someone recorded as zero.
+**Expect:** 8 input rows become 5 groups, one per observed clinic and department pair. North Cardiology shows `82` visits and `7` no-shows (42 + 40 and 3 + 4). In the grid, the North `Dermatology` cell is `NaN`: North logged no Dermatology visits on either day, which is not the same as a count someone recorded as zero.
 
 
 ### Work with the MultiIndex
@@ -355,7 +355,7 @@ display(Markdown("**fill_value=0: Dermatology really has no nurses in the South*
 display(filled)
 ```
 
-**Expect:** Dermatology–South is `NaN` in the first table and `0` in the second, and the other cells are unchanged. For a count of nurses, zero is the true answer, so `fill_value=0` is right here. It would be wrong for a mean wait: filling an empty cell with 0 would report a zero-minute wait that never happened.
+**Expect:** the Dermatology `South` cell is `NaN` in the first table and `0` in the second, and the other cells are unchanged. For a count of nurses, zero is the true answer, so `fill_value=0` is right here. It would be wrong for a mean wait: filling an empty cell with 0 would report a zero-minute wait that never happened.
 
 
 ### Read a Pivot Table as a Heatmap

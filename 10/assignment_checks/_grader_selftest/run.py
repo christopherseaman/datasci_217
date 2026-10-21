@@ -944,8 +944,20 @@ def run() -> None:
             {"approach": "linear_pipeline", **metrics(test[TARGET], pipeline.predict(test[leaky]))}
         ]).to_csv(index=False)
         result = graded(submission("leaky-validation-and-test-metrics", files))
-        assert failing(result) == {"validation metrics: mae values", "test metrics: mae value"}, failing(result)
-        assert "test scores of a pipeline that also uses" in detail(result, "test metrics: mae value"), result
+        assert failing(result) == {"validation metrics: mae values"}, failing(result)
+        # One leak costs points once: marked available in Task 2.1, it leaves Tasks 3.1 and 3.2 uncharged.
+        frame = frames["output/test_predictions.csv"].copy()
+        frame["predicted_sbp"] = leaky_final.predict(test[FEATURES + ["a1c_result"]])
+        files["output/test_predictions.csv"] = frame.to_csv(index=False)
+        result = graded(submission("leaky-validation-and-test", files))
+        assert failing(result) == {"validation metrics: mae values"}, failing(result)
+        frame = data["candidates"].copy()
+        frame["available"] = frame["hours_after_visit"] <= 24
+        frame["decision"] = np.where(frame["available"], "Keep", "Exclude (leakage)")
+        files["output/availability_decisions.csv"] = frame.to_csv(index=False)
+        result = graded(submission("leaky-from-availability", files))
+        assert failing(result) == {"availability: available values"}, failing(result)
+        assert "only after the visit ends" in detail(result, "availability: available values"), result
         # The Task 3.3 save line copied from Task 3.1 writes the readmission table over validation_metrics.csv.
         files = dict(correct)
         files["output/validation_metrics.csv"] = readmission

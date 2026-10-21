@@ -35,12 +35,11 @@ Run the cells from top to bottom.
 ```python
 from datetime import datetime, timedelta
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 ```
 
-The core walkthrough is sections 1–8. Sections 9–10 are independent practice for outside class; section 9 reuses the core's `weekly_calls` and `log`, and section 10 builds its own data.
+The core walkthrough is sections 1 to 8. Sections 9 and 10 are independent practice for outside class; section 9 reuses the core's `weekly_calls` and `log`, and section 10 builds its own data.
 
 ## 1. One date at a time with `datetime`
 

@@ -22,7 +22,7 @@ A clinic network's quarterly report groups 100,000 synthetic visits by clinic an
 
 - **Part 1:** which visits and clinics the default report silently leaves out.
 - **Part 2:** `transform` adds department context to every visit.
-- **Independent practice after class:** plot coverage, find within-department quartiles, and use `filter` to keep or drop whole departments.
+- **Independent practice after class:** plot coverage, find within-department quartiles, fill blank scores with each department's median, and use `filter` to keep or drop whole departments.
 
 Run the cells from top to bottom; each **Expect** line says what the output should show. Patient IDs and values are synthetic.
 
@@ -254,11 +254,27 @@ display(pd.crosstab(visits["department"], visits["wait_quartile"], margins=True)
 **Expect:** each department split into Q1 to Q4 by its own waits, with row totals equal to its visit counts and 100,000 in the corner. The quarters are not exactly equal (Pediatrics Q1 has 4,628 visits, Q3 has 3,153) because many visits share the same whole-minute wait, and tied waits always land in the same quartile.
 
 
-### Filter Keeps or Drops Whole Groups
+### Fill Missing Scores with the Department Median
 
-`filter` tests each whole group and keeps every row of the groups that pass. Rows are never changed, only kept or dropped.
+```python
+# Each blank survey gets its own department's median score
+dept_median = visits.groupby("department")["satisfaction"].transform("median")
+filled = visits["satisfaction"].fillna(dept_median)
+print("Blank scores before:", visits["satisfaction"].isna().sum(), "after:", filled.isna().sum())
+
+# Which score each department's blanks received
+blank = visits["satisfaction"].isna()
+with_filled = visits.copy()
+with_filled["satisfaction"] = filled
+display(with_filled[blank].groupby("department")["satisfaction"].agg(["count", "max"]))
+```
+
+**Expect:** `Blank scores before: 2984 after: 0`, then one row per department: Pediatrics' 445 blanks become 5.0, Cardiology's 507 and Orthopedics' 447 become 3.0, and the other three departments' blanks become 4.0. A whole-column `fillna(visits["satisfaction"].median())` would give every blank 4.0.
+
 
 ### Keep Only the Departments That Qualify
+
+`filter` tests each whole group and keeps every row of the groups that pass. Rows are never changed, only kept or dropped.
 
 ```python
 by_department = visits.groupby("department")

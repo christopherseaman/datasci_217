@@ -92,10 +92,12 @@ class Slip:
     """A common wrong answer: the values it leaves, by row key and column, and what causes it.
 
     A values check names the cause when every wrong cell it found holds this slip's value.
+    Slips that share a `charge` come from one mistake, so only the first check naming one costs points.
     """
 
     cause: str
     rows: dict[tuple, dict[str, object]]
+    charge: str = ""
 
 
 @dataclass(frozen=True)
@@ -247,6 +249,13 @@ RANGES_FROM_VISIT_TIME = Slip(
                     "last_target_time": Instant("2026-05-04T21:51:00Z")},
     },
 )
+# One leak (a1c_result or callback_sbp kept as a feature) reaches Tasks 2.1, 3.1, and 3.2; it costs points once.
+LEAKY_AVAILABLE = Slip(
+    "Those features become known only after the visit ends, so marking them available leaks them into the "
+    "model's features.",
+    {(feature,): {"available": Flag(True)} for feature in ("a1c_result", "callback_sbp")},
+    charge="leakage",
+)
 # The pipeline fitted with a leaky feature as well: callback_sbp, a1c_result, or both.
 LEAKY_VALIDATION = Slip(
     "Those are the scores of a pipeline that also uses a1c_result or callback_sbp, which become known only "
@@ -254,6 +263,7 @@ LEAKY_VALIDATION = Slip(
     {("linear_pipeline",): {"mae": Either((2.002328, 3.291011, 1.987482)),
                             "rmse": Either((2.211588, 3.572686, 2.26713)),
                             "r2": Either((0.924388, 0.802681, 0.920543))}},
+    charge="leakage",
 )
 BASELINE_FROM_VALIDATION = Slip(
     "Those are the scores of a mean taken from the validation rows (130.25 mmHg); the baseline learns its "
@@ -276,6 +286,7 @@ LEAKY_TEST = Slip(
         "rmse": Either((2.111613, 1.822818, 4.008395, 3.949808, 2.508591, 2.103367)),
         "r2": Either((0.935602, 0.952012, 0.767949, 0.774683, 0.909113, 0.936104)),
     }},
+    charge="leakage",
 )
 # Each test visit's prediction from those pipelines, in the same order as LEAKY_TEST.
 LEAKY_TEST_PREDICTIONS = Slip(
@@ -293,6 +304,7 @@ LEAKY_TEST_PREDICTIONS = Slip(
         "V47": (164.87556, 166.094788, 163.818391, 165.170387, 164.87074, 166.193853),
         "V48": (150.750689, 150.514727, 152.283146, 152.210843, 150.71794, 150.631268),
     }.items()},
+    charge="leakage",
 )
 TEST_SCORED_ON_VALIDATION = Slip(
     "Those are the pipeline's validation scores from Task 3.1; score test[TARGET] against the test predictions.",
@@ -1312,7 +1324,7 @@ CHECKS = (
         values_check(
             AVAILABILITY, ("available",),
             "available is hours_after_visit <= 0: True when the feature is known by the end of the visit.",
-            (ZERO_HOURS_EXCLUDED,),
+            (ZERO_HOURS_EXCLUDED, LEAKY_AVAILABLE),
         ),
     ),
     Check(
@@ -1480,20 +1492,21 @@ def run_checks(root: Path) -> list[tuple[str, str | None]]:
     """Return one (check name, problem or None) pair per check; every check runs."""
     _REPORTED_OUTSIDE.clear()
     results = []
-    charged_causes = set()
-    causes = tuple(slip.cause for slip in globals().values() if isinstance(slip, Slip))
+    charged = set()
+    slips = tuple(slip for slip in globals().values() if isinstance(slip, Slip))
     for check in CHECKS:
         try:
             check.action(Path(root))
         except (AssertionError, OSError, ValueError, UnicodeDecodeError, csv.Error) as error:
             message = str(error)
-            cause = next((cause for cause in causes if cause in message), None)
-            if cause and cause in charged_causes:
+            slip = next((slip for slip in slips if slip.cause in message), None)
+            mistake = slip and (slip.charge or slip.cause)
+            if mistake and mistake in charged:
                 results.append((check.name, None))
             else:
                 results.append((check.name, message))
-                if cause:
-                    charged_causes.add(cause)
+                if mistake:
+                    charged.add(mistake)
         else:
             results.append((check.name, None))
     return results

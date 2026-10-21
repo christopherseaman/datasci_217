@@ -683,7 +683,7 @@ def plot_with_confidence(y, ax):
                alpha=0.3, color='red', label='95% t interval')
     ax.text(0.02, 0.98,
             f'Mean: {mean_y:.2f} (95% t interval: '
-            f'{mean_y - half_width:.2f}–{mean_y + half_width:.2f})',
+            f'{mean_y - half_width:.2f} to {mean_y + half_width:.2f})',
             transform=ax.transAxes, va='top')
 ```
 

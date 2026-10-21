@@ -165,7 +165,7 @@ display(by_type.unstack())
 | North | 10.5 | 12.0 |
 | South | NaN | 25.0 |
 
-East had no new-patient visits, so East–New is `NaN`: there was nothing to average, which is not a zero-minute wait (those exist only in clinic brochures).
+East had no new-patient visits, so the East `New` cell is `NaN`: there was nothing to average, which is not a zero-minute wait (those exist only in clinic brochures).
 
 # Pivot Tables and Cross-Tabulations
 

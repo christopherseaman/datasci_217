@@ -415,7 +415,6 @@ Discharge measurements → logistic regression → 0.72 probability → flag 1 a
 | `Lasso(alpha=...)` | Fit a linear model with an L1 penalty that may set coefficients to zero. | Estimator |
 | `LogisticRegression(max_iter=1000)` | Linear model for yes/no targets; `predict` gives 0/1 and `predict_proba` gives probabilities. | Estimator |
 | `model.coef_` / `model.intercept_` | Read fitted slopes and intercept after `.fit(...)`. | Array / scalar |
-| `model.score(X, y)` | R² for these regressors; accuracy for `LogisticRegression`. | Float |
 
 ## Baselines and Pipelines
 
@@ -641,7 +640,7 @@ _"Did you ever think that maybe there's more to life than being really, really, 
 
 ![Decision tree: one model, one prediction. Random forest: trees trained in parallel on resampled rows, predictions averaged. XGBoost: trees trained in sequence, each learning from the previous error.](media/trees.webp)
 
-When `max_features` selects fewer than all columns, the forest considers a fresh random subset at each split; the diagram does not mean each tree keeps one fixed subset. The regressor defaults to considering all columns. XGBoost's feature sampling is optional.
+When `max_features` selects fewer than all columns, the forest considers a fresh random subset at each split; the diagram does not mean each tree keeps one fixed subset. XGBoost's feature sampling is optional.
 
 ### Reference Card: Random Forests
 
@@ -719,11 +718,11 @@ _Gradient boosting is the Magnum of machine learning: a signature look, built on
 
 | Parameter | What it controls | Starting choice and tradeoff |
 | --- | --- | --- |
-| `n_estimators` | Boosting rounds | Try 50–200; more rounds give more opportunity to fit and overfit |
-| `max_depth` | Depth of each tree | Try 3–6; deeper trees capture more complexity and can memorize |
-| `learning_rate` | Share of each tree's correction added | Try 0.01–0.3; smaller steps usually need more rounds |
-| `subsample` | Fraction of training rows each tree sees | Try 0.8–1.0; sampling can reduce overfitting, but too few rows lose signal |
-| `colsample_bytree` | Fraction of features each tree sees | Try 0.8–1.0; sampling makes trees less alike, but can omit useful features |
+| `n_estimators` | Boosting rounds | Try 50 to 200; more rounds give more opportunity to fit and overfit |
+| `max_depth` | Depth of each tree | Try 3 to 6; deeper trees capture more complexity and can memorize |
+| `learning_rate` | Share of each tree's correction added | Try 0.01 to 0.3; smaller steps usually need more rounds |
+| `subsample` | Fraction of training rows each tree sees | Try 0.8 to 1.0; sampling can reduce overfitting, but too few rows lose signal |
+| `colsample_bytree` | Fraction of features each tree sees | Try 0.8 to 1.0; sampling makes trees less alike, but can omit useful features |
 
 These are toy starting points; choose settings on validation rows for the data and budget.
 

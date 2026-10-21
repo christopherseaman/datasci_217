@@ -110,7 +110,7 @@ df.groupby(pd.Grouper(freq='7D')).agg({
 
 # Advanced Pivot Table Operations
 
-Multiple row or column keys give each cell a more specific meaning. With region and product down the rows and quarter and year across the columns, one cell describes exactly one region–product–quarter–year combination. Select a level before comparing values with different units, such as sales totals and mean profit.
+Multiple row or column keys give each cell a more specific meaning. With region and product down the rows and quarter and year across the columns, one cell describes exactly one combination of region, product, quarter, and year. Select a level before comparing values with different units, such as sales totals and mean profit.
 
 ## Multi-Level Pivot Tables
 
@@ -233,7 +233,7 @@ Forward-filling or interpolating fabricates values the same way: `means.ffill()`
 
 # Hierarchical Grouping and MultiIndex
 
-A **MultiIndex** stores several labels for each row, such as clinic and department. Grouping by one level combines rows sharing that label while ignoring the others: North–Cardiology 4 and North–Pediatrics 6 become North 10. `swaplevel` changes label order; `sort_index` changes row order; neither aggregates values.
+A **MultiIndex** stores several labels for each row, such as clinic and department. Grouping by one level combines rows sharing that label while ignoring the others: North Cardiology 4 and North Pediatrics 6 become North 10. `swaplevel` changes label order; `sort_index` changes row order; neither aggregates values.
 
 ## MultiIndex Operations
 

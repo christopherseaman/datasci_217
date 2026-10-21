@@ -19,6 +19,7 @@ All checks passed.
 How the files are read:
 
 - Each check is scored on its own, so one mistake costs only that check's points.
+- A mistake that carries into later files, such as a leaky feature kept in Task 2.1, costs points once, at the first check that finds it.
 - A missing column costs the columns check once; values in the remaining columns are still checked. An empty table or one with no recognizable rows earns no value points.
 - Spacing, line endings, quoting, column order, and row order never cost points.
 - Numbers are compared as numbers, so `2`, `2.0`, and `2.00` are the same value. Any number may be rounded to one or two decimals, as `3.3` or `3.34` for an MAE of 3.3379. Accuracy, precision, recall, and R² may also be written as percents, as `85%` for 0.85.

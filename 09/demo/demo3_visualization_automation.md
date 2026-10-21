@@ -39,7 +39,7 @@ import pandas as pd
 import seaborn as sns
 ```
 
-The core walkthrough is sections 1–6. Sections 7–9 are independent practice for outside class: sections 7 and 8 build their own data, and section 9 uses section 8's `daily` and `alerts`.
+The core walkthrough is sections 1 to 6. Sections 7 to 9 are independent practice for outside class: sections 7 and 8 build their own data, and section 9 uses section 8's `daily` and `alerts`.
 
 ## 1. Rebuild the ICU panel
 
@@ -241,7 +241,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-**Expect:** three winter peaks near 60 visits per day and three summer troughs near 20; the blue 28-day mean crosses the dashed surge line each winter. Both lines break over February 1–14, 2023; after the outage, the mean uses fewer than 28 reported days.
+**Expect:** three winter peaks near 60 visits per day and three summer troughs near 20; the blue 28-day mean crosses the dashed surge line each winter. Both lines break over February 1 to 14, 2023; after the outage, the mean uses fewer than 28 reported days.
 
 Averaging by calendar month shows the seasonal pattern directly. Bars go on a new Axes of their own, and they start at zero, which suits counts.
 
