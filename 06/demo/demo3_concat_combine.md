@@ -173,9 +173,10 @@ display(with_audits)
 
 **Expect:** `(7, 3)`. January, May, and June have `NaN` hand hygiene (no audit), and the new July row has `NaN` `admissions` and `bed_days`. The default `join='outer'` keeps every label from every input, and the `NaN` cells turn the counts into `float64` (`212.0`).
 
-This chart is a preview: run the cell and read the picture; the plotting code is taught later. Light cells are the `NaN` values from the outer join.
+Light cells are the `NaN` values from the outer join.
 
 ```python
+# Preview: plotting is taught later
 import seaborn as sns
 import matplotlib.pyplot as plt
 

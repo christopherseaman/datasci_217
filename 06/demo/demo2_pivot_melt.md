@@ -94,9 +94,10 @@ display(bp_long.head(6))
 
 **Expect:** `(12, 6)`: 4 patients × 3 visits = 12 rows, with columns `patient_id`, `age`, `sex`, `clinic`, `visit`, `sbp`. The first four rows are every patient's `baseline`, then the `week_04` rows begin.
 
-This chart is a preview: run the cell and read the picture; plotting code is taught later. One call draws one line per patient because the long table has one row per reading.
+One call draws one line per patient because the long table has one row per reading.
 
 ```python
+# Preview: plotting is taught later
 import seaborn as sns
 
 sns.lineplot(data=bp_long, x='visit', y='sbp', hue='patient_id', marker='o').set_title('SBP by visit');

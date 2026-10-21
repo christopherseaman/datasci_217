@@ -101,9 +101,8 @@ display(audit[audit['_merge'] != 'both'][['patient_id', 'clinic', 'lab_id', '_me
 
 **Expect:** 9 rows. `_merge` counts: `both` 6, `left_only` 2, `right_only` 1. The leftover table has 3 rows: P004 and P005 as `left_only` (registered, no labs) and P006 as `right_only` (a lab with no registry record, so `clinic` is `NaN`). Use `indicator=True` whenever a merge's row count surprises you.
 
-The next cell is a preview of a chart: run it and read the picture. Plotting code is taught later.
-
 ```python
+# Preview: plotting is taught later
 sns.countplot(data=audit, x='_merge').set_title('Rows by match status');
 ```
 
