@@ -1,6 +1,6 @@
 # Handoff
 
-Updated 2026-10-20. Read [AGENTS.md](AGENTS.md) for the authoring and verification rules. This brief holds the current state, standing decisions, and open items; Git history and `work/reviews/` hold completed work.
+Updated 2026-10-21. Read [AGENTS.md](AGENTS.md) for the authoring and verification rules. This brief holds the current state, standing decisions, and open items; Git history and `work/reviews/` hold completed work.
 
 ## Overall goal
 
@@ -10,25 +10,28 @@ Each ordinary class has 90 minutes: about 60 of lecture and 30 of core demo walk
 
 ## Repo and release state
 
-- As of October 20, `main` holds all work, and all mapped lecture and BONUS pages for 01 to 11 match it in Notion. Check `git status` and `git log` on arrival.
-- Handout repositories `UCSF-DataSci/ds217-26f-04` through `-11` match their course folders as of their last publish: 05, 08, and 10 on October 19; 06 on October 20; the rest October 2 or 14. Pushing the course updates the checks that homework forks download from `main`, never the handouts themselves.
+- As of October 21, `main` holds all work, and all mapped lecture and BONUS pages for 01 to 11 match it in Notion. Notion 06 carries two bookmark cards under "Notes from the Trenches" that the repo writes as links; after republishing 06, restore them (the instructor did so by hand on October 20). Check `git status` and `git log` on arrival.
+- Handout repositories `UCSF-DataSci/ds217-26f-04` through `-11` match their course folders as of their last publish: 05, 08, and 10 on October 19; 06 on October 20; 11 on October 21; the rest October 2 or 14. Pushing the course updates the checks that homework forks download from `main`, never the handouts themselves.
 - Assignment 05 is live with 8 forks. On October 19 its handout renamed the row-count artifact to `output/row_counts.csv` with the index `step`; earlier forks save `output/decision_log.csv` with the index `decision`. The checks accept both until the November cleanup in [TODO.md](TODO.md).
-- Assignments 06 (the midterm), 08, and 10 had no forks on October 20.
+- Assignments 06 (the midterm), 08, 10, and 11 had no forks on October 20 and 21.
 
-## Recent work, October 19 to 20
+## Recent work, October 19 to 21
 
-- Every lecture opens with a blue 🧭 callout, `# This Lecture`, holding `## Covers` (topics plus one Readings bullet) and `## Enables` (3 to 5 practical skills taught in the main lecture or demos). AGENTS.md defines the shape. Lecture 01's `# Quick References` follows the callout.
-- Assignments 08 and 10: README steps and notebook TODOs name methods and arguments without paste-ready answer expressions. Grading is unchanged.
-- Lecture 06 and the midterm had three adversarial review rounds on October 20, each claim checked by a skeptic. Fixes:
-    - Charge-once grading: summaries follow the student's own audit counts (`OWN_RULES`), including labels never mapped, stripped but not lowercased, or not stripped. When the visit count is below expected and already charged, up to that many missing rows in `analysis_sample.csv` and `sbp_wide_sample.csv` are excused. The self-test has 39 cases and takes about 15 minutes.
-    - Data fixture v8: weekday follow-ups spread over clinic days (about 5,500 per weekday), and recheck pairs share one date.
-    - Handout wording: HINTS names `patients_clean` and `one_to_one`; Task 1.2 loops over `manifest["files"]`; summary dates may carry a time.
-    - Lecture 06 gained the `rechecked` input table, the full `MergeError` text, and a `pivot_table()` card. Demo wording fixes; every `setup_demo.sh` (03 to 11) explains a rerun instead of a bare `mkdir` error.
-- `scratch/` was emptied on October 20.
+- Every lecture opens with a blue 🧭 callout, `# This Lecture`, holding `## Covers` (topics plus one Readings bullet) and `## Enables` (3 to 5 practical skills). AGENTS.md defines the shape.
+- Lecture 06 was reworked from the instructor's notes:
+    - One **key** idea replaces primary, candidate, and foreign keys; grain is the **unit of analysis**.
+    - Join types sit in `pd.merge()` with a Venn image and left join as the course default.
+    - Output tables drop the meaningless 0, 1, 2 index; headings name their function.
+    - `combine_first()` fills missing values.
+    - Two-column `set_index`, two-level `.loc`, and `stack()`/`unstack()` moved to BONUS and a Demo 2 extension; the main lecture keeps `reset_index()`.
+    - The old join, wide/long, and MultiIndex images and six memes and comics are back. Their sources are the old Notion export under `~/projects/sqrl/Notion/` and DataSci 223.
+- Midterm grading charges each mistake once with simple rules. When `visits` is below the expected count and charged, rows missing from the two extracts cost nothing more. The self-test has 42 single-mistake cases and takes about 15 minutes.
+- Exam handouts (06 and 11): each task's Checkpoint names its artifact, header, and line count. Check your work is Restart and Run All, then commit and push. CHECKS.md lists the checks run on the artifacts, the proof of work, and human review shows only category and full credit.
+- The shark-repellent `xkcd/` toolkit searches, audits, and fetches comics (AGENTS.md has the commands). Comics 1205, 1319, and 1513 each appear in one lecture page plus an unused media file in another lecture.
 
 ## Coming up
 
-- A final re-review of Lecture 06, its demos, and the midterm (round 3) before the midterm opens. Untested: the 25 human-review points and a live Colab runtime.
+- The midterm opens with Lecture 06 and its demos reviewed five times. Untested: the 25 human-review points and a live Colab runtime.
 - November: remove the Assignment 05 legacy file name (TODO.md).
 - Republish each handout only after a fresh reconcile, and only when the instructor asks.
 
