@@ -203,6 +203,7 @@ Organization first, styling last. Fix substance (add the missing explanation, vi
 - Notebook opening: title, short intro, one sentence (run the cells top to bottom), and one install cell, `%pip install -q --no-warn-conflicts ...` (the flag silences Colab's harmless `google-colab requires pandas==...` conflict), whose one-line comment carries any caveat (restart prompt, a platform limit such as Lecture 10's). No route table, local setup commands, or install Expect paragraph; the lecture page carries those.
 - A notebook runs alone in a fresh Colab runtime: its first cells install packages and download every non-notebook file it reads (data, and anything an earlier demo writes) when missing, as Lecture 11's demos do.
 - Core content uses only material taught before its break. Label optional extensions and link any approved BONUS prerequisite.
+- Charts may preview a tool taught later, such as seaborn in Lecture 06, when they make a step's result easier to see. The demo's first chart cell opens with `# Preview: plotting is taught later`; the `%pip` line pins the plotting package and lets pip choose its dependencies.
 - Lecture 01 uses plain `print()`; f-strings start in Lecture 02.
 - Build progressive workflows from preceding material, with realistic data and edge cases where they serve the lesson.
 - Show intermediate values, tables, diffs, or saved files after meaningful steps, with concrete expected results.

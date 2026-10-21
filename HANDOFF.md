@@ -10,8 +10,8 @@ Each ordinary class has 90 minutes: about 60 of lecture and 30 of core demo walk
 
 ## Repo and release state
 
-- As of October 21, `main` holds all work, and all mapped lecture and BONUS pages for 01 to 11 match it in Notion. Notion 06 carries two bookmark cards under "Notes from the Trenches" that the repo writes as links; after republishing 06, restore them (the instructor did so by hand on October 20). Check `git status` and `git log` on arrival.
-- Handout repositories `UCSF-DataSci/ds217-26f-04` through `-11` match their course folders as of their last publish: 05, 08, and 10 on October 19; 06 on October 20; 11 on October 21; the rest October 2 or 14. Pushing the course updates the checks that homework forks download from `main`, never the handouts themselves.
+- As of October 21, `main` holds all work, and all mapped lecture and BONUS pages for 01 to 11 match it in Notion. Notion 06 carries two bookmark cards under "Notes from the Trenches" that the repo writes as links; after republishing 06, restore them; the October 21 republishes did so with `scratch/recon/trench_bookmarks.py` (ignored scratch, so it may be gone). Check `git status` and `git log` on arrival.
+- Handout repositories `UCSF-DataSci/ds217-26f-04` through `-11` match their course folders as of their last publish: 05, 08, and 10 on October 19; 06 and 11 on October 21; the rest October 2 or 14. Pushing the course updates the checks that homework forks download from `main`, never the handouts themselves.
 - Assignment 05 is live with 8 forks. On October 19 its handout renamed the row-count artifact to `output/row_counts.csv` with the index `step`; earlier forks save `output/decision_log.csv` with the index `decision`. The checks accept both until the November cleanup in [TODO.md](TODO.md).
 - Assignments 06 (the midterm), 08, 10, and 11 had no forks on October 20 and 21.
 
@@ -24,14 +24,15 @@ Each ordinary class has 90 minutes: about 60 of lecture and 30 of core demo walk
     - Output tables drop the meaningless 0, 1, 2 index; headings name their function.
     - `combine_first()` fills missing values.
     - Two-column `set_index`, two-level `.loc`, and `stack()`/`unstack()` moved to BONUS and a Demo 2 extension; the main lecture keeps `reset_index()`.
-    - The old join, wide/long, and MultiIndex images and six memes and comics are back. Their sources are the old Notion export under `~/projects/sqrl/Notion/` and DataSci 223.
-- Midterm grading charges each mistake once with simple rules. When `visits` is below the expected count and charged, rows missing from the two extracts cost nothing more. The self-test has 42 single-mistake cases and takes about 15 minutes.
+    - The old join, wide/long, and MultiIndex images and the memes and comics are back, spaced at most 87 lines apart. Their sources are the old Notion export under `~/projects/sqrl/Notion/` and DataSci 223. The instructor dropped the beard join image and gave three memes plain captions, no jokes.
+    - Demos 1 to 3 each carry two seaborn preview charts and cover `left_on=`/`right_on=` (Demo 1) and `%%bash wc -l` (Demo 3).
+- Midterm grading charges each mistake once with simple rules. When `visits` is below the expected count and charged, rows missing from the two extracts cost nothing more. An October 21 audit (fresh completion 75/75) led to four more charge-once fixes. The self-test has 46 single-mistake cases and takes about 15 minutes; for a small grader change, run only the clean submission and the affected cases first (about 4 minutes), then the full suite.
 - Exam handouts (06 and 11): each task's Checkpoint names its artifact, header, and line count. Check your work is Restart and Run All, then commit and push. CHECKS.md lists the checks run on the artifacts, the proof of work, and human review shows only category and full credit.
 - The shark-repellent `xkcd/` toolkit searches, audits, and fetches comics (AGENTS.md has the commands). Comics 1205, 1319, and 1513 each appear in one lecture page plus an unused media file in another lecture.
 
 ## Coming up
 
-- The midterm opens with Lecture 06 and its demos reviewed five times. Untested: the 25 human-review points and a live Colab runtime.
+- The midterm opens with Lecture 06 and its demos reviewed five times and the exam audited on October 21. Untested: the 25 human-review points and a live Colab runtime.
 - November: remove the Assignment 05 legacy file name (TODO.md).
 - Republish each handout only after a fresh reconcile, and only when the instructor asks.
 
@@ -63,7 +64,7 @@ Each ordinary class has 90 minutes: about 60 of lecture and 30 of core demo walk
 - `NN/assignment/` and `NN/assignment_checks/` (06: `06/mid-term/` and `06/mid-term_checks/`); `05/mid-term/` and `06/assignment/` are inactive. `assignments.json` names each handout folder. Homework checkers are byte-identical in both locations; change both together and judge by emitted JSON.
 - Older forks may run older workflows; do not assume every fork fetches current checks.
 - TA grading: `uv run scripts/grade_submissions.py NN`, run from the ignored `grading/` folder. Live fork collection has not been exercised.
-- Use ignored `scratch/` or `tmp/` for trials. `scratch/` was emptied on October 20; build each verification env fresh there with uv. `work/tufte/` holds local reference PDFs, not for redistribution.
+- Use ignored `scratch/` or `tmp/` for trials. Build each verification env fresh in `scratch/` with uv. `work/tufte/` holds local reference PDFs, not for redistribution.
 
 ## Still unverified
 
