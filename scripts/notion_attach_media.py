@@ -97,8 +97,14 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    wanted = {caption_key(caption): path for caption, path in captioned_images(args.source)}
-    broken = [b for b in page_blocks(args.page) if b["type"] == "image" and placeholder(b)]
+    images = captioned_images(args.source)
+    wanted = {caption_key(caption): path for caption, path in images if caption}
+    # Uncaptioned images have no key, so the nth uncaptioned block on the page gets the nth one in the file.
+    # ponytail: nested blocks come after top-level ones in page_blocks, so uncaptioned images inside columns may pair out of order.
+    uncaptioned = [path for caption, path in images if not caption]
+    blocks = [b for b in page_blocks(args.page) if b["type"] == "image"]
+    by_order = {b["id"]: path for b, path in zip([b for b in blocks if not caption_of(b)], uncaptioned)}
+    broken = [b for b in blocks if placeholder(b)]
     if not broken:
         print("no placeholder images on this page")
         return 0
@@ -106,7 +112,7 @@ def main() -> int:
     repaired, skipped = 0, []
     for block in broken:
         caption = caption_of(block)
-        local = wanted.get(caption_key(caption))
+        local = wanted.get(caption_key(caption)) if caption else by_order.get(block["id"])
         if local is None:
             skipped.append(caption[:70] or "(no caption)")
             continue

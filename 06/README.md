@@ -68,7 +68,7 @@ _Join keys are the table's name tags: if two rows share a tag, pandas brings the
 
 ## Joining Tables with pd.merge()
 
-`pd.merge(left, right, on='key', how=...)` pairs each row of `left` with every row of `right` that has the same key value, and returns a new DataFrame. The **join type** (`how=`) decides what happens to a key found in only one table:
+`pd.merge(table1, table2, on='key', how=...)` pairs each row of `table1` with every row of `table2` that has the same key value, and returns a new DataFrame. The **join type** (`how=`) decides what happens to a key found in only one table:
 
 - **Left join** (`how='left'`): keeps every row of the left table, the main table written first. It reads left to right, so it is the course default.
 - **Inner join** (`how='inner'`, pandas' default): keeps only keys found in both tables.
@@ -100,8 +100,8 @@ _Join keys are the table's name tags: if two rows share a tag, pandas brings the
 ### Code Snippet: Compare join types
 
 ```python
-left = pd.merge(patients, labs, on='patient_id', how='left')
-display(left)
+left_join = pd.merge(patients, labs, on='patient_id', how='left')
+display(left_join)
 
 audit = pd.merge(patients, labs, on='patient_id', how='outer', indicator=True)
 display(audit)
@@ -135,8 +135,6 @@ display(audit)
 </callout>
 
 _“The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn’t support our hypothesis.”_
-
-![Left join: bald with a full beard. Right join: hair with a mustache. Inner join: bald with a mustache. Full outer join: hair and a full beard](media/join_types_beard.png)
 
 ### Code Snippet: Match differently named keys
 
@@ -278,6 +276,8 @@ display(coverage)
 
 North's 9:00 `NaN` means no report arrived; its 10:00 `0.0` is a real report of zero arrivals.
 
+![](media/cat_line_56.png)
+
 ## Checking Merge Cardinality
 
 - **Cardinality**: how many rows each key value can match on each side.
@@ -338,8 +338,6 @@ Duplicates in right:
 
 Without `validate=`, the second merge returns 6 rows from 4 visits.
 
-![A cat sleeps through an earthquake, a thunderstorm, and an alien attack, then wakes up remembering how to fix the error on line 56](media/cat_line_56.png)
-
 # LIVE DEMO!
 
 [Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo1_merge_operations.ipynb)
@@ -359,7 +357,7 @@ Without `validate=`, the second merge returns 6 rows from 4 visits.
 | Wide | One entity with several measured columns | Side-by-side comparison | `melt()` to long |
 | Long | One entity/variable observation | Grouping and tidy plotting | `pivot()` to wide |
 
-![A cat held upright is long; a dachshund standing sideways is wide](media/wide_vs_long_pets.png)
+![](media/wide_vs_long_pets.png)
 
 ## Melting Wide to Long with melt()
 
@@ -544,7 +542,7 @@ display(per_visit.reset_index())
 
 After `reset_index()`, `patient_id` repeats on every row: it is an ordinary column again.
 
-![xkcd 1762: Moving Boxes. A good row label says what is inside, like a patient ID](media/xkcd_1762.png)
+![xkcd 1762: Moving Boxes. A good row label says what is inside](media/xkcd_1762.png)
 
 # LIVE DEMO!
 
@@ -694,7 +692,7 @@ display(pd.concat([jan, feb], join='inner', ignore_index=True))
 | A201 | 5 |
 | A202 | 1 |
 
-![Say big data one more time: stacking more extracts makes a longer table, not a better one](media/say_big_data.png)
+![](media/say_big_data.png)
 
 ## Placing Tables Side by Side with concat(axis=1)
 
