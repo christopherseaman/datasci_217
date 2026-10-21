@@ -9,13 +9,110 @@ notion:
 
 # DLC: Advanced Data Wrangling
 
-# Advanced MultiIndex Operations
+# Two-Level Row Labels
 
-A **MultiIndex** identifies rows or columns with several label levels. Changing which level comes first lets the same clinic-by-quarter table support selection by clinic or by quarter without changing its values.
+- **MultiIndex** (hierarchical index): row labels with more than one level, such as a `(clinic, quarter)` pair. The outer label prints once, with the inner labels under it.
+- One column often cannot name a row in long data: a clinic with one visit count per quarter needs a clinic _and_ a quarter.
+- `set_index()` with a list of columns builds one; `loc` then selects by both parts of the label.
+- Columns can have levels too.
+
+![A pandas MultiIndex: row index levels 0 and 1 on the left, column header levels 0 and 1 on top](media/multiindex_levels.png)
+
+## Selecting Rows by a Two-Part Label
+
+### Reference Card: Two-level row labels
+
+| Item | Purpose / arguments | Output / note |
+| --- | --- | --- |
+| `df.set_index(['col1', 'col2'])` | Build two-level row labels from two columns | DataFrame with a `MultiIndex` |
+| `df.loc[('key1', 'key2'), :]` | Select a row by both parts of its label | Selected row |
+| `df.loc['key1']` | Select every row under one outer label | Rows with the inner level as their labels |
+| `df.index.is_unique` | Test that all row labels are unique; an index can repeat a label | `True` when no labels repeat |
+| `df.reset_index()` | Turn both levels back into columns | New `DataFrame` with a default `RangeIndex` |
+
+### Code Snippet: Select a two-part row label
+
+`quarterly` has one `visits` count per clinic (North, South) and quarter (Q1, Q2):
+
+| clinic | quarter | visits |
+| --- | --- | --- |
+| North | Q1 | 410 |
+| North | Q2 | 395 |
+| South | Q1 | 380 |
+| South | Q2 | 362 |
+
+```python
+summary = quarterly.set_index(['clinic', 'quarter'])
+display(summary)
+print(summary.loc[('South', 'Q2'), 'visits'])  # 362
+display(summary.loc['South'])
+```
+
+| clinic | quarter | visits |
+| --- | --- | --- |
+| North | Q1 | 410 |
+|  | Q2 | 395 |
+| South | Q1 | 380 |
+|  | Q2 | 362 |
+
+The `loc` line prints `362`; `loc['South']` shows the two South rows:
+
+| quarter | visits |
+| --- | --- |
+| Q1 | 380 |
+| Q2 | 362 |
+
+## Moving Index Levels with stack() and unstack()
+
+- **unstack()** moves an index level from the rows to the columns: each quarter becomes its own column.
+- **stack()** moves the column labels down into an inner row level.
+- Both change the layout only; every value keeps its clinic and quarter labels.
+- By default each moves the innermost level; `level=` names a different one.
+
+```text
+stacked: summary['visits']            unstacked: summary['visits'].unstack()
+clinic  quarter                       quarter  Q1   Q2
+North   Q1        410                 clinic
+        Q2        395                 North    410  395
+South   Q1        380                 South    380  362
+        Q2        362
+```
+
+### Reference Card: `stack()` and `unstack()`
+
+| Call | Purpose | Output / note |
+| --- | --- | --- |
+| `s.unstack()` | Move the inner row level to columns | `DataFrame`: one row per outer label, one column per inner label |
+| `s.unstack(level='clinic')` | Move a named level (or a number, `0` for outer) instead | Clinics become the columns |
+| `df.stack()` | Move the column labels into an inner row level | `Series` with a two-level index |
+| Missing combination | A pair absent from the data | `unstack()` fills `NaN`; `stack()` keeps that `NaN` row, so add `.dropna()` to remove it |
+
+### Code Snippet: Unstack quarters into columns
+
+```python
+by_quarter = summary['visits'].unstack()
+display(by_quarter)
+display(summary['visits'].unstack(level='clinic'))
+print(by_quarter.stack().equals(summary['visits']))   # True: stack() undoes unstack()
+```
+
+| quarter | Q1 | Q2 |
+| --- | --- | --- |
+| **clinic** |  |  |
+| North | 410 | 395 |
+| South | 380 | 362 |
+
+| clinic | North | South |
+| --- | --- | --- |
+| **quarter** |  |  |
+| Q1 | 410 | 380 |
+| Q2 | 395 | 362 |
+
+`pivot(index='clinic', columns='quarter', values='visits')` gives the same layout as `set_index(['clinic', 'quarter'])['visits'].unstack()`.
 
 ## Swapping and Reordering Index Levels
 
-When you have multiple index levels, you may need to change their order for different analyses.
+Swapping levels puts the other label first, so `loc` and `sort_index()` work on it.
 
 ### Reference Card: Swapping and reordering index levels
 
@@ -440,10 +537,6 @@ print(swapped)
 	Flatten them to single-level names, extract one metric with `.xs()`, or keep the data in long format.
 </callout>
 
-
-# Repeated Pairs and pivot_table()
-
-`pivot()` stops with `ValueError: Index contains duplicate entries, cannot reshape` when an index/column pair holds more than one value. `pivot_table(values=..., index=..., columns=..., aggfunc='mean')` aggregates the repeats into one cell; choosing `mean` or `sum` is an analysis decision, and Lecture 08 teaches it.
 
 # Further Reading
 

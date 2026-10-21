@@ -22,7 +22,7 @@ jupyter:
 - Stack the monthly files and record where each row came from.
 - Handle a March file whose columns changed: keep every column, or only the shared ones.
 - Line up two systems by month, keeping every month or only the months both report.
-- Patch a gappy census from a backup source.
+- Fill missing census values from a backup source.
 
 Run the cells from top to bottom; each **Expect** line says what you should see.
 
@@ -124,7 +124,7 @@ display(admissions.isna().sum())
 display(admissions)
 ```
 
-**Expect:** `(9, 7)` and missing counts of `age` 3 and `payer` 6, everything else 0. The 3 March rows have no `age`, and the 6 January and February rows have no `payer`. These gaps come from the files' layouts, not from missing measurements, so note them rather than filling them.
+**Expect:** `(9, 7)` and missing counts of `age` 3 and `payer` 6, everything else 0. The 3 March rows have no `age`, and the 6 January and February rows have no `payer`. These missing values come from the files' layouts, not from missing measurements, so note them rather than filling them.
 
 `join='inner'` keeps only the columns every file shares.
 
@@ -164,7 +164,7 @@ display(audited_months)
 
 **Expect:** 3 rows, `2026-02`, `2026-03`, and `2026-04`: only the months present in both inputs, with no `NaN`.
 
-### 6. Patch gaps with `combine_first()`
+### 6. Fill missing values with `combine_first()`
 
 The live ADT export failed to report February and April and has not reported June yet. Finance keeps its own estimate for every month.
 
@@ -175,22 +175,22 @@ display(primary)
 display(finance)
 ```
 
-**Expect:** 5 ADT months with `NaN` in both columns for February and April, and 6 finance months with no gaps.
+**Expect:** 5 ADT months with `NaN` in both columns for February and April, and 6 finance months with no missing values.
 
 ```python
 filled = primary.combine_first(finance)
 display(filled)
 ```
 
-**Expect:** 6 months. January, March, and May keep the ADT values (212, 225, 231 admissions), February and April take finance's estimates (200 and 238), and June comes only from finance (219). Values print as `212.0` because the gaps made the columns `float64`.
+**Expect:** 6 months. January, March, and May keep the ADT values (212, 225, 231 admissions), February and April take finance's estimates (200 and 238), and June comes only from finance (219). Values print as `212.0` because the missing values made the columns `float64`.
 
-Compare `concat(axis=1)`, which puts the two sources side by side instead of patching one with the other:
+Compare `concat(axis=1)`, which puts the two sources side by side instead of filling one from the other:
 
 ```python
 print(list(pd.concat([primary, finance], axis=1).columns))
 ```
 
-**Expect:** `['admissions', 'bed_days', 'admissions', 'bed_days']`: duplicate column names and no filled gaps. For patching, `combine_first()` is the right tool.
+**Expect:** `['admissions', 'bed_days', 'admissions', 'bed_days']`: duplicate column names and no filled values. For filling missing values, `combine_first()` is the right tool.
 
 Record which source each month's numbers came from. Start by marking every month as an estimate, then relabel the months where ADT actually reported.
 
@@ -304,10 +304,10 @@ display(yoy)
 
 ```python
 by_file = pd.concat([jan, feb], keys=['jan', 'feb'], names=['source', 'row'])
-display(by_file.loc['feb'])
+display(by_file.reset_index().query("source == 'feb'"))
 ```
 
-**Expect:** the 3 February admissions (A201, A202, A203), selected by the outer label `feb`, with row labels 0 to 2.
+**Expect:** the 3 February admissions (A201, A202, A203), with `source` = `feb` and `row` = 0 to 2 as ordinary columns.
 
 ```python
 print(list(by_file.reset_index().columns))

@@ -19,8 +19,8 @@ jupyter:
 # Demo 2: Row Labels and Reshaping Blood-Pressure Visits
 
 - A small hypertension study records systolic blood pressure (SBP, mmHg) at baseline, week 4, and week 12.
-- Give the table meaningful row labels, including two-level ones.
-- Reshape it from wide to long and back with `melt()`, `unstack()`, `stack()`, and `pivot()`.
+- Give the table meaningful row labels.
+- Reshape it from wide to long with `melt()` and from long to wide with `pivot()`.
 - Fix the repeated reading that stops `pivot()`.
 
 Run the cells from top to bottom; each **Expect** line says what you should see.
@@ -67,7 +67,7 @@ display(bp_wide)
 
 ### 2. Patient IDs as row labels
 
-As in Lecture 04, `set_index()` turns a column into row labels.
+`set_index()` turns a column into row labels.
 
 ```python
 bp = bp_wide.set_index('patient_id')
@@ -94,9 +94,9 @@ display(bp_long.head(6))
 
 **Expect:** `(12, 6)`: 4 patients × 3 visits = 12 rows, with columns `patient_id`, `age`, `sex`, `clinic`, `visit`, `sbp`. The first four rows are every patient's `baseline`, then the `week_04` rows begin.
 
-### 4. Long back to wide with `pivot()`
+### 4. Long to wide with `pivot()`
 
-`pivot()` gives each patient one row: `visit` supplies the headers and `sbp` fills the cells. The four identifier columns in `ids` become row labels, so `reset_index()` turns them back into columns, and `columns.name = None` drops the leftover `visit` header label.
+`pivot()` gives each patient one row: `visit` supplies the headers and `sbp` fills the cells. The four identifier columns in `ids` become four-level row labels, so `reset_index()` turns them into ordinary columns, and `columns.name = None` drops the leftover `visit` header label.
 
 ```python
 bp_wide_again = bp_long.pivot(
@@ -154,20 +154,69 @@ display(recorded.pivot(index='patient_id', columns='visit', values='sbp'))
 
 If both readings should count, `pivot_table()` would average them instead.
 
-### 6. Two-level row labels
+## Independent practice
+
+Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
+
+### 6. Average the readings instead of selecting the recheck
+
+For a report about the average of all recorded readings, keep both P003 measurements and state the aggregation with `aggfunc='mean'`. This answers a different question from the clinic protocol in step 5.
+
+```python
+average_readings = device_week4.pivot_table(
+    index='patient_id', columns='visit', values='sbp', aggfunc='mean',
+)
+display(average_readings)
+```
+
+**Expect:** four rows: P001 144.0, P002 135.0, P003 146.0, and P004 136.0. P003's mean is `(152 + 140) / 2 = 146` mmHg; the protocol's later reading was 140 mmHg. Aggregation changes the values, so this is not a lossless reshape.
+
+### 7. Visit numbers instead of labels
+
+The visit labels are text. A number of weeks is easier to plot and sort, so look each label up in a dictionary with `.map()`.
+
+```python
+weeks = {'baseline': 0, 'week_04': 4, 'week_12': 12}
+bp_long['week'] = bp_long['visit'].map(weeks)
+print(bp_long['week'].isna().sum())
+display(bp_long.sort_values(['patient_id', 'week']).head(3))
+```
+
+**Expect:** `0` unmapped labels, then P001's three rows in time order: 152 at week 0, 144 at week 4, and 138 at week 12.
+
+### 8. Renumber rows after a filter
+
+Filtering keeps the original row labels, so the numbers now skip the rows that were removed.
+
+```python
+high_baseline = bp_wide[bp_wide['baseline'] >= 140]
+print(list(high_baseline.index))
+
+high_baseline = high_baseline.reset_index(drop=True)
+print(list(high_baseline.index))
+display(high_baseline[['patient_id', 'age', 'baseline']])
+```
+
+**Expect:** `[0, 2, 3]`, then `[0, 1, 2]`: P001, P003, and P004 started at 140 mmHg or higher. `drop=True` throws the old labels away instead of saving them as a column, because `0, 2, 3` carried no information.
+
+## Optional extension: two-level row labels
+
+Prerequisite: BONUS.md, Two-Level Row Labels. Nothing in the core route or the assignment needs this. These cells use `bp_long` from step 3.
+
+### 9. Two-level row labels
 
 In the long table one patient has three rows, so `patient_id` alone no longer names a row; `patient_id` and `visit` together do.
 
 ```python
-by_visit = bp_long.set_index(['patient_id', 'visit']).sort_index()
+by_visit = bp_long.set_index(['patient_id', 'visit'])[['sbp']].sort_index()
 print(by_visit.index.is_unique)
 display(by_visit.loc['P003'])
 print(by_visit.loc[('P003', 'week_12'), 'sbp'])
 ```
 
-**Expect:** `True`, then P003's three visits (`baseline`, `week_04`, `week_12`) with SBP 147, 140, and 129, then `129`. The labels sort alphabetically, which here is also time order.
+**Expect:** `True`, then P003's three visits as rows labeled by `visit` alone (`baseline`, `week_04`, `week_12`), with SBP 147, 140, and 129, then `129`. The labels sort alphabetically, which here is also time order.
 
-### 7. Move a level with `unstack()` and `stack()`
+### 10. Move a level with `unstack()` and `stack()`
 
 `unstack()` moves the inner level, `visit`, up into the columns: one row per patient again.
 
@@ -187,60 +236,15 @@ print(sbp_by_visit.stack().equals(by_visit['sbp']))
 
 **Expect:** `True`: no value was lost or moved to another patient.
 
-## Independent practice
-
-Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
-
-### 8. Average the readings instead of selecting the recheck
-
-For a report about the average of all recorded readings, keep both P003 measurements and state the aggregation with `aggfunc='mean'`. This answers a different question from the clinic protocol in step 5.
-
-```python
-average_readings = device_week4.pivot_table(
-    index='patient_id', columns='visit', values='sbp', aggfunc='mean',
-)
-display(average_readings)
-```
-
-**Expect:** four rows: P001 144.0, P002 135.0, P003 146.0, and P004 136.0. P003's mean is `(152 + 140) / 2 = 146` mmHg; the protocol's later reading was 140 mmHg. Aggregation changes the values, so this is not a lossless reshape.
-
-### 9. Visit numbers instead of labels
-
-The visit labels are text. A number of weeks is easier to plot and sort, so look each label up in a dictionary with `.map()` (Lecture 05).
-
-```python
-weeks = {'baseline': 0, 'week_04': 4, 'week_12': 12}
-bp_long['week'] = bp_long['visit'].map(weeks)
-print(bp_long['week'].isna().sum())
-display(bp_long.sort_values(['patient_id', 'week']).head(3))
-```
-
-**Expect:** `0` unmapped labels, then P001's three rows in time order: 152 at week 0, 144 at week 4, and 138 at week 12.
-
-### 10. A missed visit after `unstack()`
+### 11. A missed visit after `unstack()`
 
 P002 missed the week 12 visit. Drop that row and unstack again.
 
 ```python
 missed = by_visit['sbp'].drop(('P002', 'week_12'))
-gappy = missed.unstack()
-display(gappy)
-print(len(gappy.stack()), len(gappy.stack().dropna()))
+with_missing = missed.unstack()
+display(with_missing)
+print(len(with_missing.stack()), len(with_missing.stack().dropna()))
 ```
 
 **Expect:** P002's `week_12` cell is `NaN`, and the SBP columns become floats (`138.0`) because `NaN` is a float. Then `12 11`: `stack()` keeps the empty cell as a row, and `.dropna()` removes it.
-
-### 11. Renumber rows after a filter
-
-Filtering keeps the original row labels, so the numbers now have gaps.
-
-```python
-high_baseline = bp_wide[bp_wide['baseline'] >= 140]
-print(list(high_baseline.index))
-
-high_baseline = high_baseline.reset_index(drop=True)
-print(list(high_baseline.index))
-display(high_baseline[['patient_id', 'age', 'baseline']])
-```
-
-**Expect:** `[0, 2, 3]`, then `[0, 1, 2]`: P001, P003, and P004 started at 140 mmHg or higher. `drop=True` throws the old labels away instead of saving them as a column, because `0, 2, 3` carried no information.

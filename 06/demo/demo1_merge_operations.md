@@ -56,7 +56,7 @@ print(sorted(p.name for p in data_dir.glob("demo1_*.parquet")))
 
 **Expect:** a list of the 7 `demo1_*.parquet` file names.
 
-The registry has one row per patient, so `patient_id` is its primary key. The lab table has one row per test; its `patient_id` is a foreign key that can repeat.
+`patient_id` is the key in both tables. The registry has one row per patient, so its `patient_id` should be unique. The lab table has one row per test, so its `patient_id` can repeat.
 
 ```python
 patients = pd.read_parquet(data_dir / "demo1_patients.parquet")
@@ -140,7 +140,7 @@ display(registry[registry.duplicated(subset=['patient_id'], keep=False)])
 
 **Expect:** `False`, then 2 rows for P003: a `retired` North record and a `current` South record. P003 moved clinics, and the export kept both rows.
 
-**Intentional error:** declare the contract with `validate='many_to_one'`, and pandas refuses the merge. The `try`/`except` (Lecture 02) catches the `MergeError` so the notebook keeps running.
+**Intentional error:** declare the contract with `validate='many_to_one'`, and pandas refuses the merge. The `try`/`except` catches the `MergeError` so the notebook keeps running.
 
 ```python
 try:
@@ -254,7 +254,7 @@ paired['poc_minus_lab'] = (paired['a1c_poc'] - paired['a1c_lab']).round(1)
 display(paired[['patient_id', 'a1c_lab', 'a1c_poc', 'device', 'poc_minus_lab']])
 ```
 
-**Expect:** columns `a1c_lab` and `a1c_poc`, and `poc_minus_lab` of -0.2, 0.2, -0.7, and 0.1. P003's device reading is 0.7 points below the lab, the largest gap, and it came from device `DCA-2`: a question for the lab's quality team. This comparison needs the descriptive suffixes to be readable.
+**Expect:** columns `a1c_lab` and `a1c_poc`, and `poc_minus_lab` of -0.2, 0.2, -0.7, and 0.1. P003's device reading is 0.7 points below the lab, the largest difference, and it came from device `DCA-2`: a question for the lab's quality team. This comparison needs the descriptive suffixes to be readable.
 
 ### 11. Putting it together: a checked patient-lab table
 
