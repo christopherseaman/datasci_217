@@ -162,7 +162,7 @@ def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, si
           rename_wt=True, visit_map=VISIT_MAP, recheck_keep="last", exact_dates=True, sbp_range=True,
           melt_map=None, melt_dropna=True, a1c_how="left", site_table="current", reverse_change=False,
           audit_rules=True, references: dict | None = None, visit_lower=True, gender_strip=True,
-          dropna_sbp=False) -> dict[str, str]:
+          dropna_sbp=False, dropna_all=False) -> dict[str, str]:
     """Answer the midterm with lecture methods, with any one mistake carried through; return each file's text.
 
     With `audit_rules`, the issue audit counts with the site code, date, and visit label rules the cleaning
@@ -238,15 +238,19 @@ def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, si
     v["visit"] = v["visit"].str.lower() if visit_lower else v["visit"]
     v["visit"] = v["visit"] if visit_map is None else v["visit"].map(visit_map)
     sbp = pd.to_numeric(v["sbp_mmhg"], errors="coerce")
-    v["sbp_mmhg"] = (sbp.where(sbp.between(70, 250)) if sbp_range else sbp).astype("Int64")
+    v["sbp_mmhg"] = (sbp.clip(70, 250) if sbp_range == "clip" else sbp.where(sbp.between(70, 250)) if sbp_range
+                     else sbp).astype("Int64")
     v["weight_kg"] = pd.to_numeric(v["weight_kg"], errors="coerce").astype("float64")
     day = v["visit_date"].str.strip()
     v["visit_date"] = pd.to_datetime(day.where(day.str.fullmatch(EXACT_DATE)) if exact_dates else day,
                                      format="%Y-%m-%d", errors="coerce")
     repeated = v[v.duplicated(subset=["patient_id", "visit"], keep=False)]
-    v = v.sort_values("visit_time").drop_duplicates(subset=["patient_id", "visit"], keep=recheck_keep)
+    if recheck_keep != "skip":
+        v = v.sort_values("visit_time").drop_duplicates(subset=["patient_id", "visit"], keep=recheck_keep)
     if dropna_sbp:
         v = v.dropna(subset=["sbp_mmhg"])
+    if dropna_all:
+        v = v.dropna()
     v = v.sort_values(["patient_id", "visit"]).reset_index(drop=True)[VISIT_COLUMNS]
     files["visits_summary.csv"] = metrics(VISIT_METRICS, [
         len(v), v["visit"].eq("baseline").sum(), v["visit"].eq("week12").sum(), v["visit_date"].isna().sum(),
@@ -299,7 +303,7 @@ def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, si
 
     # A mistake upstream makes validate= raise; the carried-through pipeline joins without it, as a student
     # who removed validate= would, so the later files show the mistake.
-    strict = not keep_patient_repeats and site_table == "current"
+    strict = not keep_patient_repeats and site_table == "current" and recheck_keep != "skip"
     analysis = (v.merge(pc, on="patient_id", how="left", validate="many_to_one" if strict else None)
                 .merge(current, on="site_code", how="left", validate="many_to_one" if strict else None)
                 .merge(a1c, on=["patient_id", "visit"], how=a1c_how,
@@ -307,7 +311,8 @@ def solve(gender_map=GENDER_MAP, keep_patient_repeats=False, keep_9999=False, si
     sample = analysis[analysis["patient_id"].isin(grading.SAMPLE_IDS)].reset_index(drop=True)
     files["analysis_sample.csv"] = sample.to_csv(index=False)
 
-    wide = v.pivot(index="patient_id", columns="visit", values="sbp_mmhg").reset_index()
+    wide = (v.pivot_table(index="patient_id", columns="visit", values="sbp_mmhg", aggfunc="mean", dropna=False)
+             if recheck_keep == "skip" else v.pivot(index="patient_id", columns="visit", values="sbp_mmhg")).reset_index()
     wide.columns.name = None
     for column in ("baseline", "week12"):
         if column not in wide:
@@ -678,6 +683,13 @@ def run() -> None:
             solve(exact_dates=False), {"issue_audit.csv": 1}, ("date parse failures", "fullmatch")),
         "dates accepted without the exact-text check in the cleaning only": (
             solve(exact_dates=False, audit_rules=False), {"visits_summary.csv: visit_date": 1}, ("fullmatch",)),
+        "sbp capped with clip(70, 250)": (solve(sbp_range="clip"), {"visits_summary.csv: sbp_mmhg": 1},
+                                          ("70 through 250",)),
+        "dropna() on every visits_clean column": (solve(dropna_all=True), {"visits_summary.csv: rows": 4},
+                                                  ("dropna()",)),
+        "rechecks never deduplicated, pivot_table() averages them": (
+            solve(recheck_keep="skip"), {"visits_summary.csv: rows": 4, "sbp_wide_sample.csv: baseline": 1},
+            ("keep='last'",)),
         "sbp range rule skipped, 999 kept": (solve(sbp_range=False), {"visits_summary.csv: sbp_mmhg": 3},
                                              ("999",)),
         "melt labels swapped": (solve(melt_map={"a1c_baseline": "week12", "a1c_week12": "baseline"}),

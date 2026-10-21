@@ -19,6 +19,11 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/setup_demo.sh | sh
 ```
 
+# Notes from the Trenches
+
+- [Bar Raiser Interviews: Companies Are Full of It](https://tej.as/blog/companies-are-full-of-it)
+- [Chaos ensues when AI interviewer meets AI interviewee](https://www.theregister.com/offbeat/2026/10/14/chaos-ensues-when-ai-interviewer-meets-ai-interviewee/5303144)
+
 <callout icon="🧭" color="blue_bg">
 	# This Lecture
 	## Covers
@@ -130,6 +135,8 @@ display(audit)
 </callout>
 
 _“The data clearly shows that our hypothesis is correct, assuming we ignore all the data that doesn’t support our hypothesis.”_
+
+![Left join: bald with a full beard. Right join: hair with a mustache. Inner join: bald with a mustache. Full outer join: hair and a full beard](media/join_types_beard.png)
 
 ### Code Snippet: Match differently named keys
 
@@ -331,6 +338,8 @@ Duplicates in right:
 
 Without `validate=`, the second merge returns 6 rows from 4 visits.
 
+![A cat sleeps through an earthquake, a thunderstorm, and an alien attack, then wakes up remembering how to fix the error on line 56](media/cat_line_56.png)
+
 # LIVE DEMO!
 
 [Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/06/demo/demo1_merge_operations.ipynb)
@@ -477,7 +486,7 @@ display(rechecked[rechecked.duplicated(subset=['patient_id', 'visit'], keep=Fals
 | `index`, `columns`, `values` | Same roles as in `pivot()` | Row labels, headers, and the column filling cells |
 | `aggfunc` | Summary for repeated pairs: `'mean'` (default), `'sum'`, `'count'`, `'max'`, ... | Picks the value each cell holds |
 
-Returns a wide `DataFrame`; repeated pairs never raise an error. `values` must be numeric for `'mean'` or `'sum'`: a text column raises `TypeError: dtype 'str' does not support operation 'mean'`.
+Returns a wide `DataFrame`; repeated pairs never raise an error. `values` must be numeric for `'mean'`: a text column raises `TypeError: dtype 'str' does not support operation 'mean'`, and `'sum'` joins the text instead.
 
 ### Code Snippet: Summarize repeated readings with `pivot_table()`
 
@@ -497,7 +506,7 @@ display(rechecked.pivot_table(index='patient_id', columns='visit',
 
 `aggfunc='mean'` is the default; naming it records the decision. This answers “What was the average reading?”, while keeping the later recheck answers “What reading did the protocol record?” Aggregation is not lossless: the mean alone cannot recover the two readings.
 
-![xkcd 1762: Moving Boxes. A good row label says what is inside, like a patient ID](media/xkcd_1762.png)
+![xkcd 1478: P-Values. A summary number invites its own interpretation, so record which aggfunc made it](media/xkcd_1478.png)
 
 ## Turning Two-Level Row Labels into Columns with reset_index()
 
@@ -534,6 +543,8 @@ display(per_visit.reset_index())
 | P003 | baseline | 145.0 |
 
 After `reset_index()`, `patient_id` repeats on every row: it is an ordinary column again.
+
+![xkcd 1762: Moving Boxes. A good row label says what is inside, like a patient ID](media/xkcd_1762.png)
 
 # LIVE DEMO!
 
@@ -574,6 +585,8 @@ Result (outer join keeps every label):
 │ 2 │NaN│NaN│ 7 │ 8 │
 └───────────────────┘
 ```
+
+![xkcd 1667: Algorithms. The most complex system on the chart is a spreadsheet a church group grew over 20 years](media/xkcd_1667.png)
 
 ## Stacking Rows with concat()
 
@@ -681,6 +694,8 @@ display(pd.concat([jan, feb], join='inner', ignore_index=True))
 | A201 | 5 |
 | A202 | 1 |
 
+![Say big data one more time: stacking more extracts makes a longer table, not a better one](media/say_big_data.png)
+
 ## Placing Tables Side by Side with concat(axis=1)
 
 - Separate systems can report different variables for the same patients.
@@ -765,6 +780,8 @@ display(complete)
 | P004 | 90.2 |
 
 P002 is filled from the intake form, P003 keeps the primary 67.0 over the intake's 66.1, and P004 comes only from the intake form.
+
+![95% of programming is visible frustration; the other 5% is the moment it works: I am Iron Man](media/iron_man.png)
 
 # LIVE DEMO!
 

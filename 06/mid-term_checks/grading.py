@@ -1136,6 +1136,8 @@ def visits_summary(part: str) -> Callable[[Path], Outcome]:
         # Rows the student kept or dropped by mistake are charged once, in the rows part: each one can move a
         # later count by at most one and a mean by at most one row's share.
         gap = 0 if part == "rows" else visit_row_gap(root)
+        dropped = own_metrics(root, "visits_summary.csv", ("visits",)).get("visits", VISIT_SUMMARY["visits"]) \
+            < VISIT_SUMMARY["visits"]
         # A visit label or date rule the audit already charged is right here too.
         own = own_rule_summaries(root, "visits_summary.csv", part)
 
@@ -1150,6 +1152,11 @@ def visits_summary(part: str) -> Callable[[Path], Outcome]:
                 return want in calendar_dates(cell)
             if wanted == "weight_kg mean":
                 return close(number(cell), want, MEAN_TOLERANCE + gap * WEIGHT_SPAN / VISIT_SUMMARY["visits"])
+            if wanted in ("sbp_mmhg min", "sbp_mmhg max") and dropped:
+                # Dropped rows may take the boundary readings with them; any value inside 70 through 250 fits.
+                value = number(cell)
+                return value is not None and SBP_RANGE[0] <= value <= SBP_RANGE[1] and (
+                    value >= want if wanted.endswith("min") else value <= want)
             if wanted.endswith(("min", "max")):
                 return number(cell) == want
             return close(number(cell), want, gap)
@@ -1262,8 +1269,9 @@ def check_merge_audit(root: Path) -> Outcome:
     patient_gap = abs(patients["patients"] - PATIENT_SUMMARY["patients"]) if "patients" in patients else 0
     own: dict[str, bool] = {}
     if upstream:
+        # Repeated visits (rechecks kept) each match the same A1c row, so both + right_only exceeds the results.
         own["visits with an A1c result"] = both is not None and None not in (left, right) and (
-            both + left == own_visits and both + right == own_labs)
+            both + left == own_visits and (both + right == own_labs or own_visits > VISIT_SUMMARY["visits"]))
         own["visits without an A1c result"] = None not in (both, left) and both + left == own_visits
         own["A1c results without a visit"] = None not in (both, right) and both + right == own_labs
     reference = dict(MERGE_AUDIT)
@@ -1476,8 +1484,9 @@ def sbp_wide_visit(visit: str) -> Callable[[Path], Outcome]:
 
         def accepted(key: Key, row: dict[str, str]) -> list[object]:
             values: list[object] = [SBP_WIDE[key[0]][visit]]
-            if sbp_off:  # a 70 through 250 rule skipped or misapplied is charged once in visits_summary.csv
-                values += [RAW_SBP.get((key[0], visit)), None]
+            if sbp_off:  # a 70 through 250 rule skipped, misapplied, or clipped is charged once in visits_summary.csv
+                raw = RAW_SBP.get((key[0], visit))
+                values += [raw, None, None if raw is None else min(max(raw, SBP_RANGE[0]), SBP_RANGE[1])]
             if rows_off:  # an unmapped label pivots into its own column, charged once in visits_summary.csv
                 values += [None, EARLIER_SBP.get((key[0], visit))]
             return values

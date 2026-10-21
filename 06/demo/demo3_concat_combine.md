@@ -304,7 +304,8 @@ display(yoy)
 
 ```python
 by_file = pd.concat([jan, feb], keys=['jan', 'feb'], names=['source', 'row'])
-display(by_file.reset_index().query("source == 'feb'"))
+flat = by_file.reset_index()
+display(flat[flat['source'] == 'feb'])
 ```
 
 **Expect:** the 3 February admissions (A201, A202, A203), with `source` = `feb` and `row` = 0 to 2 as ordinary columns.
