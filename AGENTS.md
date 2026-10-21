@@ -137,7 +137,7 @@ Demo breaks:
 
 Images and comics:
 
-- The link text is the caption (Notion caption and site `figcaption`); never a separate italic caption paragraph. One line: what it shows or the point, not a restatement of the prose. No source citations such as `Screenshots: VS Code documentation`. A meme whose joke is its own text may go uncaptioned (`![](media/FILE.png)`); comics and diagrams keep a caption.
+- The link text is the caption (Notion caption and site `figcaption`); never a separate italic caption paragraph. One line: what it shows or the point, not a restatement of the prose. No source citations such as `Screenshots: VS Code documentation`.
 - Comics are local images between topics, captioned `xkcd NNNN: Title. The joke or point.`, as in the example above.
 - Find and fetch comics with shark-repellent's `xkcd.py` (`X=https://raw.githubusercontent.com/christopherseaman/shark-repellent/main/xkcd/xkcd.py`): `uv run $X index` once, then `uv run $X search TERMS --root .` marks comics already used, `uv run $X used --root .` flags any shared across lectures, and `uv run $X fetch NNNN --outdir NN/media` saves `xkcd_NNNN.png`.
 

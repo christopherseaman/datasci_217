@@ -7,6 +7,7 @@ import re
 import sys
 from pathlib import Path
 
+MEDIA = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
 DEMO = "# LIVE DEMO!"
 COLAB_LINK = re.compile(r"^\[Open Demo \d+ in Colab\]\(https://colab\.research\.google\.com/github/christopherseaman/datasci_217/blob/main/\S+\.ipynb\)$")
 
@@ -89,9 +90,8 @@ def check(path):
                 and (m := re.fullmatch(r"\*\*([^*]+)\*\*", stripped)) and not m.group(1).endswith(":")):
             problems.append(f"{path}:{number}: bold pseudo-heading {stripped[:40]!r}; use a real heading")
         if (m := re.fullmatch(r"!\[([^]]*)\]\(([^)]+)\)", stripped)):
-            # A meme whose joke is its own text may go uncaptioned; comics always carry one.
-            if not m.group(1).strip() and Path(m.group(2)).name.startswith("xkcd_"):
-                problems.append(f"{path}:{number}: comic has no caption in its link text")
+            if not m.group(1).strip() and Path(m.group(2)).suffix.lower() in MEDIA:
+                problems.append(f"{path}:{number}: image has no caption in its link text")
 
     for index, (number, line) in enumerate(lines[:-1]):
         if re.fullmatch(r"!\[[^]]*\]\([^)]+\)", line.strip()):

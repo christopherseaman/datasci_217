@@ -276,7 +276,7 @@ display(coverage)
 
 North's 9:00 `NaN` means no report arrived; its 10:00 `0.0` is a real report of zero arrivals.
 
-![](media/cat_line_56.png)
+![A cat sleeps through an earthquake, a storm, and an alien attack, then wakes up knowing how to fix line 56](media/cat_line_56.png)
 
 ## Checking Merge Cardinality
 
@@ -357,7 +357,7 @@ Without `validate=`, the second merge returns 6 rows from 4 visits.
 | Wide | One entity with several measured columns | Side-by-side comparison | `melt()` to long |
 | Long | One entity/variable observation | Grouping and tidy plotting | `pivot()` to wide |
 
-![](media/wide_vs_long_pets.png)
+![A cat held upright is long; a dachshund standing sideways is wide](media/wide_vs_long_pets.png)
 
 ## Melting Wide to Long with melt()
 
@@ -692,7 +692,7 @@ display(pd.concat([jan, feb], join='inner', ignore_index=True))
 | A201 | 5 |
 | A202 | 1 |
 
-![](media/say_big_data.png)
+![Meme: say big data one more time](media/say_big_data.png)
 
 ## Placing Tables Side by Side with concat(axis=1)
 
