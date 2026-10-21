@@ -29,8 +29,7 @@ A breast lump is biopsied with a fine needle, and a digitized image of the cells
 Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-# On an Intel Mac, TensorFlow has no local version: use Colab. On another Mac, if XGBoost fails to load, run `brew install libomp`
+# Installs the course's pandas in Colab; restart and rerun if asked. Intel Mac: run this demo in Colab (no local TensorFlow). Mac XGBoost load error: brew install libomp
 %pip install -q --no-warn-conflicts pandas==3.0.5
 ```
 
@@ -308,6 +307,7 @@ Early stopping scores the validation rows after every boosting round and stops w
 xgb_early_stop = xgb.XGBClassifier(
     n_estimators=500,            # a generous budget; early stopping decides where to stop
     max_depth=3, learning_rate=0.1,
+    subsample=0.8, colsample_bytree=0.8,   # Part 5's settings, so the round count is the only change
     early_stopping_rounds=10,    # in the constructor since XGBoost 2.0
     random_state=42, n_jobs=-1,
 )
@@ -325,13 +325,13 @@ print(f"XGBoost, early stopped:    validation accuracy {xgb_early_acc:.4f}")
 **Expect:**
 
 ```text
-Best iteration: 420 (of a 500-round budget)
-Best validation loss: 0.0921
+Best iteration: 54 (of a 500-round budget)
+Best validation loss: 0.1168
 XGBoost, 100 fixed rounds: validation accuracy 0.9649
-XGBoost, early stopped:    validation accuracy 0.9825
+XGBoost, early stopped:    validation accuracy 0.9474
 ```
 
-On a table this small the validation loss keeps creeping down for hundreds of rounds, so early stopping uses most of the budget. The early-stopped model gets 112 of 114, the best score so far, and those same 114 rows chose its round count. Part 10 comes back to that.
+Validation loss is lowest at iteration 54 (counted from 0), so early stopping keeps 55 rounds, about half of Part 5's 100. The early-stopped model gets 108 of 114, two rows fewer than 100 fixed rounds: the round with the lowest validation loss is not always the round with the highest accuracy. Those same 114 rows chose its round count. Part 10 comes back to that.
 
 ## 7. Build and compile a neural network
 
@@ -515,13 +515,13 @@ Majority-class baseline                0.6228              71
 Logistic regression                    0.9737             111
 Random forest                          0.9737             111
 XGBoost (100 rounds)                   0.9649             110
-XGBoost (early stopped)                0.9825             112
+XGBoost (early stopped)                0.9474             108
 Neural net 64-32                       0.9737             111
 Neural net 128-64-32-16                0.9649             110
 Neural net 64-32 + dropout/L2          0.9737             111
 ```
 
-This reference run includes independent practice. The core table omits early-stopped XGBoost and the two network variants. In this run every candidate clears the baseline by a wide margin, and all seven land within two rows of each other.
+This reference run includes independent practice. The core table omits early-stopped XGBoost and the two network variants. In this run every candidate clears the baseline by a wide margin, and all seven land within three rows of each other.
 
 ### Independent practice: compare individual errors
 
@@ -541,7 +541,7 @@ for name, pred in valid_predictions.items():
 Logistic regression            wrong on rows [9, 10, 75], missed malignant [9]
 Random forest                  wrong on rows [9, 10, 45], missed malignant [9, 45]
 XGBoost (100 rounds)           wrong on rows [9, 10, 45, 98], missed malignant [9, 45]
-XGBoost (early stopped)        wrong on rows [9, 98], missed malignant [9]
+XGBoost (early stopped)        wrong on rows [9, 10, 45, 68, 93, 98], missed malignant [9, 45, 68]
 Neural net 64-32               wrong on rows [9, 10, 75], missed malignant [9]
 Neural net 128-64-32-16        wrong on rows [9, 10, 34, 98], missed malignant [9]
 Neural net 64-32 + dropout/L2  wrong on rows [9, 10, 75], missed malignant [9]
@@ -549,11 +549,11 @@ Neural net 64-32 + dropout/L2  wrong on rows [9, 10, 75], missed malignant [9]
 
 - **Row 9** is a malignant biopsy that every model calls benign. None of these fitted candidates fixes it; it is worth a pathologist's look.
 - **Same score, different mistakes:** logistic regression and the forest both get 111 right, but the forest misses a second malignancy (row 45) where logistic regression raises a false alarm (row 75). For a screening tool that difference matters more than the tie in accuracy.
-- **The early-stopped XGBoost** is right on rows 10, 45, and 75, and its 112 of 114 is the best in the table. Those same 114 rows chose its round count, so its score also reflects selection of the round count; that is another reason to reserve the independent test.
+- **The early-stopped XGBoost** misses two more malignancies (rows 45 and 68) than logistic regression. It stopped where validation loss was lowest, and those same 114 rows chose its round count, so even a good score here would reflect that selection; that is another reason to reserve the independent test.
 
 ### Apply the selection rule (core)
 
-Now apply Part 2's rule to your table. In the reference core run, logistic regression ties for best at 111; with independent practice the best candidate (112) and logistic regression (111) differ by one validation row. Either way the tie goes to **logistic regression**, 30 coefficients and an intercept. This one small split does not establish that the model families perform equally well. If your versions give a different result, apply the same predeclared rule before opening the test set; the final cell below is specifically the logistic-regression choice.
+Now apply Part 2's rule to your table. In the reference run, with or without independent practice, logistic regression ties for best at 111, and the tie goes to **logistic regression**, 30 coefficients and an intercept. This one small split does not establish that the model families perform equally well. If your versions give a different result, apply the same predeclared rule before opening the test set; the final cell below is specifically the logistic-regression choice.
 
 ```python
 assert max(candidate_accuracy.values()) - lr_acc <= 1 / len(y_valid) + 1e-12, 'Apply the selection rule to this run before opening the test set.'
@@ -585,4 +585,4 @@ actual benign                   71                    1
 actual malignant                 3                   39
 ```
 
-110 of 114 test biopsies are right: one false alarm and three missed malignancies out of 42. Test accuracy (0.965) is a little below validation (0.974), the normal cost of choosing on validation rows. Three missed cancers is the number to take to the clinical team. If misses cost that much more than false alarms, the next project would pick its threshold or metric for recall before looking at the test set again; going back now to try the early-stopped XGBoost on these rows would turn the test set into a second validation set.
+110 of 114 test biopsies are right: one false alarm and three missed malignancies out of 42. Test accuracy (0.965) is one row below validation (0.974), within the noise of 114 rows. Three missed cancers is the number to take to the clinical team. If misses cost that much more than false alarms, the next project would pick its threshold or metric for recall before looking at the test set again; going back now to try the early-stopped XGBoost on these rows would turn the test set into a second validation set.

@@ -459,7 +459,7 @@ valid    60 2026-02-09 00:01:00 2026-02-16 23:34:00
 test     30 2026-02-23 00:44:00 2026-02-23 23:53:00
 ```
 
-120, 60, and 30 rows: four target weeks for training, two for validation, one for test. The three target-time ranges do not overlap, and the midnight readers' targets (00:07, 00:01, 00:44) land in the right week because the cutoffs compare full timestamps.
+120, 60, and 30 rows: four target weeks for training, two for validation, one for test. The three target-time ranges do not overlap, and the midnight readers' targets (00:07, 00:01, 00:44) land in the right week.
 
 ### Fit on training rows, read the validation rows
 

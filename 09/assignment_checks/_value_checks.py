@@ -794,7 +794,7 @@ def _clock_offsets(root: Path) -> list[timedelta]:
     return sorted(offsets, key=lambda value: (abs(value), value))
 
 
-def _match(root: Path, table: Table, artifact: Artifact, found: dict[str, str]) -> Match:
+def _match(root: Path, table: Table, artifact: Artifact, found: dict[str, str], strict: bool = False) -> Match:
     """Group the saved rows by the expected key each one holds.
 
     When every key column is saved, each row is matched by its key. Times are
@@ -806,7 +806,9 @@ def _match(root: Path, table: Table, artifact: Artifact, found: dict[str, str]) 
     judged on the one that places the most rows. When a key column is not
     saved, as when the keys stayed in the index and were dropped by
     `index=False`, a table with exactly the expected number of rows is matched
-    in the notebook's sorted order.
+    in the notebook's sorted order. With `strict`, no uniform shift is applied
+    on any clock, so bins labeled by their end do not match bins labeled by
+    their start.
     """
     if not all(column in found for column in artifact.key):
         absent = [column for column in artifact.key if column not in found]
@@ -829,7 +831,7 @@ def _match(root: Path, table: Table, artifact: Artifact, found: dict[str, str]) 
     best = None
     for offset, rows in clocks:
         lookup = _lookup(rows)
-        shift, placed = _best_shift(keys, lookup, position)
+        shift, placed = _best_shift(keys, lookup, None if strict else position)
         rank = (-placed, abs(shift), abs(offset))
         if best is None or rank < best[0]:
             best = (rank, offset, rows, lookup, shift)
@@ -917,7 +919,16 @@ def columns_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
             for other in ARTIFACTS:
                 if other.path != artifact.path and column in {_fold(name) for name in _own_columns(other)}:
                     owners.setdefault(other.path, (other, []))[1].append(column)
-        if owners:
+        own = [_fold(column) for column in _own_columns(artifact)]
+        if owners and own and all(column in table.columns for column in own):
+            # The file has this task's own columns, so this task wrote it, starting from another task's table.
+            fix = " ".join(
+                f"{_join(columns)} {'is the column' if len(columns) == 1 else 'are columns'} {other.task} adds, "
+                f"so {artifact.task} started from {other.task}'s table: start it from vitals, as the task says, "
+                f"so it adds only {_join(_own_columns(artifact))}."
+                for other, columns in owners.values()
+            )
+        elif owners:
             fix = " ".join(
                 f"{_join(columns)} {'is the column' if len(columns) == 1 else 'are columns'} {other.task} adds, "
                 f"so that cell saved its table over {artifact.path}: save it to {other.constant} instead, then run "
@@ -1002,7 +1013,9 @@ def rows_check(artifact: Artifact, description: str, hint: str, accept_own: bool
 
     def check(root: Path) -> None:
         table = read_table(root, artifact)
-        match = _match(root, table, artifact, _resolve(table, artifact))
+        # Bins and blocks are already tried on each clock; a further uniform shift would accept relabeled bins.
+        strict = artifact.path in (TWO_HOUR.path, BLOCKS.path)
+        match = _match(root, table, artifact, _resolve(table, artifact), strict)
         missing = [key for key in match.rows if key not in match.grouped]
         repeated = [key for key, rows in match.grouped.items() if len(rows) > 1]
         problems = []

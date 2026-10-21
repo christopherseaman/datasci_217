@@ -23,7 +23,7 @@ How the files are read:
 - Spacing, line endings, quoting, column order, and row order never cost points.
 - Numbers are compared as numbers (`84`, `84.0`, `84.00`); a mean may be rounded to one decimal.
 - Timestamps are compared as instants: `2026-01-20 18:00:00+00:00`, `2026-01-20T18:00:00Z`, and `2026-01-20 13:00:00-05:00` are the same moment. A timestamp with no offset is read as UTC.
-- Only Task 1.1 checks that `recorded_at` was converted to UTC; Task 3.2 checks its own lab times. If Task 1.1 skipped the conversion, later files are judged on the same clock, so their other values still count.
+- Only Task 1.1 checks that each `recorded_at` names the right instant (UTC, or the same moment with a New York offset); two-hour bins drawn on the clock your file uses also count. Task 3.2 checks its own lab times. If Task 1.1 skipped the conversion, later files are judged on the same clock, so their other values still count.
 - `True` and `False` may be written in any letter case, or as `1` and `0`.
 - Patient IDs, test names, block labels, and column names are compared in any letter case, and `later holdout` matches `later_holdout`.
 - An empty cell may be written empty or as `NaN`.
@@ -54,7 +54,7 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | `output/past_features.csv` | It holds each of the 12 readings once. | past features: one row per reading | 3 |
 | `output/past_features.csv` | Each `previous_hr` is the same patient's previous heart rate. | past features: previous_hr values | 4 |
 | `output/past_features.csv` | Each `hr_change` is the heart rate minus `previous_hr`. | past features: hr_change values | 3 |
-| `output/past_features.csv` | Each `mean_prev_2` is the mean of the patient's previous two readings. | past features: mean_prev_2 values | 4 |
+| `output/past_features.csv` | Each `mean_prev_2` is the mean of the heart rates present in the patient's previous two rows. | past features: mean_prev_2 values | 4 |
 | `output/past_features.csv` | Each `mean_prev_2h` is the mean of the patient's readings in the two hours before, not counting the current one. | past features: mean_prev_2h values | 4 |
 | `output/lab_availability.csv` | Its columns are the five in the Task 3.2 header line. | lab availability: columns | 2 |
 | `output/lab_availability.csv` | It holds each of the 6 lab orders once. | lab availability: one row per lab | 2 |

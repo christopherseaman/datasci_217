@@ -1,12 +1,12 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.13"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
-    "python_full_version == '3.14.*' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version < '3.14' and sys_platform == 'emscripten'",
@@ -26,7 +26,7 @@ dependencies = [
     { name = "pandas" },
     { name = "scikit-learn" },
     { name = "statsmodels" },
-    { name = "tensorflow" },
+    { name = "tensorflow", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "xgboost" },
 ]
 
@@ -40,7 +40,7 @@ requires-dist = [
     { name = "pandas", specifier = "==3.0.5" },
     { name = "scikit-learn", specifier = "==1.9.0" },
     { name = "statsmodels", specifier = "==0.14.6" },
-    { name = "tensorflow", specifier = "==2.21.0" },
+    { name = "tensorflow", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'", specifier = "==2.21.0" },
     { name = "xgboost", specifier = "==2.1.4" },
 ]
 

@@ -118,7 +118,7 @@ A residual is observed minus fitted SBP. Lecture 10's "Code Snippet: Residuals V
 > The header line `patient_id,observed,fitted,residual`, then 20 rows, `P01` to `P20`. P01 reads about `P01,149,142.71,6.29`. Values may be rounded to one decimal.
 
 > **Checkpoint: `output/residuals_vs_fitted.png`**
-> A PNG image. The check confirms the file is a PNG; how the plot looks is up to you.
+> A PNG of the step 3 scatter. The check confirms only that the file is a PNG.
 
 The residuals scatter around the dashed line with no clear curve or funnel, which is what a straight-line model should leave. The plot can show a curve or a changing spread; it cannot show that BMI _causes_ higher SBP.
 
@@ -143,7 +143,7 @@ A feature the model will not have at prediction time is **leakage**, however use
 
 ### 2.2 Split on the target time
 
-Split on when each **target** is measured, `followup_time`, so no training outcome is measured during the validation or test weeks. This exercise is a **retrospective comparison** of records whose delayed outcomes are already known. It does not simulate forecasting at the original visit times: the latest training outcome is reported after the first validation visit, and a training-plus-validation refit also includes outcomes reported after the first test visit. For a prospective evaluation, the latest training target time must be on or before the first validation prediction time; apply the same rule before a refit predicts the test rows, leaving a gap or removing overlapping training rows when necessary. Lecture 10's "Code Snippet: A Chronological Split" does the same with dates. In the Task 2.2 cell:
+Split on when each **target** is measured, `followup_time`, so no training outcome is measured during the validation or test weeks. This is a **retrospective comparison**: every outcome is already known, so the split does not simulate forecasting at the visit times. Lecture 10's "Code Snippet: A Chronological Split" does the same with dates. In the Task 2.2 cell:
 
 1. Select `train`, the visits whose `followup_time` is before `VALIDATION_START` (May 1, 2026, UTC); `valid`, those on or after `VALIDATION_START` and before `TEST_START` (May 9); and `test`, those on or after `TEST_START`. It prints `rows: 30 8 10`.
 2. Build `split_summary` with one row per partition and four columns: `partition` (`"train"`, `"validation"`, `"test"`), `row_count` (each part's `len()`), `first_target_time` (each part's `["followup_time"].min()`), and `last_target_time` (its `.max()`).

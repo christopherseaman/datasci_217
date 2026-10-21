@@ -98,7 +98,7 @@ Expect blue circles and orange squares that both rise with age, a legend titled 
 
 ### 3. Annotate, declutter, and save
 
-The first reading is patient 1001: age 34, systolic BP 114 mmHg. Add that context to the existing scatter, hide the unused frame lines, and save the whole Figure.
+The first reading is patient 1001: age 34, systolic BP 114 mmHg. Add that context to the existing scatter, hide the unused frame lines, and save the whole Figure. The figure from step 2 still exists as `fig`; `display(fig)` shows it again after the changes.
 
 ```python
 from pathlib import Path

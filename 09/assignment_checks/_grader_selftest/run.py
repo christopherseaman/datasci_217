@@ -13,8 +13,9 @@ cost only Task 1.1's UTC check even where every later table is built from
 them, and a missing file costs only its own artifact's checks. A reading
 dropped or changed in Task 1.1 is charged there once, while correctly derived
 outputs keep their points; new downstream mistakes still lose theirs. A table
-saved over another and a summary resampled without grouping get feedback that
-names the cause. It also confirms that the
+saved over another, a Task 3.3 table started from Task 3.1's, and a summary
+resampled without grouping get feedback that names the cause; bins labeled by
+their end cost only the rows check. It also confirms that the
 copies of the data in
 `_value_checks.py` match `09/assignment/data/`, that the README's checkpoints,
 completion contract, and numbering agree with the checks and the notebook, that
@@ -603,6 +604,23 @@ def run() -> None:
         for name in ("two-hour summary: columns", "two-hour summary: one row per patient and bin"):
             assert 'Group by patient_id before .resample("2h")' in detail(result, name), detail(result, name)
 
+        # Bins labeled by their end hold the right means and counts under the wrong names: only the rows check.
+        right_labeled = (prepare().set_index("recorded_at").groupby("patient_id").resample("2h", label="right")
+                         .agg(mean_hr=("heart_rate", "mean"), n_rows=("source_row", "count")).reset_index())
+        files = dict(correct)
+        files["output/two_hour_summary.csv"] = right_labeled.to_csv(index=False)
+        result = graded(submission("two-hour-label-right", files))
+        assert failing(result) == {"two-hour summary: one row per patient and bin"}, failing(result)
+
+        # Task 3.3 started from past_features: block is present, so the message says where to start, not where to save.
+        from_features = blocks_from(frames["output/past_features.csv"])
+        files = dict(correct)
+        files["output/chronological_blocks.csv"] = from_features.to_csv(index=False)
+        result = graded(submission("blocks-from-features", files))
+        assert failing(result) == {"chronological blocks: columns"}, failing(result)
+        message = detail(result, "chronological blocks: columns")
+        assert "Task 3.3 started from Task 3.1's table" in message and "FEATURES_PATH" not in message, message
+
         files = dict(correct)
         files["output/hourly_grid.csv"] = frames["output/hourly_grid.csv"].drop(columns="value_missing").to_csv(index=False)
         assert failing(graded(submission("missing-value-column-once", files))) == {"hourly grid: columns"}
@@ -728,7 +746,7 @@ def run() -> None:
         "submissions earn 100; lost key columns cost only the columns check; New York clock times, with every "
         f"later table built from them, cost only the UTC check; each of the {len(NAMES)} single mistakes and each "
         "missing file costs only its own checks; feedback names a dropped reading, a table saved over another, and "
-        "an ungrouped summary; feedback and pytest pass."
+        "an ungrouped summary; right-labeled bins cost only the rows check; feedback and pytest pass."
     )
 
 

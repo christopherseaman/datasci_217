@@ -23,6 +23,7 @@ Nothing here imports, runs, or inspects student code.
 
 from __future__ import annotations
 
+import ast
 import codecs
 import csv
 import difflib
@@ -146,7 +147,7 @@ PANDAS_DTYPE = re.compile(
     r"(?:u?int|float|complex)(?:8|16|32|64)?|object|str|string|category|bool(?:ean)?|datetime64(?:\[\w+\])?"
 )
 # A word right after one of these is ruled out, as in "not ordinal" or "non-numeric".
-NEGATION = re.compile(r"(?:\bnot|\bnon|\bno|n't|\brather than|\binstead of)[\s-]*(?:an?\s+)?$")
+NEGATION = re.compile(r"(?:\bnot|\bnon|\bno|n't|\brather than|\binstead of|\bunlike|\bas opposed to|\bversus|\bvs\.?)[\s-]*(?:an?\s+)?$")
 
 # The data are whole numbers, so numbers are compared rounded to two decimals: 79 == 79.0 == 79.00.
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -257,6 +258,8 @@ def _artifact(root: Path, name: str) -> Path | None:
 
 # The artifacts found in the assignment folder instead of output/ during one run_checks() call.
 _REPORTED_OUTSIDE: set[str] = set()
+# The JSON artifacts found in Python's printed form during one run_checks() call.
+_REPORTED_PYTHON_FORM: set[str] = set()
 
 
 def _locate(root: Path, name: str, task: str) -> Path:
@@ -371,6 +374,15 @@ def _load_json(root: Path, name: str, task: str):
     except json.JSONDecodeError as error:
         if text.lstrip()[:2] in ("{'", "['"):
             # Python's printed form of a dict or list: str(), print(), or file.write(str(...)).
+            # The first check that reads it names the slip and the checks after it grade its values: one charge.
+            try:
+                value = ast.literal_eval(text.strip())
+            except (ValueError, SyntaxError, TypeError, MemoryError, RecursionError):
+                value = None
+            if value is not None and name in _REPORTED_PYTHON_FORM:
+                return value
+            _REPORTED_PYTHON_FORM.add(name)
+            rest = " The checks after this one read its values as written." if value is not None else ""
             how = (
                 "in Task 1.1, save the chart itself with exploratory_chart.save(EXPLORATORY_SPEC_PATH)"
                 if name == SPEC_FILE
@@ -379,7 +391,7 @@ def _load_json(root: Path, name: str, task: str):
             )
             raise AssertionError(
                 f"{name} holds a Python dict written with str() or print(), not JSON, which puts every key and "
-                f"text in double quotes; {how}."
+                f"text in double quotes; {how}.{rest}"
             ) from None
         raise AssertionError(
             f"{name} is not valid JSON ({error.msg}, line {error.lineno}, column {error.colno}); "
@@ -1271,6 +1283,7 @@ CHECKS = (
 def run_checks(root: Path) -> list[tuple[str, str | None]]:
     """Return one (check name, problem or None) pair per check; every check runs."""
     _REPORTED_OUTSIDE.clear()
+    _REPORTED_PYTHON_FORM.clear()
     results = []
     for check in CHECKS:
         try:

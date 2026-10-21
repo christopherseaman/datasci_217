@@ -474,6 +474,7 @@ East (one visit, mean 9) fails both the size and the mean test. Only South's wai
 | :--- | :--- | :--- |
 | `grouped.apply(func, include_groups=False)` | Run your own function on each group's columns, excluding the grouping column | Depends on `func` |
 | `grouped.apply(lambda g: g.sort_values('col'), include_groups=False)` | Sort rows inside each group | Every row, grouped and sorted |
+| `df.nlargest(n, 'col')` | The `n` rows with the largest values in `col`, largest first; ties keep their original order | Up to `n` rows |
 | `grouped.apply(lambda g: g.nlargest(2, 'col'), include_groups=False)` | Keep the top two rows in each group | Up to two rows per group |
 
 ### Code Snippet: Sort Within Clinics and Keep the Two Longest Waits
@@ -525,7 +526,7 @@ display(top2[['patient_id', 'wait_min']])
 
 ### Reference Card: Measure Before Optimizing
 
-- `%timeit expression`: Time one line in a notebook by running it many times; output looks like `8.8 ms ± 0.1 ms per loop (mean ± std. dev. of 7 runs, 100 loops each)`.
+- `%timeit expression`: Time one line in a notebook by running it many times; output looks like `8.8 ms ± 100 μs per loop (mean ± std. dev. of 7 runs, 100 loops each)`.
 - `df.memory_usage(deep=True)`: Bytes used by each column, counting the text inside it; shows which column to shrink.
 - `df['key'].astype('category')`: Store a repeated text key as a few labels plus a small code per row; same groups, less memory.
 - `grouped['col'].agg(['mean', 'std', 'count'])`: Several summaries from one split instead of one `groupby()` per summary.

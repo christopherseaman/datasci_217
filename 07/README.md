@@ -103,12 +103,13 @@ visits = pd.DataFrame({
 display(visits.dtypes)
 ```
 
-|  | value |
-| --- | --- |
-| patient_id | int64 |
-| clinic | str |
-| visit_month | int64 |
-| systolic_bp | int64 |
+```text
+patient_id     int64
+clinic           str
+visit_month    int64
+systolic_bp    int64
+dtype: object
+```
 
 - Only `systolic_bp` (mmHg) is a quantitative measure.
 - `patient_id` is an identifier (its average means nothing), `visit_month` is temporal, and `clinic` is categorical.
@@ -268,11 +269,11 @@ Expected result: blue squares joined by a dashed line, readable in grayscale.
 On the existing North chart, week 3 has 51 visits:
 
 ```python
-ax.annotate('Peak: 51 visits', xy=(3, 51), xytext=(1.5, 55),
+ax.annotate('Peak: 51 visits', xy=(3, 51), xytext=(1.5, 50),
             arrowprops=dict(arrowstyle='->'))
 ```
 
-Expected result: text above the line, with an arrow ending at the week-3 point.
+Expected result: text inside the plot, left of the peak, with an arrow ending at the week-3 point.
 
 ### Code Snippet: Save the Figure
 
@@ -338,7 +339,7 @@ pandas hands the data to matplotlib using two rules:
 	Otherwise the x-axis shows row numbers and a `week` column is drawn as one more line: run `set_index('week')` first.
 </callout>
 
-`weekly` is indexed by weeks 1 to 4, with North counts `[42, 45, 51, 48]` and South counts `[30, 33, 31, 36]`.
+`weekly` was built with `set_index('week')`, so its index is named `week` (weeks 1 to 4), with North counts `[42, 45, 51, 48]` and South counts `[30, 33, 31, 36]`.
 
 ### Code Snippet: The Index Becomes the x-Axis
 
@@ -420,7 +421,7 @@ axes = monthly.plot(subplots=True, sharey=True, ylabel='Visits')
 
 Expected result: three stacked panels with matching y-limits.
 
-![xkcd 688: Self-Description. A pie, a bar chart, and a plot of the comic's own ink: one set of numbers, three views, like swapping `kind=`.](media/xkcd_688.png)
+![xkcd 688: Self-Description. A pie, a bar chart, and a map, each charting the comic itself; every chart answers a different question about the same picture.](media/xkcd_688.png)
 
 # seaborn: Statistical Graphics
 
@@ -497,7 +498,7 @@ print(ax.get_lines()[0].get_ydata())  # y-values seaborn drew, one mean per week
 
 ## Density Plots in pandas and seaborn
 
-- The curve's total area is 1, so the y-axis is **density**, not a count.
+- The curve's total area is 1, so the y-axis is **density**, not a count. `histplot(kde=True)` rescales the curve to the count axis; `kdeplot()` and `.plot.density()` show density.
 - **Bandwidth**: the bump width; wider bumps smooth more, narrower ones show more detail and more noise.
 - `df.plot.density()` needs `scipy` installed (Colab has it); seaborn's `kdeplot()` and `histplot(kde=True)` work without it.
 
@@ -602,7 +603,7 @@ Common distortions to avoid:
 
 **Small multiples** are small, repeated charts on one shared scale, so readers compare categories or time periods at a glance; `sharey=True` from the pandas section draws them.
 
-![Six clinics on one shared y-axis, so Central's tall flu peak and West's flat season compare at a glance.](media/tufte_small_multiples.png)
+![Six clinics on one shared y-axis, so Central's tall week-6 flu peak and West's low week-8 peak compare at a glance.](media/tufte_small_multiples.png)
 
 ### Show the Detail
 

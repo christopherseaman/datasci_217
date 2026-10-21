@@ -36,6 +36,7 @@ def render_reference_figures():
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
     axes[0, 0].plot(weeks, north)
     axes[0, 0].set(title='Weekly flu visits', xlabel='Week', ylabel='Flu visits')
+    axes[0, 0].set_xticks(weeks)
     axes[0, 1].hist(pressures, bins=4)
     assert [bar.get_height() for bar in axes[0, 1].patches] == [3, 5, 2, 2]
     axes[0, 1].set(title='Blood-pressure distribution', xlabel='Systolic BP (mmHg)', ylabel='Readings')
@@ -65,6 +66,7 @@ def render_reference_figures():
 
     fig, axes = plt.subplots(2, 2, figsize=(12, 8))
     weekly.plot(ax=axes[0, 0], marker='o', ylabel='Flu visits', title='Line: visits each week')
+    axes[0, 0].set_xticks(weeks)
     weekly.plot.bar(ax=axes[0, 1], ylabel='Flu visits', title='Bar: visits each week')
     weekly.plot.scatter(x='North', y='South', ax=axes[1, 0], title='Scatter: one point per week')
     axes[1, 0].set(xlabel='North flu visits', ylabel='South flu visits')

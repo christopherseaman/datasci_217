@@ -11,7 +11,8 @@ handout earn 0, one wrong value or one misnamed column costs exactly its own
 check, a summary saved without its key column costs only the columns check,
 and a missing file costs only its own artifact's checks, with no advice to
 rename another required file. A pivot with its axes swapped costs only its
-columns check, margins=True is named as the cause of a Total row and column,
+columns check, margins=True costs only the columns check, which names it as the
+cause of the Total column,
 and wait_vs_clinic worked out from a wrong clinic_mean_wait costs only the
 clinic_mean_wait check. It also confirms that
 the copy of the visit log in `_value_checks.py` matches
@@ -556,17 +557,23 @@ def run() -> None:
         message = detail(result, "mean wait pivot: columns")
         assert "swapped" in message and 'index="clinic" and columns="visit_type"' in message, message
 
-        # margins=True adds a Total row and column: the columns and rows checks say where it came from.
+        # margins=True adds a Total row and column: one argument, charged once by the columns check, which names it.
         files = dict(correct)
-        files["output/mean_wait_pivot.csv"] = pd.pivot_table(
+        margins = pd.pivot_table(
             visits, values="wait_min", index="clinic", columns="visit_type", aggfunc="mean", margins=True,
-            margins_name="Total").to_csv()
+            margins_name="Total")
+        files["output/mean_wait_pivot.csv"] = margins.to_csv()
         result = graded(submission("pivot-margins", files))
-        assert failing(result) == {"mean wait pivot: columns", "mean wait pivot: one row per clinic"}, failing(result)
-        for name in failing(result):
-            assert "Total comes from margins=True" in detail(result, name), detail(result, name)
+        assert failing(result) == {"mean wait pivot: columns"}, failing(result)
+        assert result["score"] == 100 - cost("mean wait pivot: columns"), result["score"]
+        assert "Total comes from margins=True" in detail(result, "mean wait pivot: columns")
         # Headers are quoted as the file writes them, not lowercased.
         assert "also has Total;" in detail(result, "mean wait pivot: columns"), detail(result, "mean wait pivot: columns")
+        # A Total row with no Total column is still charged by the rows check.
+        files["output/mean_wait_pivot.csv"] = margins.drop(columns="Total").to_csv()
+        result = graded(submission("pivot-margins-row-only", files))
+        assert failing(result) == {"mean wait pivot: one row per clinic"}, failing(result)
+        assert "Total comes from margins=True" in detail(result, "mean wait pivot: one row per clinic")
 
         # wait_vs_clinic worked out from a wrong clinic_mean_wait costs only the clinic_mean_wait check.
         context = visits.copy()

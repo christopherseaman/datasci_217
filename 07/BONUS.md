@@ -49,7 +49,7 @@ Expected output: `56.4` prints, and the plot shows twelve weekly points with a d
 
 ## Drawing Shapes and Patches
 
-### Reference Card: Adding Shapes to Plots
+### Code Snippet: Adding Shapes to Plots
 
 ```python
 import matplotlib.pyplot as plt
@@ -108,7 +108,7 @@ ax.plot(data)
 
 **Style sheets** bundle defaults for fonts, colors, grids, and backgrounds. Applying several styles in sequence lets later settings replace earlier ones.
 
-### Reference Card: Built-in and Custom Style Sheets
+### Code Snippet: Built-in and Custom Style Sheets
 
 ```python
 import matplotlib.pyplot as plt
@@ -136,7 +136,7 @@ plt.style.use({
 
 `layout=(rows, columns)` arranges one panel per numeric column. Shared scales make values comparable across panels; separate scales emphasize each series' own variation.
 
-### Reference Card: Advanced Subplot Layouts
+### Code Snippet: Advanced Subplot Layouts
 
 ```python
 import pandas as pd
@@ -157,7 +157,7 @@ df.plot(subplots=True, figsize=(12, 8), title='Custom Title')
 
 **Stacked bars** emphasize the total and its parts; **grouped bars** put each clinic beside the others on a common baseline. An **area plot** fills the space under each series; stacking areas emphasizes how the total changes over time.
 
-### Reference Card: Stacked, Grouped, and Area Plots
+### Code Snippet: Stacked, Grouped, and Area Plots
 
 ```python
 import pandas as pd
@@ -200,7 +200,7 @@ df.plot.area(alpha=0.7, stacked=True)
 
 **Faceting** splits a table into panels using `row=` and `col=`. Each panel shows only its matching rows; the example includes every category/group/time combination so empty panels do not hide the comparison.
 
-### Reference Card: Facet Grids and Categorical Plots
+### Code Snippet: Facet Grids and Categorical Plots
 
 ```python
 import numpy as np
@@ -228,7 +228,7 @@ g.map(sns.scatterplot, 'x', 'y')
 
 ## Custom Themes and Styles
 
-### Reference Card: seaborn Themes and Custom Styles
+### Code Snippet: seaborn Themes and Custom Styles
 
 ```python
 import seaborn as sns
@@ -256,7 +256,7 @@ A publication figure needs readable units, labels, and marks at its final printe
 
 ## Publication-Quality Plots
 
-### Reference Card: Publication-Quality Plot Defaults
+### Code Snippet: Publication-Quality Plot Defaults
 
 ```python
 import matplotlib.pyplot as plt
@@ -296,7 +296,7 @@ plt.show()
 
 ## Custom Color Palettes
 
-### Reference Card: Custom Color Palettes and Colormaps
+### Code Snippet: Custom Color Palettes and Colormaps
 
 ```python
 import matplotlib.pyplot as plt
@@ -336,7 +336,7 @@ This survey names alternatives to the lecture's tools; the same visible-context 
 | matplotlib | Custom plots, publication quality | High | Pan/zoom in desktop or widget backends | PNG/SVG/PDF | Imperative |
 | seaborn | Statistical plots, beautiful defaults | Low | Pan/zoom in desktop or widget backends | PNG/SVG/PDF | Imperative |
 | pandas | Quick exploration, basic charts | Very Low | Pan/zoom in desktop or widget backends | PNG/SVG/PDF | Imperative |
-| altair | Interactive plots, grammar of graphics | Medium | Built-in | PNG/SVG/HTML/JSON | Declarative |
+| altair | Interactive plots, grammar of graphics | Medium | Built-in | HTML/JSON (PNG/SVG with vl-convert-python) | Declarative |
 | plotnine | R users, layered approach | Medium | Pan/zoom in desktop or widget backends | PNG/SVG/PDF | Declarative |
 | bokeh | Interactive web visualizations | High | High | HTML/JS | Imperative |
 | plotly | Dashboards, web applications | Medium | High | HTML/JS | Declarative |
@@ -345,7 +345,7 @@ This survey names alternatives to the lecture's tools; the same visible-context 
 
 **Layering** draws several marks on the same axes. A regression transform replaces the observations with fitted values; `groupby=['category']` fits one line per category and keeps that field available to the color encoding.
 
-### Reference Card: Altair Layered Chart with Regression
+### Code Snippet: Altair Layered Chart with Regression
 
 ```python
 import altair as alt
@@ -377,7 +377,7 @@ chart.save('interactive_chart.html')
 
 ## Bokeh for Interactive Plots
 
-### Reference Card: Bokeh Scatter Plot with Hover
+### Code Snippet: Bokeh Scatter Plot with Hover
 
 ```python
 from bokeh.plotting import figure, show, output_notebook
@@ -411,7 +411,7 @@ show(p)
 
 ## Plotly for Interactive Dashboards
 
-### Reference Card: Plotly Express Scatter with Trendline
+### Code Snippet: Plotly Express Scatter with Trendline
 
 ```python
 import plotly.express as px
@@ -440,7 +440,7 @@ fig.show()
 
 ## matplotlib Animation
 
-### Reference Card: matplotlib FuncAnimation
+### Code Snippet: matplotlib FuncAnimation
 
 ```python
 import matplotlib.pyplot as plt
@@ -471,7 +471,7 @@ anim.save('sine_wave.gif', writer='pillow', fps=20)
 
 Run this example as a script with an interactive matplotlib window. A notebook's default inline backend produces static images, so `plt.pause()` alone does not turn its output into a live display.
 
-### Reference Card: Real-Time Plot Updates
+### Code Snippet: Real-Time Plot Updates
 
 ```python
 import time
@@ -510,7 +510,7 @@ while time.time() - start_time < 10:
 
 Use a qualitative palette for unordered groups and a sequential palette for ordered magnitudes, as in the lecture. seaborn's named `colorblind` palette is qualitative; `viridis` and `plasma` are sequential, so using them for groups can imply an order those groups do not have. Keep marker shapes or direct labels as redundant cues.
 
-### Reference Card: Colorblind-Friendly Palettes
+### Code Snippet: Colorblind-Friendly Palettes
 
 ```python
 import seaborn as sns
@@ -530,7 +530,7 @@ sns.set_palette(palettes['colorblind'])
 
 Color associations depend on the audience and context: red may mean danger, a negative change, or a named group. The dictionary below is an example design convention, not a universal meaning; keep labels or symbols alongside color.
 
-### Reference Card: Color Associations by Context
+### Code Snippet: Color Associations by Context
 
 ```python
 # Emotional color associations
@@ -559,7 +559,7 @@ When points overlap or rendering becomes slow, show a reproducible sample or cou
 
 ## Large Dataset Visualization
 
-### Reference Card: Sampling and Hexbin for Large Datasets
+### Code Snippet: Sampling and Hexbin for Large Datasets
 
 ```python
 import numpy as np
@@ -593,7 +593,7 @@ plt.colorbar()
 
 ## Memory-Efficient Plotting
 
-### Reference Card: Releasing Figure Memory
+### Code Snippet: Releasing Figure Memory
 
 ```python
 # Clear memory between plots
@@ -621,7 +621,7 @@ memory_efficient_plotting()
 
 ## Multiple Format Export
 
-### Reference Card: Exporting to Multiple File Formats
+### Code Snippet: Exporting to Multiple File Formats
 
 ```python
 # Export to multiple formats
@@ -639,7 +639,7 @@ def export_plot(fig, filename_base):
 
 ## Interactive HTML Export
 
-### Reference Card: Exporting Plotly Charts to HTML
+### Code Snippet: Exporting Plotly Charts to HTML
 
 ```python
 import pandas as pd
@@ -660,7 +660,7 @@ pyo.plot(fig, filename='interactive_plot.html', auto_open=False)
 
 ## Confidence Intervals
 
-### Reference Card: Plotting a t Confidence Interval
+### Code Snippet: Plotting a t Confidence Interval
 
 ```python
 # Add a one-sample t confidence interval for a mean. This is appropriate when
@@ -689,7 +689,7 @@ def plot_with_confidence(y, ax):
 
 ## Statistical Annotations
 
-### Reference Card: Annotating Correlation Statistics
+### Code Snippet: Annotating Correlation Statistics
 
 ```python
 # Add statistical annotations
@@ -711,9 +711,12 @@ def add_statistical_annotations(ax, x, y):
 
 **Waterfall charts** show signed changes accumulating into a running total, such as admissions minus discharges. Each bar starts where the previous change ended; supply a list of changes and one label per change.
 
-### Reference Card: Waterfall Chart Function
+### Code Snippet: Waterfall Chart Function
 
 ```python
+import matplotlib.pyplot as plt
+import numpy as np
+
 def create_waterfall_chart(data, labels):
     """Create waterfall chart for showing cumulative changes"""
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -735,13 +738,15 @@ def create_waterfall_chart(data, labels):
     
     plt.tight_layout()
     plt.show()
+
+create_waterfall_chart([120, -95, 30, -40], ['Admitted', 'Discharged', 'Transferred in', 'Transferred out'])
 ```
 
 ## Sankey Diagrams
 
 **Sankey diagrams** show flows between stages; link width represents the amount moving between two nodes. In the example, C receives 8 and sends 8, while D receives 6 and sends 6.
 
-### Reference Card: Sankey Diagram Function
+### Code Snippet: Sankey Diagram Function
 
 ```python
 # Sankey diagram for flow visualization
@@ -775,7 +780,7 @@ def create_sankey_diagram():
 
 ## Automated Plot Testing
 
-### Reference Card: Testing Plot Properties
+### Code Snippet: Testing Plot Properties
 
 ```python
 # Test plot properties
@@ -802,7 +807,7 @@ def test_plot_properties(fig, expected_properties):
 
 These flags record whether chart elements exist. They do not establish that a title is accurate, a scale is honest, or a grid is useful; inspect the rendered chart against its contract too.
 
-### Reference Card: Plot Quality Metrics Function
+### Code Snippet: Plot Quality Metrics Function
 
 ```python
 # Calculate plot quality metrics
@@ -829,7 +834,7 @@ def calculate_plot_quality(fig):
 
 ## Tufte's Books and Essays
 
-- [The Visual Display of Quantitative Information](https://www.edwardtufte.com/tufte/books_vdqi): Tufte's seminal work
+- [The Visual Display of Quantitative Information](https://www.edwardtufte.com/book/the-visual-display-of-quantitative-information/): Tufte's seminal work
 - [Envisioning Information](https://www.edwardtufte.com/book/envisioning-information/): Color, layering, and detail
 - [Tufte's website](https://www.edwardtufte.com/): Essays and resources
 

@@ -25,8 +25,9 @@ ignored `scratch/`, and confirms that:
   `tz_localize("UTC")`, with every later table built from it, costs only the
   UTC check; a missing file costs only its own artifact's checks; the feedback
   says what was expected and what was found, and names the cause of a reading
-  dropped in Task 1.1, a table saved over another, and a summary resampled
-  without grouping; a timestamp near year 1 or 9999, or with an offset of a day
+  dropped in Task 1.1, a table saved over another, a Task 3.3 table started
+  from Task 3.1's, and a summary resampled without grouping; two-hour bins
+  labeled by their end (`label="right"`) cost only the rows check; a timestamp near year 1 or 9999, or with an offset of a day
   or more, is reported rather than crashing the run;
 - a dropped reading, changed heart rate, or missing source marker costs points
   only in preparation when the later tables correctly transform those saved

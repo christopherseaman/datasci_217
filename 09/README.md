@@ -121,7 +121,7 @@ For a whole column, use Lecture 05's `pd.to_datetime()`: its `datetime64` values
 | Two clinic dates | As text (dtype `str`) | After `pd.to_datetime()` (dtype `datetime64[us]`) |
 | --- | --- | --- |
 | Sorted | `'3/10/2024'`, then `'3/9/2024'` | `2024-03-09`, then `2024-03-10` |
-| Second minus first | `TypeError` | `1 days 00:00:00` |
+| Later minus earlier | `TypeError` | `1 days 00:00:00` |
 
 - **`Timestamp`**: one value in the column.
 - **`DatetimeIndex`**: timestamps used as row labels, which date selection, resampling, and time windows all read.
@@ -167,7 +167,7 @@ Index([8, 20, 8], dtype='int32', name='recorded_at')
 
 <callout icon="⚠️" color="yellow_bg">
 	## Sort by time first
-	On unsorted rows, a date slice can raise `KeyError`. Run `sort_index()`, or `sort_values(['patient_id', 'recorded_at'])` for a panel.
+	On unsorted rows, a date slice can raise `KeyError`. Run `sort_index()` first. A panel sorted by patient, then time, is not in time order, so select its dates with a mask such as `df[df['recorded_at'].between(start, end)]`.
 </callout>
 
 ![xkcd 2867: DateTime. T2 minus T1 looks like simple subtraction until time zones and clock changes, later in this lecture, get involved.](media/xkcd_2867.png)
@@ -230,7 +230,7 @@ DatetimeIndex(['2024-01-01 08:00:00', '2024-01-01 09:00:00',
 
 ### Code Snippet: Calendar Selection
 
-`study_day` numbers the dates in January and February 2024, starting at 1.
+`study_day` is a Series named `value` that numbers the dates in January and February 2024, starting at 1.
 
 ```python
 print(study_day.loc['2024-02'].shape)  # leap year: 29 days
@@ -239,14 +239,12 @@ display(study_day.loc['2024-01-30':'2024-02-02'])
 
 ```text
 (29,)
+2024-01-30    30
+2024-01-31    31
+2024-02-01    32
+2024-02-02    33
+Freq: D, Name: value, dtype: int64
 ```
-
-|  | value |
-| --- | --- |
-| 2024-01-30 | 30 |
-| 2024-01-31 | 31 |
-| 2024-02-01 | 32 |
-| 2024-02-02 | 33 |
 
 # Time Zone Handling
 
@@ -271,12 +269,12 @@ display(study_day.loc['2024-01-30':'2024-02-02'])
 - `df['t'].dt.tz_localize(...)` and `.dt.tz_convert(...)`: The same operations on a datetime column.
 - `ts.index.tz` / `s.dt.tz`: The attached zone; `None` means naive.
 - `pd.to_datetime(text, utc=True)`: Parse text with an offset, or known to be UTC, straight to aware UTC values.
-- `pd.Timestamp('2024-03-09 14:00', tz='UTC')`, `pd.Timestamp.now(tz='UTC')`, `pd.date_range(..., tz='UTC')`: Build aware timestamps and ranges directly; `.tz_convert(...)` works on all of them.
+- `pd.Timestamp('2024-03-09 14:00', tz='UTC')`, `pd.Timestamp.now(tz='UTC')`, `pd.date_range(..., tz='UTC')`: Build aware timestamps and ranges directly; `.tz_convert(...)` works on all of them. Comparing or subtracting an aware column and a naive `Timestamp` raises `TypeError`, so give a cutoff the column's `tz`.
 - Zone names: full names from the IANA time-zone database (the standard list of world time zones), such as `'America/New_York'`; `'US/Eastern'` exists only for backward compatibility.
 
 ### Code Snippet: Local Clinic Times to UTC
 
-`clinic` holds readings of 120 and 118 indexed by naive New York times: March 9 and March 11, 2024, both at 09:00.
+`clinic` is a Series named `value` with readings of 120 and 118, indexed by naive New York times: March 9 and March 11, 2024, both at 09:00.
 
 ```python
 local = clinic.tz_localize('America/New_York')
@@ -284,15 +282,14 @@ display(local)
 display(local.tz_convert('UTC'))
 ```
 
-|  | value |
-| --- | --- |
-| 2024-03-09 09:00:00-05:00 | 120 |
-| 2024-03-11 09:00:00-04:00 | 118 |
-
-|  | value |
-| --- | --- |
-| 2024-03-09 14:00:00+00:00 | 120 |
-| 2024-03-11 13:00:00+00:00 | 118 |
+```text
+2024-03-09 09:00:00-05:00    120
+2024-03-11 09:00:00-04:00    118
+Name: value, dtype: int64
+2024-03-09 14:00:00+00:00    120
+2024-03-11 13:00:00+00:00    118
+Name: value, dtype: int64
+```
 
 Daylight saving time began March 10, so the two 9 AM local visits are 14:00 and 13:00 UTC.
 
@@ -301,7 +298,7 @@ Daylight saving time began March 10, so the two 9 AM local visits are 14:00 and 
 	Localizing these New York readings as `'UTC'` raises no error but shifts each instant by 4 or 5 hours. Localize with the recording zone and convert to UTC to store and order. Convert to the reporting zone before grouping by local calendar days or weeks, or displaying local times.
 </callout>
 
-![xkcd 1799: Bad Map Projection: Time Zones. Each country is redrawn where its clocks say it should be; a wall-clock reading alone does not pin down where, or when, something happened.](media/xkcd_time_zones.png)
+![xkcd 1799: Bad Map Projection: Time Zones. Each country is redrawn where its clocks say it should be; a wall-clock reading alone does not pin down where, or when, something happened.](media/xkcd_1799.png)
 
 ## Clock Changes: Repeated and Skipped Times
 
@@ -326,7 +323,7 @@ By default, `tz_localize()` raises `ValueError` at these times; the arguments be
 
 ### Code Snippet: Flag Clock-Change Timestamps
 
-`local` holds naive New York timestamps: March 10, 2024 at 01:00 and 02:30, and November 3 at 01:30 and 03:00.
+`local` is a Series of naive New York timestamps: March 10, 2024 at 01:00 and 02:30, and November 3 at 01:30 and 03:00.
 
 ```python
 aware = local.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')
@@ -338,14 +335,12 @@ spring_day = pd.date_range('2024-03-10', '2024-03-11', freq='h',
 print(len(spring_day))  # hours in that local day
 ```
 
-|  | value |
-| --- | --- |
-| 0 | 2024-03-10 06:00:00+00:00 |
-| 1 | NaT |
-| 2 | NaT |
-| 3 | 2024-11-03 08:00:00+00:00 |
-
 ```text
+0   2024-03-10 06:00:00+00:00
+1                         NaT
+2                         NaT
+3   2024-11-03 08:00:00+00:00
+dtype: datetime64[us, UTC]
 Set aside: 2
 23
 ```
@@ -378,25 +373,24 @@ _Time series analysis is 90% datetime wrangling, 5% actual analysis, and 5% swea
 
 ### Code Snippet: Basic Resampling
 
-`day_num` holds the values 1 to 30 on January 1 to 30, 2023.
+`day_num` is a Series named `value` holding 1 to 30 on January 1 to 30, 2023.
 
 ```python
 display(day_num.resample('W').mean())
 display(day_num.resample('ME').mean())   # all 30 days fall in January
 ```
 
-|  | value |
-| --- | --- |
-| 2023-01-01 | 1.0 |
-| 2023-01-08 | 5.0 |
-| 2023-01-15 | 12.0 |
-| 2023-01-22 | 19.0 |
-| 2023-01-29 | 26.0 |
-| 2023-02-05 | 30.0 |
-
-|  | value |
-| --- | --- |
-| 2023-01-31 | 15.5 |
+```text
+2023-01-01     1.0
+2023-01-08     5.0
+2023-01-15    12.0
+2023-01-22    19.0
+2023-01-29    26.0
+2023-02-05    30.0
+Freq: W-SUN, Name: value, dtype: float64
+2023-01-31    15.5
+Freq: ME, Name: value, dtype: float64
+```
 
 ## How Resampling Draws Bins
 
@@ -452,7 +446,7 @@ Any aggregation that works after `groupby()` works after `resample()`, including
 
 ### Code Snippet: Resampling Aggregations
 
-`daily` has eight rows, January 1 to 8, 2023, indexed by date, with `temperature` (°F) and `heart_rate` (bpm).
+`daily` has eight rows, January 1 to 8, 2023, indexed by date: `temperature` (°F) 98.6, 98.4, 98.8, 99.6, 100.2, 99.1, 98.5, 98.4 and `heart_rate` (bpm) 72, 74, 76, 80, 82, 76, 72, 71.
 
 ```python
 display(daily.resample('W').agg({'temperature': ['mean', 'max'], 'heart_rate': ['mean', 'count']}).round(1))
@@ -517,7 +511,7 @@ Resample inside each patient's group (Lecture 08's split-apply-combine); the who
 
 ### Code Snippet: Two-Hour Summaries per Patient
 
-`vitals` has `patient_id`, datetime `recorded_at`, and `heart_rate` columns: three readings for P1 and two for P2.
+`vitals` has `patient_id`, datetime `recorded_at`, and `heart_rate` columns: P1 has 72, 75, and 80 bpm at 08:00, 09:00, and 10:00 on March 1, 2024; P2 has 90 and 94 at 09:00 and 10:00.
 
 ```python
 per_patient = (
@@ -714,7 +708,7 @@ In a panel, a plain `shift(1)` runs down the whole stacked column (`wrong_previo
 | 4 | P2 | 2024-03-01 10:00:00 | 86 | 88.0 | 88.0 |
 | 5 | P2 | 2024-03-01 11:00:00 | 84 | 86.0 | 86.0 |
 
-Row 3 is the leak: P2's "previous" heart rate is P1's 95. Sort by patient and time first, because on unsorted rows `shift()` pairs each reading with whatever row sits above it.
+Row 3 is the leak: P2's "previous" heart rate is P1's 95. Sort by patient and time first: `shift()` reads row order, so on unsorted rows a patient's "previous" reading can be a later one.
 
 ### Reference Card: Past-Only Panel Features
 
@@ -832,9 +826,10 @@ A chronological split permits earlier history from the same patient on both side
 
 - `ts.plot()`: Line plot with the DatetimeIndex on the x-axis; returns the `Axes` (`ax = ts.plot()`) for further customization
 - `ts.plot(figsize=(12, 6), title='Title', marker='o')`: Figure size, title, and a marker at each reading
-- `ts.asfreq('D').plot()`: Inserts `NaN` for missing days, so the line breaks at gaps instead of bridging them; `ts.asfreq('D')` is the shortcut for `ts.resample('D').asfreq()`
+- `ts.asfreq('D').plot()`: Inserts `NaN` for missing days, so the line breaks at gaps instead of bridging them; `ts.asfreq('D')` starts the grid at the first reading's clock time, while `ts.resample('D').asfreq()` starts at midnight and turns off-midnight readings into `NaN`; the two match for date-only readings
 - `ts.groupby(ts.index.month).mean().plot(kind='bar', ax=ax)`: Calendar-month means as bars, to show a seasonal pattern; `groupby()` also accepts an array of keys as long as the series, such as `ts.index.month`. Draw them on a new `fig, ax = plt.subplots()`: bars on the dated line's Axes raise `AttributeError`. Bars start at zero (Lecture 07), which suits counts; for a reading such as temperature, plot the difference from a baseline such as 98.6 °F
 - `ax.axhline(98.6, linestyle='--', label='Normal')`: Horizontal reference line for a clinical threshold
+- `ax.set(xlabel='Time (UTC)')`: Name the zone of an aware time axis
 
 ### Code Snippet: Time-Series Plotting
 

@@ -39,7 +39,7 @@ import pandas as pd
 import seaborn as sns
 ```
 
-The core walkthrough is sections 1 to 6. Sections 7 to 9 are independent practice for outside class: sections 7 and 8 build their own data, and section 9 uses section 8's `daily` and `alerts`.
+The core walkthrough is sections 1 to 7. Sections 8 to 10 are independent practice for outside class: section 8 uses section 7's `ili`, section 9 builds its own data, and section 10 uses section 9's `daily` and `alerts`.
 
 ## 1. Rebuild the ICU panel
 
@@ -80,7 +80,7 @@ vitals['previous_hr'] = by_patient.shift(1)
 display(vitals[['patient_id', 'heart_rate', 'wrong_previous', 'previous_hr']])
 ```
 
-**Expect:** the two columns agree except on each patient's first row. Row 5, P02's first reading, has `wrong_previous` `118.0`, P01's last heart rate, and row 9, P03's first, has `69.0` from P02. `previous_hr` is `NaN` on all three first rows.
+**Expect:** the two columns agree except on the first rows of P02 and P03. Row 5, P02's first reading, has `wrong_previous` `118.0`, P01's last heart rate, and row 9, P03's first, has `69.0` from P02. `previous_hr` is `NaN` on all three first rows.
 
 ```python
 vitals = vitals.drop(columns='wrong_previous')
@@ -154,7 +154,7 @@ display(audit)
 
 ## 5. A chronological holdout
 
-To test a score honestly, build it on the earlier rows and hold out the rows from the prediction time onward, the way it would meet later patients.
+To test a score honestly, build it on the earlier rows and hold out the rows from the prediction time onward, the way it would meet later readings.
 
 ```python
 vitals['block'] = np.where(vitals['recorded_at'] < prediction_time, 'earlier', 'later_holdout')
@@ -185,7 +185,7 @@ plt.show()
 **Expect:** P01's line climbs across the dashed line between 03:30 and 04:30 UTC and keeps rising to 118; P03's starts above it and falls below; P02's stays near 70. There is no P02 point between 04:00 and 07:00 UTC, where the ambiguous reading was set aside.
 
 
-## 7. Independent practice: three years of flu-like illness visits
+## 7. Three years of flu-like illness visits
 
 The emergency department counts visits for influenza-like illness (fever with cough or sore throat) every day. Visits peak each winter. The reporting feed failed for two weeks in February 2023, so those days have no rows at all.
 
@@ -205,14 +205,6 @@ display(ili.resample('W').count().loc['2023-01-29':'2023-02-19'])
 
 **Expect:** `1081 days reported` (1,095 days minus the 14-day outage). The weekly counts of reported days drop to `2`, `0`, and `5` for the weeks ending February 5, 12, and 19. A weekly _sum_ of visits would fall the same way, which is a reporting gap, not fewer patients.
 
-Optional extension. Prerequisite: BONUS.md, Frequency Inference and Specialized Schedules. `pd.infer_freq()` reads the spacing back from the index.
-
-```python
-print('Frequency:', pd.infer_freq(ili.index))
-```
-
-**Expect:** `Frequency: None`, because the missing days break the daily spacing.
-
 Plotted as is, the line draws straight across the outage. `asfreq('D')` puts the missing days back as `NaN`, and the line breaks there instead.
 
 ```python
@@ -227,6 +219,19 @@ plt.show()
 ```
 
 **Expect:** the top panel shows a straight segment from January 31 to February 15; the bottom panel shows the same data with a two-week break.
+
+
+## 8. Independent practice: smoothing and seasons in the flu-like visits
+
+Use `ili` from section 7.
+
+Optional extension. Prerequisite: BONUS.md, Frequency Inference and Specialized Schedules. `pd.infer_freq()` reads the spacing back from the index.
+
+```python
+print('Frequency:', pd.infer_freq(ili.index))
+```
+
+**Expect:** `Frequency: None`, because the missing days break the daily spacing.
 
 Over all three years, a 28-day time window smooths the daily counts. A time window uses whatever days were reported in the last 28 days, so the outage does not shift it the way a 28-row window would. Add the daily grid after calculating the mean to leave the smoother visibly broken on unreported days too.
 
@@ -260,7 +265,7 @@ plt.show()
 **Expect:** January is highest (`60.2`) and July lowest (`20.6`); the bars fall from January to July and rise again toward December (`56.8`).
 
 
-## 8. Independent practice: daily weights and a fluid-gain alert
+## 9. Independent practice: daily weights and a fluid-gain alert
 
 Heart-failure patients are commonly told to call the clinic if their weight rises by more than about 1 kg in a day or 2 kg in a week, because fluid is building up. This section builds one patient's daily weight for January through March, with a fluid-gain episode in March.
 
@@ -316,9 +321,9 @@ print('Largest daily change before March 9:', daily.loc[:'2024-03-08', 'change_1
 **Expect:** three alert days: March 10 (the 1-day rule, `1.3` kg) and March 11 and 12 (the 7-day rule, `2.3` kg). Before the episode, no day moved more than `0.4` kg, so ordinary scale noise never trips the rule.
 
 
-## 9. Independent practice: plot the home-weight alerts
+## 10. Independent practice: plot the home-weight alerts
 
-Use `daily` and `alerts` from section 8. Marking the alert days on the raw series shows both the size of the change and when it happened.
+Use `daily` and `alerts` from section 9. Marking the alert days on the raw series shows both the size of the change and when it happened.
 
 ```python
 fig, ax = plt.subplots(figsize=(10, 4))

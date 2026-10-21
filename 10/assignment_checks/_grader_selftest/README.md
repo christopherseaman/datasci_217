@@ -31,8 +31,13 @@ assignment with statsmodels, scikit-learn, and pandas from
   on the visit time, ranges read from `visit_time`, a residual sign flipped on
   every row or on a few, fitted and residual columns swapped, `< 0` for
   `<= 0`, a baseline mean from the validation rows, RMSE saved without its
-  square root, test metrics copied from validation, and precision and recall
-  with their arguments swapped land on the checks that name them, and the
+  square root, `r2_score` with its arguments swapped, 90% new-patient
+  intervals, split ranges read from every visit, test metrics copied from
+  validation, and precision and recall with their arguments swapped land on
+  the checks that name them; RMSE without its root or swapped `r2_score`
+  arguments in both Tasks 3.1 and 3.2, 90% intervals, and ranges from every
+  visit cost points once; rows saved under each other's labels cost the
+  artifact's first values check once and say which labels hold which values; and the
   feedback says what was expected, what was found, and the likely cause; and
   for the readmission table saved over `validation_metrics.csv`, the feedback
   names the file whose header it holds;

@@ -389,7 +389,7 @@ Create estimator and choose settings
 | `model.fit(X, y)` | Learn parameters from features and targets. | The fitted estimator (`model`) |
 | `model.predict(X)` | Generate predictions for new rows. | NumPy array |
 | `model.score(X, y)` | Return the estimator's default score (R² for regressors; for classifiers, accuracy, the fraction predicted correctly; both defined below). | Float |
-| `cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=3), scoring=...)` | Cross-validate time-ordered rows: each fold fits a fresh copy on earlier rows and scores the next block (`from sklearn.model_selection import cross_val_score, TimeSeriesSplit`). | One score per fold (array) |
+| `cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=3), scoring=...)` | Cross-validate rows sorted by time (the splitter uses row position, not dates; `df.sort_values('target_date')` first): each fold fits a fresh copy on earlier rows and scores the next block (`from sklearn.model_selection import cross_val_score, TimeSeriesSplit`). | One score per fold (array) |
 
 ## Linear Regression for Prediction
 
@@ -414,7 +414,7 @@ Discharge measurements → logistic regression → 0.72 probability → flag 1 a
 | `Ridge(alpha=...)` | Fit a linear model with an L2 coefficient penalty; larger `alpha` shrinks more. | Estimator |
 | `Lasso(alpha=...)` | Fit a linear model with an L1 penalty that may set coefficients to zero. | Estimator |
 | `LogisticRegression(max_iter=1000)` | Linear model for yes/no targets; `predict` gives 0/1 and `predict_proba` gives probabilities. | Estimator |
-| `model.coef_` / `model.intercept_` | Read fitted slopes and intercept after `.fit(...)`. | Array / scalar |
+| `model.coef_` / `model.intercept_` | Read fitted slopes and intercept after `.fit(...)`. | Array / float (`LogisticRegression`: 2-D `coef_`, 1-element `intercept_`) |
 
 ## Baselines and Pipelines
 
@@ -546,7 +546,7 @@ print((-scores).round(1))
 
 ### Code Snippet: Accuracy Hides Missed Readmissions
 
-When readmissions are rare, a model that always says "no" scores high accuracy while catching nobody, which is why screening cares about recall.
+A model that always says "no" matches this flag's 0.625 accuracy while catching nobody, and the rarer readmissions are, the higher that accuracy climbs. Screening therefore cares about recall.
 
 ```python
 actual    = [1, 0, 0, 1, 0, 0, 0, 1]

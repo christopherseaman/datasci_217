@@ -17,6 +17,7 @@ The lecture's main path uses linear models, random forests, and gradient boostin
 - Unsupervised work: `KMeans` for clustering and `PCA` for dimensionality reduction. Neither uses a target column.
 - Selection: `GridSearchCV` for hyperparameter tuning within the training data (examples under Hyperparameter Tuning Strategies below).
 - Independent rows: `cv=5` uses `StratifiedKFold` for classifiers with binary or multiclass targets, and `KFold` otherwise. Each fold takes a turn as the scored block; neither protects time order like `TimeSeriesSplit`.
+- Patient groups: `GroupKFold(n_splits=5)` and `GroupShuffleSplit` keep each patient's rows in one part; pass `groups=df['patient_id']` to `split(X, y, groups=...)` or `cross_val_score(..., groups=...)`. Use them to evaluate on entirely new patients.
 - Delayed targets: `TimeSeriesSplit(gap=n)` leaves `n` rows out between each training block and the block it scores. Choose a gap large enough that every retained label was available at that fold's first prediction cutoff; a row count is not a fixed time delay with irregular visits.
 
 _Let validation evidence decide, not a favorite algorithm. Blue steel is a style, not a model-selection rule._
@@ -121,7 +122,7 @@ space = [
 ]
 
 # Objective function
-@use_named_args(space=space)
+@use_named_args(space)
 def objective(**params):
     model = XGBClassifier(**params, random_state=42)
     scores = cross_val_score(model, X_train, y_train, cv=5)
@@ -373,6 +374,18 @@ The lecture uses TensorFlow/Keras for its worked example. That is a teaching cho
 
 `PyTorch` provides an eager, Python-oriented interface used in research and production. It is not part of Lecture 10's recorded environment; add it to the demo folder's environment with `uv add torch` (Lecture 03), or run `%pip install torch` in Colab, before running the example.
 
+On Linux and WSL, plain `uv add torch` also installs the CUDA GPU packages, a multi-GB download. For the CPU-only build, add these lines to `pyproject.toml` before running `uv add torch`:
+
+```toml
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+```
+
 - **PyTorch:** Eager execution and a Python-oriented modeling ecosystem
 - **TensorFlow/Keras:** High-level Keras APIs within TensorFlow's broader modeling and deployment ecosystem
 - **Both:** Used for research and production; neither role belongs exclusively to one framework
@@ -444,7 +457,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # Base models
 base_models = [
     ('rf', RandomForestClassifier(n_estimators=100, random_state=42)),
-    ('svm', SVC(probability=True, random_state=42))
+    ('svm', SVC())
 ]
 
 # Meta-learner
@@ -507,8 +520,6 @@ When each observation depends on the ones just before it, `statsmodels` offers d
 - ARIMA models for time series forecasting
 - Seasonal decomposition
 - Use when: You have temporal dependencies in your data
-
-Lecture 09's bonus has worked examples of decomposition and ARIMA and exponential smoothing.
 
 ## Weekly Persistence on an Hourly Grid
 
@@ -643,7 +654,7 @@ with mlflow.start_run():
     mlflow.log_metric("accuracy", accuracy)
     
     # Log model
-    mlflow.sklearn.log_model(model, "model")
+    mlflow.sklearn.log_model(model, name="model", skops_trusted_types=["sklearn.tree._tree.Tree"])
 ```
 
 # Advanced Feature Engineering

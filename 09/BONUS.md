@@ -62,6 +62,24 @@ print("\nPeriod-indexed Series:")
 print(ts)
 ```
 
+```text
+Period: 2011
+Plus 5 years: 2016
+Minus 2 years: 2009
+Fiscal Q4: 2012Q4
+Start date: 2011-11-01
+End date: 2012-01-31
+
+Period-indexed Series:
+2000-01    0.304717
+2000-02   -1.039984
+2000-03    0.750451
+2000-04    0.940565
+2000-05   -1.951035
+2000-06   -1.302180
+Freq: M, dtype: float64
+```
+
 ## Converting Between Timestamps and Periods
 
 Converting a timestamp to a period keeps the containing span, not the original instant. Converting back chooses its start by default; `how='end'` chooses its final instant. Multiple dates can become the same monthly period, so conversion alone does not produce a monthly summary.
@@ -96,6 +114,20 @@ print(pts)
 ts_back = pts.to_timestamp()
 print("\nBack to timestamps:")
 print(ts_back)
+```
+
+```text
+Period-indexed:
+2000-01    0.304717
+2000-02   -1.039984
+2000-03    0.750451
+Freq: M, dtype: float64
+
+Back to timestamps:
+2000-01-01    0.304717
+2000-02-01   -1.039984
+2000-03-01    0.750451
+Freq: MS, dtype: float64
 ```
 
 # Advanced Time Series Decomposition
@@ -236,6 +268,8 @@ def fit_arima(series, order=(1, 1, 1)):
     return fitted_model, forecast, forecast_ci
 ```
 
+statsmodels 0.15 prints a `FutureWarning` about `adfuller`'s return type; it does not change `result[0]` or `result[1]`.
+
 ## Exponential Smoothing
 
 These forecasting models extend a smoothed level with a trend (Holt) or trend and seasonality (Holt-Winters). Here `ts` is the daily series from the decomposition example; its annual cycle is approximately 365 observations. A monthly series would use `seasonal_periods=12`. Forecast steps count observations, so 30 steps here means 30 days. The examples use fixed smoothing coefficients of 0.3 (`optimized=False`), chosen for illustration rather than forecast accuracy.
@@ -295,6 +329,20 @@ annual = frame.resample('Y-DEC').mean()
 
 # Upsample annual to quarterly
 quarterly = annual.resample('Q-DEC', convention='start').ffill()
+print(annual)
+print(quarterly.head())
+```
+
+```text
+      Colorado     Texas  New York      Ohio
+2000 -0.099587 -0.376765  0.583130  0.211060
+2001 -0.266281  0.196464 -0.299594 -0.131869
+        Colorado     Texas  New York      Ohio
+2000Q1 -0.099587 -0.376765  0.583130  0.211060
+2000Q2 -0.099587 -0.376765  0.583130  0.211060
+2000Q3 -0.099587 -0.376765  0.583130  0.211060
+2000Q4 -0.099587 -0.376765  0.583130  0.211060
+2001Q1 -0.266281  0.196464 -0.299594 -0.131869
 ```
 
 # More Window and Selection Options

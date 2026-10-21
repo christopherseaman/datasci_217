@@ -27,7 +27,8 @@ only, or refitted on training plus validation rows.
 Downstream decisions, fitted values, residuals, and test metrics also accept
 values calculated correctly from the student's earlier saved artifacts. A
 recognized common slip that affects several checks is charged once, by the
-first affected check. Duplicate headers cost the columns check; every stored
+first affected check, and so are rows whose values all sit under each other's
+labels. Duplicate headers cost the columns check; every stored
 copy is considered rather than silently discarding a column.
 
 Nothing here imports, runs, or inspects student code.
@@ -249,6 +250,25 @@ RANGES_FROM_VISIT_TIME = Slip(
                     "last_target_time": Instant("2026-05-04T21:51:00Z")},
     },
 )
+# summary_frame(alpha=0.10) gives 90% bounds for both intervals in one call; it costs points once.
+INTERVALS_AT_90 = Slip(
+    "Those are 90% intervals; summary_frame(alpha=0.05) gives the 95% intervals.",
+    {NEW_PATIENT: {"mean_ci_lower": 146.83531, "mean_ci_upper": 153.461769,
+                   "obs_ci_lower": 138.753737, "obs_ci_upper": 161.543342}},
+    charge="interval_alpha",
+)
+# Ranges read from every visit: the min and max followup_time of the whole table on every row.
+RANGES_FROM_ALL_VISITS = Slip(
+    "Those are the first and last followup_time of every visit; take each partition's own "
+    "followup_time.min() and max().",
+    {
+        ("validation",): {"first_target_time": Instant("2026-04-01T18:18:00Z"),
+                          "last_target_time": Instant("2026-05-18T21:51:00Z")},
+        ("test",): {"first_target_time": Instant("2026-04-01T18:18:00Z")},
+        ("train",): {"last_target_time": Instant("2026-05-18T21:51:00Z")},
+    },
+    charge="ranges_from_all_visits",
+)
 # One leak (a1c_result or callback_sbp kept as a feature) reaches Tasks 2.1, 3.1, and 3.2; it costs points once.
 LEAKY_AVAILABLE = Slip(
     "Those features become known only after the visit ends, so marking them available leaks them into the "
@@ -270,13 +290,26 @@ BASELINE_FROM_VALIDATION = Slip(
     "mean from the training rows (134.13 mmHg).",
     {("mean_baseline",): {"mae": 6.75, "rmse": 8.042854, "r2": 0.0}},
 )
+# The Task 3.2 scaffold reuses Task 3.1's metric code, so one slip there reaches both tasks; it costs points once.
 RMSE_NOT_ROOTED = Slip(
     "Those are mean squared errors, in mmHg squared; RMSE is their square root, back in mmHg.",
     {("mean_baseline",): {"rmse": 79.767778}, ("linear_pipeline",): {"rmse": 13.539216}},
+    charge="rmse_not_rooted",
 )
 TEST_RMSE_NOT_ROOTED = Slip(
     "That is the mean squared error, in mmHg squared; RMSE is its square root, back in mmHg.",
     {("linear_pipeline",): {"rmse": Either((13.090932, 12.661851))}},
+    charge="rmse_not_rooted",
+)
+R2_ARGS_SWAPPED = Slip(
+    "That is what r2_score gives with the predictions first; pass the actual values first.",
+    {("mean_baseline",): {"r2": 0.0}, ("linear_pipeline",): {"r2": 0.617464}},
+    charge="r2_swapped",
+)
+TEST_R2_ARGS_SWAPPED = Slip(
+    "That is what r2_score gives with the test predictions first; pass test[TARGET] first.",
+    {("linear_pipeline",): {"r2": Either((0.771802, 0.788141))}},
+    charge="r2_swapped",
 )
 LEAKY_TEST = Slip(
     "Those are the test scores of a pipeline that also uses a1c_result or callback_sbp, which become known "
@@ -980,6 +1013,46 @@ def _cause(misses: list[tuple[tuple, str, str]], artifact: Artifact, slips: tupl
     return ""
 
 
+# Rows whose values all belong under other labels: one mistake, charged by the artifact's first values check.
+RELABELED = "check the labels each row is saved under"
+
+
+def _relabeled(grouped: dict[tuple, list[dict[str, str]]], artifact: Artifact, found: dict[str, str]) -> str:
+    """Where every expected row's values sit under another present label, the cause naming them, or "".
+
+    Only a whole permutation counts: each saved row holds, in every value column,
+    the values of its own key or of exactly one other, and every key is used once.
+    """
+    columns = [column for column in artifact.columns if column not in artifact.key and column in found]
+    if len(artifact.rows) < 2 or not columns or any(len(grouped.get(key, ())) != 1 for key in artifact.rows):
+        return ""
+
+    def fits(row: dict[str, str], key: tuple) -> bool:
+        return all(
+            _matches(row[found[column]], artifact.rows[key][column], artifact.tolerance, column in PERCENT_COLUMNS)
+            for column in columns
+        )
+
+    holder = {}
+    for key in artifact.rows:
+        row = grouped[key][0]
+        if fits(row, key):
+            holder[key] = key
+            continue
+        others = [other for other in artifact.rows if other != key and fits(row, other)]
+        if len(others) != 1:
+            return ""
+        holder[key] = others[0]
+    if sorted(holder.values()) != sorted(artifact.rows) or all(label == values for label, values in holder.items()):
+        return ""
+    moved = [
+        f"the values for {_key_name(values, artifact)} sit in {_key_name(label, artifact)}'s row"
+        for label, values in holder.items() if label != values
+    ]
+    shown = _listed(moved)
+    return f" {shown[0].upper()}{shown[1:]}; {RELABELED}."
+
+
 CLINIC_PREDICTORS = {
     'P01': (67.0, 24.2),
     'P02': (72.0, 35.4),
@@ -1124,7 +1197,8 @@ def values_check(
                     wrong.append(f"{_key_name(key, artifact)} has {column} {_join(given)}, expected {_show(artifact.rows[key][column])}")
         _assert(
             not wrong,
-            f"{artifact.path}: " + _listed(wrong) + "." + _cause(misses, artifact, named)
+            f"{artifact.path}: " + _listed(wrong) + "."
+            + (_relabeled(grouped, artifact, found) or _cause(misses, artifact, named))
             + f" Fix it in {artifact.task}: {hint}",
         )
 
@@ -1266,6 +1340,7 @@ CHECKS = (
         values_check(
             NEW_PATIENT_INTERVALS, ("mean_ci_lower", "mean_ci_upper"),
             "mean_ci_lower and mean_ci_upper bound the average SBP of patients like this one.",
+            (INTERVALS_AT_90,),
         ),
     ),
     Check(
@@ -1273,6 +1348,7 @@ CHECKS = (
         values_check(
             NEW_PATIENT_INTERVALS, ("obs_ci_lower", "obs_ci_upper"),
             "obs_ci_lower and obs_ci_upper bound one such patient's SBP; this interval is the wider one.",
+            (INTERVALS_AT_90,),
         ),
     ),
     # Task 1.3: output/ols_residuals.csv and output/residuals_vs_fitted.png
@@ -1362,7 +1438,7 @@ CHECKS = (
         values_check(
             SPLIT, ("first_target_time",),
             "first_target_time is the partition's followup_time.min(), the full timestamp.",
-            (SPLIT_ON_VISIT_TIME, RANGES_FROM_VISIT_TIME),
+            (SPLIT_ON_VISIT_TIME, RANGES_FROM_VISIT_TIME, RANGES_FROM_ALL_VISITS),
         ),
     ),
     Check(
@@ -1370,7 +1446,7 @@ CHECKS = (
         values_check(
             SPLIT, ("last_target_time",),
             "last_target_time is the partition's followup_time.max(), the full timestamp.",
-            (SPLIT_ON_VISIT_TIME, RANGES_FROM_VISIT_TIME),
+            (SPLIT_ON_VISIT_TIME, RANGES_FROM_VISIT_TIME, RANGES_FROM_ALL_VISITS),
         ),
     ),
     # Task 3.1: output/validation_metrics.csv
@@ -1399,7 +1475,8 @@ CHECKS = (
     Check(
         "validation metrics: r2 values",
         values_check(
-            VALIDATION, ("r2",), f"r2 is r2_score(actual, predicted); {PIPELINE_HINT}", (LEAKY_VALIDATION, BASELINE_FROM_VALIDATION)
+            VALIDATION, ("r2",), f"r2 is r2_score(actual, predicted); {PIPELINE_HINT}",
+            (LEAKY_VALIDATION, BASELINE_FROM_VALIDATION, R2_ARGS_SWAPPED),
         ),
     ),
     # Task 3.2: output/test_metrics.csv and output/test_predictions.csv
@@ -1432,7 +1509,7 @@ CHECKS = (
         "test metrics: r2 value",
         values_check(
             TEST_METRICS, ("r2",), f"r2 is r2_score(test[TARGET], test_predicted), actual first; {TEST_HINT}",
-            (LEAKY_TEST, TEST_SCORED_ON_VALIDATION),
+            (LEAKY_TEST, TEST_SCORED_ON_VALIDATION, TEST_R2_ARGS_SWAPPED),
         ),
     ),
     Check(
@@ -1501,6 +1578,8 @@ def run_checks(root: Path) -> list[tuple[str, str | None]]:
             message = str(error)
             slip = next((slip for slip in slips if slip.cause in message), None)
             mistake = slip and (slip.charge or slip.cause)
+            if not mistake and RELABELED in message:
+                mistake = message.split(":")[0] + RELABELED
             if mistake and mistake in charged:
                 results.append((check.name, None))
             else:

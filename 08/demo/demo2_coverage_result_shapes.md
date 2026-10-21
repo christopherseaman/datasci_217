@@ -21,10 +21,10 @@ jupyter:
 A clinic network's quarterly report groups 100,000 synthetic visits by clinic and by department.
 
 - **Part 1:** which visits and clinics the default report silently leaves out.
-- **Part 2:** `transform` adds department context to every visit.
-- **Independent practice after class:** plot coverage, find within-department quartiles, fill blank scores with each department's median, and use `filter` to keep or drop whole departments.
+- **Part 2:** `transform` adds department context to every visit, and `filter` keeps whole departments that pass a rule.
+- **Independent practice after class:** plot coverage, find within-department quartiles, fill blank scores with each department's median, and filter by mean and spread.
 
-Run the cells from top to bottom; each **Expect** line says what the output should show. Patient IDs and values are synthetic.
+Run the cells from top to bottom; each **Expect** line says what the output should show.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -78,13 +78,11 @@ typical_wait = {"Orthopedics": 38, "Cardiology": 30, "Endocrinology": 26,
                 "Family Medicine": 22, "Dermatology": 18, "Pediatrics": 15}
 wait_spread = {"Orthopedics": 10, "Cardiology": 9, "Endocrinology": 8,
                "Family Medicine": 14, "Dermatology": 6, "Pediatrics": 5}
-visits["wait_min"] = rng.normal(
-    visits["department"].map(typical_wait), visits["department"].map(wait_spread)
-).round()
-visits["wait_min"] = visits["wait_min"].clip(lower=0).astype(int)
-
-# Systolic blood pressure (mmHg) rises with age
-visits["systolic_bp"] = rng.normal(100 + 0.5 * visits["age"], 14).round().astype(int)
+# Waits are skewed right (a few very long, none below 1 minute): a gamma draw with that mean and spread
+typical = visits["department"].map(typical_wait)
+spread = visits["department"].map(wait_spread)
+visits["wait_min"] = rng.gamma(shape=(typical / spread) ** 2, scale=spread**2 / typical).round()
+visits["wait_min"] = visits["wait_min"].clip(lower=1).astype(int)
 
 # Satisfaction survey, 1 (poor) to 5 (excellent): longer waits, lower scores
 visits["satisfaction"] = (5.5 - visits["wait_min"] / 15 + rng.normal(0, 0.8, n_visits)).round()
@@ -97,7 +95,7 @@ print(f"Visits with no satisfaction survey: {visits['satisfaction'].isna().sum()
 display(visits.head())
 ```
 
-**Expect:** `(100000, 9)`, 2,984 visits with no survey, and five visits with nine columns, the same log as Demo 1.
+**Expect:** `(100000, 8)`, 2,982 visits with no survey, and five visits with eight columns, the same log as Demo 1.
 
 ### Two Realities the Default Summary Hides
 
@@ -204,7 +202,7 @@ print("Same index as visits?", z_lambda.index.equals(visits.index))
 print("Largest difference between the two z-scores:", (visits["wait_z"] - z_lambda).abs().max())
 ```
 
-**Expect:** the first five visits with their department's mean, the difference, and the z-score; row 0 is a 28-minute Family Medicine wait, 5.70 minutes above that department's 22.30, so `wait_z` is 0.43. Then `Rows: 100000`, `True`, and a difference of about `6e-15`: the two z-scores agree to rounding error. `transform` added columns; it did not summarize.
+**Expect:** the first five visits with their department's mean, the difference, and the z-score; row 0 is a 26-minute Family Medicine wait, 4.05 minutes above that department's 21.95, so `wait_z` is 0.29. Then `Rows: 100000`, `True`, and a difference of about `2e-14`: the two z-scores agree to rounding error. `transform` added columns; it did not summarize.
 
 ```python
 # The same 30-minute wait, measured against each department's own waits
@@ -212,7 +210,24 @@ thirty = visits[visits["wait_min"] == 30]
 display(thirty.groupby("department")["wait_z"].mean().round(2))
 ```
 
-**Expect:** the same 30-minute wait is ordinary in Cardiology (z = 0.01), about 3 standard deviations above the Pediatrics mean (2.99), and shorter than usual in Orthopedics (-0.8). Group context changes what one number means.
+**Expect:** the same 30-minute wait is ordinary in Cardiology (z = -0.01), about 3 standard deviations above the Pediatrics mean (3.03), and shorter than usual in Orthopedics (-0.8). Group context changes what one number means.
+
+### Keep Only the Departments That Qualify
+
+`filter` tests each whole group and keeps every row of the groups that pass. Rows are never changed, only kept or dropped.
+
+```python
+by_department = visits.groupby("department")
+
+# Departments with at least 15,000 visits
+busy = by_department.filter(lambda g: len(g) >= 15_000)
+print(f"At least 15,000 visits: {len(busy):,} rows, departments {sorted(busy['department'].unique())}")
+
+# Checkpoint: the kept rows are the original rows, unchanged
+print("Rows unchanged?", busy.equals(visits.loc[busy.index]))
+```
+
+**Expect:** only Family Medicine and Cardiology have 15,000 or more visits (51,310 rows); Pediatrics, at 14,672, just misses. Then `True`: `filter` returns the original rows of the passing groups, not one row per group.
 
 ## Independent practice after class
 
@@ -251,7 +266,7 @@ visits["wait_quartile"] = by_dept.transform(
 display(pd.crosstab(visits["department"], visits["wait_quartile"], margins=True))
 ```
 
-**Expect:** each department split into Q1 to Q4 by its own waits, with row totals equal to its visit counts and 100,000 in the corner. The quarters are not exactly equal (Pediatrics Q1 has 4,628 visits, Q3 has 3,153) because many visits share the same whole-minute wait, and tied waits always land in the same quartile.
+**Expect:** each department split into Q1 to Q4 by its own waits, with row totals equal to its visit counts and 100,000 in the corner. The quarters are not exactly equal (Pediatrics Q2 has 4,730 visits, Q3 has 2,925) because many visits share the same whole-minute wait, and tied waits always land in the same quartile.
 
 
 ### Fill Missing Scores with the Department Median
@@ -269,20 +284,12 @@ with_filled["satisfaction"] = filled
 display(with_filled[blank].groupby("department")["satisfaction"].agg(["count", "max"]))
 ```
 
-**Expect:** `Blank scores before: 2984 after: 0`, then one row per department: Pediatrics' 445 blanks become 5.0, Cardiology's 507 and Orthopedics' 447 become 3.0, and the other three departments' blanks become 4.0. A whole-column `fillna(visits["satisfaction"].median())` would give every blank 4.0.
+**Expect:** `Blank scores before: 2982 after: 0`, then one row per department: Pediatrics' 473 blanks become 5.0, Orthopedics' 418 become 3.0, and the other four departments' blanks become 4.0. A whole-column `fillna(visits["satisfaction"].median())` would give every blank 4.0.
 
 
-### Keep Only the Departments That Qualify
-
-`filter` tests each whole group and keeps every row of the groups that pass. Rows are never changed, only kept or dropped.
+### Filter by Mean and Spread
 
 ```python
-by_department = visits.groupby("department")
-
-# Departments with at least 15,000 visits
-busy = by_department.filter(lambda g: len(g) >= 15_000)
-print(f"At least 15,000 visits: {len(busy):,} rows, departments {sorted(busy['department'].unique())}")
-
 # Departments whose mean wait is over 25 minutes
 slow = by_department.filter(lambda g: g["wait_min"].mean() > 25)
 print(f"Mean wait over 25 min:  {len(slow):,} rows, departments {sorted(slow['department'].unique())}")
@@ -290,12 +297,9 @@ print(f"Mean wait over 25 min:  {len(slow):,} rows, departments {sorted(slow['de
 # Departments whose waits vary the most (standard deviation over 9.5 minutes)
 variable = by_department.filter(lambda g: g["wait_min"].std() > 9.5)
 print(f"Wait SD over 9.5 min:   {len(variable):,} rows, departments {sorted(variable['department'].unique())}")
-
-# Checkpoint: the kept rows are the original rows, unchanged
-print("\nRows unchanged?", busy.equals(visits.loc[busy.index]))
 ```
 
-**Expect:** only Family Medicine and Cardiology have 15,000 or more visits (51,310 rows); Pediatrics, at 14,672, just misses. Cardiology, Endocrinology, and Orthopedics average over 25 minutes (42,724 rows). Family Medicine and Orthopedics have the most variable waits (48,659 rows). Then `True`: `filter` returns the original rows of the passing groups, not one row per group.
+**Expect:** Cardiology, Endocrinology, and Orthopedics average over 25 minutes (42,724 rows). Family Medicine and Orthopedics have the most variable waits (48,659 rows).
 
 ## Optional Extension: `dropna` in a Pivot Table
 
@@ -326,5 +330,5 @@ display(means_kept.round(1))
 print("Rows:", len(means_kept))
 ```
 
-**Expect:** 5 rows with `dropna=True`: the `NaN` group goes because its key is missing, and Bayview goes because all six of its cells are `NaN`. With `dropna=False`, 7 rows, and the `NaN` row is not empty: six real means, from 16.5 minutes in Pediatrics to 38.6 in Orthopedics, computed from the 250 visits the default report never mentions.
+**Expect:** 5 rows with `dropna=True`: the `NaN` group goes because its key is missing, and Bayview goes because all six of its cells are `NaN`. With `dropna=False`, 7 rows, and the `NaN` row is not empty: six real means, from 13.3 minutes in Pediatrics to 37.1 in Orthopedics, computed from the 250 visits the default report never mentions.
 

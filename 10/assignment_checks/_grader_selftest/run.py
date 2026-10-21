@@ -341,6 +341,27 @@ def check_slip_values() -> None:
     ]
     wanted = value_checks.TEST_RMSE_NOT_ROOTED.rows[("linear_pipeline",)]["rmse"].values
     assert all(near(got, want) for got, want in zip(squared, wanted, strict=True)), (squared, wanted)
+    # r2_score with its arguments swapped, on validation rows and on both refits' test rows.
+    for (approach,), expected in value_checks.R2_ARGS_SWAPPED.rows.items():
+        fitted = baseline if approach == "mean_baseline" else pipeline
+        assert near(r2_score(fitted.predict(valid[FEATURES]), valid[TARGET]), expected["r2"]), approach
+    swapped_r2 = [
+        r2_score(Pipeline([("scale", StandardScaler()), ("model", LinearRegression())])
+                 .fit(rows[FEATURES], rows[TARGET]).predict(test[FEATURES]), test[TARGET])
+        for rows in (train, pd.concat([train, valid]))
+    ]
+    wanted = value_checks.TEST_R2_ARGS_SWAPPED.rows[("linear_pipeline",)]["r2"].values
+    assert all(near(got, want) for got, want in zip(swapped_r2, wanted, strict=True)), (swapped_r2, wanted)
+    # 90% intervals from summary_frame(alpha=0.10).
+    results = smf.ols("sbp ~ age + bmi", data=data["patients"]).fit()
+    at_90 = results.get_prediction(NEW_PATIENT).summary_frame(alpha=0.10).iloc[0]
+    for column, want in value_checks.INTERVALS_AT_90.rows[value_checks.NEW_PATIENT].items():
+        assert near(at_90[column], want), column
+    # Every partition's range read from all visits.
+    for (partition,), expected in value_checks.RANGES_FROM_ALL_VISITS.rows.items():
+        for column, stat in (("first_target_time", "min"), ("last_target_time", "max")):
+            if column in expected:
+                assert getattr(visits["followup_time"], stat)() == pd.Timestamp(expected[column].text), partition
     baseline = DummyRegressor(strategy="mean").fit(valid[FEATURES], valid[TARGET])
     for column, want in value_checks.BASELINE_FROM_VALIDATION.rows[("mean_baseline",)].items():
         assert near(metrics(valid[TARGET], baseline.predict(valid[FEATURES]))[column], want), column
@@ -992,6 +1013,74 @@ def run() -> None:
                            for column in frame["approach"]]
         slip("flag-passed-first", "output/readmission_metrics.csv", frame.to_csv(index=False),
              {"readmission metrics: precision values"}, "traded places")
+        # One slip that reaches several checks costs points once, and the feedback names its cause.
+        def once(label: str, changes: dict[str, str], name: str, cause: str) -> None:
+            files = dict(correct)
+            files.update(changes)
+            result = graded(submission(label, files))
+            assert failing(result) == {name}, (label, {other: detail(result, other) for other in failing(result)})
+            assert result["score"] == 100 - cost(name), (label, result["score"])
+            assert cause in detail(result, name), (label, detail(result, name))
+
+        validation_frame = frames["output/validation_metrics.csv"].copy()
+        validation_frame["rmse"] = validation_frame["rmse"] ** 2
+        test_frame = frames["output/test_metrics.csv"].copy()
+        test_frame["rmse"] = test_frame["rmse"] ** 2
+        once("rmse-not-rooted-both", {"output/validation_metrics.csv": validation_frame.to_csv(index=False),
+                                      "output/test_metrics.csv": test_frame.to_csv(index=False)},
+             "validation metrics: rmse values", "mean squared errors")
+        swapped_frames = solve()
+        validation_frame = swapped_frames["output/validation_metrics.csv"]
+        baseline_fit = DummyRegressor(strategy="mean").fit(train[FEATURES], train[TARGET])
+        pipeline_fit = Pipeline([("scale", StandardScaler()), ("model", LinearRegression())]).fit(
+            train[FEATURES], train[TARGET])
+        validation_frame["r2"] = [r2_score(fitted.predict(valid[FEATURES]), valid[TARGET])
+                                  for fitted in (baseline_fit, pipeline_fit)]
+        test_frame = swapped_frames["output/test_metrics.csv"]
+        test_frame["r2"] = r2_score(pipeline_fit.predict(test[FEATURES]), test[TARGET])
+        once("r2-swapped-both", {"output/validation_metrics.csv": validation_frame.to_csv(index=False),
+                                 "output/test_metrics.csv": test_frame.to_csv(index=False)},
+             "validation metrics: r2 values", "with the predictions first")
+        files = dict(correct)
+        files["output/test_metrics.csv"] = test_frame.to_csv(index=False)
+        message = detail(graded(submission("r2-swapped-test", files)), "test metrics: r2 value")
+        assert "with the test predictions first" in message, message
+        # A lone 0.0 baseline r2 is still the validation-mean slip, which also gives 0.0.
+        once("baseline-r2-zero", {"output/validation_metrics.csv": edit(validation, "mean_baseline", "r2", "0.0")},
+             "validation metrics: r2 values", "a mean taken from the validation rows")
+        results = smf.ols("sbp ~ age + bmi", data=data["patients"]).fit()
+        frame = pd.concat([NEW_PATIENT, results.get_prediction(NEW_PATIENT).summary_frame(alpha=0.10)], axis=1)
+        once("intervals-at-90", {"output/new_patient_intervals.csv": frame.to_csv(index=False)},
+             "new-patient intervals: mean-response interval", "90% intervals")
+        frame = frames["output/split_summary.csv"].copy()
+        frame["first_target_time"] = visits["followup_time"].min()
+        frame["last_target_time"] = visits["followup_time"].max()
+        once("ranges-from-all-visits", {"output/split_summary.csv": frame.to_csv(index=False)},
+             "split summary: first_target_time values", "followup_time of every visit")
+        # Rows saved under each other's labels cost the artifact's first values check once.
+        frame = frames["output/validation_metrics.csv"].copy()
+        frame["approach"] = frame["approach"].to_numpy()[::-1]
+        once("swapped-approach-labels", {"output/validation_metrics.csv": frame.to_csv(index=False)},
+             "validation metrics: mae values", "values for mean_baseline sit in linear_pipeline's row")
+        frame = frames["output/split_summary.csv"].copy()
+        frame["partition"] = ["validation", "train", "test"]
+        once("swapped-partition-labels", {"output/split_summary.csv": frame.to_csv(index=False)},
+             "split summary: row_count values", "check the labels")
+        frame = frames["output/ols_coefficients.csv"].rename(index={"age": "bmi", "bmi": "age"})
+        once("swapped-term-labels", {"output/ols_coefficients.csv": frame.to_csv()},
+             "coefficients: coef values", "The values for bmi sit in age's row")
+        frame = frames["output/ols_residuals.csv"].copy()
+        frame["patient_id"] = np.roll(frame["patient_id"].to_numpy(), 1)
+        once("shifted-patient-ids", {"output/ols_residuals.csv": frame.to_csv(index=False)},
+             "residuals: observed values", "The values for P02 sit in P01's row")
+        # Relabeled rows on two artifacts are two mistakes.
+        files = dict(correct)
+        files["output/split_summary.csv"] = frames["output/split_summary.csv"].assign(
+            partition=["validation", "train", "test"]).to_csv(index=False)
+        files["output/validation_metrics.csv"] = frames["output/validation_metrics.csv"].assign(
+            approach=["linear_pipeline", "mean_baseline"]).to_csv(index=False)
+        result = graded(submission("swapped-labels-two-files", files))
+        assert failing(result) == {"split summary: row_count values", "validation metrics: mae values"}, failing(result)
         # A wrong value that no slip explains names no cause.
         files = dict(correct)
         files["output/validation_metrics.csv"] = mistakes["validation metrics: mae values"][1]

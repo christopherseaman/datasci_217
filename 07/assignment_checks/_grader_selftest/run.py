@@ -300,6 +300,11 @@ def run() -> None:
             "goal_met_pct": "numeric, continuous",
         }))
         assert lost(phrased) == set(), details(phrased)
+        for program_type in ("Categorical - no natural order, unlike ordinal",
+                             "nominal (categorical), as opposed to ordinal",
+                             "categorical vs ordinal: categorical"):
+            edit_json(phrased, EVIDENCE, lambda value: value["data_types"].update(program=program_type))
+            assert lost(phrased) == set(), (program_type, details(phrased))
 
         # The earlier handout's measure key remains accepted after the rename.
         legacy = variant(workspace, "legacy-measure-key", correct)
@@ -450,9 +455,19 @@ def run() -> None:
                 lambda root: followup.loc[followup["program"] == "Home-based", ["program", "visit_number", "goal_met_pct"]]
                 .to_csv(root / SUPPORTING, index=False),
                 {"supporting data: rows and values"}, "has no Center-based rows at all")
+        # A JSON file written with str() costs its first reader; the checks after it grade the values.
         mistake("evidence-python-dict",
                 lambda root: (root / EVIDENCE).write_text(str(evidence()), encoding="utf-8"),
-                CRITIQUE_CHECKS | EVIDENCE_CHECKS, "written with str() or print()")
+                {next(name for name in NAMES if name.startswith("critique:"))}, "read its values as written")
+        mistake("spec-python-dict",
+                lambda root: (root / SPEC).write_text(str(scatter(patients).to_dict()), encoding="utf-8"),
+                {NAMES[0]}, "written with str() or print()")
+        mistake("evidence-python-dict-wrong-value",
+                lambda root: (root / EVIDENCE).write_text(
+                    str({**evidence(), "data_types": {**evidence()["data_types"], "visit_number": "quantitative"}}),
+                    encoding="utf-8"),
+                {next(name for name in NAMES if name.startswith("critique:")), "data type: visit_number"},
+                "written with str() or print()")
         mistake("text-alternative-json-quoted",
                 lambda root: write_json(root, TEXT_ALTERNATIVE, TEXT_ALTERNATIVE_TEXT),
                 {"text alternative file"}, "inside quotation marks")
@@ -550,7 +565,10 @@ def run_handout() -> None:
         )
 
     # The handout's only Python files are the checks; the self-test stays here.
-    handout_python = {path.relative_to(HANDOUT).as_posix() for path in HANDOUT.rglob("*.py")}
+    # A student's gitignored .venv/ is not part of the handout.
+    handout_python = {
+        path.relative_to(HANDOUT).as_posix() for path in HANDOUT.rglob("*.py") if ".venv" not in path.parts
+    }
     assert handout_python == set(files) - {".github/test/requirements.txt"}, sorted(handout_python)
     assert not (HANDOUT / "_grader_selftest").exists()
 

@@ -23,7 +23,7 @@ A health system's visit log has one row per clinic visit: 100,000 synthetic visi
 - **Questions answered:** how long each department's patients wait, how many patients each sees, and how that differs by clinic.
 - **Tools:** `groupby`, named aggregation, two-key groups, pivot tables with totals, and cross-tabulations.
 
-Run the cells from top to bottom; each **Expect** line says what the output should show. Patient IDs and values are synthetic.
+Run the cells from top to bottom; each **Expect** line says what the output should show.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -38,7 +38,7 @@ The visit log has one row per visit. Every question in this part has an answer w
 
 ### Build the Visit Log
 
-The next cell generates the log. You do not need to follow every line: it draws a fixed set of patients, gives each visit a clinic, a department, a wait, a blood pressure, and a satisfaction score, and leaves some surveys blank. The seed makes every run produce the same table.
+The next cell generates the log. You do not need to follow every line: it draws a fixed set of patients, gives each visit a clinic, a department, a wait, and a satisfaction score, and leaves some surveys blank. The seed makes every run produce the same table.
 
 ```python
 import numpy as np
@@ -79,13 +79,11 @@ typical_wait = {"Orthopedics": 38, "Cardiology": 30, "Endocrinology": 26,
                 "Family Medicine": 22, "Dermatology": 18, "Pediatrics": 15}
 wait_spread = {"Orthopedics": 10, "Cardiology": 9, "Endocrinology": 8,
                "Family Medicine": 14, "Dermatology": 6, "Pediatrics": 5}
-visits["wait_min"] = rng.normal(
-    visits["department"].map(typical_wait), visits["department"].map(wait_spread)
-).round()
-visits["wait_min"] = visits["wait_min"].clip(lower=0).astype(int)
-
-# Systolic blood pressure (mmHg) rises with age
-visits["systolic_bp"] = rng.normal(100 + 0.5 * visits["age"], 14).round().astype(int)
+# Waits are skewed right (a few very long, none below 1 minute): a gamma draw with that mean and spread
+typical = visits["department"].map(typical_wait)
+spread = visits["department"].map(wait_spread)
+visits["wait_min"] = rng.gamma(shape=(typical / spread) ** 2, scale=spread**2 / typical).round()
+visits["wait_min"] = visits["wait_min"].clip(lower=1).astype(int)
 
 # Satisfaction survey, 1 (poor) to 5 (excellent): longer waits, lower scores
 visits["satisfaction"] = (5.5 - visits["wait_min"] / 15 + rng.normal(0, 0.8, n_visits)).round()
@@ -99,7 +97,7 @@ print(f"Visits with no satisfaction survey: {visits['satisfaction'].isna().sum()
 display(visits.head())
 ```
 
-**Expect:** `(100000, 9)`, 28,929 distinct patients, and 2,984 visits with no survey, then five visits with nine columns: IDs, age, clinic, visit type, department, wait, blood pressure, and satisfaction (`NaN` where no survey came back). The grain is one row per visit, so a patient who came three times has three rows.
+**Expect:** `(100000, 8)`, 28,929 distinct patients, and 2,982 visits with no survey, then five visits with eight columns: IDs, age, clinic, visit type, department, wait, and satisfaction (`NaN` where no survey came back). The grain is one row per visit, so a patient who came three times has three rows.
 
 ### Basic Aggregation
 
@@ -109,7 +107,7 @@ dept_wait = visits.groupby("department")["wait_min"].mean()
 display(dept_wait.round(1))
 ```
 
-**Expect:** six rows in alphabetical order. Orthopedics has the longest mean wait (38.1 minutes) and Pediatrics the shortest (14.9).
+**Expect:** six rows in alphabetical order. Orthopedics has the longest mean wait (38.0 minutes) and Pediatrics the shortest (15.0).
 
 ### Named Aggregation: One Flat Row per Department
 
@@ -145,7 +143,7 @@ print(f"\nSum of per-department patients: {dept_report['patients'].sum():,}")
 print(f"Distinct patients overall:      {visits['patient_id'].nunique():,}")
 ```
 
-**Expect:** `2,984` twice: the whole size/count gap is the unreturned surveys. The per-department patient counts add up to 63,091, more than twice the 28,929 distinct patients, because an adult seen in both Cardiology and Endocrinology counts once in each. Row counts add up across groups; distinct counts do not.
+**Expect:** `2,982` twice: the whole size/count gap is the unreturned surveys. The per-department patient counts add up to 63,091, more than twice the 28,929 distinct patients, because an adult seen in both Cardiology and Endocrinology counts once in each. Row counts add up across groups; distinct counts do not.
 
 ## Part 2: Grouping by Two Keys
 
@@ -211,7 +209,7 @@ print(f"\nCorner cell:     {wait_totals.loc['Total', 'Total']:,.0f}")
 print(f"Sum of wait_min: {visits['wait_min'].sum():,.0f}")
 ```
 
-**Expect:** a `Total` row and column, and `2,485,272` on both checkpoint lines. Totals come from the raw rows, not from adding up rounded cells.
+**Expect:** a `Total` row and column, and `2,476,462` on both checkpoint lines. Totals come from the raw rows, not from adding up rounded cells.
 
 ## Part 4: Cross-Tabulations
 
@@ -272,7 +270,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-**Expect:** two panels. The bars climb from Pediatrics (shortest mean wait) to Orthopedics (longest). In the box plot, Family Medicine's box and whiskers are the widest: its mean is middling, but its waits are the least predictable.
+**Expect:** two panels. The bars climb from Pediatrics (shortest mean wait) to Orthopedics (longest). In the box plot, Family Medicine's box and whiskers are the widest and its outliers reach past two hours: its mean is middling, but its waits are the least predictable.
 
 
 ### A Small Table You Can Read Row by Row

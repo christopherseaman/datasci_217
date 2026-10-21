@@ -24,8 +24,8 @@ lecture does, builds submissions in ignored `scratch/`, and confirms that:
   found;
 - a missing file is never told to take another required file's name; a pivot
   with `index=` and `columns=` swapped costs only its columns check and says
-  so; a pivot with `margins=True` costs the columns and rows checks, and both
-  name `margins=True`; `wait_vs_clinic` worked out from a wrong
+  so; a pivot with `margins=True` costs only the columns check, which names
+  `margins=True`, and a Total row alone costs the rows check; `wait_vs_clinic` worked out from a wrong
   `clinic_mean_wait` costs only the `clinic_mean_wait` check; a
   `clinic_mean_wait` column assigned from `.mean()` gets a message naming that
   cause;

@@ -28,7 +28,7 @@ import difflib
 import math
 import re
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 
@@ -610,9 +610,12 @@ def rows_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
             f"{artifact.path} has repeated key headers with conflicting labels; expected one key value per "
             f"row. Remove the extra key column and save {artifact.task}'s table again.",
         )
-        grouped, unknown = _group(table, artifact, found)
         first_key = found.get(artifact.key[0])
         notes = _margins_note(artifact, [row[first_key] for row in table.rows] if first_key else [])
+        if notes and any(column in MARGIN_NAMES for column in table.columns):
+            # margins=True also adds a Total column, which the columns check charges: one argument, one charge.
+            table = replace(table, rows=tuple(row for row in table.rows if row[first_key].casefold() not in MARGIN_NAMES))
+        grouped, unknown = _group(table, artifact, found)
         missing = [key for key in artifact.rows if key not in grouped]
         repeated = [key for key, rows in grouped.items() if len(rows) > 1]
         problems = []

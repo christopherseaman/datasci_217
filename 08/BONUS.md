@@ -20,7 +20,7 @@ Custom aggregations answer questions beyond built-in means and counts. The funct
 
 ## Custom Aggregation Functions
 
-### Reference Card: Named Aggregations with `.agg()`
+### Code Snippet: Named Aggregations with `.agg()`
 
 ```python
 import pandas as pd
@@ -45,7 +45,7 @@ summary = df.groupby('category').agg(
 
 ## Lambda Functions in GroupBy
 
-### Reference Card: Lambda Aggregations
+### Code Snippet: Lambda Aggregations
 
 ```python
 import pandas as pd
@@ -81,7 +81,7 @@ df.groupby('category').agg({
 
 `pd.Grouper` builds a grouping key from dates: `ME` collects rows into calendar months and labels each group by its month-end date. The timestamps must first be datetime values; setting the date index tells the grouper which timestamps to use. A seven-day window is a fixed duration, unlike a calendar month.
 
-### Reference Card: Grouping by Time Windows
+### Code Snippet: Grouping by Time Windows
 
 ```python
 import pandas as pd
@@ -114,7 +114,7 @@ Multiple row or column keys give each cell a more specific meaning. With region 
 
 ## Multi-Level Pivot Tables
 
-### Reference Card: Multi-Level Pivot Tables
+### Code Snippet: Multi-Level Pivot Tables
 
 ```python
 import pandas as pd
@@ -148,7 +148,7 @@ pivot.columns = ['_'.join(map(str, col)).rstrip('_') for col in pivot.columns]
 
 The **weighted mean** is `sum(value × weight) / sum(weight)`: a value with twice the weight contributes twice as much. Values 10 and 20 with weights 1 and 3 give 17.5, not the ordinary mean 15. This example assumes complete, finite values and weights; missing measurements need an explicit policy before either sum is calculated.
 
-### Reference Card: Weighted-Mean Pivot Workaround
+### Code Snippet: Weighted-Mean Pivot Workaround
 
 ```python
 import pandas as pd
@@ -237,7 +237,7 @@ A **MultiIndex** stores several labels for each row, such as clinic and departme
 
 ## MultiIndex Operations
 
-### Reference Card: MultiIndex Operations
+### Code Snippet: MultiIndex Operations
 
 ```python
 import pandas as pd
@@ -271,7 +271,7 @@ df_multi.xs('A', level=0)  # Cross-section
 
 ## Advanced MultiIndex Grouping
 
-### Reference Card: Advanced MultiIndex Grouping
+### Code Snippet: Advanced MultiIndex Grouping
 
 ```python
 # Complex MultiIndex operations
@@ -393,7 +393,7 @@ Grouped statistics keep populations separate. A percentile describes the distrib
 
 A **rolling window** uses the latest fixed number of rows; an **expanding window** uses every row so far. For values 10, 20, 30, a two-row rolling mean is `NaN, 15, 25`, while the expanding mean is `10, 15, 20`. Sort by the relevant time column before using either on dated observations. The examples below operate in their existing row order.
 
-### Reference Card: Rolling and Expanding Statistics
+### Code Snippet: Rolling and Expanding Statistics
 
 ```python
 import pandas as pd
@@ -417,7 +417,7 @@ df['expanding_mean'] = grouped_values.transform(lambda s: s.expanding().mean())
 
 ## Percentile Aggregations
 
-### Reference Card: Percentile Aggregations
+### Code Snippet: Percentile Aggregations
 
 ```python
 import pandas as pd
@@ -451,7 +451,7 @@ The normality test asks whether each group's measurements are compatible with a 
 
 This optional example requires SciPy, which is not part of Lecture 08's recorded core environment. Add it to the project with `uv add scipy` (in Colab, run `%pip install scipy` in a cell) before running the example.
 
-### Reference Card: Statistical Tests in Groups
+### Code Snippet: Statistical Tests in Groups
 
 ```python
 import pandas as pd
@@ -493,7 +493,7 @@ The row key need not already be a column: `pd.cut` can supply intervals directly
 
 ## Pivot Table with Custom Index
 
-### Reference Card: Pivot Tables with a Custom Index
+### Code Snippet: Pivot Tables with a Custom Index
 
 ```python
 import pandas as pd
@@ -525,7 +525,7 @@ pivot = pd.pivot_table(df,
 
 ## Pivot Table with Time Index
 
-### Reference Card: Pivot Tables with a Time Index
+### Code Snippet: Pivot Tables with a Time Index
 
 ```python
 import pandas as pd
@@ -557,13 +557,13 @@ The grouped weighted-mean workflow in [Pivot Table with Custom Functions](#pivot
 
 # Advanced GroupBy Transformations
 
-Lecture 09 teaches grouped lags and rolling windows for time-ordered rows, including past-only windows for prediction.
+Lags and rolling windows need each group's rows sorted by time; for prediction, a window may use only past rows.
 
 ## Ranking Within Groups
 
 **Rank** is a value's position within its group. For values 10, 10, 30, the default ranks are 1.5, 1.5, 3 because tied positions are averaged; `dense` gives 1, 1, 2, `min` gives 1, 1, 3, and `max` gives 2, 2, 3. `ascending=False` puts the largest value first; `pct=True` expresses the rank relative to the group's size.
 
-### Reference Card: Ranking Within Groups
+### Code Snippet: Ranking Within Groups
 
 ```python
 import pandas as pd
@@ -589,7 +589,7 @@ df['rank_max'] = df.groupby('category')['value'].rank(method='max')
 
 A **lag** brings an earlier row's value onto the current row; a **lead** brings a later one. Within values 10, 15, 20, `shift(1)` gives `NaN, 10, 15`, and `diff()` gives `NaN, 5, 5`. Sort each group's observations into time order first. A lead uses future information, so it cannot be a predictor available at the current time.
 
-### Reference Card: Lag and Lead Within Groups
+### Code Snippet: Lag and Lead Within Groups
 
 ```python
 import pandas as pd
@@ -615,7 +615,7 @@ df['value_pct_change'] = df.groupby('category')['value'].pct_change()
 
 ## Window Functions
 
-### Reference Card: Window Functions Within Groups
+### Code Snippet: Window Functions Within Groups
 
 ```python
 import pandas as pd
@@ -641,7 +641,7 @@ This optional class keeps a DataFrame and its grouping together and exposes meth
 
 ## Custom GroupBy Aggregator
 
-### Reference Card: Custom GroupBy Aggregator Class
+### Code Snippet: Custom GroupBy Aggregator Class
 
 ```python
 import pandas as pd
@@ -692,6 +692,10 @@ Measure first, with the tools from the lecture's Measure Before Optimizing card,
 On `labs`, one million glucose results with a text `clinic` column:
 
 ```python
+import numpy as np
+import pandas as pd
+
+rng = np.random.default_rng(42)
 labs = pd.DataFrame({'patient_id': rng.integers(0, 10_000, 1_000_000),
                      'clinic': rng.choice(['North', 'South', 'East', 'West'], 1_000_000),
                      'glucose': rng.normal(100, 15, 1_000_000).round(1)})
@@ -736,7 +740,7 @@ def chunked_groupby(file_path, group_cols, agg_cols, chunk_size=10000):
 
 `multiprocessing.Pool` runs a function on several CPU cores at once, each in a separate Python process. Parallel work adds process startup, copying data between processes, and merge costs, so more processes do not guarantee a faster result.
 
-Each worker process must be able to find the worker function (`process_chunk` below). In a notebook, that works only with the `fork` start method, the default on Linux (including Colab). macOS and Windows use `spawn`: a worker function defined in a notebook makes the workers fail and the cell can hang. There, put the worker function in a `.py` file and import it, and start the pool from a script under `if __name__ == "__main__":`.
+Each worker process must be able to find the worker function (`process_chunk` below). In a notebook, that works only with the `fork` start method, the default on Linux through Python 3.13 (including Colab). Python 3.14 and later, macOS, and Windows start workers another way (`forkserver` or `spawn`): a worker function defined in a notebook makes the workers fail and the cell can hang. There, put the worker function in a `.py` file and import it, and start the pool from a script under `if __name__ == "__main__":`.
 
 ```python
 from multiprocessing import Pool
@@ -805,7 +809,7 @@ ssh -N -L 8888:127.0.0.1:8888 username@server.example
 
 Dask is not part of Lecture 08's core environment. Add it to the project with `uv add "dask[dataframe]"` (in Colab, `%pip install "dask[dataframe]"`) before running this example.
 
-### Reference Card: Distributed Computing with Dask
+### Code Snippet: Distributed Computing with Dask
 
 ```python
 # Distributed computing with Dask
@@ -829,7 +833,7 @@ result.to_csv('distributed_results.csv')
 
 pandas reads and writes `s3://` paths directly once the `s3fs` package is installed (`uv add s3fs`; in Colab, `%pip install s3fs`) and your AWS credentials are configured. Without `s3fs`, `pd.read_csv('s3://...')` raises `ImportError: Install s3fs to access S3`.
 
-### Reference Card: Cloud Computing with S3
+### Code Snippet: Cloud Computing with S3
 
 ```python
 import pandas as pd
@@ -846,7 +850,7 @@ result.to_csv('s3://bucket/results.csv')
 
 # Debugging and Profiling Data Pipelines
 
-Under pandas 3, inferred text uses the `str` dtype and Copy-on-Write makes view-oriented mutation advice obsolete. Profile first, treat dtype changes as reviewed data-contract decisions, and apply them through explicit returned objects rather than automatic guesses.
+Under pandas 3, inferred text uses the `str` dtype, and **Copy-on-Write** makes every selection behave as a copy, so changing a selection never changes the original table. Profile first, treat dtype changes as reviewed data-contract decisions, and apply them through explicit returned objects rather than automatic guesses.
 
 ## Memory Profiling and Optimization
 
@@ -955,9 +959,13 @@ The decorator below wraps a pipeline step to log its input shape, elapsed time, 
 
 ```python
 import functools
-import traceback
 import logging
+import os
+import traceback
 from datetime import datetime
+
+import pandas as pd
+import psutil
 
 # Setup logging
 logging.basicConfig(
@@ -1265,7 +1273,7 @@ class PerformanceAnalyzer:
 def intensive_analysis(df):
     """Example intensive analysis function"""
     # Multiple operations that might be slow
-    correlation_matrix = df.corr()
+    correlation_matrix = df.corr(numeric_only=True)
     grouped_stats = df.groupby(df.columns[0]).agg(['mean', 'std', 'count'])
     rolling_means = df.select_dtypes(include=[np.number]).rolling(window=10).mean()
 

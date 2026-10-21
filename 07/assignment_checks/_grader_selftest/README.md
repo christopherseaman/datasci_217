@@ -15,7 +15,8 @@ files, builds submissions in ignored `scratch/`, and confirms that:
   `data.values`, a layered chart, the critique as a dict keyed by category,
   data types written as notes (`ordered categorical`, `Nominal: ...`,
   `:O`) under `variable_roles` or `variables` or in other words
-  (`qualitative`, `categorical (ordered)`, `numeric, continuous`), supporting
+  (`qualitative`, `categorical (ordered)`, `numeric, continuous`,
+  `categorical, unlike ordinal`), supporting
   data separated by semicolons or tabs, and a text alternative file in
   another letter case;
 - each single mistake (a circle mark, a missing or mistyped encoding, swapped
@@ -29,8 +30,8 @@ files, builds submissions in ignored `scratch/`, and confirms that:
   that names the fix, and a submission that stops after Task 2 keeps its 62
   points;
 - a beginner's slip is named with its cause: a blank PNG saved after
-  `plt.show()`, a file saved with a bare name outside `output/`, evidence
-  written with `str()`, a text alternative written with `json.dump` or as the
+  `plt.show()`, a file saved with a bare name outside `output/`, the evidence
+  or spec written with `str()` (charged to its first check only), a text alternative written with `json.dump` or as the
   whole dict, a pandas dtype or `quantitative` given as a data type, one
   program's supporting rows, and an evidence file that holds only the critique,
   which gives every Task 3 evidence check one message;

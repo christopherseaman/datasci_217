@@ -28,7 +28,7 @@ The clinic tables and glucose values are synthetic; `healthexp` is real OECD dat
 Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+# Installs the course's pandas and pyarrow (for Parquet) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
 ```
 
@@ -85,7 +85,7 @@ Expect three lines, not two. The x-axis runs 0 to 9, and `week` is drawn as a th
 
 ### 2. seaborn on real data: health spending and life expectancy
 
-`healthexp` has one row per country per year: health spending per person in US dollars and life expectancy in years, for six countries from 1970 to 2020.
+`healthexp` has one row per country per year with data: health spending per person in US dollars and life expectancy in years, for six countries from 1970 to 2020 (274 rows; France reports every 5 years before 1990, and Canada starts in 1971).
 
 ```python
 health = pd.read_parquet('healthexp.parquet')
@@ -120,10 +120,10 @@ rng = np.random.default_rng(42)
 without_diabetes = pd.Series(95 + 8 * rng.standard_normal(300))   # mg/dL
 with_diabetes = pd.Series(165 + 25 * rng.standard_normal(100))    # mg/dL
 glucose = pd.concat([without_diabetes, with_diabetes], ignore_index=True)
-display(pd.Series({'count': len(glucose), 'mean': round(glucose.mean(), 1), 'median': round(glucose.median(), 1)}, dtype=object))
+print(len(glucose), 'readings; mean', round(glucose.mean(), 1), 'median', round(glucose.median(), 1))
 ```
 
-Expect a table with count 400, mean 112.9 mg/dL, and median 97.5 mg/dL. Neither number shows that there are two groups; a density plot does.
+Expect `400 readings; mean 112.9 median 97.5` (mg/dL). Neither number shows that there are two groups; a density plot does.
 
 ```python
 fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
@@ -191,7 +191,7 @@ Expect three stacked panels on the same y-scale: North high and falling, South r
 
 ### 3. Country trends and distributions
 
-Continue comparing the same country-year table with line and box plots.
+Continue comparing the same country-year table with line and box plots. Each line connects straight across a country's missing years.
 
 ```python
 fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))

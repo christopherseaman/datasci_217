@@ -23,7 +23,7 @@ One million synthetic fasting-glucose results, then a practice session for a rem
 - **Parts 1 and 2** run in this notebook: `apply` keeps the highest results per clinic, then timings of grouped summaries and the memory a repeated text key costs.
 - **Part 3** runs in a terminal on your own computer: it creates a practice SSH key pair and keeps a long job alive in tmux, the steps you repeat on a remote server.
 
-Run the notebook cells from top to bottom; each **Expect** line says what the output should show. Timings depend on the computer, so compare the ratio between two timings, not the exact milliseconds. Patient IDs and values are synthetic.
+Run the notebook cells from top to bottom; each **Expect** line says what the output should show.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
@@ -49,14 +49,14 @@ labs = pd.DataFrame({
     "clinic": rng.choice(["North", "South", "East", "West"], n),
     "glucose": rng.normal(100, 15, n).round(1),              # fasting glucose, mg/dL
 })
-# One age per patient (drawn last so the glucose values stay the same), placed after patient_id
-labs.insert(1, "age", rng.integers(18, 96, 10_000)[labs["patient_id"]])
+# One age per patient (drawn last so the glucose values stay the same)
+labs["age"] = rng.integers(18, 96, 10_000)[labs["patient_id"]]
 print(labs.shape)
 print(f"Patients: {labs['patient_id'].nunique():,}")
 display(labs.head())
 ```
 
-**Expect:** `(1000000, 4)`, `Patients: 10,000`, and five rows with patient number, age (18 to 95), clinic, and a glucose value around 100 mg/dL. The grain is one row per lab result.
+**Expect:** `(1000000, 4)`, `Patients: 10,000`, and five rows with patient number, clinic, a glucose value around 100 mg/dL, and age (18 to 95). The grain is one row per lab result.
 
 ### The Highest Glucose in Each Clinic
 
@@ -68,9 +68,11 @@ display(highest[["patient_id", "age", "glucose"]])
 print("Rows:", len(highest))
 ```
 
-**Expect:** 8 rows: the two highest glucose results in each clinic, with the clinic as the outer index level and each result's original row number as the inner one. North has the highest value, 175.0 mg/dL (patient 9336, age 84). This function returns whole rows, so `apply` returns rows. The custom-summary practice instead returns one `Series` per group, producing one row per group. When `agg` or `transform` can do the job, prefer them: they run as compiled code instead of once per group.
+**Expect:** 8 rows: the two highest glucose results in each clinic, with the clinic as the outer index level and each result's original row number as the inner one. North has the highest value, 175.0 mg/dL (patient 9336, age 84). This function returns whole rows, so `apply` returns rows. The custom-summary practice instead returns one `Series` per group, producing one row per group. When a built-in aggregation named by string, such as `agg("max")` or `transform("mean")`, can do the job, prefer it: it runs as compiled code instead of once per group.
 
 ## Part 2: Measure, Then Optimize
+
+Timings depend on the computer, so compare the ratio between two timings, not the exact milliseconds.
 
 ### One `.agg()` Instead of Three `groupby()` Calls
 
@@ -134,7 +136,8 @@ def glucose_summary(group):
         "q25": q25,
         "q75": q75,
         "iqr": q75 - q25,
-        "over_126": (group["glucose"] > 126).sum(),
+        # Fasting glucose of 126 mg/dL or more is in the diabetes range
+        "at_least_126": (group["glucose"] >= 126).sum(),
     })
 
 clinic_summary = labs.groupby("clinic").apply(glucose_summary, include_groups=False)
@@ -145,7 +148,7 @@ builtin = labs.groupby("clinic")["glucose"].median()
 print("Same medians as agg('median')?", clinic_summary["median"].equals(builtin))
 ```
 
-**Expect:** one row per clinic, like `agg`, with the columns your function named. Counts show `.0` because a `Series` that holds a median stores all its values as floats. Each clinic has about 250,000 results (East 249,785, North 249,815, South 250,430, West 249,970), a median near 100 mg/dL, an interquartile range of about 20 mg/dL, and about 10,300 to 10,450 results over 126 mg/dL. Then `True`.
+**Expect:** one row per clinic, like `agg`, with the columns your function named. Counts show `.0` because a `Series` that holds a median stores all its values as floats. Each clinic has about 250,000 results (East 249,785, North 249,815, South 250,430, West 249,970), a median near 100 mg/dL, an interquartile range of about 20 mg/dL, and about 10,450 to 10,600 results at or above 126 mg/dL. Then `True`.
 
 
 ### Built-in Aggregations vs a Lambda

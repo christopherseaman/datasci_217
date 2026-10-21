@@ -117,7 +117,7 @@ During the fever, a nurse also charted temperature by hand every four hours. To 
 
 ```python
 charted_temp = pd.Series(
-    [98.8, 99.6, 100.9, 101.2, 100.4, 99.5],
+    [101.0, 100.8, 100.9, 101.2, 100.6, 100.9],
     index=pd.date_range('2024-01-15 00:00', periods=6, freq='4h'),
 )
 hourly = pd.DataFrame({
@@ -130,7 +130,7 @@ print(hourly.shape)
 display(hourly.isna().sum())
 ```
 
-**Expect:** 21 hourly rows, 00:00 through 20:00. `asfreq` leaves `15` slots empty; `ffill(limit=2)` carries each reading two hours forward and still leaves `5` empty (the third hour after each reading); `interpolate` fills all of them with a straight line, such as `99.2` at 02:00. The filled values are estimates, not measurements.
+**Expect:** 21 hourly rows, 00:00 through 20:00. `asfreq` leaves `15` slots empty; `ffill(limit=2)` carries each reading two hours forward and still leaves `5` empty (the third hour after each reading); `interpolate` fills all of them with a straight line, such as `100.900` at 02:00. The filled values are estimates, not measurements.
 
 The 02:00 interpolated estimate uses the 04:00 reading, which had not happened at 02:00. It describes the completed record; it is not an input available to a score running at 02:00.
 
@@ -301,7 +301,7 @@ windows = pd.DataFrame({
 display(windows.loc['2024-01-05 05:00':'2024-01-05 20:00'].round(1))
 ```
 
-**Expect:** at `2024-01-05 18:00`, `last_3_readings` is `78.7`, averaging the 06:00 and 07:00 readings from 11 hours earlier, while `last_3_hours` is `78.0`, the 18:00 reading alone. They differ again at 19:00, while the count window still reaches back to 07:00, and agree from 20:00 on.
+**Expect:** at `2024-01-05 18:00`, `last_3_readings` is `78.7`, averaging the 06:00 and 07:00 readings from 12 and 11 hours earlier, while `last_3_hours` is `78.0`, the 18:00 reading alone. They differ again at 19:00, while the count window still reaches back to 07:00, and agree from 20:00 on.
 
 
 ## 10. Independent practice: home-weight reports
@@ -333,7 +333,7 @@ display(home_weights['weight_kg'].resample('W').mean().head(3).round(2))
 display(home_weights['weight_kg'].resample('ME').agg(['mean', 'max']).round(2))
 ```
 
-**Expect:** `(29, 1)` for February, then a one-row table of nine March weights from `81.9` to `82.1`. Weekly means are labeled with the Sunday that ends each week: `2024-01-07`, `2024-01-14`, `2024-01-21`. The monthly table has three rows; March's `max` is `84.4`, against `82.3` in January and `82.2` in February.
+**Expect:** `(29, 1)` for February, then a one-row table of nine March weights that rise from `81.9` kg on March 8 to `84.4` kg on March 11 and 12, then fall back to `82.1` kg on March 16. Weekly means are labeled with the Sunday that ends each week: `2024-01-07`, `2024-01-14`, `2024-01-21`. The monthly table has three rows; March's `max` is `84.4`, against `82.3` in January and `82.2` in February.
 
 
 ## 11. Independent practice: ICU summaries and exact bin boundaries

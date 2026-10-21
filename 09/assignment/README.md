@@ -113,7 +113,7 @@ Lecture 09's "Grouped Lag" and "Grouped Past-Only Windows" snippets build the sa
 
 1. Add the column `previous_hr`: `by_patient.shift(1)`, the same patient's previous reading, empty on each patient's first row. A plain `shift(1)` on the stacked column would hand P02's first row P01's last heart rate.
 2. Add the column `hr_change`: `by_patient.diff()`, the current heart rate minus the previous one.
-3. Add the column `mean_prev_2`: `by_patient.transform(lambda s: s.shift(1).rolling(2, min_periods=1).mean())`, the mean of the previous two readings, however far apart they are.
+3. Add the column `mean_prev_2`: `by_patient.transform(lambda s: s.shift(1).rolling(2, min_periods=1).mean())`, the mean of the previous two readings, however far apart they are. An empty heart rate is skipped, so a mean may cover only one reading: P01's 16:00 row gets 88.0.
 4. Build `prev_2h`: `past_features.set_index("recorded_at").groupby("patient_id")["heart_rate"].rolling("2h", closed="left").mean().rename("mean_prev_2h").reset_index()`, the mean of the readings in the two hours before each reading. `closed="left"` leaves the current reading out.
 5. Merge it back: `past_features = past_features.merge(prev_2h, on=["patient_id", "recorded_at"], validate="one_to_one")`. It prints `rows: 12`.
 6. Save `past_features` to `FEATURES_PATH` with `index=False`.
@@ -135,7 +135,7 @@ A lab result can feed the score only if it was reported by the prediction time, 
 
 ### 3.3 Label a chronological holdout
 
-A chronological holdout builds a method on the earlier rows and tests it on the rows from a cutoff onward, the way it would meet later patients. The cutoff here is the prediction time. Lecture 09's "Chronological Holdout" snippet labels the same blocks. In the Task 3.3 cell:
+A chronological holdout builds a method on the earlier rows and tests it on the rows from a cutoff onward, the way it would meet later readings. Both patients appear in both blocks, so this tests later times, not unseen patients. The cutoff here is the prediction time. Lecture 09's "Chronological Holdout" snippet labels the same blocks. In the Task 3.3 cell:
 
 1. `chronological_blocks` starts as a `.copy()` of `vitals`. Add the column `block`: `np.where(chronological_blocks["recorded_at"] < prediction_time, "earlier", "later_holdout")`. `<` puts a reading at exactly `2026-01-20 18:00:00+00:00` in `later_holdout`. The crosstab prints 4 `earlier` and 2 `later_holdout` readings for each patient.
 2. Save `chronological_blocks` to `BLOCKS_PATH` with `index=False`.

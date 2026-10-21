@@ -16,7 +16,7 @@
     },
     {
       "category": "truncated baseline",
-      "problem": "The y-axis starts at 50%, so North's 12.5% rise is drawn as a 117% rise (lie factor 9.3).",
+      "problem": "The y-axis starts at 50%, so North's 7-point rise (56% to 63%, 12.5% relative) is drawn as a 117% rise in bar length (lie factor 9.3).",
       "repair": "Start the bar axis at zero with ax.set_ylim(0, 100)."
     },
     {

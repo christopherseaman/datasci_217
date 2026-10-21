@@ -160,7 +160,7 @@ Save with `explanatory_fig.savefig(EXPLANATORY_PATH, dpi=150, bbox_inches="tight
 
 In the Task 3.3 cell:
 
-1. Write `text_alternative`, one paragraph that names the chart type, both axes and their units, both programs, how each changes from visit 1 to visit 4, the gap at visit 4, and a limitation: patients chose their program, so the gap does not show that one program causes more exercise. Lecture 07's "Make the chart accessible" section has an example.
+1. Write `text_alternative`, one paragraph that names the chart type, both axes and their units, both programs, how each changes from visit 1 to visit 4, the gap at visit 4, and a limitation: patients chose their program, so the gap does not show that one program causes more exercise, and each percentage covers only the patients seen at that visit, about 45 per program, so a 9-point gap could also come from chance or from who returned. Lecture 07's "Make the chart accessible" section has an example.
 2. Add the keys `question`, `audience`, `intended_claim`, `y_measure`, `grain`, `data_types`, and `text_alternative` to `visualization_evidence`, each holding the variable of the same name. `critique` is already there.
 3. Save `visualization_evidence` to `EVIDENCE_PATH` with `json.dump(..., indent=2, ensure_ascii=False)`, as the Task 2.2 cell does. This replaces the Task 2.2 file and keeps its critique.
 4. Write `text_alternative` to `TEXT_ALTERNATIVE_PATH` with `open(..., "w", encoding="utf-8")` and `file.write()`.

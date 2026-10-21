@@ -30,7 +30,7 @@ All values are synthetic.
 Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+# Installs the course's pandas and altair in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
 %pip install -q --no-warn-conflicts pandas==3.0.5 altair==5.5.0
 ```
 
@@ -44,7 +44,6 @@ The prepared table has one row per clinic: the percentage of adult patients vacc
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from IPython.display import Markdown
 
 uptake = pd.DataFrame({
     'clinic': ['North', 'South', 'East'],
@@ -90,7 +89,7 @@ critique = [
      'problem': 'The title says reminder texts caused the rise, but the table only shows that uptake rose, and it rose at South and East too.',
      'repair': 'Use a descriptive title: uptake rose at all three clinics, most at North.'},
     {'category': 'truncated baseline',
-     'problem': "The y-axis starts at 50%, so North's 12.5% rise is drawn as a 117% rise (lie factor 9.3).",
+     'problem': "The y-axis starts at 50%, so North's 7-point rise (56% to 63%, 12.5% relative) is drawn as a 117% rise in bar length (lie factor 9.3).",
      'repair': 'Start the bar axis at zero with ax.set_ylim(0, 100).'},
     {'category': 'missing unit',
      'problem': 'The y-axis has no label, so readers cannot tell the values are percentages of adult patients.',
@@ -102,11 +101,12 @@ critique = [
      'problem': 'Thick black edges, a heavy grid, and the same hatch on every bar carry no data.',
      'repair': 'Drop the edges and grid, hide the top and right spines, and keep hatches only where they mark the season.'},
 ]
-display(Markdown('\n'.join(
-    f"- **{entry['category']}**: {entry['problem']}\n    - Repair: {entry['repair']}" for entry in critique)))
+for entry in critique:
+    print(entry['category'] + ':', entry['problem'])
+    print('    Repair:', entry['repair'])
 ```
 
-Expect a five-item list, each problem followed by its repair.
+Expect five problems, each followed by its repair, starting with `unsupported claim:`.
 
 ### 3. Redesign: zero baseline, redundant cues, labels on the bars
 
@@ -325,8 +325,8 @@ baseline = 50
 shown_change = ((63 - baseline) - (56 - baseline)) / (56 - baseline)  # change in bar length
 data_change = (63 - 56) / 56                                          # change in the data
 print('Bars grow by', round(shown_change * 100), '%')
-print('Uptake grows by', round(data_change * 100, 1), '%')
+print('Uptake grows by (relative)', round(data_change * 100, 1), '%')
 print('Lie factor:', round(shown_change / data_change, 1))
 ```
 
-Expect `Bars grow by 117 %`, `Uptake grows by 12.5 %`, and `Lie factor: 9.3`: the drawing exaggerates North's change about ninefold.
+Expect `Bars grow by 117 %`, `Uptake grows by (relative) 12.5 %`, and `Lie factor: 9.3`: the drawing exaggerates North's change about ninefold.

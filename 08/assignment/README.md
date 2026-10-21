@@ -107,7 +107,7 @@ In the Task 2.1 cell:
 4. Save `visits_with_context` to `CONTEXT_PATH` with `index=False`.
 
 > **Checkpoint: `output/visits_with_context.csv`**
-> The header line `visit_id,clinic,patient_id,visit_type,wait_min,satisfaction,clinic_mean_wait,wait_vs_clinic`, then 15 rows, V001 to V015, one per visit. V007 waited 32 minutes at Sunset, whose mean is 25.2, so its `wait_vs_clinic` is 6.8.
+> The header line `visit_id,clinic,patient_id,visit_type,wait_min,satisfaction,clinic_mean_wait,wait_vs_clinic`, then 15 rows, V001 to V015, one per visit. V007 waited 32 minutes at Sunset, whose mean is 25.2, so its `wait_vs_clinic` is 6.8 (the file may show 6.800000000000001, which is the same value).
 
 ### 2.3 Summarize each clinic and visit type
 
@@ -141,6 +141,6 @@ This step saves nothing. In the Task 3.2 cell, count the visits in each clinic a
 - Run the checks any time, even partway through: `python3 check_assignment.py` in the terminal (with the environment active) prints your score and what to fix.
 - When **Restart** and **Run All** finish without errors, the notebook's last cell runs the same checks.
 - Both use the latest checks from the course repository, the same checks GitHub runs on each push. Commit `assignment.ipynb` and the `output/` files, then push.
-- Expect: a passing run ends with `Score: 100/100`.
+- Expect: a passing run prints `Score: 100/100` and `All checks passed.`
 
 What each check looks for: [CHECKS.md](CHECKS.md)
