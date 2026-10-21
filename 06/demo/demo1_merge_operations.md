@@ -27,7 +27,7 @@ Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 matplotlib==3.11.1 seaborn==0.13.2
 ```
 
 ## Core walkthrough
@@ -41,6 +41,7 @@ from pathlib import Path
 from urllib.request import urlretrieve
 
 import pandas as pd
+import seaborn as sns
 
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/06/demo/data"
 data_dir = Path("data")
@@ -100,6 +101,14 @@ display(audit[audit['_merge'] != 'both'][['patient_id', 'clinic', 'lab_id', '_me
 
 **Expect:** 9 rows. `_merge` counts: `both` 6, `left_only` 2, `right_only` 1. The leftover table has 3 rows: P004 and P005 as `left_only` (registered, no labs) and P006 as `right_only` (a lab with no registry record, so `clinic` is `NaN`). Use `indicator=True` whenever a merge's row count surprises you.
 
+The next cell is a preview of a chart: run it and read the picture. Plotting code is taught later.
+
+```python
+sns.countplot(data=audit, x='_merge').set_title('Rows by match status');
+```
+
+**Expect:** a bar chart with three bars, left to right: `left_only` at height 2, `right_only` at 1, and `both` at 6.
+
 ### 4. Merging on several keys: visits against targets
 
 Clinic operations tracks monthly visits by clinic and service. Targets are set per clinic, month, and service, so a visit count matches a target only when **all three** keys agree.
@@ -117,6 +126,14 @@ display(vs_target)
 ```
 
 **Expect:** 5 January visit rows and 6 target rows (4 for January, 2 for February). The merge has 5 rows. `pct_of_target` is 102.5 for North primary care, 92.3 for North cardiology, 95.0 for South primary care, and 105.6 for South cardiology. East has no target, so its `target` and `pct_of_target` are `NaN`.
+
+Another chart preview: run the cell and read the picture. Plotting code is taught later.
+
+```python
+sns.barplot(data=vs_target, x='clinic', y='pct_of_target', hue='service').set_title('Visits as % of target');
+```
+
+**Expect:** grouped bars for North and South, with an empty East slot because East has no target. Cardiology is above primary care only in South (105.6 against 95.0); in North primary care is higher (102.5 against 92.3).
 
 ### 5. Check the cardinality before you trust a merge
 
@@ -177,6 +194,16 @@ display(clinics[['patient_id', 'clinic_patient', 'clinic_registry']])
 ```
 
 **Expect:** 5 rows. Without `suffixes=`, the columns would be named `clinic_x` and `clinic_y`. Here P003 shows `North` in `clinic_patient` and `South` in `clinic_registry`: the patient table is older and never recorded the move.
+
+A table from another system may name the key differently. Rename `patient_id` in `labs` to `registry_id` to simulate that, then match with `left_on=` and `right_on=`.
+
+```python
+labs_ids = labs.rename(columns={'patient_id': 'registry_id'})
+by_name = pd.merge(labs_ids, current, left_on='registry_id', right_on='patient_id', how='left')
+display(by_name[['lab_id', 'registry_id', 'patient_id', 'clinic']])
+```
+
+**Expect:** 7 rows. Both key columns, `registry_id` and `patient_id`, stay in the result with the same values; P006's row has `NaN` in `patient_id` and `clinic`.
 
 ## Independent practice
 

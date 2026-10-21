@@ -28,7 +28,7 @@ Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 matplotlib==3.11.1 seaborn==0.13.2
 ```
 
 ## Core walkthrough
@@ -71,7 +71,23 @@ print(list(jan.columns) == list(feb.columns))
 
 **Expect:** two 3-row tables with columns `admission_id`, `unit`, `age`, `diagnosis`, `los_days`, then `True`: same columns, same row meaning, so these are pieces of one table.
 
-### 2. Stack rows with `concat()`
+### 2. Count each extract's lines with `%%bash`
+
+The monthly extracts usually arrive as CSV files. Save the two samples to `data/` without the row index, then count their lines from the shell. A cell whose first line is `%%bash` runs the whole cell in the shell, and `wc -l` counts the header line too.
+
+```python
+jan.to_csv(data_dir / "jan_admissions.csv", index=False)
+feb.to_csv(data_dir / "feb_admissions.csv", index=False)
+```
+
+```python
+%%bash
+wc -l data/*_admissions.csv
+```
+
+**Expect:** `4 data/feb_admissions.csv`, `4 data/jan_admissions.csv`, and `8 total`: each file has 1 header line plus 3 admissions, so a file with N lines holds N - 1 rows.
+
+### 3. Stack rows with `concat()`
 
 ```python
 stacked = pd.concat([jan, feb])
@@ -88,7 +104,7 @@ print(list(stacked.index))
 
 **Expect:** `[0, 1, 2, 3, 4, 5]`. Use `ignore_index=True` when the old row numbers carry no information, as here.
 
-### 3. Record where each row came from
+### 4. Record where each row came from
 
 Once stacked, nothing says which file a row came from. Add a label column to each piece **before** stacking; it is an ordinary column, so it survives saving to CSV and later merges.
 
@@ -103,7 +119,7 @@ display(stacked)
 
 **Expect:** `demo3_jan_admissions` 3 and `demo3_feb_admissions` 3, and a `source_file` column as the last column of the 6-row table.
 
-### 4. March changed its columns
+### 5. March changed its columns
 
 The March extract comes from an updated report: it no longer includes `age`, and it adds `payer`.
 
@@ -136,7 +152,7 @@ print(list(shared_only.columns))
 
 **Expect:** `(9, 5)` and `['admission_id', 'unit', 'diagnosis', 'los_days', 'source_file']`. `age` and `payer` are gone without any warning, which is why the outer result is the one to keep.
 
-### 5. Side by side: line up two systems by month
+### 6. Side by side: line up two systems by month
 
 ADT (the admission-discharge-transfer feed) reports a census every month. Infection control audits hand hygiene only in some months, and its file already includes July. Put `month` in the index of each so that `concat(axis=1)` lines rows up by label.
 
@@ -157,6 +173,18 @@ display(with_audits)
 
 **Expect:** `(7, 3)`. January, May, and June have `NaN` hand hygiene (no audit), and the new July row has `NaN` `admissions` and `bed_days`. The default `join='outer'` keeps every label from every input, and the `NaN` cells turn the counts into `float64` (`212.0`).
 
+This chart is a preview: run the cell and read the picture; the plotting code is taught later. Light cells are the `NaN` values from the outer join.
+
+```python
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.heatmap(with_audits.isna(), cbar=False).set_title("Missing values after concat(axis=1)")
+plt.show()
+```
+
+**Expect:** a 7-row by 3-column grid (`2026-01` to `2026-07`). `hand_hygiene_pct` is light for `2026-01`, `2026-05`, and `2026-06`; `admissions` and `bed_days` are light only for `2026-07`; every other cell is dark.
+
 ```python
 audited_months = pd.concat([census, audits], axis=1, join='inner')
 display(audited_months)
@@ -164,7 +192,7 @@ display(audited_months)
 
 **Expect:** 3 rows, `2026-02`, `2026-03`, and `2026-04`: only the months present in both inputs, with no `NaN`.
 
-### 6. Fill missing values with `combine_first()`
+### 7. Fill missing values with `combine_first()`
 
 The live ADT export failed to report February and April and has not reported June yet. Finance keeps its own estimate for every month.
 
@@ -183,6 +211,17 @@ display(filled)
 ```
 
 **Expect:** 6 months. January, March, and May keep the ADT values (212, 225, 231 admissions), February and April take finance's estimates (200 and 238), and June comes only from finance (219). Values print as `212.0` because the missing values made the columns `float64`.
+
+This chart is a preview: run the cell and read the picture; the plotting code is taught later.
+
+```python
+trend = pd.concat({'ADT only': primary['admissions'], 'after combine_first()': filled['admissions']},
+                  names=['version']).reset_index()
+sns.lineplot(data=trend, x='month', y='admissions', hue='version', marker='o').set_title("Monthly admissions")
+plt.show()
+```
+
+**Expect:** `ADT only` has points at `2026-01`, `2026-03`, and `2026-05` only (212, 225, 231), joined by a straight line that skips February and April. `after combine_first()` has all 6 months, adding February (200), April (238), and June (219).
 
 Compare `concat(axis=1)`, which puts the two sources side by side instead of filling one from the other:
 
@@ -217,7 +256,7 @@ print(list(filled_flat.columns))
 
 Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
-### 7. `concat()` then `merge()`: add unit details
+### 8. `concat()` then `merge()`: add unit details
 
 Stacking made one admissions table. Unit names and bed counts live in a separate lookup table, so they are joined by key with `merge()`. Each admission should find exactly one unit: many-to-one.
 
@@ -247,7 +286,7 @@ display(enriched.sort_values('los_days', ascending=False)[
 
 `concat()` stacks pieces of one table; `merge()` joins different tables by key.
 
-### 8. Three systems side by side
+### 9. Three systems side by side
 
 Staffing and patient experience each report one row per month, for the same 6 months as the census.
 
@@ -272,7 +311,7 @@ display(monthly)
 
 If the identifiers were in ordinary columns rather than the index, this would be a job for `merge()` on those columns.
 
-### 9. Year over year: stack, then pivot
+### 10. Year over year: stack, then pivot
 
 Compare the first quarter's admissions with the same months last year. Stack the two years with a `year` label column, then pivot to put the years side by side.
 
@@ -298,7 +337,7 @@ display(yoy)
 
 **Expect:** `['Feb', 'Jan', 'Mar']` first, because `pivot()` sorts the labels alphabetically; after `.loc` the rows are in calendar order. Growth is 7.1% in January, 7.0% in February, and 8.7% in March, so admissions rose every month and March grew the most.
 
-### 10. Source labels as index levels
+### 11. Source labels as index levels
 
 `keys=` is the alternative: it labels each piece with an outer index level instead of a column. Here the outer label repeats what `source_file` already says, so you can compare the two.
 

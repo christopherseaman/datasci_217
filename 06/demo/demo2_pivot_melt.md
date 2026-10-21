@@ -27,7 +27,7 @@ Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 matplotlib==3.11.1 seaborn==0.13.2
 ```
 
 ## Core walkthrough
@@ -94,6 +94,16 @@ display(bp_long.head(6))
 
 **Expect:** `(12, 6)`: 4 patients × 3 visits = 12 rows, with columns `patient_id`, `age`, `sex`, `clinic`, `visit`, `sbp`. The first four rows are every patient's `baseline`, then the `week_04` rows begin.
 
+This chart is a preview: run the cell and read the picture; plotting code is taught later. One call draws one line per patient because the long table has one row per reading.
+
+```python
+import seaborn as sns
+
+sns.lineplot(data=bp_long, x='visit', y='sbp', hue='patient_id', marker='o').set_title('SBP by visit');
+```
+
+**Expect:** a line chart with visits `baseline`, `week_04`, `week_12` on the x axis and four lines, one per patient. Every line falls from baseline to week 12 (P001 from 152 to 138, P003 from 147 to 129).
+
 ### 4. Long to wide with `pivot()`
 
 `pivot()` gives each patient one row: `visit` supplies the headers and `sbp` fills the cells. The four identifier columns in `ids` become four-level row labels, so `reset_index()` turns them into ordinary columns, and `columns.name = None` drops the leftover `visit` header label.
@@ -121,6 +131,14 @@ display(device_week4)
 ```
 
 **Expect:** 5 rows for 4 patients; P003 appears twice.
+
+Another chart preview: run the cell and read the picture; plotting code is taught later. Each dot is one reading.
+
+```python
+sns.stripplot(data=device_week4, x='patient_id', y='sbp').set_title('Week 4 readings');
+```
+
+**Expect:** four patient columns with one dot each for P001, P002, and P004, and two dots for P003 at 152 and 140 mmHg.
 
 **Intentional error:** one `patient_id`/`visit` pair has two readings, so `pivot()` cannot choose a cell value.
 
