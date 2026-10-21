@@ -23,6 +23,7 @@ The midterm totals 100 points: 75 points graded from your committed files after 
 - Line endings, blank lines, spaces at the end of a line or around a header name, a comma, semicolon, or tab between cells, column order, extra columns, a leading column of row numbers, and number format (`6`, `6.0`) do not matter. Letter case and surrounding spaces in labels, codes, IDs, and text values do not cost points: `f` reads as `F`. A spelling that still needs its dictionary, such as `woman`, `N-01`, or `wk12`, does.
 - An empty field, `NaN`, and `<NA>` all read as missing; a date written year first may carry a `00:00:00` time after it or use `/` in place of `-`, while a date with the year last, such as `01/05/2026`, can be read as May 1 or January 5 and costs its point; a mean rounded to two decimals (within 0.006 of the exact one) is right.
 - A file missing from `output/` earns 0 points. A file a stopped notebook never writes costs its points on top of the earlier file that shows the mistake:
+    - An audit that changes `raw` fails the Task 2.3 snapshot comparison and leaves every file from Task 3.1 on unwritten (55 points).
     - A Task 4.3 `pivot()` `ValueError`, raised when the Task 3.2 step 6 rechecks are left in, leaves `sbp_wide_sample.csv` and `analysis_sample.csv` unwritten (15 points).
     - A `MergeError` in the Task 4.4 join or a failed Task 5.1 check leaves `analysis_sample.csv` unwritten (9 points).
 - One mistake is charged once, in the file that first shows it. A later file is also right when it follows from your own earlier ones:

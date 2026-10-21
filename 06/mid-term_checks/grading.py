@@ -1119,12 +1119,12 @@ def visit_row_gap(root: Path) -> float:
 
 
 def visit_rows_charged(root: Path) -> bool:
-    """True when visits_summary.csv: rows already charges dropped visits (`visits` below the expected count, or the
-    file unreadable), so later extracts may miss them; an over-count explains no missing row."""
+    """True when visits_summary.csv: rows already charges dropped visits (`visits` below the expected count), so
+    later extracts may miss them; an over-count or an unreadable summary explains no missing row."""
     try:
         outcome = visits_summary("rows")(root)
     except ArtifactProblem:
-        return True
+        return False  # a missing summary charges no dropped visit, so it excuses none
     own = own_metrics(root, "visits_summary.csv", ("visits",)).get("visits")
     return outcome.right < outcome.total and (own is None or own < VISIT_SUMMARY["visits"])
 
@@ -1215,6 +1215,9 @@ def check_a1c_means(root: Path) -> Outcome:
         if row is None:
             outcome.right += 1  # the results check charges a missing row
             continue
+        if number(row["results"]) == 0 and is_missing(row["a1c_pct_mean"]):
+            outcome.right += 1  # no results has no mean; the results check charges the count
+            continue
         mean = number(row["a1c_pct_mean"])
         other = VISIT_LABELS[1 - VISIT_LABELS.index(visit)]
         if close(mean, A1C_SUMMARY[visit][1], MEAN_TOLERANCE) or (
@@ -1276,8 +1279,11 @@ def check_merge_audit(root: Path) -> Outcome:
         own["A1c results without a visit"] = None not in (both, right) and both + right == own_labs
     reference = dict(MERGE_AUDIT)
     value = found.get("visits whose patient is not in the registry")
-    own["visits whose patient is not in the registry"] = close(
-        value, reference["visits whose patient is not in the registry"], visit_gap)
+    expected = reference["visits whose patient is not in the registry"]
+    # Patients dropped from the registry (charged in patients_summary.csv) leave more of the visits unmatched.
+    dropped = patients.get("patients", PATIENT_SUMMARY["patients"]) < PATIENT_SUMMARY["patients"]
+    own["visits whose patient is not in the registry"] = close(value, expected, visit_gap) or (
+        dropped and value is not None and value >= expected - visit_gap)
     value = found.get("registry patients with no visit")
     own["registry patients with no visit"] = close(value, reference["registry patients with no visit"],
                                                    visit_gap + patient_gap)
@@ -1385,7 +1391,10 @@ def check_analysis_sites(root: Path) -> Outcome:
 
     def accepted(key: Key, row: dict[str, str]) -> list[object]:
         # The name the current site list gives the row's own site_code, exactly as written, is right too.
-        return [ANALYSIS[key]["site_name"], CURRENT_SITES.get(row.get("site_code", ""))]
+        # A code the site list lacks, such as N-01, joins no name, so a blank is right; a row with no
+        # site_code at all earns no such allowance.
+        code = row.get("site_code", "").strip()
+        return [ANALYSIS[key]["site_name"]] + ([CURRENT_SITES.get(code)] if code else [])
 
     return score_sample(grouped, "site_name", SAMPLE_VISITS, accepted, text_right,
                         "the current site_name for the patient's site_code (keep record_status == 'current' "

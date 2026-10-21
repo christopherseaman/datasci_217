@@ -697,6 +697,25 @@ def run() -> None:
         "melt labels swapped": (solve(melt_map={"a1c_baseline": "week12", "a1c_week12": "baseline"}),
                                 {"a1c_summary.csv: results": 2}, ("map each label",)),
         "melt labels never mapped": (solve(melt_map="none"), {"a1c_summary.csv: results": 2}, ("map the labels",)),
+        "melt labels never mapped, summary rows named baseline and week12": (
+            {**solve(melt_map="none"), "a1c_summary.csv": "visit,results,a1c_pct_mean\nbaseline,0,\nweek12,0,\n"},
+            {"a1c_summary.csv: results": 2}, ("map each label",)),
+        "registry patients dropped, so more visits have no registry patient": (
+            {"patients_summary.csv": edit(files["patients_summary.csv"], lambda t: t.assign(value=t["value"].mask(
+                t["metric"].eq("patients"), str(grading.PATIENT_SUMMARY["patients"] - 100)))),
+             "merge_audit.csv": bump(files["merge_audit.csv"], "check",
+                                     {"visits whose patient is not in the registry": "+150"})},
+            {"patients_summary.csv: patients": 2}, ("drop_duplicates",)),
+        "site_code left out of the extract and site_name blank": (
+            {"analysis_sample.csv": edit(analysis_csv, lambda t: t.drop(columns="site_code").assign(site_name=""))},
+            {"analysis_sample.csv: site_name": 2}, ("current",)),
+        "visits_summary.csv not committed and the rechecked visits left out of the extract": (
+            {"visits_summary.csv": None,
+             "analysis_sample.csv": edit(analysis_csv, lambda t: t[~pd.Series(list(zip(t["patient_id"], t["visit"])),
+                                                                              index=t.index).isin(grading.REPEATED_PAIRS)])},
+            {"visits_summary.csv: rows": 4, "visits_summary.csv: visit_date": 3, "visits_summary.csv: sbp_mmhg": 3,
+             "visits_summary.csv: weight_kg": 2, "visits_summary.csv: source_file": 2, "analysis_sample.csv: rows": 1},
+            ("missing",)),
         "melt rows with no result kept": (solve(melt_dropna=False), {"a1c_summary.csv: results": 2},
                                           ("drop the rows",)),
         "the A1c merged with how='inner'": (solve(a1c_how="inner"), {"analysis_sample.csv: rows": 1},
