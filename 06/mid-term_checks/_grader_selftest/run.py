@@ -148,7 +148,7 @@ def checks_contract() -> dict[str, int]:
 
 
 def checks_review_points() -> int:
-    table = re.search(r"^\| Category \| What it reads \| Full credit \((\d+)\) \|.*\n\|[- |]+\|\n((?:\|.*\n)+)",
+    table = re.search(r"^\| Category \| Full credit \((\d+)\) \|.*\n\|[- |]+\|\n((?:\|.*\n)+)",
                       CHECKS_MD.read_text(encoding="utf-8"), re.M)
     assert table, "CHECKS.md shows no human-review rubric table"
     return int(table.group(1)) * len(table.group(2).splitlines())

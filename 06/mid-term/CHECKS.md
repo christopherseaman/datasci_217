@@ -37,12 +37,12 @@ The midterm totals 100 points: 75 points graded from your committed files after 
 
 5 points for each category:
 
-| Category | What it reads | Full credit (5) | Partial credit |
-| --- | --- | --- | --- |
-| Lecture 01 to 06 evidence map | The "Cumulative midterm checkpoint" cell and saved NumPy outputs after Task 4.3 | One entry for each of Lectures 01 to 06: 01, 02, 04, 05, and 06 each name a concrete technique or file and where this notebook uses it; 03 explains the axis used for the saved complete-pair BP array shape and two per-visit NumPy means | 2 to 4 for missing or unclear entries, or incomplete NumPy outputs or axis explanation |
-| Data contract | The Task 2.1 cell | States each cleaned table's intended grain and key (single or composite), notes raw duplicates, rechecks, and site versions, and gives the cardinality of each Task 4.4 join | 2 to 4 when one or two parts are missing or do not fit these files |
-| Decisions and reasons | The `decision` and `reason` columns of `output/decision_log.csv` | Each of the nine decisions fixes its issue in these files, and each reason names the rows or values it affects and why the decision fits | 2 to 4 when some decisions do not fix their issue, or some reasons are generic, such as "to clean the data", or do not match their decision |
-| Join and reshape safeguards | The Task 3.2 step 6 cell and the Task 4.2 and 4.4 cells | Shows the repeated visit pair before keeping the later reading, the caught `MergeError` and the repeated site rows, the `_merge` counts, and a `validate=` on each Task 4.4 merge | 2 to 4 when a part is missing or unclear |
-| Validation, read-back, and reproducibility | The Task 1.1 command, the Task 5.1 and 5.3 cells, the notebook as a whole, and the commit history | The Task 1.1 cell shows the command that made `file_inventory.txt`; the checks are named and stop the analysis extract from being saved; the read-back prints `True`; the notebook runs top to bottom with its outputs saved; at least two commits with messages that say what changed; no credentials or personal information appear | 2 to 4 when a part is missing or unclear |
+| Category | Full credit (5) |
+| --- | --- |
+| Lecture 01 to 06 evidence map | One entry for each of Lectures 01 to 06: 01, 02, 04, 05, and 06 each name a concrete technique or file and where this notebook uses it; 03 explains the axis used for the saved complete-pair BP array shape and two per-visit NumPy means |
+| Data contract | States each cleaned table's intended grain and key (single or composite), notes raw duplicates, rechecks, and site versions, and gives the cardinality of each Task 4.4 join |
+| Decisions and reasons | Each of the nine decisions fixes its issue in these files, and each reason names the rows or values it affects and why the decision fits |
+| Join and reshape safeguards | Shows the repeated visit pair before keeping the later reading, the caught `MergeError` and the repeated site rows, the `_merge` counts, and a `validate=` on each Task 4.4 merge |
+| Validation, read-back, and reproducibility | The Task 1.1 cell shows the command that made `file_inventory.txt`; the checks are named and stop the analysis extract from being saved; the read-back prints `True`; the notebook runs top to bottom with its outputs saved; at least two commits with messages that say what changed; no credentials or personal information appear |
 
-A category whose cell still holds its **TODO** text earns 0.
+Missing or unclear parts earn 2 to 4. A category whose cell still holds its **TODO** text earns 0.
