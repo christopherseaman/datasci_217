@@ -17,7 +17,7 @@ jupyter:
 
 **25 points, human review**
 
-Complete the root [`report.md`](report.md) using facts from your saved files. Concise, factual writing is welcome, and the model does not need to beat persistence. The [completion contract in CHECKS.md](CHECKS.md#completion-contract) says which report sections and notebook cells each review category reads and what earns full credit:
+Complete the root [`report.md`](report.md) using facts from your saved files. Concise, factual writing is welcome, and the model does not need to beat persistence. [CHECKS.md](CHECKS.md#human-review) says what earns full credit in each review category:
 
 | Category | Points |
 | --- | ---: |
@@ -67,6 +67,7 @@ display(station_metrics)
 ```
 
 > **Checkpoint: `report.md`**
+> First line `# Next-Hour Chicago Beach Air Temperature Forecast`, then the six headings from section 9.1.
 
 ## Check Your Work
 

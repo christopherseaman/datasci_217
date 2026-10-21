@@ -86,6 +86,7 @@ One row for each check, in this order: `release_filename`, `release_sha256`, `re
 One row per station. `expected_hours` counts the elapsed UTC hours from local 2022-01-01 00:00 up to local 2025-01-01 00:00. `observed_hours` counts the station's rows whose timestamp localizes without becoming `NaT`. `missing_hours` is the difference, `coverage_pct` is observed over expected times 100, and `first_timestamp` and `last_timestamp` are the station's earliest and latest valid times.
 
 > **Checkpoint: `output/q1_visualizations.png`**
+> A PNG image.
 
 One figure with at least two labeled panels: the distribution of one ordinary sensor, and a time-series preview for each station (a short slice or a daily summary reads better than every point).
 
@@ -185,6 +186,7 @@ One row per station and target local year and month, summarizing `target_air_tem
 The Pearson correlation matrix of those seven predictors, `training_rows[columns].corr()` (Lecture 07), saved with its row labels as the first column: `to_csv(path, index=True, index_label="feature")`.
 
 > **Checkpoint: `output/q5_patterns.png`**
+> A PNG image.
 
 One labeled figure showing the training period's monthly and local-hour temperature patterns.
 
@@ -243,12 +245,14 @@ Keep the Q7 choice: build the same regressor with the parameters in `q7_model_sp
 > First line `model,station_name,n,mae,rmse,r2`; 5 lines, one per model and station.
 
 > **Checkpoint: `output/q8_final_visualizations.png`**
+> A PNG image.
 
 One multi-panel figure: a validation comparison of the baseline and the model, a test actual-versus-predicted view, and residual diagnostics.
 
 ## Q9: Writeup
 
 > **Checkpoint: `report.md`**
+> First line `# Next-Hour Chicago Beach Air Temperature Forecast`, then the six headings below.
 
 Complete the root `report.md` with exactly these level-two headings, in order:
 
@@ -267,4 +271,4 @@ Under **Model Results**, keep the six-column metrics table with columns `Evaluat
 ![Final model results](output/q8_final_visualizations.png)
 ```
 
-The report and the notebooks earn the 25 human-review points, 5 for each of five categories; the [completion contract](CHECKS.md#completion-contract) says what each category reads and what earns full credit. The model does not need to beat persistence.
+The report and the notebooks earn the 25 human-review points, 5 for each of five categories; [CHECKS.md](CHECKS.md#human-review) says what earns full credit in each category. The model does not need to beat persistence.

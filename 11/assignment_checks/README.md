@@ -1,6 +1,6 @@
 # Assignment 11 checks (course-owned)
 
-These checks grade the final exam. The handout in `11/assignment/` ships none of them, with no checker, workflow, or test, so its README names every output file with the question that makes it, its first line, and its line count instead. After the deadline, `uv run scripts/grade_submissions.py 11` clones each fork and runs `check_assignment.py` from this folder on the fork's committed files. To grade one submission by hand:
+These checks grade the final exam. The handout in `11/assignment/` ships none of them, with no checker, workflow, or test, so each notebook's Checkpoints name every output file with its first line and line count instead, and the handout `CHECKS.md` lists the checks and their points. After the deadline, `uv run scripts/grade_submissions.py 11` clones each fork and runs `check_assignment.py` from this folder on the fork's committed files. To grade one submission by hand:
 
 ```bash
 uv run --isolated --project 11/assignment --locked \
@@ -13,7 +13,7 @@ By default the checker downloads the latest `grading.py` from the course reposit
 
 The first prints a readable report; `--json` prints the `datasci217/grading-result/v1` report instead. `uv run --isolated --project 11/assignment --locked` runs the command in a temporary environment built from the handout's `pyproject.toml` and `uv.lock`, so it leaves no `.venv` in the handout folder.
 
-The report covers the 75 points graded from files; the other 25 come from human review of `report.md` and the notebooks, five 5-point categories that the handout README's Completion contract lists with the report sections and notebook cells each one reads. The command exits 0 only when every check passes, 1 when any does not, and 2 when the supplied release is missing or changed, so judge a run by its JSON, not its exit status. A run takes about 15 seconds.
+The report covers the 75 points graded from files; the other 25 come from human review of `report.md` and the notebooks, five 5-point categories that the handout `CHECKS.md` lists with what earns full credit. The command exits 0 only when every check passes, 1 when any does not, and 2 when the supplied release is missing or changed, so judge a run by its JSON, not its exit status. A run takes about 15 seconds.
 
 The checks read only the CSV and PNG files in the submission's `output/` and its `report.md`. They never import, run, or read submitted code, and they ignore the submission's own `data/`: every expected value is recomputed from `11/assignment/data/` in this repository, after its SHA-256 is checked against the frozen release. They need NumPy, pandas, and scikit-learn at the versions `11/assignment/pyproject.toml` pins; run from any other Python, `check_assignment.py` says which package is missing and how to run it inside that environment.
 
@@ -62,7 +62,7 @@ A missing or extra row costs only the rows check: the value checks compare the r
 
 ## Changing a check
 
-Edit `grading.py`, keep the handout README's checklist, question table, and Completion contract, each notebook's points line, and `assignment.md` in agreement with it (the self-test compares their points), and rerun both tests:
+Edit `grading.py`, keep the handout README's question table, `CHECKS.md`'s artifact checks and human-review tables, each notebook's points line, and `assignment.md` in agreement with it (the self-test compares their points), and rerun both tests:
 
 ```bash
 uv run --isolated --project 11/assignment --locked python3 11/assignment_checks/_grader_selftest/run.py

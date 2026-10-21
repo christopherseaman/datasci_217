@@ -53,7 +53,7 @@ def graded_points(part) -> dict[str, int]:
 
 
 def readme_contract() -> dict[str, int]:
-    """Each output file's points from CHECKS.md's Completion contract table."""
+    """Each output file's points from CHECKS.md's artifact checks table."""
     points = {}
     for line in CHECKS_DOC.read_text(encoding="utf-8").splitlines():
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
@@ -70,7 +70,7 @@ def readme_questions() -> dict[str, int]:
 
 def readme_rubric() -> tuple[int, list[str]]:
     """The human-review rubric's full credit per category and its category names."""
-    table = re.search(r"^\| Category \| What it reads \| Full credit \((\d+)\) \|.*\n\|[- |]+\|\n((?:\|.*\n)+)",
+    table = re.search(r"^\| Category \| Full credit \((\d+)\) \|.*\n\|[- |]+\|\n((?:\|.*\n)+)",
                       CHECKS_DOC.read_text(encoding="utf-8"), re.M)
     assert table, "CHECKS.md shows no human-review rubric table"
     return int(table.group(1)), [line.split("|")[1].strip() for line in table.group(2).splitlines()]
@@ -80,7 +80,7 @@ def check_points_documented() -> None:
     """The README, the notebooks, and assignment.md state the points the checks and the rubric give."""
     readme = README.read_text(encoding="utf-8")
     by_file = graded_points(lambda name: name.split()[1].split(":")[0].replace("train/validation/test", "*"))
-    assert readme_contract() == by_file, ("CHECKS.md Completion contract points", readme_contract(), by_file)
+    assert readme_contract() == by_file, ("CHECKS.md artifact check points", readme_contract(), by_file)
     credit, categories = readme_rubric()
     review = credit * len(categories)
     assert AUTOMATED + review == 100 and review == check_assignment.HUMAN_REVIEW_POINTS, (AUTOMATED, review)
@@ -762,14 +762,22 @@ def run() -> None:
         assert losses(result).get("Q8 q8_test_metrics.csv") == 1, details(result)
         print("q8_test_predictions.csv missing: -6, its own checks only; with a wrong model n as well, the metrics -1")
 
-        # Documented handout contract: tree and checklist name every artifact with its header.
-        readme = (HANDOUT / "README.md").read_text(encoding="utf-8") + CHECKS_DOC.read_text(encoding="utf-8")
+        # Documented handout contract: each notebook Checkpoint and assignment.md name every artifact with
+        # its first line (a PNG Checkpoint says it is a PNG image) and a line count.
+        notebooks = "".join(path.read_text(encoding="utf-8") for path in sorted(HANDOUT.glob("q*.md")))
         contract = (HANDOUT / "assignment.md").read_text(encoding="utf-8")
-        for name, (columns, _) in grading.ARTIFACTS.items():
-            assert f"output/{name}" in readme and name in contract, f"README or assignment.md omits {name}"
-            if columns:
-                assert f"`{','.join(columns)}`" in readme, f"README omits the first line of {name}"
-                assert f"`{','.join(columns)}`" in contract, f"assignment.md omits the first line of {name}"
+        for text, source in ((notebooks, "notebook"), (contract, "assignment.md")):
+            blocks = re.findall(r"^> \*\*Checkpoint: (.+)\*\*\n> (.+)$", text, re.M)
+            for name, (columns, _) in grading.ARTIFACTS.items():
+                lines = [line for title, line in blocks if f"`output/{name}`" in title]
+                assert len(lines) == 1, f"no single {source} Checkpoint names {name}"
+                if name.endswith(".png"):
+                    assert lines[0] == "A PNG image.", (source, name, lines[0])
+                else:
+                    assert re.fullmatch(rf"First line `{re.escape(','.join(columns))}`; .+\.", lines[0]), \
+                        (source, name, lines[0])
+            report = [line for title, line in blocks if title == "`report.md`"]
+            assert report and report[0].startswith("First line `# Next-Hour Chicago Beach"), (source, report)
         for forbidden in ("check_assignment", "GitHub Actions", "including final newlines", "automated feedback",
                           "checker", "autograd"):
             for path in [*HANDOUT.glob("*.md"), *HANDOUT.glob("example_report/*.md")]:
@@ -789,7 +797,7 @@ def run() -> None:
             assert not any(cell.get("outputs") or cell.get("execution_count") for cell in notebook["cells"]
                            if cell["cell_type"] == "code"), f"{path.name} has outputs"
         assert [p.name for p in (HANDOUT / "output").iterdir()] == [".gitkeep"], "the handout output/ is not empty"
-        print("handout README and assignment.md list every artifact and first line, print no expected value, "
+        print("each notebook Checkpoint and assignment.md name every artifact with its first line, print no expected value, "
               "and mention no checker; notebooks are cleared and output/ is empty")
     print("Assignment 11 self-test passed")
 

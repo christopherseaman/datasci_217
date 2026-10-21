@@ -99,6 +99,7 @@ Create one figure with at least two labeled panels: an ordinary sensor distribut
 ```
 
 > **Checkpoint: `output/q1_visualizations.png`**
+> A PNG image.
 
 ## Check Your Work
 

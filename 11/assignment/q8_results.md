@@ -86,6 +86,7 @@ Create one readable multi-panel figure: a validation comparison of the baseline 
 ```
 
 > **Checkpoint: `output/q8_final_visualizations.png`**
+> A PNG image.
 
 ## Check Your Work
 

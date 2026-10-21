@@ -78,6 +78,7 @@ Make one labeled figure that shows both the monthly and the local-hour temperatu
 ```
 
 > **Checkpoint: `output/q5_patterns.png`**
+> A PNG image.
 
 ## Check Your Work
 

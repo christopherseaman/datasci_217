@@ -43,14 +43,14 @@ assignment/
 ├── q1_setup_exploration.md ... q9_writeup.md  # supplied plain-text copies of the notebooks; leave them as they are
 ├── report.md                     # you complete in Q9
 ├── HINTS.md                      # supplied nudges for each question
-├── CHECKS.md                     # supplied: every output file's first line and line count, and what earns points
+├── CHECKS.md                     # supplied: the checks the course runs on your files, and their points
 ├── example_report/               # supplied formatting example with made-up numbers
 ├── data/                         # supplied frozen release and manifest; never edit them
 ├── download_data.sh              # supplied: verifies the two data files (it downloads nothing)
 ├── pyproject.toml, uv.lock       # supplied: the packages and exact versions `uv sync` installs
 ├── .python-version               # supplied: Python 3.13
 ├── .gitattributes, .gitignore    # supplied: keep the data byte for byte, keep .venv/ out of Git
-└── output/                       # you make 28 files, listed in CHECKS.md
+└── output/                       # you make 28 files, each named in its Checkpoint
     ├── q1_*  # release audit, station coverage, visualizations
     ├── q2_*  # cleaned observations, cleaning audit, missingness
     ├── q3_*  # hourly panel, panel summary
@@ -65,7 +65,7 @@ assignment/
 
 1. Read [`assignment.md`](assignment.md): the forecasting question (each station's air temperature one hour after a cutoff hour), cleaning rules, fixed predictors, train, validation, and test periods, and every output file's columns.
 2. Complete the nine notebooks in order. Each starts from the files the previous one saved in `output/`, so you can close one and open the next without rerunning anything.
-    - Expect: every section that saves a file ends with a **Checkpoint** naming the file, its first line, and its line count.
+    - Expect: every section that saves a file ends with a **Checkpoint** naming the file and its first line and line count, or saying it is a PNG image.
 3. When stuck, open [`HINTS.md`](HINTS.md): one nudge per question, naming the lecture that taught the tool.
 
 | Question | Notebook | What you build | Points |
@@ -84,8 +84,7 @@ assignment/
 
 1. Restart each notebook's kernel and **Run All**, Q1 through Q8.
     - Expect: every cell finishes without an error.
-2. Compare `output/` and `report.md` with [CHECKS.md](CHECKS.md).
-3. Save each notebook after **Run All** so its outputs are committed. In Source Control, stage the nine notebooks, `report.md`, and `output/`, commit (for example `Complete the final exam`), and sync.
-    - Expect: `output/` on your fork's `main` branch on GitHub shows all 28 files, `report.md` shows its table and images, and `data/` shows no change.
+2. Save each notebook after **Run All** so its outputs are committed. In Source Control, stage the nine notebooks, `report.md`, and the 28 `output/` files from the Checkpoints, commit (for example `Complete the final exam`), and sync. The course grades your fork's `main` branch after the deadline.
+    - Expect: on GitHub, `report.md` shows its table and images, and `data/` shows no change.
 
-What earns each point: [CHECKS.md](CHECKS.md#completion-contract)
+The checks the course runs, and their points: [CHECKS.md](CHECKS.md)
