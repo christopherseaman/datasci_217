@@ -28,7 +28,7 @@ Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 matplotlib==3.11.1 seaborn==0.13.2
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 seaborn==0.13.2
 ```
 
 ## Core walkthrough
@@ -211,8 +211,6 @@ display(filled)
 ```
 
 **Expect:** 6 months. January, March, and May keep the ADT values (212, 225, 231 admissions), February and April take finance's estimates (200 and 238), and June comes only from finance (219). Values print as `212.0` because the missing values made the columns `float64`.
-
-This chart is a preview: run the cell and read the picture; the plotting code is taught later.
 
 ```python
 trend = pd.concat({'ADT only': primary['admissions'], 'after combine_first()': filled['admissions']},

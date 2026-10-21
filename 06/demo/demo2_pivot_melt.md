@@ -27,7 +27,7 @@ Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 matplotlib==3.11.1 seaborn==0.13.2
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 seaborn==0.13.2
 ```
 
 ## Core walkthrough
@@ -132,7 +132,7 @@ display(device_week4)
 
 **Expect:** 5 rows for 4 patients; P003 appears twice.
 
-Another chart preview: run the cell and read the picture; plotting code is taught later. Each dot is one reading.
+Each dot is one reading.
 
 ```python
 sns.stripplot(data=device_week4, x='patient_id', y='sbp').set_title('Week 4 readings');

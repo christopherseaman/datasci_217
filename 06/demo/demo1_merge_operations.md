@@ -27,7 +27,7 @@ Run the cells from top to bottom; each **Expect** line says what you should see.
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 matplotlib==3.11.1 seaborn==0.13.2
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 seaborn==0.13.2
 ```
 
 ## Core walkthrough
@@ -126,8 +126,6 @@ display(vs_target)
 ```
 
 **Expect:** 5 January visit rows and 6 target rows (4 for January, 2 for February). The merge has 5 rows. `pct_of_target` is 102.5 for North primary care, 92.3 for North cardiology, 95.0 for South primary care, and 105.6 for South cardiology. East has no target, so its `target` and `pct_of_target` are `NaN`.
-
-Another chart preview: run the cell and read the picture. Plotting code is taught later.
 
 ```python
 sns.barplot(data=vs_target, x='clinic', y='pct_of_target', hue='service').set_title('Visits as % of target');
