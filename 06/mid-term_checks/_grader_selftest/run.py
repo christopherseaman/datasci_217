@@ -132,10 +132,11 @@ def readme_decisions() -> list[tuple[str, str]]:
     return [row for row in rows if row[0] in ("patients", "visits", "sites")]
 
 
-def readme_checklist() -> dict[str, tuple[str, int]]:
-    rows = re.findall(r"^\| `output/([^`]+)` \| [^|]+ \| `([^`]+)` \| (\d+) \|$",
+def readme_checklist() -> dict[str, tuple[str | None, int]]:
+    """Each task Checkpoint block: the file, its header when the block names one, and its line count."""
+    rows = re.findall(r"^> \*\*Checkpoint: `output/([^`]+)`\*\*\n> (\d+) lines:(?: the header `([^`]+)`)?",
                       README.read_text(encoding="utf-8"), re.M)
-    return {name: (header, int(lines)) for name, header, lines in rows}
+    return {name: (header or None, int(lines)) for name, lines, header in rows}
 
 
 def checks_contract() -> dict[str, int]:
@@ -523,7 +524,8 @@ def check_handout(files: dict[str, str]) -> None:
     tree = readme.split("## Task 1")[0]
     for name, text in files.items():
         header, count = checklist[name]
-        assert header == HEADERS[name], (name, header)
+        assert header in (None, HEADERS[name]), (name, header)
+        assert header or name == "file_inventory.txt", (name, "Checkpoint names no header")
         assert len(text.splitlines()) == count, (name, count, len(text.splitlines()))
         assert re.search(rf"── {re.escape(name)} +# you make in Task", tree), (name, "missing from the file tree")
     assert re.fullmatch(r"\s*\d+ data/sites\.csv", files["file_inventory.txt"].splitlines()[0])
@@ -534,7 +536,7 @@ def check_handout(files: dict[str, str]) -> None:
     for check in grading.CHECKS:
         file_name = check.name.split(":")[0]
         graded[file_name] = graded.get(file_name, 0) + check.points
-    assert checks_contract() == graded, ("CHECKS.md Completion contract points", checks_contract(), graded)
+    assert checks_contract() == graded, ("CHECKS.md artifact check points", checks_contract(), graded)
     review = checks_review_points()
     assert grading.MAX_SCORE + review == 100 and check_assignment.HUMAN_REVIEW_POINTS == review, review
     assert (f"{grading.MAX_SCORE} points graded from your committed files after the deadline, "
@@ -758,7 +760,7 @@ def run() -> None:
 
     print("Assignment 06 checks: generate_data.py writes the data_manifest.json tables as Parquet and CSV; "
           "the values grading.py derives match an independent pandas solution; the extracts' "
-          "patients cover every planted pattern; the README lists every artifact with its header and line count and states no "
+          "patients cover every planted pattern; each README Checkpoint names its artifact, header, and line count and states no "
           "graded count; CHECKS.md states the 75/25 split and each file's points; the handout ships no checks and "
           "no data, and saves every ungated file before the validation assert; empty and handout score 0, a "
           "partial submission 10; complete and loosely formatted submissions score 75; no submitted file runs; "

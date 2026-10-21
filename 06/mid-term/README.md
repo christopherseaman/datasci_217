@@ -460,22 +460,6 @@ Read `output/analysis_sample.csv` back with `dtype={...}` for every column but `
 
 1. Click **Restart**, then **Run All**.
     - Expect: no errors, the validation cell shows only `True`, and the read-back prints `True`.
-2. In the terminal, compare each file in `output/` with this table: `wc -l output/*` prints each file's line count, and `head -n 1 output/FILE` its first line.
+2. Commit `assignment.ipynb` (with its outputs) and the eleven `output/` files from the Checkpoints, then push. The course grades your fork's `main` branch after the deadline.
 
-| File | Made in | First line | Lines |
-| --- | --- | --- | --- |
-| `output/file_inventory.txt` | Task 1.1 | `<count> data/sites.csv` | 4 |
-| `output/table_profile.csv` | Task 1.2 | `table,rows,columns,exact_duplicate_rows` | 6 |
-| `output/issue_audit.csv` | Task 2.3 | `issue,count` | 11 |
-| `output/patients_summary.csv` | Task 3.1 | `metric,value` | 9 |
-| `output/gender_categories.csv` | Task 3.1 | `gender,count,code` | 5 |
-| `output/visits_summary.csv` | Task 3.2 | `metric,value` | 14 |
-| `output/decision_log.csv` | Task 3.3 | `table,issue,decision,reason` | 10 |
-| `output/a1c_summary.csv` | Task 4.1 | `visit,results,a1c_pct_mean` | 3 |
-| `output/merge_audit.csv` | Task 4.2 | `check,count` | 8 |
-| `output/sbp_wide_sample.csv` | Task 4.3 | `patient_id,baseline,week12,sbp_change` | 16 |
-| `output/analysis_sample.csv` | Task 5.2 | `patient_id,visit,visit_date,sbp_mmhg,weight_kg,a1c_pct,gender,birth_year,site_code,site_name,source_file` | 29 |
-
-3. Commit `assignment.ipynb` (with its outputs) and the eleven `output/` files, then push. The course grades your fork's `main` branch after the deadline.
-
-What the points reward and how files are read: [CHECKS.md](CHECKS.md)
+The checks the course runs, and their points: [CHECKS.md](CHECKS.md)

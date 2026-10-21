@@ -1,10 +1,10 @@
 # Assignment 06 checks
 
-## Completion contract
+## Artifact checks
 
-The midterm totals 100 points: 75 points graded from your committed files after the deadline, 25 by human review. Each file is graded on its own, against the tables `generate_data.py` writes.
+The midterm totals 100 points: 75 points graded from your committed files after the deadline, 25 by human review. Your `output/` files are the proof of work: each check reads one file and compares its values with the tables `generate_data.py` writes.
 
-| File | What earns the points | Points |
+| File | Check | Points |
 | --- | --- | ---: |
 | `output/file_inventory.txt` | The line counts of the three CSV files, in proportion (rounded down) | 5 |
 | `output/table_profile.csv` | 1 for each table with its right `rows`, `columns`, and `exact_duplicate_rows` | 5 |
