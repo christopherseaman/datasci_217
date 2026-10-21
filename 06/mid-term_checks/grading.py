@@ -892,23 +892,22 @@ def normal_key(key: Key) -> Key:
 
 def score_rows(grouped: dict[Key, list[dict[str, str]]], expected: Sequence[Key], columns: Sequence[str],
                ignore: Callable[[dict[str, str]], bool] = lambda row: False,
-               hints: dict[str, str] | None = None, excused: int = 0) -> Outcome:
+               hints: dict[str, str] | None = None, charge_missing: bool = True) -> Outcome:
     """Each expected key present as often as `expected` lists it (once, or as often as the student's own earlier
-    table holds it); a repeated or unexpected row cancels a matched one. Up to `excused` missing keys, rows an
-    earlier summary already charged as dropped, cost nothing. `hints` adds advice to the `missing`, `repeated`, or
-    `unexpected` problem."""
+    table holds it); a repeated or unexpected row cancels a matched one. With `charge_missing` false, an earlier
+    summary already charged the dropped rows, so missing keys cost nothing. `hints` adds advice to the `missing`,
+    `repeated`, or `unexpected` problem."""
     wanted: dict[Key, Key] = {}
     times: dict[Key, int] = {}
     for key in expected:
         wanted.setdefault(normal_key(key), key)
         times[normal_key(key)] = times.get(normal_key(key), 0) + 1
-    missing = [key for norm, key in wanted.items() if norm not in grouped]
-    missing = missing if len(missing) > excused else []
+    missing = [key for norm, key in wanted.items() if charge_missing and norm not in grouped]
     repeated = [key for norm, key in wanted.items() if len(grouped.get(norm, ())) > times[norm]]
     # Unexpected rows are listed by their key cells exactly as the file writes them.
     unexpected = [tuple(row[column] for column in columns) for key, rows in grouped.items() if key not in wanted
                   for row in rows if not ignore(row)]
-    outcome = Outcome(total=len(wanted), right=max(0, len(wanted) - max(0, len(missing) - excused) - len(repeated)
+    outcome = Outcome(total=len(wanted), right=max(0, len(wanted) - len(missing) - len(repeated)
                                                    - len(unexpected)))
     hints = hints or {}
 
@@ -1119,15 +1118,15 @@ def visit_row_gap(root: Path) -> float:
     return 0 if own is None else abs(own - VISIT_SUMMARY["visits"])
 
 
-def visit_shortfall(root: Path) -> int:
-    """How many visits the student's own `visits` count lacks, when visits_summary.csv: rows charges that count.
-
-    0 when the count is right, above the expected one, unreadable, or what a wrong rule the audit charged gives.
-    """
+def visit_rows_charged(root: Path) -> bool:
+    """True when visits_summary.csv: rows already charges dropped visits (`visits` below the expected count, or the
+    file unreadable), so later extracts may miss them; an over-count explains no missing row."""
+    try:
+        outcome = visits_summary("rows")(root)
+    except ArtifactProblem:
+        return True
     own = own_metrics(root, "visits_summary.csv", ("visits",)).get("visits")
-    accepted = {summary["visits"] for summary in (VISIT_SUMMARY, *own_rule_summaries(root, "visits_summary.csv",
-                                                                                     "rows"))}
-    return 0 if own is None or own in accepted else max(0, int(VISIT_SUMMARY["visits"] - own))
+    return outcome.right < outcome.total and (own is None or own < VISIT_SUMMARY["visits"])
 
 
 def visits_summary(part: str) -> Callable[[Path], Outcome]:
@@ -1335,7 +1334,7 @@ def analysis_rows(root: Path) -> Outcome:
         # Exact registry repeats kept are charged once in patients_summary.csv; their visits may repeat here.
         repeated = {label(pid) for pid in REPEATED_PATIENTS}
         grouped = {key: rows[:1] if key[0] in repeated else rows for key, rows in grouped.items()}
-    # Visits dropped from visits_clean are charged in visits_summary.csv: rows, so up to that many may be missing.
+    # Visits dropped from visits_clean are charged once, in visits_summary.csv: rows.
     return best_rows(grouped, [expected], {
         "missing": "keep every visit of the SAMPLE_IDS patients: an inner or right merge drops the visits with no "
                    "match, so merge onto visits_clean with how='left', then filter with "
@@ -1346,7 +1345,7 @@ def analysis_rows(root: Path) -> Outcome:
                     "site_code listed twice in sites.csv; keep only current sites and pass validate= to each merge",
         "unexpected": "every row should be a visit of a SAMPLE_IDS patient from visits_clean; filter with "
                       "analysis['patient_id'].isin(SAMPLE_IDS) and merge onto visits_clean with how='left'",
-    }, VISIT_KEYS, ignore=ignore, excused=visit_shortfall(root))
+    }, VISIT_KEYS, ignore=ignore, charge_missing=not visit_rows_charged(root))
 
 
 def score_sample(grouped: dict[Key, list[dict[str, str]]], column: str, keys: Sequence[Key],
@@ -1459,12 +1458,11 @@ def own_rows_differ_gender(root: Path) -> bool:
 
 def sbp_wide_rows(root: Path) -> Outcome:
     _, grouped = read_sample(root, "sbp_wide_sample.csv", ("patient_id",))
-    # A patient whose every visit was dropped from visits_clean is charged in visits_summary.csv: rows, so up to
-    # that many visits' patients may be missing.
     return best_rows(grouped, [[(pid,) for pid in SAMPLE_WIDE]],
                      "pivot visits_clean with index='patient_id', so each patient with a visit gets one row, then "
                      "keep the rows whose patient_id is in SAMPLE_IDS; a patient whose visits were all dropped "
-                     "from visits_clean has no row", ("patient_id",), excused=visit_shortfall(root))
+                     "from visits_clean has no row", ("patient_id",),
+                     charge_missing=not visit_rows_charged(root))
 
 
 def sbp_wide_visit(visit: str) -> Callable[[Path], Outcome]:

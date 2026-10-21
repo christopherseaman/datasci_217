@@ -98,7 +98,7 @@ Then paste the command into the `%%bash` cell under Task 1.1 in the notebook.
 
 ### 1.2 Profile each table with a function
 
-Write a function that takes a data file's name and its table and returns a dictionary with four keys: `table` (the file name, such as `patients.parquet`), `rows` (data rows, not the header), `columns`, and `exact_duplicate_rows` (rows identical to an earlier row: `table.duplicated().sum()`). Call it once per file: loop over `manifest["files"]`, which holds the file names in the setup cell, and pass each name with its table, `raw[Path(name).stem]`. Build a DataFrame from the results, and save it with `to_csv(path, index=False)`.
+Write a function that takes a data file's name and its table and returns a dictionary with four keys: `table` (the file name, such as `patients.parquet`), `rows` (data rows, not the header), `columns`, and `exact_duplicate_rows` (rows identical to an earlier row: `table.duplicated().sum()`). Call it once per file: loop over `manifest["files"]`, a dictionary keyed by file name, so `for name in manifest["files"]` yields each name; pass each name with its table, `raw[Path(name).stem]`. Build a DataFrame from the results, and save it with `to_csv(path, index=False)`.
 
 - Self-check: each CSV file's `rows` is one less than its `wc -l` count in Task 1.1.
 
@@ -175,7 +175,7 @@ patients: site codes needing normalization,1
 
 Self-checks before you save:
 
-- Every count is a whole number from 0 up to its table's `rows` in `table_profile.csv`.
+- Every count is a whole number from 0 up to its table's `rows` in `table_profile.csv`; for the visits issues, the two visit files' `rows` added together.
 - A row with `999` is counted as a sentinel, never also as outside 70 through 250.
 - A count from `keep=False` includes the first copy, so `sites: rows with a repeated site_code` and the repeated-pair count are 0 or at least 2.
 - A count of 0 is a finding too; keep its row.
