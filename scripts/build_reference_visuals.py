@@ -27,7 +27,8 @@ def main():
     sns.kdeplot(x=glucose, ax=axes[1], label="default")
     sns.kdeplot(x=glucose, bw_adjust=0.5, ax=axes[1], label="bw_adjust=0.5")
     axes[1].legend()
-    sns.histplot(x=glucose, kde=True, ax=axes[2])
+    # 10 mg/dL bins keep the gap between the two clusters visible.
+    sns.histplot(x=glucose, kde=True, bins=np.arange(80, 181, 10), ax=axes[2])
     for ax in axes:
         ax.set_xlabel("Fasting glucose (mg/dL)")
     fig.tight_layout()
@@ -48,6 +49,24 @@ def main():
     exec(source, namespace)
     output = ROOT / "07/media/altair_study_reference.png"
     namespace["scatter"].save(str(output), scale_factor=2)
+    assert output.stat().st_size > 0
+
+    # The same chart built in three steps: mark and position, then typed group encodings, then reader context.
+    base = alt.Chart(study).properties(width=220, height=200)
+    steps = alt.hconcat(
+        base.mark_point().encode(x="age:Q", y="systolic_bp:Q")
+        .properties(title="1. Data + mark_point() + x, y (:Q)"),
+        base.mark_point().encode(x="age:Q", y="systolic_bp:Q", color="clinic:N", shape="clinic:N")
+        .properties(title="2. + color and shape (clinic:N)"),
+        base.mark_point(filled=True, size=90).encode(
+            x=alt.X("age:Q", title="Age (years)"),
+            y=alt.Y("systolic_bp:Q", title="Systolic BP (mmHg)", scale=alt.Scale(zero=False)),
+            color=alt.Color("clinic:N", title="Clinic"),
+            shape=alt.Shape("clinic:N", title="Clinic"),
+        ).properties(title="3. + titles, units, and scale"),
+    ).resolve_legend(color="independent", shape="independent")
+    output = ROOT / "07/media/altair_three_steps.png"
+    steps.save(str(output), scale_factor=2)
     assert output.stat().st_size > 0
 
     x = np.arange(1, 7)

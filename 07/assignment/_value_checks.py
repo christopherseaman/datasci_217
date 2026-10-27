@@ -6,8 +6,10 @@ so a local run reports exactly what GitHub will. They read the six files a
 submission saves in output/ and compare them with the supplied data, whose
 values are copied below; the self-test confirms those copies match data/.
 
-Each check scores one thing, so one mistake costs only its own points, and an
-answer that shows the skill in another form earns them. Values are compared
+Each check scores one thing, and each answer missing from a saved file fails
+its own check, so an evidence file that holds only the critique fails every
+Task 3 evidence check. An answer that shows the skill in another form earns
+its points. Values are compared
 after parsing: spacing, line endings, quoting, key and column order, a leading
 row-number column, number formatting (79 == 79.0 == 79.00), and the letter case
 of labels never cost points, and a CSV's cells may be separated by commas,
@@ -15,8 +17,8 @@ semicolons, or tabs. A mistake that several checks could see is charged once:
 a file saved outside output/ by the first check that reads it, swapped axes by
 the x check, one data type given to both color and shape by the color check,
 and a column named twice by the columns check. A chart saved as a PNG is
-checked for being a PNG image that is not blank; how it looks is the student's
-to inspect.
+checked for being a PNG image that is not blank and has at least one colored
+pixel, charged once by its one check; how it looks is the student's to inspect.
 
 Nothing here imports, runs, or inspects student code.
 """
@@ -932,6 +934,41 @@ OTHER_FORMATS = (
 )
 
 
+def _png_rows(data: bytes):
+    """The header fields and inflated, still-filtered rows of a PNG, or None.
+
+    None for a PNG these checks do not decode: interlaced, under 8 bits per
+    sample, or damaged. Returns (width, height, bytes per pixel, color type,
+    bit depth, palette, raw), where raw holds each row's filter byte and bytes.
+    """
+    try:
+        position, header, compressed, palette = 8, None, [], b""
+        while position + 8 <= len(data):
+            length, kind = struct.unpack(">I4s", data[position:position + 8])
+            body = data[position + 8:position + 8 + length]
+            if kind == b"IHDR":
+                header = struct.unpack(">IIBBBBB", body)
+            elif kind == b"PLTE":
+                palette = body
+            elif kind == b"IDAT":
+                compressed.append(body)
+            elif kind == b"IEND":
+                break
+            position += 12 + length
+        if header is None:
+            return None
+        width, height, depth, color_type, _, _, interlaced = header
+        if interlaced or depth not in (8, 16) or color_type not in PNG_CHANNELS or (color_type == 3 and depth != 8):
+            return None
+        raw = zlib.decompress(b"".join(compressed))
+    except (struct.error, zlib.error):
+        return None
+    size = PNG_CHANNELS[color_type] * depth // 8
+    if not width or not height or len(raw) < height * (width * size + 1):
+        return None
+    return width, height, size, color_type, depth, palette, raw
+
+
 def _png_is_blank(data: bytes) -> bool:
     """Whether every pixel of a PNG is the same color, as in a figure saved with nothing drawn on it.
 
@@ -939,30 +976,11 @@ def _png_is_blank(data: bytes) -> bool:
     row's filter (PNG filter types 0 to 4), so no pixel needs decoding. A PNG this
     cannot read (interlaced, under 8 bits per sample, or damaged) counts as not blank.
     """
-    try:
-        position, header, compressed = 8, None, []
-        while position + 8 <= len(data):
-            length, kind = struct.unpack(">I4s", data[position:position + 8])
-            body = data[position + 8:position + 8 + length]
-            if kind == b"IHDR":
-                header = struct.unpack(">IIBBBBB", body)
-            elif kind == b"IDAT":
-                compressed.append(body)
-            elif kind == b"IEND":
-                break
-            position += 12 + length
-        if header is None:
-            return False
-        width, height, depth, color_type, _, _, interlaced = header
-        if interlaced or depth not in (8, 16) or color_type not in PNG_CHANNELS or (color_type == 3 and depth != 8):
-            return False
-        raw = zlib.decompress(b"".join(compressed))
-    except (struct.error, zlib.error):
+    decoded = _png_rows(data)
+    if decoded is None:
         return False
-    size = PNG_CHANNELS[color_type] * depth // 8
+    width, height, size, _, _, _, raw = decoded
     stride = width * size
-    if not width or not height or len(raw) < height * (stride + 1):
-        return False
     pixel = raw[1:1 + size]  # the first pixel, stored unchanged whatever the first row's filter
     half = bytes((value - value // 2) % 256 for value in pixel)
     rest = bytes(stride - size)
@@ -980,6 +998,55 @@ def _png_is_blank(data: bytes) -> bool:
         if stored is None or raw[start + 1:start + 1 + stride] != stored[1 if row else 0]:
             return False
     return True
+
+
+def _png_has_color(data: bytes) -> bool:
+    """Whether any visible pixel of a PNG has a color, not a shade of gray.
+
+    Matplotlib draws axes, ticks, and text in gray, so a figure saved before its
+    bars or lines were drawn has none. A pixel counts as colored when its largest
+    and smallest of red, green, and blue differ by more than 10 (of 255). Rows are
+    unfiltered one at a time, stopping at the first colored pixel. A PNG this
+    cannot read counts as colored, so it is never charged here.
+    """
+    decoded = _png_rows(data)
+    if decoded is None:
+        return True
+    width, height, size, color_type, depth, palette, raw = decoded
+    if color_type in (0, 4):
+        return False
+    stride = width * size
+    step = depth // 8  # 16-bit samples are compared by their high byte
+    previous = bytearray(stride)
+    for row in range(height):
+        start = row * (stride + 1)
+        kind, line = raw[start], bytearray(raw[start + 1:start + 1 + stride])
+        if kind == 1:
+            for i in range(size, stride):
+                line[i] = (line[i] + line[i - size]) & 255
+        elif kind == 2:
+            line = bytearray((a + b) & 255 for a, b in zip(line, previous))
+        elif kind == 3:
+            for i in range(stride):
+                line[i] = (line[i] + ((line[i - size] if i >= size else 0) + previous[i]) // 2) & 255
+        elif kind == 4:
+            for i in range(stride):
+                a = line[i - size] if i >= size else 0
+                b, c = previous[i], previous[i - size] if i >= size else 0
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                line[i] = (line[i] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 255
+        elif kind != 0:
+            return True
+        previous = line
+        if color_type == 3:
+            pixels = (palette[3 * index:3 * index + 3] for index in line)
+        else:
+            pixels = (line[i:i + 3 * step:step] for i in range(0, stride, size)
+                      if color_type == 2 or line[i + 3 * step])  # skip fully transparent RGBA pixels
+        if any(len(rgb) == 3 and max(rgb) - min(rgb) > 10 for rgb in pixels):
+            return True
+    return False
 
 
 def _png_complete(data: bytes) -> bool:
@@ -1066,6 +1133,11 @@ def _check_png(root: Path, name: str, task: str, figure: str) -> None:
         f"{name} is blank: every pixel is the same color, so the figure it saved had nothing drawn on it. "
         f"plt.savefig() after plt.show() saves a new, empty figure; in {task}, draw the chart first, then call "
         f"{figure}.savefig(...) before plt.show().",
+    )
+    _assert(
+        _png_has_color(data),
+        f"{name} has no colored bars or lines: every pixel is white, gray, or black, so the chart was drawn in "
+        f"gray or on another figure. In {task}, draw each program in its own color before {figure}.savefig(...).",
     )
 
 

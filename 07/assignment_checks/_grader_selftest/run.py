@@ -495,6 +495,29 @@ def run() -> None:
 
         mistake("redesign-blank", blank(REDESIGN), {"critique redesign: PNG image"}, "is blank")
         mistake("explanatory-blank", blank(EXPLANATORY), {"explanatory chart: PNG image"}, "before plt.show()")
+
+        def empty_axes(name: str):
+            def save(root: Path) -> None:
+                fig, ax = plt.subplots()  # axes drawn, nothing plotted on them
+                fig.savefig(root / name, dpi=150, bbox_inches="tight")
+                plt.close(fig)
+            return save
+
+        def gray_only(name: str):
+            def save(root: Path) -> None:
+                fig, ax = plt.subplots()
+                ax.plot([1, 2, 3, 4], [58, 62, 66, 70], color="gray", marker="s")
+                ax.bar([1, 2], [40, 50], color="0.3")
+                fig.savefig(root / name, dpi=150, bbox_inches="tight")
+                plt.close(fig)
+            return save
+
+        mistake("redesign-empty-axes", empty_axes(REDESIGN), {"critique redesign: PNG image"},
+                "has no colored bars or lines")
+        mistake("explanatory-empty-axes", empty_axes(EXPLANATORY), {"explanatory chart: PNG image"},
+                "draw each program in its own color")
+        mistake("redesign-gray-only", gray_only(REDESIGN), {"critique redesign: PNG image"}, "no colored bars")
+        mistake("explanatory-gray-only", gray_only(EXPLANATORY), {"explanatory chart: PNG image"}, "no colored bars")
         for filename, check in ((REDESIGN, "critique redesign: PNG image"),
                                 (EXPLANATORY, "explanatory chart: PNG image")):
             original = (correct / filename).read_bytes()

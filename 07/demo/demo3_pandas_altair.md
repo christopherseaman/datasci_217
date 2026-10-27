@@ -22,16 +22,17 @@ A draft dashboard chart about flu vaccination misleads its readers.
 - Critique it with Tufte's checks, one problem and repair at a time.
 - Redesign it so it works without color, and write its text alternative.
 - Save the chart record as JSON.
-- Build an Altair chart of patient blood pressure and save its Vega-Lite specification.
-- Independent practice: a line chart with redundant cues, and a lie-factor calculation.
+- Draw a line chart with redundant cues and direct labels.
+- Build an Altair chart of patient blood pressure from 2,400 synthetic patients and save its Vega-Lite specification.
+- Independent practice: a lie-factor calculation, a layered Altair dashboard, small multiples, and a text alternative.
 
 All values are synthetic.
 
 Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas and altair in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 altair==5.5.0
+# Installs the course's pandas, pyarrow (for Parquet), and altair in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 altair==5.5.0
 ```
 
 ## Core walkthrough
@@ -133,7 +134,10 @@ ax.set(ylim=(0, 100), xlabel='Clinic', ylabel='Adults vaccinated against flu (%)
 ax.spines[['top', 'right']].set_visible(False)
 ax.legend(title='Season', loc='upper left', bbox_to_anchor=(1, 1), frameon=False)
 
-fig.savefig('vaccination_redesign.png', dpi=150, bbox_inches='tight')
+from pathlib import Path
+
+Path('output').mkdir(exist_ok=True)
+fig.savefig('output/vaccination_redesign.png', dpi=150, bbox_inches='tight')
 plt.show()
 bottom, top = ax.get_ylim()                                # reads back the limits set above
 print(bottom, top)
@@ -162,7 +166,7 @@ The chart record keeps the contract, the critique, and the text alternative besi
 import json
 
 chart_record = {
-    'chart': 'vaccination_redesign.png',
+    'chart': 'output/vaccination_redesign.png',
     'question': 'How did adult flu vaccination change at each clinic between seasons?',
     'audience_and_claim': 'Clinic managers; uptake rose at all three clinics, most at North',
     'grain': 'one clinic in one season',
@@ -174,10 +178,10 @@ chart_record = {
     'critique_of_draft': critique,
     'text_alternative': bar_alt,
 }
-with open('vaccination_record.json', 'w', encoding='utf-8') as file:
+with open('output/vaccination_record.json', 'w', encoding='utf-8') as file:
     json.dump(chart_record, file, indent=2, ensure_ascii=False)
 
-with open('vaccination_record.json', encoding='utf-8') as file:
+with open('output/vaccination_record.json', encoding='utf-8') as file:
     saved = json.load(file)
 print(list(saved))
 print(saved['grain'])
@@ -186,29 +190,75 @@ print(len(saved['critique_of_draft']), 'critique entries')
 
 Expect the seven keys from `chart` to `text_alternative`, then `one clinic in one season` and `5 critique entries`.
 
-### 5. Altair: data, mark, and typed encodings
+### 5. A line chart with redundant cues and direct labels
 
-Twelve patients, one row each: age in years, systolic blood pressure in mmHg, and clinic. Each Altair field carries its data type: `:Q` quantitative, `:N` nominal (categorical).
+A second prepared table: mean HbA1c (%) at four quarterly visits for patients in two diabetes programs. Lower is better. The format strings `'s--'` and `'o-'` give each series its own marker and line style beside its color, and `ax.text()` labels each line at its end, so the chart needs no legend.
 
 ```python
-patients = pd.DataFrame({
-    'patient_id': ['P01', 'P02', 'P03', 'P04', 'P05', 'P06',
-                   'P07', 'P08', 'P09', 'P10', 'P11', 'P12'],
-    'age': [34, 45, 52, 61, 68, 74, 38, 47, 55, 63, 70, 77],
-    'systolic_bp': [116, 123, 128, 134, 139, 146, 121, 130, 136, 141, 148, 155],
-    'clinic': ['North'] * 6 + ['South'] * 6,
-})
-display(patients)
+visits = [1, 2, 3, 4]
+standard = [8.4, 8.2, 8.1, 8.0]
+education = [8.5, 8.0, 7.7, 7.5]
+
+fig, ax = plt.subplots(figsize=(7, 4.5))
+ax.plot(visits, standard, 's--', color='#E69F00')
+ax.plot(visits, education, 'o-', color='#0072B2')
+ax.text(4.08, standard[-1], 'Standard care', va='center')
+ax.text(4.08, education[-1], 'Group education', va='center')
+ax.annotate('0.5 points lower at visit 4', xy=(4, 7.5), xytext=(2.3, 7.4),
+            arrowprops=dict(arrowstyle='->'))
+ax.set(xlabel='Quarterly visit', ylabel='Mean HbA1c (%)', ylim=(7, 9), xlim=(0.8, 4.9),
+       title='HbA1c fell further in the group-education program')
+ax.set_xticks(visits)
+ax.spines[['top', 'right']].set_visible(False)
+plt.show()
+print(f'{standard[-1] - education[-1]:.1f}')
 ```
 
-Expect twelve rows and four columns: six North patients (P01 to P06), then six South.
+Expect two falling lines, orange dashed squares for Standard care and blue solid circles for Group education, each labeled at its right end, and an arrow from the annotation to the last blue point. `0.5` prints. This y-axis starts at 7 rather than 0: position, not length, encodes the value, and the axis labels make the range clear.
+
+### 6. Load the patient table
+
+This supplied cell downloads the course's data generator if it is missing, builds `data/` with it when either table is missing, and reads both Parquet files. `generate_data.build()` uses a fixed seed, so everyone gets the same 2,400 patients.
+
+```python
+from pathlib import Path
+from urllib.request import urlretrieve
+
+REPO_RAW = 'https://raw.githubusercontent.com/christopherseaman/datasci_217/main/07/demo'
+if not Path('generate_data.py').exists():
+    urlretrieve(f'{REPO_RAW}/generate_data.py', 'generate_data.py')
+if not (Path('data/patients.parquet').exists() and Path('data/clinic_monthly.parquet').exists()):
+    import generate_data
+    generate_data.build()
+
+patients = pd.read_parquet('data/patients.parquet')
+monthly = pd.read_parquet('data/clinic_monthly.parquet')
+print(patients.shape, monthly.shape)
+display(patients.head(3))
+```
+
+Expect `(2400, 8) (12, 4)`: 2,400 patients with clinic, sex, age, BMI, systolic BP, steps per day, and fasting glucose, plus 12 months of clinic visits.
+
+Altair embeds every row in the chart's specification, so take a random 300 patients from North and South (`isin()`, Lecture 04; `sample()`, Lecture 05). Each Altair field carries its data type: `:Q` quantitative, `:N` nominal (categorical).
+
+```python
+bp = patients[patients['clinic'].isin(['North', 'South'])].sample(n=300, random_state=7)
+display(bp['clinic'].value_counts())
+for clinic in ['North', 'South']:
+    rows = bp[bp['clinic'] == clinic]
+    print(f"{clinic} mean age {rows['age'].mean():.1f} mean BP {rows['systolic_bp'].mean():.1f}")
+```
+
+Expect counts of North 174 and South 126, then `North mean age 54.2 mean BP 123.9` and `South mean age 61.6 mean BP 130.5`. South's patients are about 7 years older.
+
+### 7. Altair: data, mark, and typed encodings
 
 Color and shape both encode the clinic, so the groups survive grayscale printing. Tooltips show the values behind a point on hover, and `.interactive()` adds pan and zoom, but the title, axes, and legend stay visible without them.
 
 ```python
 import altair as alt
 
-scatter = alt.Chart(patients).mark_point(filled=True, size=90).encode(
+scatter = alt.Chart(bp).mark_point(filled=True, size=40, opacity=0.6).encode(
     x=alt.X('age:Q', title='Age (years)', scale=alt.Scale(zero=False)),
     y=alt.Y('systolic_bp:Q', title='Systolic BP (mmHg)', scale=alt.Scale(zero=False)),
     color=alt.Color('clinic:N', title='Clinic'),
@@ -223,12 +273,12 @@ scatter = alt.Chart(patients).mark_point(filled=True, size=90).encode(
 scatter
 ```
 
-Expect twelve filled points rising from lower left to upper right: blue circles for North and orange squares for South, with South's points a few mmHg higher at similar ages. Hovering over a point shows its patient ID, age, and blood pressure.
+Expect 300 points spread from 90 to 197 mmHg and ages 19 to 90: blue circles for North and orange squares for South. BP drifts upward with age, but at any age readings spread over 40 mmHg or more, and a few points sit above 170. Hovering over a point shows its patient ID, age, and blood pressure.
 
-A bar chart of `mean(systolic_bp):Q` changes the grain: one bar per clinic, each the mean of six patients. Altair starts bars at zero by default, as bars need. The clinic is already named on the x-axis, so the bars share one neutral color, and the scatter's color-and-shape legend stays the only one.
+A bar chart of `mean(systolic_bp):Q` changes the grain: one bar per clinic, each the mean of its patients. Altair starts bars at zero by default, as bars need. The clinic is already named on the x-axis, so the bars share one neutral color, and the scatter's color-and-shape legend stays the only one.
 
 ```python
-means = alt.Chart(patients).mark_bar(color='gray').encode(  # one color for every bar
+means = alt.Chart(bp).mark_bar(color='gray').encode(  # one color for every bar
     x=alt.X('clinic:N', title='Clinic'),
     y=alt.Y('mean(systolic_bp):Q', title='Mean systolic BP (mmHg)'),
     tooltip=[alt.Tooltip('mean(systolic_bp):Q', title='Mean systolic BP (mmHg)', format='.1f')],
@@ -238,37 +288,41 @@ combined = alt.hconcat(scatter, means)
 combined
 ```
 
-Expect the scatter on the left and two gray bars from 0 on the right, North near 131 and South near 139 mmHg, with one legend of colored circles and squares. Hovering over a bar shows its mean to one decimal.
+Expect the scatter on the left and two gray bars from 0 on the right, North 123.9 and South 130.5 mmHg in their tooltips. The bars hide what the scatter shows: South's points sit further right, at older ages, so part of its 6.6 mmHg higher mean reflects age rather than the clinic.
 
-### 6. Save the Altair chart and check the specification
+### 8. Save the Altair chart and check the specification
 
-`chart.save()` writes the Vega-Lite specification with the twelve rows embedded, so anyone with the file can render the same chart.
+`chart.save()` writes the Vega-Lite specification with the 300 rows embedded, as JSON or as a web page that opens in any browser. `chart.to_dict()` returns the same specification as a Python dictionary.
 
 ```python
-combined.save('bp_charts.json')
+combined.save('output/bp_charts.json')
+combined.save('output/bp_charts.html')
+spec = combined.to_dict()
 
-with open('bp_charts.json', encoding='utf-8') as file:
-    spec = json.load(file)
 print(spec['hconcat'][0]['mark'])
 print(spec['hconcat'][0]['encoding']['x'])
 print(spec['hconcat'][1]['encoding']['y'])
+with open('output/bp_charts.json', encoding='utf-8') as file:
+    print(json.load(file)['hconcat'][1]['encoding'] == spec['hconcat'][1]['encoding'])
 ```
 
-Expect three dictionaries: the point mark, the scatter's x encoding, and the bar's y encoding. Each `:Q` became `'type': 'quantitative'`, and `mean(...)` became `'aggregate': 'mean'`.
+Expect three dictionaries, then `True`: the saved file holds the same specification. Each `:Q` became `'type': 'quantitative'`, and `mean(...)` became `'aggregate': 'mean'`. Open `output/bp_charts.html` in a browser to hover and zoom.
 
 ```text
-{'type': 'point', 'filled': True, 'size': 90}
+{'type': 'point', 'filled': True, 'opacity': 0.6, 'size': 40}
 {'field': 'age', 'scale': {'zero': False}, 'title': 'Age (years)', 'type': 'quantitative'}
 {'aggregate': 'mean', 'field': 'systolic_bp', 'title': 'Mean systolic BP (mmHg)', 'type': 'quantitative'}
+True
 ```
 
 A shared browser chart needs its own text alternative, naming both views, their units, the comparison, and the limitation.
 
 ```python
-bp_alt = ('Two views of twelve patients. Left: scatter plot of systolic BP (mmHg) against age (years), '
-          'North as circles and South as squares; BP rises with age at both clinics, and South is a few '
-          'mmHg higher at similar ages. Right: bar chart of mean systolic BP per clinic, 131.0 for North '
-          'and 138.5 for South. Twelve synthetic patients describe these rows, not the clinics.')
+bp_alt = ('Two views of 300 synthetic patients from North and South clinics. Left: scatter plot of '
+          'systolic BP (mmHg) against age (years), North as circles and South as squares; BP rises '
+          'with age at both clinics, with wide spread at every age. Right: bar chart of mean systolic BP '
+          'per clinic, 123.9 for North and 130.5 for South. South patients are about 7 years older, '
+          'so the gap partly reflects age.')
 print(bp_alt)
 ```
 
@@ -278,34 +332,93 @@ Expect the paragraph printed in full. Check its two means against the bars' tool
 
 Continue on your own after class. These cells reuse the core results; if the runtime closed, run the cells above again first.
 
-### 1. A line chart with redundant cues and one annotation
+### 1. Calculate the lie factor
 
-A second prepared table: mean HbA1c (%) at four quarterly visits for patients in two diabetes programs. Lower is better. Each series gets its own color, marker, and line style, plus a direct label, so the chart needs no legend.
+The **lie factor** compares the change the drawing shows with the change in the data. On the draft's y-axis, which starts at 50, North's bars are 6 and 13 units tall.
 
 ```python
-visits = [1, 2, 3, 4]
-standard = [8.4, 8.2, 8.1, 8.0]
-education = [8.5, 8.0, 7.7, 7.5]
-display(pd.DataFrame({'visit': visits, 'standard_care': standard, 'group_education': education}))
-
-fig, ax = plt.subplots(figsize=(7, 4.5))
-ax.plot(visits, standard, color='#E69F00', marker='s', linestyle='--')
-ax.plot(visits, education, color='#0072B2', marker='o', linestyle='-')
-ax.text(4.08, standard[-1], 'Standard care', va='center')
-ax.text(4.08, education[-1], 'Group education', va='center')
-ax.annotate('0.5 points lower at visit 4', xy=(4, 7.5), xytext=(2.3, 7.4),
-            arrowprops=dict(arrowstyle='->'))
-ax.set(xlabel='Quarterly visit', ylabel='Mean HbA1c (%)', ylim=(7, 9), xlim=(0.8, 4.9),
-       title='HbA1c fell further in the group-education program')
-ax.set_xticks(visits)
-ax.spines[['top', 'right']].set_visible(False)
-plt.show()
-print(round(standard[-1] - education[-1], 1))
+before_pct = uptake.set_index('clinic').loc['North', '2024-25']
+after_pct = uptake.set_index('clinic').loc['North', '2025-26']
+baseline = 50
+shown_change = ((after_pct - baseline) - (before_pct - baseline)) / (before_pct - baseline)  # bar length
+data_change = (after_pct - before_pct) / before_pct                                          # the data
+print(f'Bars grow by {shown_change:.0%}')
+print(f'Uptake grows by (relative) {data_change:.1%}')
+print(f'Lie factor: {shown_change / data_change:.1f}')
 ```
 
-Expect two falling lines, orange dashed squares for Standard care and blue solid circles for Group education, each labeled at its right end, and an arrow from the annotation to the last blue point. `0.5` prints. This y-axis starts at 7 rather than 0: a line chart need not start at zero because position, not length, encodes the value, and the axis labels make the range clear.
+Expect `Bars grow by 117%`, `Uptake grows by (relative) 12.5%`, and `Lie factor: 9.3`: the drawing exaggerates North's change about ninefold.
 
-Its text alternative names the chart type, both programs, the pattern, and the limitation.
+### 2. Stack an Altair line chart above a bar chart
+
+`melt()` (Lecture 06) turns `uptake` into long form, one row per clinic and season. The season is ordinal, `:O`: its values have an order but are not measurements. `sort=` fixes the clinic order in the legend.
+
+```python
+uptake_long = uptake.melt(id_vars='clinic', value_vars=['2024-25', '2025-26'],
+                          var_name='season', value_name='vaccinated_pct')
+display(uptake_long)
+
+clinic_color = alt.Color('clinic:N', title='Clinic', sort=['North', 'South', 'East'])
+lines = alt.Chart(uptake_long).mark_line(point=True).encode(
+    x=alt.X('season:O', title='Season'),
+    y=alt.Y('vaccinated_pct:Q', title='Adults vaccinated (%)', scale=alt.Scale(zero=False)),
+    color=clinic_color,
+).properties(title='Flu vaccination by season', width=280, height=180)
+
+season_means = alt.Chart(uptake_long).mark_bar().encode(
+    x=alt.X('clinic:N', title='Clinic', sort=['North', 'South', 'East']),
+    y=alt.Y('mean(vaccinated_pct):Q', title='Two-season mean (%)'),
+    color=clinic_color,
+).properties(width=280, height=120)
+
+alt.vconcat(lines, season_means)
+```
+
+Expect six rows, then three two-point lines above three bars, blue for North, orange for South, and red for East. North's line climbs most steeply, from 56 to 63%. The bars reuse `clinic_color`, so both charts share one Clinic legend; North's two-season mean is 59.5%, South's 58.5%, and East's 61.5%.
+
+`json.dumps()` turns a dictionary into a JSON string, such as a value to store in one CSV cell, and `json.loads()` turns it back.
+
+```python
+text = json.dumps({'grain': 'one clinic in one season', 'seasons': 2})
+print(text)
+print(json.loads(text)['seasons'])
+```
+
+Expect `{"grain": "one clinic in one season", "seasons": 2}` and `2`.
+
+### 3. Small multiples on a shared scale
+
+`monthly` holds a year of visit counts for North, South, and East. `sharey=True` puts the three panels on one y-scale.
+
+```python
+axes = monthly.set_index('month').plot(subplots=True, sharey=True, figsize=(7, 6),
+                                       ylabel='Visits', title='Monthly clinic visits')
+plt.show()
+display(monthly[['North', 'South', 'East']].min())
+display(monthly[['North', 'South', 'East']].max())
+```
+
+Expect three stacked panels under the title Monthly clinic visits, all on one y-scale from about 14 to 262 visits. North runs from 201 visits in July to 251 in December; East's line stays flat near the bottom of its panel. Then the minimums, North 201, South 112, East 25, and the maximums, North 251, South 134, East 37. Without `sharey=True`, East's 25 to 37 visits would fill its panel and look as variable as North's.
+
+For an Altair version, `melt()` turns `monthly` into long form, one row per clinic and month. `pd.to_datetime()` (Lecture 05) builds a date from each month number, and `:T` marks the field as **temporal**, so the x-axis shows month names in time order.
+
+```python
+m = monthly.melt(id_vars='month', var_name='clinic', value_name='visits')
+m['date'] = pd.to_datetime('2025-' + m['month'].astype('string') + '-01', format='%Y-%m-%d')
+display(m.head(3))
+
+alt.Chart(m).mark_line(point=True).encode(
+    x=alt.X('date:T', title='Month'),
+    y=alt.Y('visits:Q', title='Visits'),
+    color=alt.Color('clinic:N', title='Clinic', sort=['North', 'South', 'East']),
+).properties(title='Monthly clinic visits', width=360, height=240)
+```
+
+Expect three rows of `m`: North in months 1 to 3, with 247, 249, and 240 visits and dates 2025-01-01 to 2025-03-01. Then one chart with three lines over January to December 2025: North near the top, dipping to 201 in July, South near 112 to 134, and East flat near the bottom. All three share one y-axis, as with `sharey=True`.
+
+### 4. Write the line chart's text alternative
+
+Name the chart type, both programs, the pattern, and the limitation.
 
 ```python
 line_alt = ('Line chart of mean HbA1c (%) at four quarterly visits for standard care and group '
@@ -315,18 +428,3 @@ print(line_alt)
 ```
 
 Expect the paragraph printed in full.
-
-### 2. Calculate the lie factor
-
-The **lie factor** compares the change the drawing shows with the change in the data. On a y-axis that starts at 50, North's bars are 6 and 13 units tall.
-
-```python
-baseline = 50
-shown_change = ((63 - baseline) - (56 - baseline)) / (56 - baseline)  # change in bar length
-data_change = (63 - 56) / 56                                          # change in the data
-print('Bars grow by', round(shown_change * 100), '%')
-print('Uptake grows by (relative)', round(data_change * 100, 1), '%')
-print('Lie factor:', round(shown_change / data_change, 1))
-```
-
-Expect `Bars grow by 117 %`, `Uptake grows by (relative) 12.5 %`, and `Lie factor: 9.3`: the drawing exaggerates North's change about ninefold.

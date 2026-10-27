@@ -55,6 +55,8 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 | Patient visits | One blood-pressure reading at one visit | One point | How much do individual readings vary? |
 | Clinic summary | One clinic in one month | One bar or line point | Which clinic's average changed more? |
 
+![The same 12 visits drawn twice: one mark per reading (left), one bar per clinic-month mean (right).](media/unit_grain.png)
+
 ## Separate data type from role
 
 - **Data type**: what a variable's values mean and which operations make sense.
@@ -70,12 +72,17 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 - **Exploratory visualization**: inspects patterns, distributions, or surprises while the question is still forming; quick, but still with truthful scales and labels.
 - **Explanatory visualization**: communicates one finding to a named audience; drops irrelevant alternatives, adds annotation, and uses a title that states what to notice without overstating the evidence.
 
+![The same weekly flu counts twice: a default quick look for yourself (left) and one stated finding with direct labels and an annotation for a reader (right).](media/exploratory_vs_explanatory.png)
+
 ## Think in marks and encodings
 
 - **Mark**: a visible object such as a point, line, or rectangle.
 - **Encoding**: maps a data value to a visible property: position, length, color, marker shape, or line style.
 - Position along a common scale supports more precise comparison than area or volume.
+
 - **Redundant encoding**: a second cue, such as marker shape, line style, or a direct label, paired with color. Color alone fails readers who cannot tell the hues apart and disappears in grayscale printing.
+
+![Four clinics' visits (42, 35, 30, 27) in four encodings: ranking is easy by position and length, hard by angle and area.](media/encoding_accuracy.png)
 
 ## Write the contract down
 
@@ -117,7 +124,7 @@ dtype: object
 
 ## The Right Chart for the Job
 
-![Six common jobs and the chart each one calls for. Pie charts, not shown, split a whole into parts; use them sparingly, because comparing angles is harder than comparing lengths.](media/chart_selection.png)
+![Six common jobs and the chart each one calls for, drawn from clinic data. Pie charts, not shown, split a whole into parts; use them sparingly, because comparing angles is harder than comparing lengths.](media/chart_selection.png)
 
 ![xkcd 1845: State Word Map. If flexible method choices can produce any headline, the chart is not evidence.](media/xkcd_1845.png)
 
@@ -256,6 +263,8 @@ Expected result: blue squares joined by a dashed line, readable in grayscale.
 - **Spines**: the frame lines; the top and right ones carry no data, so hiding them leaves more attention for the marks.
 - `fig.savefig()` writes the whole Figure to a file whose extension picks the file type.
 
+![Tufte, _Seeing with Fresh Eyes_, p. 63: the Financial Times' March 2020 chart of cumulative COVID-19 deaths names each country at its line end and notes lockdowns and testing on the lines themselves.](media/tufte_covid_annotations.jpg)
+
 ### Reference Card: Annotate, Declutter, and Save
 
 - `ax.annotate(text, xy=(x, y), xytext=(x2, y2), arrowprops=dict(arrowstyle='->'))`: Put `text` at `xytext` with an arrow pointing to the data point `xy`. Add `color=` for the text, and a `color=` inside `arrowprops` for the arrow.
@@ -274,6 +283,8 @@ ax.annotate('Peak: 51 visits', xy=(3, 51), xytext=(1.5, 50),
 ```
 
 Expected result: text inside the plot, left of the peak, with an arrow ending at the week-3 point.
+
+![The North line with its week-3 peak annotated and the top and right spines hidden.](media/annotated_flu_line.png)
 
 ### Code Snippet: Save the Figure
 
@@ -339,6 +350,8 @@ pandas hands the data to matplotlib using two rules:
 	Otherwise the x-axis shows row numbers and a `week` column is drawn as one more line: run `set_index('week')` first.
 </callout>
 
+![Without `set_index`, week becomes one more line over row numbers 0 to 3 (left); after it, week is the x-axis (right).](media/pandas_index_before_after.png)
+
 `weekly` was built with `set_index('week')`, so its index is named `week` (weeks 1 to 4), with North counts `[42, 45, 51, 48]` and South counts `[30, 33, 31, 36]`.
 
 ### Code Snippet: The Index Becomes the x-Axis
@@ -363,7 +376,8 @@ Expected output: two lines, one per clinic, with `week` on the x-axis and a lege
 | :--- | :--- | :--- |
 | `df.plot()` | Line plot: index on x, one line per numeric column | `Axes` |
 | `df.plot(ax=axes[0, 1])` | Draw into an existing Axes instead of a new figure | That Axes |
-| `df.plot(kind='bar')` | Compare values across categories | `Axes` |
+| `df.plot(kind='bar')` | Compare values across categories; `kind='barh'` draws horizontal bars, which fit long category names | `Axes` |
+| `s.value_counts().sort_values().plot.barh()` | Count each category of one column and draw the counts, largest on top | `Axes` |
 | `df.plot(kind='hist', bins=...)` | Inspect numeric distributions | `Axes` |
 | `df.plot(kind='scatter', x='col1', y='col2')` | Inspect a two-variable relationship | `Axes` |
 | `df.plot(kind='box')` | Compare distributions and outliers | `Axes` |
@@ -379,6 +393,16 @@ weekly.plot(kind='bar', ylabel='Flu visits')
 ```
 
 Expected result: one pair of bars per week, starting at zero.
+
+### Code Snippet: Count a Category Column
+
+On the `visits` table from the dtype snippet (two North visits, two South):
+
+```python
+visits['clinic'].value_counts().sort_values().plot.barh(xlabel='Visits')
+```
+
+Expected result: two horizontal bars of length 2, one per clinic.
 
 ### Code Snippet: A Correlation Matrix
 
@@ -403,13 +427,7 @@ display(weekly[['North', 'South']].corr())
 | `title=...`, `xlabel=...`, `ylabel=...` | Add reader-facing context | Labeled plot |
 | `legend=True`, `grid=True` | Decode series or add restrained guides | Updated `Axes` |
 
-One panel per group, same y-scale:
-
-```text
-North panel ┐
-South panel ├── same y-scale: a higher line means a higher count
-East panel  ┘
-```
+![Unshared y-axes make East's 22 to 38 visits look as busy as North's 200 to 260 (left); `sharey=True` shows the gap (right).](media/sharey_comparison.png)
 
 ### Code Snippet: Separate Groups on a Shared Scale
 
@@ -451,6 +469,8 @@ Each plotting function below takes the DataFrame as `data=` and column names for
 | `errorbar=None` | Hide the error band or bar on lineplot/barplot | Updated `Axes` |
 | `ax.get_lines()[0].get_ydata()` | Read back the y-values of the first line drawn, to check what a plot shows | NumPy array |
 
+![A correlation heatmap of five measures in 2,400 synthetic patients: red where columns rise together, blue where daily steps fall as age, systolic BP, BMI, and glucose rise.](media/correlation_heatmap.png)
+
 ### Code Snippet: Load a Teaching Dataset
 
 ```python
@@ -475,6 +495,8 @@ Each point is one country-year; country uses both color and shape.
 - Their default **95% confidence interval** shows uncertainty in the estimated mean, not the spread of individual readings. Lines use a shaded band; bars use error bars. `errorbar=None` hides this interval without changing the mean.
 - The unit displayed silently changes from one reading to an average, so say so in the axis label or title.
 
+![The snippet's six readings: seaborn draws one mean per week with a 95% confidence band (left); `errorbar=None` draws the means 143.3 and 139.7 alone (right).](media/seaborn_grain.png)
+
 ### Code Snippet: seaborn Averages Repeated x Values
 
 ```python
@@ -494,7 +516,7 @@ print(ax.get_lines()[0].get_ydata())  # y-values seaborn drew, one mean per week
 - **Density plot**, or **KDE** (kernel density estimate): a distribution drawn as a smooth curve by putting a small bump on every observation and adding them up, so its shape does not depend on where histogram bins start.
 - It shows shapes a mean or box plot hides, such as the two peaks (**bimodal**) of fasting glucose in a clinic that serves people with and without diabetes.
 
-![Twelve fasting glucose readings (mg/dL): the pandas (left) and seaborn (middle) density curves peak near 94 and 163, and `bw_adjust=0.5` sharpens both peaks.](media/distribution_reference.png)
+![Twelve fasting glucose readings (mg/dL): the pandas (left) and seaborn (middle) density curves peak near 94 and 163, `bw_adjust=0.5` sharpens both peaks, and 10 mg/dL histogram bins (right) show the same two clusters.](media/distribution_reference.png)
 
 ## Density Plots in pandas and seaborn
 
@@ -564,7 +586,11 @@ Raise it by removing ink that carries no data:
 - **Labels**: label series directly when space allows; remove repeated labels and ticks.
 - **Decoration**: remove 3D effects and shadows, which distort perception.
 
-![Left: Low data-ink ratio with excessive decoration. Right: High data-ink ratio focusing on the data.](media/tufte_data_ink_ratio.png)
+![Tufte, _The Visual Display of Quantitative Information_, p. 127: erase the frame, then the axis line except its ticks, then cut a white grid through the bars; every bar stays and the ink drops.](media/tufte_erase_non_data_ink.png)
+
+![Tufte, _Envisioning Information_, p. 59: a thick grid swallows the ECG trace (top); a screened-down grid stays behind 12 leads (bottom).](media/tufte_ecg_grid.jpg)
+
+![A Tufte-style box plot of stations reporting each earthquake magnitude: a dot for the median and gaps for the middle half replace the box and its frame.](media/minimal-boxplot.png)
 
 ### Chartjunk
 
@@ -573,7 +599,11 @@ Raise it by removing ink that carries no data:
 - Color or a fill pattern is data ink only when it encodes something, such as which group a bar belongs to.
 - The same pattern on every bar is chartjunk.
 
-![Before (left): five colors repeat the clinic labels, and one hatch pattern carries no information. After (right): one color, sorted bars, and each value written at the bar's end.](media/tufte_bar_comparison.png)
+![Tufte, _The Visual Display of Quantitative Information_, p. 109: a medical journal's 3D striped pyramids of regurgitation severity in 31 patients hide one another, and their depth encodes nothing.](media/tufte_chartjunk_pyramids.png)
+
+![A 3D stacked bar of greenhouse-gas emissions on a smokestack photo, redrawn as flat bars with three annotations and a line chart of each gas's share, labeled at the line ends.](media/greenhouse_redesign.png)
+
+![Before (left): five colors repeat the clinic labels, and one fill pattern carries no information. After (right): one color, sorted bars, and each value written at the bar's end.](media/tufte_bar_comparison.png)
 
 ### Lie Factor
 
@@ -588,6 +618,8 @@ Lie Factor = (Size of effect shown in graphic) / (Size of effect in data)
 - **Data change**: compliance rises by 1 percentage point, a relative increase of `100 × (97 - 96) / 96 ≈ 1.04%`.
 - **Result**: `100 / 1.04 ≈ 96`; the graphic exaggerates the relative increase about 96-fold.
 
+![Tufte, _The Visual Display of Quantitative Information_, p. 57: fuel standards rise 53% (18 to 27.5 mpg), but the line for 27.5 is 783% longer than the line for 18, a lie factor of 14.8.](media/tufte_lie_factor_fuel_economy.png)
+
 ![Hand-hygiene compliance of 96% and 97%: on a 95% baseline (left) April's bar is twice as tall; from zero (right) the bars differ by one point, as the data do.](media/tufte_lie_factor.png)
 
 Common distortions to avoid:
@@ -597,17 +629,25 @@ Common distortions to avoid:
 - **Inconsistent scales**: make equal values look different across panels.
 - **Cherry-picked dates**: hide parts of a trend that change the conclusion.
 
+![Bar lengths that do not follow their values: curved leader lines carry each brand's count to an axis whose values fall from left to right at uneven spacing, so no length can be read.](media/social_media.png)
+
 ![xkcd 1725: Linear Regression. Finding a dog-shaped constellation in the points does not make it evidence.](media/xkcd_1725.png)
 
 ### Small Multiples
 
 **Small multiples** are small, repeated charts on one shared scale, so readers compare categories or time periods at a glance; `sharey=True` from the pandas section draws them.
 
+![About 30 years of gold returns as overlapping lines in one panel: only the highlighted 2020 line can be followed.](media/gold.jpg)
+
 ![Six clinics on one shared y-axis, so Central's tall week-6 flu peak and West's low week-8 peak compare at a glance.](media/tufte_small_multiples.png)
+
+![Tufte, _The Visual Display of Quantitative Information_, p. 172: twelve samples of 50 normal values drawn on the same axes; several look bimodal by chance alone.](media/tufte_small_multiples_sampling.png)
 
 ### Show the Detail
 
 Show as much detail as the data allow instead of aggregating it away; Tufte calls these **high-resolution data graphics**.
+
+![1,000 Fiji earthquakes, each one a point of depth and magnitude, with a histogram on each margin: the two depth clusters stay visible.](media/complicated-ink.png)
 
 ![Charles Minard's 1869 map of Napoleon's march on Moscow: the band's width is the army's size, its path the route, and the line below the temperature on the retreat, six variables in one drawing](media/napoleon.webp)
 
@@ -630,6 +670,10 @@ Match the palette to the data type:
 - **Diverging:** data with a meaningful midpoint, such as a change from baseline or a correlation; two contrasting hues that meet at the midpoint, like `cmap='RdBu_r', center=0` in the seaborn heatmap card.
 - **Qualitative:** categories with no inherent order, such as clinics; distinct, unrelated hues.
 
+![Tufte, _Envisioning Information_, p. 91: height in tan and depth in blue, each darker with distance from sea level, a diverging scale around a real zero.](media/tufte_bathymetric_diverging.jpg)
+
+![Tufte, _Envisioning Information_, p. 82: saturated, unrelated hues at full strength over large areas turn a county map of heating fuels into noise.](media/tufte_garish_color_map.jpg)
+
 ## Make the chart accessible
 
 An **accessible** chart lets readers recover its comparison whatever their eyesight, screen, or printer.
@@ -641,9 +685,15 @@ An **accessible** chart lets readers recover its comparison whatever their eyesi
 - Do not rely on hover interaction to reveal essential values.
 - Provide a concise **text alternative** or caption that states the chart type, axes, main pattern, and a relevant limitation.
 
+![Tufte, _Seeing with Fresh Eyes_, p. 63: a legend in a different order from the lines uses over 40% of the space (left); each line named in its own color at its end needs no lookup (right).](media/tufte_direct_labels.png)
+
+![Tufte, _Seeing with Fresh Eyes_, p. 55: letter keys send the reader to a caption to decode two suturing results (top); words under each drawing say what it shows (bottom).](media/tufte_letter_codes_vs_labels.png)
+
 Example text alternative:
 
 > Line chart of mean systolic blood pressure (mmHg) at five follow-up visits for a standard-care clinic and a nurse-led clinic. Both fall across the visits; the nurse-led series drops from 153 to 135 mmHg and finishes 9 mmHg below standard care. These are descriptive clinic summaries; patients were not randomized, so the chart does not show that the nurse-led model caused the difference.
+
+![Printed in grayscale, markers, line styles, hatches, direct labels, and values on the bars still tell each series apart.](media/accessible_charts.png)
 
 ### Reference Card: Redundant Cues for Bars and Lines
 
@@ -655,7 +705,7 @@ Example text alternative:
 
 ### Code Snippet: Directly Label a Line
 
-On the chart described above, the nurse-led series ends at 135 mmHg at visit 5:
+On the left chart above, the nurse-led series ends at 135 mmHg at visit 5:
 
 ```python
 ax.text(5.08, 135, 'Nurse-led', va='center')
@@ -693,6 +743,8 @@ Expected result: `58%` and `64%` appear above North's bars.
 ## Data, Mark, and Typed Encodings
 
 An Altair chart is **data → mark → typed encodings**, and each field carries a type letter from the contract's data types: categorical → `:N` (nominal), ordinal → `:O`, quantitative → `:Q`, temporal → `:T`.
+
+![The `study` table built in three steps: a mark with quantitative x and y; color and shape typed `:N` for clinic; then axis titles with units and a y-scale that starts near the data.](media/altair_three_steps.png)
 
 ### Reference Card: Altair chart construction
 

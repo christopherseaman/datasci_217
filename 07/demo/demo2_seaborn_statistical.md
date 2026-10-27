@@ -17,13 +17,13 @@ jupyter:
 
 # Demo 2: pandas plotting, seaborn, and density
 
-- seaborn on real health-spending data.
 - Quick pandas plots of clinic visit tables.
-- A correlation matrix saved to CSV.
-- A check on what a seaborn line actually averages.
+- seaborn on real health-spending data.
 - Density plots of fasting glucose.
+- Counts, correlations, and heatmaps for 2,400 patients.
+- A check on what a seaborn line or bar actually averages.
 
-The clinic tables and glucose values are synthetic; `healthexp` is real OECD data, supplied as a Parquet file for this demo.
+The patient and clinic tables are synthetic; `healthexp` is real OECD data, supplied as a Parquet file for this demo.
 
 Run the cells from top to bottom.
 
@@ -32,17 +32,29 @@ Run the cells from top to bottom.
 %pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
 ```
 
+This supplied cell downloads `healthexp.parquet` and `generate_data.py` when they are missing, runs `generate_data.build()` to write the two synthetic tables into `data/` if they are not there yet, then loads all three tables.
+
 ```python
 from pathlib import Path
 from urllib.request import urlretrieve
 
+import pandas as pd
+
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/07/demo"
-if not Path("healthexp.parquet").exists():
-    urlretrieve(f"{REPO_RAW}/healthexp.parquet", "healthexp.parquet")
-print("Ready: healthexp.parquet")
+for filename in ["healthexp.parquet", "generate_data.py"]:
+    if not Path(filename).exists():
+        urlretrieve(f"{REPO_RAW}/{filename}", filename)
+if not (Path("data/patients.parquet").exists() and Path("data/clinic_monthly.parquet").exists()):
+    import generate_data
+    generate_data.build()
+
+patients = pd.read_parquet("data/patients.parquet")
+clinic_monthly = pd.read_parquet("data/clinic_monthly.parquet")
+health = pd.read_parquet("healthexp.parquet")
+print(patients.shape, clinic_monthly.shape, health.shape)
 ```
 
-Expect `Ready: healthexp.parquet`.
+Expect `(2400, 8) (12, 4) (274, 4)`: 2,400 patients, 12 months of visits, and 274 country-years.
 
 ## Core walkthrough
 
@@ -54,8 +66,6 @@ Make `week` the index with `set_index()` (Lecture 06), so each clinic becomes on
 
 ```python
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 import seaborn as sns
 
 sns.set_style('whitegrid')
@@ -88,14 +98,12 @@ Expect three lines, not two. The x-axis runs 0 to 9, and `week` is drawn as a th
 `healthexp` has one row per country per year with data: health spending per person in US dollars and life expectancy in years, for six countries from 1970 to 2020 (274 rows; France reports every 5 years before 1990, and Canada starts in 1971).
 
 ```python
-health = pd.read_parquet('healthexp.parquet')
-print(health.shape)
 display(health.head())
 print(health['Country'].nunique(), 'countries,', health['Year'].min(), 'to', health['Year'].max())
 display(health.loc[(health['Country'] == 'USA') & (health['Year'] == 2020)])
 ```
 
-Expect `(274, 4)`, then `6 countries, 1970 to 2020`, and one USA row for 2020 with spending of about 11,860 USD and a life expectancy of 77.0 years.
+Expect `6 countries, 1970 to 2020`, and one USA row for 2020 with spending of about 11,860 USD and a life expectancy of 77.0 years.
 
 seaborn takes the DataFrame and column names, and maps each column to an encoding: position (`x=`, `y=`) and color (`hue=`).
 
@@ -113,17 +121,15 @@ Expect one point per country-year, with color and shape identifying the country.
 
 ### 3. Density plots: a distribution a mean would hide
 
-Fasting glucose in a clinic that serves people with and without diabetes: 300 readings centered near 95 mg/dL and 100 near 165 mg/dL. `95 + 8 * rng.standard_normal(300)` gives 300 bell-curve values around 95 that spread by about 8 mg/dL, and `pd.concat(..., ignore_index=True)` (Lecture 06) stacks the two groups into one Series.
+`patients['fasting_glucose']` holds one fasting glucose reading per patient, from a clinic network that serves people with and without diabetes.
 
 ```python
-rng = np.random.default_rng(42)
-without_diabetes = pd.Series(95 + 8 * rng.standard_normal(300))   # mg/dL
-with_diabetes = pd.Series(165 + 25 * rng.standard_normal(100))    # mg/dL
-glucose = pd.concat([without_diabetes, with_diabetes], ignore_index=True)
-print(len(glucose), 'readings; mean', round(glucose.mean(), 1), 'median', round(glucose.median(), 1))
+glucose = patients['fasting_glucose']
+display(patients.head())
+print(f'{len(glucose)} readings; mean {glucose.mean():.1f}, median {glucose.median():.1f}')
 ```
 
-Expect `400 readings; mean 112.9 median 97.5` (mg/dL). Neither number shows that there are two groups; a density plot does.
+Expect `2400 readings; mean 107.4, median 96.0` (mg/dL). Neither number shows that there are two groups; a density plot does.
 
 ```python
 fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
@@ -131,8 +137,9 @@ fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
 sns.histplot(x=glucose, kde=True, ax=axes[0])
 axes[0].set(title='Histogram + density', xlabel='Fasting glucose (mg/dL)')
 
+sns.kdeplot(x=glucose, ax=axes[1], label='default')
 sns.kdeplot(x=glucose, bw_adjust=0.3, ax=axes[1], label='bw_adjust=0.3')
-sns.kdeplot(x=glucose, bw_adjust=2, ax=axes[1], label='bw_adjust=2')
+sns.kdeplot(x=glucose, bw_adjust=3, ax=axes[1], label='bw_adjust=3')
 axes[1].set(title='Bandwidth changes the story', xlabel='Fasting glucose (mg/dL)')
 axes[1].legend()
 
@@ -143,51 +150,79 @@ fig.tight_layout()
 plt.show()
 ```
 
-Expect a tall peak near 95 and a lower, wider hump around 170 to 180 mg/dL in the left and right panels. In the middle, `bw_adjust=0.3` keeps both peaks but adds small wiggles, while `bw_adjust=2` blurs them into one broad hump with a flat shoulder, so the second group is easy to miss. The middle and right y-axes are density, not a count; the left panel keeps the histogram's counts and scales its curve to match.
+Expect a tall peak near 95 mg/dL and a low, wide hump near 160 mg/dL in all three panels. In the middle, the default and `bw_adjust=0.3` curves both keep the two peaks, and `bw_adjust=0.3` adds small wiggles; `bw_adjust=3` blurs them into one broad hump with a shoulder, so the second group is easy to miss. The middle and right y-axes are density, not a count; the left panel keeps the histogram's counts and scales its curve to match.
 
 ## Independent practice
 
 Continue on your own after class. If the runtime closed, run the cells above again first.
 
-### 1. One table, four views
+### 1. Count and compare patients
 
-`kind=` picks the mark, and `ax=` draws into one panel of a `plt.subplots()` grid.
+`kind='bar'` draws one group of bars per index value, here one pair per week from the `weekly` table above.
+
+```python
+ax = weekly.plot(kind='bar', ylabel='Flu visits', title='Weekly flu visits by clinic')
+plt.show()
+```
+
+Expect one pair of bars per week, North in blue and South in orange, on a y-axis that starts at 0. North peaks at 51 visits in week 6.
+
+`kind=` picks the mark, and `ax=` draws into one panel of a `plt.subplots()` grid. Each panel answers a different question about the same 2,400 rows.
 
 ```python
 fig, axes = plt.subplots(2, 2, figsize=(11, 8))
-weekly.plot(ax=axes[0, 0], marker='o', ylabel='Flu visits', title='Line: visits each week')
-weekly.plot(kind='bar', ax=axes[0, 1], ylabel='Flu visits', title='Bar: visits each week')
-weekly.plot(kind='box', ax=axes[1, 0], ylabel='Flu visits', title='Box: spread of weekly visits')
-weekly.plot(kind='hist', bins=8, alpha=0.6, ax=axes[1, 1], title='Histogram: weekly visit counts')
-axes[1, 1].set_xlabel('Flu visits in a week')
+patients['clinic'].value_counts().sort_values().plot.barh(
+    ax=axes[0, 0], xlabel='Patients', title='Patients per clinic')
+patients.plot(kind='scatter', x='age', y='systolic_bp', alpha=0.2, ax=axes[0, 1],
+              xlabel='Age (years)', ylabel='Systolic BP (mmHg)', title='Age and blood pressure')
+patients[['systolic_bp']].plot(kind='box', ax=axes[1, 0], ylabel='Systolic BP (mmHg)',
+                               title='Spread of systolic BP')
+patients['systolic_bp'].plot(kind='hist', bins=23, ax=axes[1, 1], title='Systolic BP readings')
+axes[1, 1].set_xlabel('Systolic BP (mmHg)')
 fig.tight_layout()
 plt.show()
 ```
 
-Expect four panels from the same ten rows. The bar panel has ten pairs of bars, one pair per week, starting at 0. The box panel shows North's box taller and higher than South's, because North's weekly counts vary more.
+Expect four panels. The bars run West (300), East (500), South (700), North (900), largest on top. The scatter is a wide cloud that drifts upward with age; `alpha=0.2` makes overlapping points darker. The box runs from 112 to 136 mmHg with a median of 124, and its circles above 172 mmHg are high outliers (53 patients). The histogram shows the same long right tail.
+
+A Series has one column of values, so `kind='pie'` needs no `y=`: each clinic's count becomes one slice.
+
+```python
+ax = patients['clinic'].value_counts().plot(kind='pie', ylabel='', title='Share of patients by clinic')
+plt.show()
+```
+
+Expect four slices from largest to smallest: North, South, East, West (900, 700, 500, and 300 of 2,400 patients).
 
 ### 2. Small multiples with a shared y-axis
 
-`subplots=True` gives each clinic its own panel; `sharey=True` puts every panel on one y-scale, so the levels compare directly.
+`subplots=True` gives each clinic its own panel. Without `sharey=True`, each panel picks its own y-range, so a small clinic looks as busy as a large one.
 
 ```python
-monthly = pd.DataFrame({
-    'month': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    'North': [410, 395, 380, 350, 330, 320],
-    'South': [260, 270, 265, 280, 290, 300],
-    'East': [150, 160, 170, 165, 180, 175],
-}).set_index('month')
+monthly = clinic_monthly.set_index('month')
 display(monthly)
 
-axes = monthly.plot(subplots=True, sharey=True, figsize=(8, 7),
-                    title='Primary-care visits by month', ylabel='Visits', grid=True)
+axes = monthly.plot(subplots=True, figsize=(8, 7),
+                    title='Primary-care visits by month (own y-scales)', ylabel='Visits', grid=True)
 plt.tight_layout()
 plt.show()
-print(axes.shape)
 print(axes[0].get_ylim() == axes[2].get_ylim())  # get_ylim() reads back the limits set_ylim() sets
 ```
 
-Expect three stacked panels on the same y-scale: North high and falling, South rising, East lowest. `(3,)` and `True` print: one Axes per clinic, and North's and East's panels share limits.
+Expect three stacked panels that all look equally busy: each line fills its own panel because each panel picks its own y-range (North 201 to 251 visits, East 25 to 37). `False` prints: North's and East's panels have different limits.
+
+`sharey=True` puts every panel on one y-scale, so the levels compare directly.
+
+```python
+axes = monthly.plot(subplots=True, sharey=True, figsize=(8, 7),
+                    title='Primary-care visits by month (shared y-scale)', ylabel='Visits', grid=True)
+plt.tight_layout()
+plt.show()
+print(axes.shape)
+print(axes[0].get_ylim() == axes[2].get_ylim())
+```
+
+Expect the same three panels on one shared scale up to about 260 visits: North high, South in the middle, East near the bottom with an almost flat line. `(3,)` and `True` print: one Axes per clinic, and North's and East's panels share limits.
 
 ### 3. Country trends and distributions
 
@@ -208,48 +243,60 @@ Expect two panels: the legend identifies each country's line by color and dash p
 
 ### 4. A correlation matrix, its heatmap, and a CSV
 
-`corr()` needs numeric columns. `Country` holds words, so asking for every column fails.
+`corr()` needs numeric columns. `patients` also holds text columns (`patient_id`, `clinic`, `sex`), so asking for every column fails.
 
 _Intentional error:_ correlate the whole table. `try`/`except` (Lecture 02) catches the error so the notebook keeps running.
 
 ```python
 try:
-    health.corr()
+    patients.corr()
 except ValueError as error:
     print('ValueError:', error)
 ```
 
-Expect a `ValueError` that mentions a country name such as `'Germany'`: pandas cannot turn that text into a number.
+Expect `ValueError: could not convert string to float: 'M'`: pandas cannot turn the text in `sex` into a number.
 
 **The fix:** list the numeric columns yourself.
 
 ```python
-corr = health[['Year', 'Spending_USD', 'Life_Expectancy']].corr()
-display(corr.round(2))
+corr = patients[['age', 'systolic_bp', 'bmi', 'steps_per_day', 'fasting_glucose']].corr()
+display(corr)
 ```
 
-Expect a 3-by-3 table with `1.0` down the diagonal, `0.83` for Year and spending, `0.90` for Year and life expectancy, and `0.58` for spending and life expectancy. All three rise together over time; a correlation measures straight-line association, not cause.
+Expect a 5-by-5 table with `1.000000` down the diagonal. Age goes with higher systolic BP (`0.401`) and fewer daily steps (`-0.410`); BMI also goes with fewer steps (`-0.392`). Steps is the only column with negative correlations. A correlation measures straight-line association, not cause.
 
 A heatmap turns the same numbers into color. For correlations, a two-hue palette centered at 0 over the full range from -1 to 1 keeps the colors honest.
 
 ```python
-fig, ax = plt.subplots(figsize=(6, 4.5))
+fig, ax = plt.subplots(figsize=(7, 5.5))
 sns.heatmap(corr, annot=True, cmap='RdBu_r', center=0, vmin=-1, vmax=1, ax=ax)
-ax.set_title('Correlations, six countries, 1970-2020')
+ax.set_title('Correlations among five measures, 2,400 patients')
 plt.show()
 ```
 
-Expect nine cells with their values written in them, all in shades of red because every correlation is positive; the color bar runs from blue at -1 through white at 0 to dark red at 1.
+Expect 25 cells with their values written in them: red where two columns rise together, blue in the `steps_per_day` row and column, and pale cells near 0, such as `0.094` for systolic BP and glucose. The color bar runs from blue at -1 through white at 0 to dark red at 1.
 
 The row labels are data here, so keep them when saving, and name the column they land in.
 
 ```python
-corr.round(3).to_csv('health_corr.csv', index=True, index_label='feature')
-with open('health_corr.csv', encoding='utf-8') as file:
+Path('output').mkdir(exist_ok=True)
+corr.to_csv('output/health_corr.csv', index=True, index_label='feature')
+with open('output/health_corr.csv', encoding='utf-8') as file:
     print(file.read())
 ```
 
-Expect four lines: a header starting `feature,Year,Spending_USD,Life_Expectancy`, then one line per variable, such as `Spending_USD,0.826,1.0,0.579`.
+Expect six lines: a header starting `feature,age,systolic_bp,bmi,steps_per_day,fasting_glucose`, then one line per variable at full precision, such as `age,1.0,0.40107239526711,0.09952032367181005,...`.
+
+`sns.heatmap()` colors any wide table of numbers, not only correlations: here one row per month and one column per clinic.
+
+```python
+fig, ax = plt.subplots(figsize=(5, 6))
+sns.heatmap(data=monthly, annot=True, fmt='d', cmap='Blues', ax=ax)
+ax.set(title='Visits by month and clinic', xlabel='Clinic', ylabel='Month')
+plt.show()
+```
+
+Expect a 12-by-3 grid with each visit count written in its cell (`fmt='d'` prints whole numbers). North's column is the darkest, from 201 in July to 251 in December; East's column stays pale, at 25 to 37.
 
 ### 5. Watch the grain: what a seaborn line averages
 
@@ -278,3 +325,18 @@ display(pd.DataFrame({'line_y': line_y, 'mean_by_hand': by_hand}, index=[1, 2, 3
 ```
 
 Expect 12 points on the left and a four-point line on the right. The table lists the line's y-values beside the weekly means computed by hand; the two columns match (145.0, 141.67, 139.0, 135.67). The unit displayed changed from one reading to a weekly mean, so the right panel's axis label says so.
+
+`sns.barplot()` averages the same way: each bar is the mean systolic BP of every patient in one clinic and sex.
+
+```python
+fig, axes = plt.subplots(1, 2, figsize=(11, 4), sharey=True)
+sns.barplot(data=patients, x='clinic', y='systolic_bp', hue='sex', ax=axes[0])
+axes[0].set(title='Mean with 95% CI', ylabel='Mean systolic BP (mmHg)')
+axes[0].legend(title='Sex', loc='lower center')
+sns.barplot(data=patients, x='clinic', y='systolic_bp', hue='sex', errorbar=None, ax=axes[1])
+axes[1].set(title='errorbar=None', ylabel='Mean systolic BP (mmHg)')
+axes[1].legend(title='Sex', loc='lower center')
+plt.show()
+```
+
+Expect eight bars, one per clinic and sex: South's are tallest (about 130 mmHg) and West's lowest (about 120). Each bar is a mean, not one reading. The black lines on the left are 95% confidence intervals for each mean; `errorbar=None` on the right removes them and leaves the means unchanged.

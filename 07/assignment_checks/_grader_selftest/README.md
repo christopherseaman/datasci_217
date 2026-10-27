@@ -21,7 +21,8 @@ files, builds submissions in ignored `scratch/`, and confirms that:
   another letter case;
 - each single mistake (a circle mark, a missing or mistyped encoding, swapped
   axes, a changed or missing patient, data linked by URL, a missing or
-  non-PNG chart, a blank or missing critique entry, an extra, misnamed, or
+  non-PNG chart, a chart saved with empty axes or drawn only in gray, a blank
+  or missing critique entry, an extra, misnamed, or
   missing column, a wrong or missing row, a blank or missing contract string,
   a wrong data type, including `categorical (ordered)` for `program` and
   `categorical, not ordinal` for `visit_number`, a wrong value in a
