@@ -588,9 +588,10 @@ def run_handout() -> None:
         )
 
     # The handout's only Python files are the checks; the self-test stays here.
-    # A student's gitignored .venv/ is not part of the handout.
+    # A student's gitignored .venv/ and the downloaded .checks/ cache are not part of the handout.
     handout_python = {
-        path.relative_to(HANDOUT).as_posix() for path in HANDOUT.rglob("*.py") if ".venv" not in path.parts
+        path.relative_to(HANDOUT).as_posix() for path in HANDOUT.rglob("*.py")
+        if ".venv" not in path.parts and ".checks" not in path.parts
     }
     assert handout_python == set(files) - {".github/test/requirements.txt"}, sorted(handout_python)
     assert not (HANDOUT / "_grader_selftest").exists()

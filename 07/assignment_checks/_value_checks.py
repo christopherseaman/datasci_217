@@ -862,8 +862,8 @@ def _check_data_type(root: Path, column: str) -> None:
         )
     elif column == "visit_number" and found == "quantitative":
         hint = " visit_number's numbers give the visits' order; the gaps between visits are not measured amounts."
-    elif column == "visit_number":
-        hint = " visit_number is the visits' order, not a date."
+    elif column == "visit_number" and found == "categorical":
+        hint = " Categorical names groups with no order; visit_number's values are the 1st, 2nd, 3rd visit, so they have one."
     else:
         hint = ""
     _assert(
