@@ -38,7 +38,7 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 
 # From the Trenches
 
-![Max Kennerly on Bluesky: "BOOM! Finally somebody takes down those arrogant little preschoolers and their so-called art."](media/trenches_creativity_post.png)
+![Max Kennerly on Bluesky: "BOOM! Finally somebody takes down those arrogant little preschoolers and their so-called art: ..."](media/trenches_creativity_post.png)
 
 [PLOS ONE: adults outperformed children on externally rated creativity](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0346553)
 
@@ -156,7 +156,7 @@ Figure (fig)
 
 | Call | Purpose and key arguments | Output |
 | :--- | :--- | :--- |
-| `import matplotlib.pyplot as plt` | Load pyplot under its standard alias; the snippets below also assume `import numpy as np` and `import pandas as pd` | `plt` |
+| `import matplotlib.pyplot as plt` | Load pyplot under its standard alias; the snippets in this lecture also assume `import numpy as np` and `import pandas as pd` | `plt` |
 | `plt.subplots(rows, cols, figsize=(w, h))` | Create a figure and a grid of Axes, with dimensions in inches | `Figure` plus one Axes or an array of Axes |
 | `plt.figure(figsize=(w, h))` | Create an empty figure (pyplot shortcut style) | `Figure` |
 | `plt.plot()`, `plt.title()`, `plt.xlabel()` | Pyplot shortcuts for `ax.plot()`, `ax.set_title()`, `ax.set_xlabel()` on whichever Axes is current: fine for a sketch, confusing with several panels | Updated current Axes |
@@ -186,11 +186,10 @@ print(type(axes[0]))
 ### Reference Card: Axes Plotting Methods
 
 - `ax.plot(x, y)`: Draw a line through the points in order; use for trends over an ordered x such as time.
-- `ax.scatter(x, y, alpha=0.6)`: Draw one point per observation; `alpha` (0 to 1) makes overlapping points see-through.
+- `ax.scatter(x, y, s=15, alpha=0.6)`: Draw one point per observation; `s` sets each marker's area, and `alpha` (0 to 1) makes overlapping points see-through.
 - `ax.bar(categories, heights)`: Draw one bar per category, starting at zero.
 - `ax.hist(values, bins=30)`: Count values in 30 equal-width bins and draw one bar per bin.
 - `ax.boxplot([group_a, group_b], tick_labels=['A', 'B'])`: Draw the median, quartiles, and outliers of each group.
-- `ax.set(title=..., xlabel=..., ylabel=...)`: Name the comparison and label each axis with its measurement unit.
 
 ### Code Snippet: Draw a Line
 
@@ -220,7 +219,7 @@ Expected result: four bars with counts 3, 5, 2, and 2.
 
 | Call | Purpose and key arguments | Output |
 | :--- | :--- | :--- |
-| `ax.set(title=..., xlabel=..., ylabel=...)` | Set visible context for the reader | Updated `Axes` |
+| `ax.set(title=..., xlabel=..., ylabel=...)` | Name the comparison and label each axis with its measurement unit | Updated `Axes` |
 | `ax.set_title(text)`, `ax.set_xlabel(text)`, `ax.set_ylabel(text)` | Set one label at a time | Updated `Axes` |
 | `ax.set_xlim(left, right)` / `ax.set_ylim(bottom, top)` | Control displayed ranges; use deliberately | Updated limits |
 | `ax.get_ylim()` / `ax.get_xlim()` | Read the current limits back to check what a chart shows; `bottom, top = ax.get_ylim()` unpacks them | Two numbers: bottom and top |
@@ -302,7 +301,7 @@ Expected result: `flu_visits.png` contains the whole Figure, including its label
 
 <callout icon="⚠️" color="yellow_bg">
 	## Save before `plt.show()`
-	In a script, a blocking `plt.show()` closes the current figure; a later `plt.savefig()` can save a blank PNG. Save first, or keep `fig` and use `fig.savefig()` to save that Figure explicitly.
+	In a script, a blocking `plt.show()` closes the current figure, and in a notebook the end of each cell does the same; a later `plt.savefig()` can save a blank PNG. Save first, or keep `fig` and use `fig.savefig()` to save that Figure explicitly.
 </callout>
 
 ![xkcd 833: Convincing. "I just think I can do better than someone who doesn't label her axes." Label your axes.](media/xkcd_833.png)
@@ -468,7 +467,7 @@ Each plotting function below takes the DataFrame as `data=` and column names for
 | `sns.scatterplot(data=df, x=..., y=..., hue=..., style=...)` | Show relationships and optional groups; `style=` gives one marker shape per category, a redundant cue to pair with `hue=` | `Axes` |
 | `sns.lineplot(data=df, x=..., y=..., hue=..., style=...)` | Show ordered trends; averages repeated x values within each hue/style group; `style=` gives one dash pattern per category | `Axes` |
 | `sns.barplot(data=df, x=..., y=..., hue=...)` | One bar per category showing the mean of y, with an error bar | `Axes` |
-| `sns.histplot(data=df, x=..., kde=True)` | Show distribution, optionally with density | `Axes` |
+| `sns.histplot(data=df, x=...)` | Count values in bins and draw one bar per bin | `Axes` |
 | `sns.boxplot(data=df, x=..., y=...)` | Compare distributions and outliers | `Axes` |
 | `sns.heatmap(data=df, annot=True)` | Encode a wide table of numbers (index as rows, columns as columns) as color; `annot=True` writes each value in its cell | `Axes` |
 | `sns.heatmap(corr, annot=True, cmap='RdBu_r', center=0, vmin=-1, vmax=1)` | Color a correlation matrix with two hues that meet at 0: blue for negative, white near 0, red for positive, over the full range from -1 to 1 | `Axes` |
@@ -477,15 +476,9 @@ Each plotting function below takes the DataFrame as `data=` and column names for
 
 ![A correlation heatmap of five measures in 2,400 synthetic patients: red where columns rise together, blue where daily steps fall as age, systolic BP, BMI, and glucose rise.](media/correlation_heatmap.png)
 
-### Code Snippet: Load a Teaching Dataset
-
-```python
-health = sns.load_dataset('healthexp')
-```
-
-Expected result: 274 rows and four columns (`Year`, `Country`, `Spending_USD`, `Life_Expectancy`).
-
 ### Code Snippet: Encode country-year observations
+
+`health` is `sns.load_dataset('healthexp')`: 274 country-year rows with `Year`, `Country`, `Spending_USD`, and `Life_Expectancy`.
 
 ```python
 ax = sns.scatterplot(data=health, x='Spending_USD', y='Life_Expectancy',
@@ -515,7 +508,7 @@ ax = sns.lineplot(data=readings, x='week', y='systolic_bp', errorbar=None)
 print(ax.get_lines()[0].get_ydata())  # y-values seaborn drew, one mean per week: [143.33333333 139.66666667]
 ```
 
-![xkcd 2739: Data Quality. A mean is a lossy copy of the readings behind it, so say when a chart shows one](media/xkcd_2739.png)
+![xkcd 2739: Data Quality. A mean is a lossy copy of the readings behind it, so say when a chart shows one.](media/xkcd_2739.png)
 
 # Density Plots and Distribution Visualization
 
@@ -672,9 +665,9 @@ Match the palette to the data type:
 
 ![Sequential shades one hue, diverging meets two hues at a midpoint, qualitative uses unrelated hues, and the colorblind-safe set stays distinct for most readers.](media/color_palettes.png)
 
-- **Sequential:** ordered data such as age or a lab value; one hue from light to dark.
-- **Diverging:** data with a meaningful midpoint, such as a change from baseline or a correlation; two contrasting hues that meet at the midpoint, like `cmap='RdBu_r', center=0` in the seaborn heatmap card.
-- **Qualitative:** categories with no inherent order, such as clinics; distinct, unrelated hues.
+- **Sequential**: ordered data such as age or a lab value; one hue from light to dark.
+- **Diverging**: data with a meaningful midpoint, such as a change from baseline or a correlation; two contrasting hues that meet at the midpoint, like `cmap='RdBu_r', center=0` in the seaborn heatmap card.
+- **Qualitative**: categories with no inherent order, such as clinics; distinct, unrelated hues.
 
 ![Tufte, _Envisioning Information_, p. 91: height in tan and depth in blue, each darker with distance from sea level, a diverging scale around a real zero.](media/tufte_bathymetric_diverging.jpg)
 
@@ -706,7 +699,7 @@ Example text alternative:
 - `ax.plot(x, y, color=..., marker='o', linestyle='-')`: Pair each line color with its own marker and line style.
 - `x = np.arange(n)`: One position per category group; `ax.set_xticks(x, labels)` names the positions.
 - `ax.bar(x - width / 2, heights, width, label=..., hatch='//')`: Draw one set of side-by-side bars, shifted left by half a bar width. A fill pattern (**hatch**) such as `'//'` or `'..'` keeps groups distinguishable in grayscale; because it encodes the group, it is data ink, not chartjunk. `edgecolor=` colors each bar's outline and its hatch lines, and `linewidth=` sets the outline's thickness.
-- `labels = ax.bar_label(bars, fmt='%d%%')`: Write each bar's value on it, such as `64%`; `bars` is what `ax.bar()` returns. The returned list holds the text labels; `labels[0].get_text()` reads the first label, `'64%'`.
+- `labels = ax.bar_label(bars, fmt='%d%%')`: Write each bar's value on it, such as `64%`; `bars` is what `ax.bar()` returns. The returned list holds the text labels; `labels[0].get_text()` reads the first label, such as `'58%'`.
 - `ax.set_ylim(0, 100)`: Start bar axes at zero, because bar length encodes magnitude.
 
 ### Code Snippet: Directly Label a Line
@@ -748,7 +741,7 @@ Expected result: `58%` and `64%` appear above North's bars.
 
 ## Data, Mark, and Typed Encodings
 
-An Altair chart is **data → mark → typed encodings**, and each field carries a type letter from the contract's data types: categorical → `:N` (nominal), ordinal → `:O`, quantitative → `:Q`, temporal → `:T`.
+An Altair chart is **data → mark → typed encodings**, and each field carries a type letter from the contract's data types: categorical → `:N` (nominal), ordinal → `:O`, quantitative → `:Q`, temporal → `:T`, which needs real dates, so convert month numbers with `pd.to_datetime()` first.
 
 ![The `study` table built in three steps: a mark with quantitative x and y; color and shape typed `:N` for clinic; then axis titles with units and a y-scale that starts near the data.](media/altair_three_steps.png)
 
@@ -758,7 +751,7 @@ An Altair chart is **data → mark → typed encodings**, and each field carries
 | :--- | :--- | :--- | :--- |
 | Import | `import altair as alt` | Load Altair under its standard alias, which the snippets assume | `alt` |
 | Build | `alt.Chart(study)` | Supply the source DataFrame | Chart to configure |
-| Build | `.mark_point(filled=True, size=90)` | Choose filled points and their area; `.mark_bar()` and `.mark_line()` draw bars or lines, and `color='gray'` gives every mark one fixed color | Chart with marks |
+| Build | `.mark_point(filled=True, size=90, opacity=0.6)` | Choose filled points, their area, and see-through `opacity` (0 to 1); `.mark_bar()` and `.mark_line()` draw bars or lines (`point=True` adds a dot at each value), and `color='gray'` gives every mark one fixed color | Chart with marks |
 | Build | `.properties(title=..., width=360, height=260)` | Add a visible title and set size in pixels | Chart |
 | Encode | `.encode(x='field:Q', color='group:N')` | Map quantitative and categorical fields to visible properties | Encoded chart |
 | Encode | `alt.X('field:Q', title='Label (unit)')` | Set an axis title with its unit (also `alt.Y`) | Encoding channel |

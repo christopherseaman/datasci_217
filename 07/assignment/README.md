@@ -143,7 +143,7 @@ The cell reads the file back and prints `shape: (8, 3)` and `same as saved: True
 
 ### 3.2 Draw the explanatory chart
 
-The Task 3.2 cell supplies `home_goals` and `center_goals`, each program's four rows. Draw one line per program on `explanatory_ax`, using Lecture 07's "Directly Label a Line" snippet, its "Redundant Cues for Bars and Lines" card, and Demo 3's HbA1c practice chart:
+The Task 3.2 cell supplies `home_goals` and `center_goals`, each program's four rows. Draw one line per program on `explanatory_ax`, using Lecture 07's "Directly Label a Line" snippet, its "Redundant Cues for Bars and Lines" card, and Demo 3's HbA1c chart (step 5):
 
 - `visit_number` on x and `goal_met_pct` on y;
 - each program with its own color, marker, and line style, such as `ORANGE`, `'s'`, and `'--'` for Home-based and `BLUE`, `'o'`, and `'-'` for Center-based, named by a direct label at its right end or by a legend;

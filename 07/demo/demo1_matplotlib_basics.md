@@ -153,7 +153,7 @@ The question compares a distribution across groups, so the chart-selection figur
 
 ### 2. An exploratory look: one Figure, four Axes
 
-`plt.subplots(2, 2)` returns one Figure and a 2-D array of Axes, so `axes[0, 1]` is row 0, column 1. The list comprehension (Lecture 02) collects one Series of readings per clinic for the box plot.
+`plt.subplots(2, 2)` returns one Figure and a 2-D array of Axes, so `axes[0, 1]` is row 0, column 1. The list comprehension (Lecture 03) collects one Series of readings per clinic for the box plot.
 
 ```python
 clinics = ['North', 'South', 'East', 'West']
