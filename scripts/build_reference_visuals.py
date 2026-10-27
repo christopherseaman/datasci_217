@@ -27,8 +27,8 @@ def main():
     sns.kdeplot(x=glucose, ax=axes[1], label="default")
     sns.kdeplot(x=glucose, bw_adjust=0.5, ax=axes[1], label="bw_adjust=0.5")
     axes[1].legend()
-    # 10 mg/dL bins keep the gap between the two clusters visible.
-    sns.histplot(x=glucose, kde=True, bins=np.arange(80, 181, 10), ax=axes[2])
+    # The lecture snippet's call: 10 mg/dL bins keep the gap between the two clusters visible.
+    sns.histplot(x=glucose, kde=True, binwidth=10, binrange=(80, 180), ax=axes[2])
     for ax in axes:
         ax.set_xlabel("Fasting glucose (mg/dL)")
     fig.tight_layout()

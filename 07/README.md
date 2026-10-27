@@ -125,7 +125,7 @@ dtype: object
 ```
 
 - Only `systolic_bp` (mmHg) is a quantitative measure.
-- `patient_id` is an identifier (its average means nothing), `visit_month` is temporal, and `clinic` is categorical.
+- `patient_id` is an identifier (its average means nothing), `visit_month` is temporal (month numbers in time order), and `clinic` is categorical.
 - One row is one visit, so one scatter point is one visit.
 
 ## The Right Chart for the Job
@@ -289,7 +289,7 @@ ax.annotate('Peak: 51 visits', xy=(3, 51), xytext=(1.5, 50),
 
 Expected result: text inside the plot, left of the peak, with an arrow ending at the week-3 point.
 
-![The North line with its week-3 peak annotated and the top and right spines hidden.](media/annotated_flu_line.png)
+![North and South weekly flu visits, North's week-3 peak annotated, and the top and right spines hidden.](media/annotated_flu_line.png)
 
 ### Code Snippet: Save the Figure
 
@@ -318,7 +318,7 @@ Expected result: `flu_visits.png` contains the whole Figure, including its label
 ```text
 matplotlib ← pandas .plot() (default backend)
            ← seaborn
-           ← plotnine
+           ← plotnine (R's ggplot2, ported to Python almost line for line)
 
 Vega-Lite  ← Altair
 
@@ -528,7 +528,7 @@ print(ax.get_lines()[0].get_ydata())  # y-values seaborn drew, one mean per week
 | Call | Purpose and key arguments | Output |
 | :--- | :--- | :--- |
 | `df.plot.density()` | Quick KDE for numeric columns (needs SciPy) | `Axes` |
-| `sns.histplot(data=df, x='col', kde=True)` | Compare bins with a smooth density estimate | `Axes` |
+| `sns.histplot(data=df, x='col', kde=True, binwidth=10)` | Compare bins with a smooth density estimate; `binwidth=` sets each bin's width and `binrange=(low, high)` where bins start and stop | `Axes` |
 | `sns.kdeplot(data=df, x='col')` | Show a smoothed distribution alone | `Axes` |
 | `sns.kdeplot(..., bw_adjust=0.5)` | Narrower bumps: less smoothing, more detail | `Axes` |
 
@@ -537,11 +537,11 @@ print(ax.get_lines()[0].get_ydata())  # y-values seaborn drew, one mean per week
 `glucose` is a pandas Series holding the twelve readings in the visual: `[84, 88, 91, 93, 95, 96, 98, 101, 156, 161, 166, 172]` mg/dL.
 
 ```python
-ax = sns.histplot(x=glucose, kde=True)
+ax = sns.histplot(x=glucose, kde=True, binwidth=10, binrange=(80, 180))
 ax.set_xlabel('Fasting glucose (mg/dL)')
 ```
 
-Expected result: peaks near 94 and 163 mg/dL, with counts on the y-axis.
+Expected result: ten bars from 80 to 180 mg/dL with counts 2, 5, 1, 0, 0, 0, 0, 1, 2, 1 (the visual's right panel), and a curve peaking near 94 and 163 mg/dL, scaled to the count axis.
 
 ### Code Snippet: Draw a pandas Density Curve
 
@@ -636,7 +636,7 @@ Common distortions to avoid:
 
 **Small multiples** are small, repeated charts on one shared scale, so readers compare categories or time periods at a glance; `sharey=True` from the pandas section draws them.
 
-![About 30 years of gold returns as overlapping lines in one panel: only the highlighted 2020 line can be followed.](media/gold.jpg)
+![The six clinics' weekly flu visits crowded into one panel: the lines cross between weeks 4 and 10, so comparing two clinics means tracing colors through the tangle.](media/tufte_spaghetti.png)
 
 ![Six clinics on one shared y-axis, so Central's tall week-6 flu peak and West's low week-8 peak compare at a glance.](media/tufte_small_multiples.png)
 
@@ -741,7 +741,7 @@ Expected result: `58%` and `64%` appear above North's bars.
 
 ## Data, Mark, and Typed Encodings
 
-An Altair chart is **data → mark → typed encodings**, and each field carries a type letter from the contract's data types: categorical → `:N` (nominal), ordinal → `:O`, quantitative → `:Q`, temporal → `:T`, which needs real dates, so convert month numbers with `pd.to_datetime()` first.
+An Altair chart is **data → mark → typed encodings**, and each field carries a type letter from the contract's data types: categorical → `:N` (nominal), ordinal → `:O`, quantitative → `:Q`, temporal → `:T`. `:T` reads its values as dates: month numbers typed `:T` are read as milliseconds after 1970, so convert them with `pd.to_datetime()` first, or type them `:O`.
 
 ![The `study` table built in three steps: a mark with quantitative x and y; color and shape typed `:N` for clinic; then axis titles with units and a y-scale that starts near the data.](media/altair_three_steps.png)
 

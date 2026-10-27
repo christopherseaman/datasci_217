@@ -342,9 +342,10 @@ def render_concept_figures():
         plt.imsave(path, rgb @ [0.299, 0.587, 0.114], cmap='gray', vmin=0, vmax=1)
         print('Generated: accessible_charts.png (grayscale)')
 
-        # The lecture's annotated North line.
+        # The lecture's weekly chart with North's peak annotated.
         fig, ax = plt.subplots(figsize=(7, 4.5))
         ax.plot([1, 2, 3, 4], [42, 45, 51, 48], 's--', color=blue, markersize=6, label='North')
+        ax.plot([1, 2, 3, 4], [30, 33, 31, 36], 'o-', color=orange, markersize=6, label='South')
         ax.set(title='Weekly flu visits by clinic', xlabel='Week', ylabel='Flu clinic visits')
         ax.annotate('Peak: 51 visits', xy=(3, 51), xytext=(1.5, 50), arrowprops=dict(arrowstyle='->'))
         ax.spines[['top', 'right']].set_visible(False)

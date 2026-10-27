@@ -28,9 +28,11 @@ def generate_small_multiples():
     rng = np.random.default_rng(42)
     weeks = np.arange(1, 13)
 
+    series = []
     for ax, clinic, size, peak in zip(axes.flat, clinics, sizes, peak_weeks):
         season = np.exp(-((weeks - peak) ** 2) / 8)   # one seasonal peak
         visits = np.round(10 + size * season + rng.normal(0, 3, weeks.size))
+        series.append(visits)
         ax.plot(weeks, visits, linewidth=2, color='#1976D2', marker='o', markersize=3)
         ax.set_title(clinic, fontweight='bold')
         ax.spines['top'].set_visible(False)
@@ -46,6 +48,19 @@ def generate_small_multiples():
     plt.savefig(MEDIA_DIR / 'tufte_small_multiples.png', dpi=150, bbox_inches='tight')
     plt.close()
     print("✓ Generated: tufte_small_multiples.png")
+
+    # The same six series crowded into one panel: the problem small multiples solve.
+    fig, ax = plt.subplots(figsize=(8, 5))
+    for clinic, visits in zip(clinics, series):
+        ax.plot(weeks, visits, linewidth=2, marker='o', markersize=3, label=clinic)
+    ax.set(title='Weekly flu visits at six clinics (one panel)', xlabel='Week', ylabel='Flu visits', ylim=(0, 90))
+    ax.set_facecolor('white')
+    ax.spines[['top', 'right']].set_visible(False)
+    ax.legend(title='Clinic', ncol=3, frameon=False)
+    plt.tight_layout()
+    plt.savefig(MEDIA_DIR / 'tufte_spaghetti.png', dpi=150, bbox_inches='tight')
+    plt.close()
+    print("✓ Generated: tufte_spaghetti.png")
 
 
 def generate_bar_chart_comparison():
