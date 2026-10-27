@@ -19,8 +19,6 @@ See [BONUS.md](BONUS.md) for the optional extensions.
 curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/07/demo/setup_demo.sh | sh
 ```
 
-![xkcd 1945: Scientific Paper Graph Quality. Chart quality in scientific papers dipped during the PowerPoint/MSPaint era; the tools in this lecture keep you on the rising end of the curve.](media/xkcd_1945.png)
-
 <callout icon="🧭" color="blue_bg">
 	# This Lecture
 	## Covers
@@ -38,7 +36,15 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 	- Build an Altair chart and save its Vega-Lite specification plus a JSON record of its contract and text alternative.
 </callout>
 
+# From the Trenches
+
+![Max Kennerly on Bluesky: "BOOM! Finally somebody takes down those arrogant little preschoolers and their so-called art."](media/trenches_creativity_post.png)
+
+[PLOS ONE: adults outperformed children on externally rated creativity](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0346553)
+
 # Start with a visualization contract
+
+![xkcd 1945: Scientific Paper Graph Quality. Chart quality in scientific papers dipped during the PowerPoint/MSPaint era; the tools in this lecture keep you on the rising end of the curve.](media/xkcd_1945.png)
 
 - **Visualization contract**: a few statements, written before any plotting code, about what a chart must let its reader compare (the reference card below lists them).
 - It decides which values become positions, lengths, and colors, so the chart answers a real question, such as which clinic's blood pressure changed, instead of showing whatever the default plot draws.
