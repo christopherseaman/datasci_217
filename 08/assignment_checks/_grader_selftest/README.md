@@ -18,14 +18,17 @@ lecture does, builds submissions in ignored `scratch/`, and confirms that:
   including a misnamed column; a summary saved with `index=False` after
   grouping without `as_index=False`, which drops its key column, costs only the
   columns check; a missing file costs only its own artifact's checks; a pivot
-  saved after `.dropna()`, which loses Sunset's row and its empty cell, costs
-  the rows and empty-cell checks; a file holding only the optional Excelsior
+  saved after `.dropna()`, which loses Sunset's row, costs only the rows check;
+  a file holding only the optional Excelsior
   row earns no value checks; the feedback says what was expected and what was
   found;
 - a missing file is never told to take another required file's name; a pivot
   with `index=` and `columns=` swapped costs only its columns check and says
   so; a pivot with `margins=True` costs only the columns check, which names
-  `margins=True`, and a Total row alone costs the rows check; `wait_vs_clinic` worked out from a wrong
+  `margins=True`, and a Total row alone costs the rows check; a pivot built
+  with `values=["wait_min"]` or `aggfunc=["mean"]` scores 96, losing only the
+  columns check, which names the list as the cause of the extra header line,
+  and a list of the wrong function also costs the means check; `wait_vs_clinic` worked out from a wrong
   `clinic_mean_wait` costs only the `clinic_mean_wait` check; a
   `clinic_mean_wait` column assigned from `.mean()` gets a message naming that
   cause;

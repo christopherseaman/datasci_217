@@ -29,8 +29,8 @@ A breast lump is biopsied with a fine needle, and a digitized image of the cells
 Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas in Colab; restart and rerun if asked. Intel Mac: run this demo in Colab (no local TensorFlow). Mac XGBoost load error: brew install libomp
-%pip install -q --no-warn-conflicts pandas==3.0.5
+# Installs the course's pandas and XGBoost in Colab; restart and rerun if asked. Intel Mac: run this demo in Colab (no local TensorFlow). Mac XGBoost load error: brew install libomp
+%pip install -q --no-warn-conflicts pandas==3.0.5 xgboost==2.1.4
 ```
 
 **Core route:** Parts 1 to 5, 7, 8, 10, and 11, skipping the subsections marked independent practice. Part 6, Part 9, and those subsections are independent practice for outside class. The comparison includes only candidates you ran. Run any independent practice before the final test; after seeing test results, do not use these variants to make a new selection on that test set.
@@ -66,7 +66,7 @@ def confusion_table(actual, predicted):
 print(biopsies.shape)
 print(feature_cols[:4])
 display(biopsies[['mean radius', 'mean texture', 'mean area', 'worst area', 'malignant']].head(5))
-display(biopsies['malignant'].value_counts().to_frame())
+display(biopsies['malignant'].value_counts())
 print(f"Share malignant: {biopsies['malignant'].mean():.1%}")
 ```
 
@@ -146,9 +146,9 @@ display(report.round(2))
 Majority class in training rows: 0
 Baseline validation accuracy: 0.6228
 Logistic regression validation accuracy: 0.9737
-                     predicted benign  predicted malignant
-actual benign                      69                    2
-actual malignant                    1                   42
+                  predicted benign  predicted malignant
+actual benign                   69                    2
+actual malignant                 1                   42
               precision  recall  f1-score  support
 0                  0.99    0.97      0.98       71
 1                  0.95    0.98      0.97       43
@@ -501,9 +501,10 @@ More than three times the weights buys one _fewer_ correct validation row (110 o
 One validation set, one metric, and every model you fitted. The core route has five rows. Independent practice adds three candidates, including the early-stopped XGBoost, whose round count was chosen using validation rows.
 
 ```python
-comparison = pd.Series(candidate_accuracy, name='valid_accuracy').rename_axis('model').reset_index()
+comparison = pd.DataFrame({'valid_accuracy': pd.Series(candidate_accuracy)})
+comparison.index.name = 'model'
 comparison['correct_of_114'] = (comparison['valid_accuracy'] * len(y_valid)).round().astype(int)
-display(comparison.set_index('model').round(4))
+display(comparison.round(4))
 ```
 
 **Expect:**

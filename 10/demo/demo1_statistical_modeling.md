@@ -212,7 +212,7 @@ The residual degrees of freedom are 442 rows minus 4 estimated coefficients. The
 Coefficients only mean something if the straight-line form fits. Plot each patient's residual (observed minus fitted) against the fitted value: a shapeless cloud around zero is what we want, a curve says the form is wrong, and a funnel says the spread is not constant.
 
 ```python
-display(results_formula.resid.describe().round(1).to_frame('residual'))
+display(results_formula.resid.describe().round(1).rename('residual'))
 
 fig, ax = plt.subplots(figsize=(6, 4))
 ax.scatter(results_formula.fittedvalues, results_formula.resid, alpha=0.5)
@@ -304,30 +304,30 @@ Clinics often report BMI in bands. `pd.cut()` makes the bands; `C()` in the form
 ```python
 diabetes['bmi_group'] = pd.cut(diabetes['bmi'], bins=[0, 25, 30, 60],
                                labels=['25 or under', 'over 25 to 30', 'over 30'])
-display(diabetes['bmi_group'].value_counts().to_frame())
+display(diabetes['bmi_group'].value_counts())
 print(f"Patients without a band: {diabetes['bmi_group'].isna().sum()}")
 
 results_cat = smf.ols('progression ~ age + bp + C(bmi_group)', data=diabetes).fit()
 print(f"Rows used: {results_cat.nobs:.0f}")
-display(results_cat.params.round(2).to_frame('coef'))
+display(results_cat.params.round(2).rename('coef'))
 ```
 
 **Expect:**
 
 ```text
-               count
 bmi_group
 25 or under      190
 over 25 to 30    157
 over 30           95
+Name: count, dtype: int64
 Patients without a band: 0
 Rows used: 442
-                                coef
-Intercept                     -42.03
-C(bmi_group)[T.over 25 to 30]  44.37
-C(bmi_group)[T.over 30]        85.01
-age                             0.23
-bp                              1.57
+Intercept                       -42.03
+C(bmi_group)[T.over 25 to 30]    44.37
+C(bmi_group)[T.over 30]          85.01
+age                               0.23
+bp                                1.57
+Name: coef, dtype: float64
 ```
 
 `25 or under` is the reference band, so it has no row of its own. At the same age and blood pressure, patients in the `over 25 to 30` band average about 44 points higher progression than the reference band, and patients `over 30` about 85 points higher. All 442 patients were used: had the top edge been lower than the largest BMI, the patients above it would have been left without a band, and the formula would have dropped them without a warning. Printing the row count is how you would catch that.
@@ -474,7 +474,7 @@ fit_rows = train[train['target_time'] <= first_valid_cutoff]
 assert fit_rows['target_time'].max() <= first_valid_cutoff
 print('Rows with labels available at first validation cutoff:', len(fit_rows))
 honest_fit = smf.ols('sbp_next ~ age + sbp_today + hour_sin + hour_cos', data=fit_rows).fit()
-display(honest_fit.params.round(3).to_frame('coef'))
+display(honest_fit.params.round(3).rename('coef'))
 
 valid_bounds = honest_fit.get_prediction(valid).conf_int(obs=True)
 check = valid[['reading_hour', 'sbp_today', 'sbp_next']].head(3).copy()
@@ -488,12 +488,12 @@ display(check)
 
 ```text
 Rows with labels available at first validation cutoff: 91
-              coef
-Intercept   85.969
-age          0.051
-sbp_today    0.376
-hour_sin     0.868
-hour_cos    -1.962
+Intercept    85.969
+age           0.051
+sbp_today     0.376
+hour_sin      0.868
+hour_cos     -1.962
+Name: coef, dtype: float64
     reading_hour  sbp_today  sbp_next  predicted  pi_lower  pi_upper
 4              9      143.4     146.8      145.4     137.8     153.0
 5              7      146.8     149.3      146.1     138.4     153.7

@@ -15,7 +15,8 @@ of labels and headers never cost points, and cells may be separated by
 commas, semicolons, or tabs. A row for Excelsior, the clinic with
 no visits, is accepted when it shows zero visits, as observed=False writes it.
 A pivot saved with its rows and columns swapped is read the right way round,
-so the swap costs only its columns check.
+so the swap costs only its columns check. So is a pivot saved with the extra
+header line a list for values= or aggfunc= adds.
 
 Nothing here imports, runs, or inspects student code.
 """
@@ -95,7 +96,9 @@ class Table:
 
     `written` maps each casefolded column name to the header as the file wrote
     it, for messages. `transposed` is True when a pivot was saved with its rows
-    and columns swapped and has been read the right way round.
+    and columns swapped and has been read the right way round. `extra_levels`
+    holds the labels of the header lines a list for values= or aggfunc= adds
+    to a pivot, such as ("wait_min",), which have been set aside.
     """
 
     columns: tuple[str, ...]
@@ -103,6 +106,7 @@ class Table:
     written: dict[str, str] = field(default_factory=dict)
     transposed: bool = False
     conflicting_columns: tuple[str, ...] = ()
+    extra_levels: tuple[str, ...] = ()
 
     def header(self, columns=None) -> str:
         """The named columns (all of them by default) as the file wrote them: 'Mission, Sunset and Total'."""
@@ -362,6 +366,33 @@ def _is_index_header(cell: str) -> bool:
     return cell in ("", "index") or cell.startswith("unnamed")
 
 
+def _level_label(line: list[str]) -> str | None:
+    """The one label a header line repeats after its first cell, such as wait_min, or None."""
+    labels = {_fold(cell) for cell in line[1:]}
+    return _clean(line[1]) if len(labels) == 1 and "" not in labels else None
+
+
+def _drop_column_levels(artifact: Artifact, lines: list[list[str]]) -> tuple[list[list[str]], tuple[str, ...]]:
+    """A pivot's lines without the header levels a list for values= or aggfunc= adds, and those levels' labels.
+
+    values=["wait_min"] saves three header lines: wait_min repeated over every
+    column, then visit_type and the visit types, then clinic over blank cells.
+    They are read as the one header line clinic,Follow-up,New,Telehealth, so
+    the list costs only the columns check.
+    """
+    count = 0
+    while count < len(lines) and _level_label(lines[count]) is not None:
+        count += 1
+    if not count or count + 1 >= len(lines):
+        return lines, ()
+    names, below = lines[count], lines[count + 1]
+    if {_fold(names[0]), _fold(below[0])} != {_fold(artifact.key[0]), _fold(artifact.across)} or any(
+        _clean(cell) for cell in below[1:]
+    ):
+        return lines, ()
+    return [[below[0], *names[1:]], *lines[count + 2:]], tuple(_level_label(line) for line in lines[:count])
+
+
 def read_table(root: Path, artifact: Artifact) -> Table:
     """Parse a saved CSV, however it is separated, spaced, quoted, or ended.
 
@@ -380,6 +411,9 @@ def read_table(root: Path, artifact: Artifact) -> Table:
             "to_csv() writes it, then compare it with the checkpoint in README.md."
         ) from None
     _assert(lines, f"{artifact.path} is empty; run the {artifact.task} cell again to write it.")
+    levels: tuple[str, ...] = ()
+    if artifact.across:
+        lines, levels = _drop_column_levels(artifact, lines)
     written = [_clean(cell) for cell in lines[0]]
     body = [[_clean(cell) for cell in row] for row in lines[1:]]
     width = max(len(written), *(len(row) for row in body)) if body else len(written)
@@ -406,6 +440,7 @@ def read_table(root: Path, artifact: Artifact) -> Table:
             rows=rows,
             written={key: artifact.key[0], **{name.casefold(): name for name in down}},
             transposed=True,
+            extra_levels=levels,
         )
     rows = []
     conflicting = set()
@@ -430,7 +465,10 @@ def read_table(root: Path, artifact: Artifact) -> Table:
     for column, as_written in zip(header, written):
         names.setdefault(column, as_written)
     header = list(dict.fromkeys(header))
-    return Table(columns=tuple(header), rows=rows, written=names, conflicting_columns=tuple(sorted(conflicting)))
+    return Table(
+        columns=tuple(header), rows=rows, written=names, conflicting_columns=tuple(sorted(conflicting)),
+        extra_levels=levels,
+    )
 
 
 def _is_transposed(artifact: Artifact, header: list[str], body: list[list[str]]) -> bool:
@@ -554,6 +592,16 @@ def _margins_note(artifact: Artifact, labels) -> str:
     return f" {_join(totals)} comes from margins=True; leave margins out of {artifact.task}."
 
 
+def _levels_note(table: Table) -> str:
+    """For a pivot saved with extra header lines: say a list for values= or aggfunc= adds them."""
+    if not table.extra_levels:
+        return ""
+    return (
+        f" A list for values= or aggfunc= adds a header level ({'/'.join(table.extra_levels)}); "
+        'use values="wait_min", aggfunc="mean".'
+    )
+
+
 def columns_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
     """The saved header holds exactly the expected columns, in any order."""
 
@@ -563,7 +611,7 @@ def columns_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
             not table.transposed,
             f"{artifact.path} has the {artifact.key[0]} labels across the top and the {artifact.across} labels "
             f"down the side, so {_swapped(artifact)} {artifact.task} saves the header line "
-            f"{','.join(artifact.columns)}.",
+            f"{','.join(artifact.columns)}.{_levels_note(table)}",
         )
         found = _resolve(table, artifact)
         # A saved index with no name leaves its column unheaded; holding the IDs, it is the key column.
@@ -589,7 +637,11 @@ def columns_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
             problems.append(f"is missing {_join(missing)}")
         if extra:
             problems.append(f"also has {table.header(extra)}")
+        if table.extra_levels:
+            lines = "an extra header line" if len(table.extra_levels) == 1 else "extra header lines"
+            problems.append(f"has {lines} repeating {_join(table.extra_levels)} above the {artifact.across} labels")
         notes = _swap_note(artifact, extra) or _margins_note(artifact, [table.written.get(c, c) for c in extra])
+        notes += _levels_note(table)
         _assert(
             not problems,
             f"{artifact.path} " + " and ".join(problems) + f"; {artifact.task} saves the header line "
@@ -860,7 +912,8 @@ CHECKS = (
             prior=CLINIC_SUMMARY,
             cause=_when_clinic_means_blank(
                 "Every clinic_mean_wait is blank, as happens when the column is assigned from .mean(): that "
-                "summary is labeled by clinic, not by row, so it lines up with no row (Lecture 08's callout)."
+                "summary is labeled by clinic, not by row, so it lines up with no row (Lecture 08's callout "
+                "\"A group summary does not line up with the rows\")."
             ),
         ),
     ),

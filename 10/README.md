@@ -26,7 +26,7 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 	## Covers
 	- **Statistical modeling with `statsmodels`**: OLS formulas, coefficients, confidence intervals, p-values, residual plots, and new-patient intervals.
 	- **Prediction setup**: features, targets, leakage, cyclic time features, and training, validation, and test rows split on target time.
-	- **scikit-learn**: the estimator pattern, baselines, pipelines, metrics, time-ordered cross-validation, permutation importance, and the one final test.
+	- **scikit-learn**: the estimator pattern, linear regression with Ridge and Lasso, logistic regression for classification, baselines, pipelines, metrics, time-ordered cross-validation, permutation importance, and the one final test.
 	- **Trees, boosting, and neural networks**: random forests, XGBoost with early stopping, and a small Keras classifier.
 	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 12.1 to 12.4.
 	## Enables
@@ -48,10 +48,14 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 | **Inference**: how are the variables related? | Is BMI associated with SBP among patients of the same age, and how sure are we? | Coefficients, their uncertainty, and the model's assumptions |
 | **Prediction**: what will the outcome be? | What will this patient's SBP be at the next visit? | Error on held-out observations representing the intended use |
 
+![Tufte, _The Visual Display of Quantitative Information_, p. 47: male lung-cancer deaths per million in 1950 against cigarettes per person in 1930 for 11 countries, with a fitted line and r = 0.73 ± 0.30.](media/tufte_lung_cancer_cigarettes.png)
+
 ## The Modeling Landscape
 
 - More flexible models fit more complex patterns but can also overfit (fit noise in the training rows); flexibility does not guarantee better predictions.
 - Shortlist libraries by the question, then compare candidates on held-out rows from the workflow you intend to use.
+
+![The usual rule of thumb, not a measured ranking: flexible models such as neural networks and boosted ensembles sit high on predictive power and low on interpretability, linear regression the reverse.](media/interpretability_tradeoff.webp)
 
 ### Reference Card: Which Library for Which Question
 
@@ -63,8 +67,6 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 | **TensorFlow/Keras** | Candidate for images, text, audio, or learned representations | Neural-network layers and training loops | Deep-learning workflows |
 
 _Pro tip: Start simple. "But why male models?" Because sometimes the simplest model is the right model!_
-
-![xkcd 882: Significant. Test twenty jelly-bean colors at p < 0.05 and one of them will look significant by chance.](media/xkcd_882.png)
 
 # Statistical Modeling with `statsmodels`
 
@@ -131,6 +133,8 @@ display(results.params.round(2).rename('coef'))
 
 `results.summary()` shows the same numbers under `coef`, beside `std err`, `P>|t|`, and `[0.025 0.975]` (next section), and reports R-squared, 0.536 here.
 
+![The clinic fit's full `results.summary()` printout, with the parts this lecture reads boxed in color among fit statistics and diagnostics it skips.](media/ols_summary.png)
+
 Transforms and interactions name their own coefficient rows:
 
 ```python
@@ -172,6 +176,8 @@ After fitting, check the model's assumptions:
 
 ![Two residuals-versus-fitted plots. Left: the clinic fit's residuals scatter without pattern around a dashed zero line. Right: a straight line fitted to curved data leaves a U-shaped pattern.](media/ols_residuals_vs_fitted.png)
 
+![Anscombe's quartet: four datasets share one fitted line, y = 3.00 + 0.50x, and R² = 0.67, but only plots show that II curves, III has one point far off the line, and IV rests on a single point.](media/anscombe_quartet.png)
+
 ### Reference Card: OLS Uncertainty and Diagnostics
 
 | Method / attribute | Purpose & arguments | Typical output |
@@ -211,6 +217,10 @@ display(results.get_prediction(new_patient).summary_frame(alpha=0.05).round(1))
 - A p-value printed as 0.0000 is below 0.00005, not exactly 0.
 - For the new patient the mean-response interval is about 6 mmHg wide, the prediction interval about 32.
 
+![At age 55 the mean-response band (blue) is far narrower than the prediction band (orange): the BMI 30 patient's 147.2 has a mean interval of 144.3 to 150.2 and a prediction interval of 131.4 to 163.0.](media/ols_intervals.png)
+
+![xkcd 539: Boyfriend. One clear outlier on a box plot makes a statistically significant other.](media/xkcd_539.png)
+
 ### Code Snippet: Residuals Versus Fitted Values
 
 ```python
@@ -234,7 +244,7 @@ plt.close(fig)
 | 1 | 144.5 | 145.1 | -0.6 |
 | 2 | 139.6 | 142.0 | -2.4 |
 
-![xkcd 539: Boyfriend. One clear outlier on a box plot makes a statistically significant other.](media/xkcd_539.png)
+![xkcd 882: Significant. Test twenty jelly-bean colors at p < 0.05 and one of them will look significant by chance.](media/xkcd_882.png)
 
 # Prediction: Features, Targets, and Honest Splits
 
@@ -256,12 +266,16 @@ Keep a candidate feature only if it is known by prediction time: `candidates['re
 | `sbp_today` | During the visit | 0 | Keep |
 | `a1c_result` | When the lab reports the next day | 24 | Exclude (leakage) |
 
+![Candidate features placed by when they become known: age and sbp_today by the end of the visit (keep), a1c_result 24 hours later (leakage), and the target, sbp_next_visit, 168 hours later.](media/leakage_timeline.png)
+
 ![xkcd 2169: Predictive Models. Autocomplete trained on other users' messages gives away the secret meeting; models leak information in ways nobody planned.](media/xkcd_2169.png)
 
 ## Cyclic Time Features
 
 - A visit's hour is known as soon as the row exists, but as a plain number it misleads a model: 23:00 and 00:00 are an hour apart, while 23 and 0 sit at opposite ends of the range.
 - The sine and cosine of `2 * np.pi * hour / 24` place each hour on a clock face instead, so hour 23 lands as close to hour 0 as hour 1 does.
+
+![Hours 0, 1, 12, and 23: as plain numbers 23 and 0 sit 23 apart; on the (hour_cos, hour_sin) circle, 23, 0, and 1 are neighbors 0.26 apart and 12 sits opposite.](media/cyclic_hours.png)
 
 ### Reference Card: Cyclic Time Features
 
@@ -304,12 +318,7 @@ Comparing the errors on these sets shows two failure modes:
 - **Overfitting**: a model memorizing its training rows instead of learning patterns that carry over, like memorizing the practice exam's answers and then failing the real exam. A much lower training error than validation error can warn of it, but a changed patient mix or time period can also create a gap.
 - **Underfitting**: a model too simple to capture the pattern, so both errors stay high.
 
-```text
-Good fit:                       Overfitting:
-Training error:   0.20          Training error:   0.05
-Validation error: 0.22          Validation error: 0.35
-                                ↑ Big gap: investigate the cause
-```
+![Curves fit to 30 diabetes patients' progression against BMI and scored on 402 others in the same BMI range: degree 0 underfits (train MAE 64, validation 68), degree 1 fits (52, 53), and degree 10 overfits (45, 82).](media/overfit_polynomial.png)
 
 - Independent rows with no time order: split at random (`train_test_split`, in the next topic).
 - A model that will predict the _future_: split into chronological blocks of target times:
@@ -330,6 +339,8 @@ Disjoint target periods are only the first check:
 - **Prospective evaluation** (made as forecasts would be in use): every training label must already be available when the first validation prediction is made. If outcomes arrive a week later, remove training rows whose labels arrive after that cutoff; do the same before refitting for test.
 - **Retrospective comparison**: a split that ignores this delay compares historical periods; it is not evidence that the fitted model could have made those forecasts in real time.
 - If labels arrive later than their target time, compare their actual availability times instead.
+
+![210 weekly home readings from 30 patients by target time: 91 training rows have labels known by the first validation prediction (Feb 2 01:58), 29 arrive later and are not fitted, 60 rows validate, and 30 test.](media/target_time_split.png)
 
 ### Reference Card: Splitting on Target Time
 
@@ -362,6 +373,8 @@ display(valid[['visit_date', 'target_date']])
 | --- | --- | --- |
 | 5 | 2026-02-08 | 2026-02-15 |
 | 6 | 2026-02-15 | 2026-02-22 |
+
+![xkcd 1122: Electoral Precedent. Each rule fits every past election until the next one breaks it, like an overfit model meeting new rows.](media/xkcd_1122.png)
 
 # LIVE DEMO!
 
@@ -399,12 +412,16 @@ Create estimator and choose settings
 - **Ridge** (L2) penalizes the sum of squared coefficients.
 - **Lasso** (L1) penalizes the sum of absolute values, which can set some fitted contributions to exactly zero. The pipeline still expects every original input column.
 
+![Coefficients for 10 diabetes features on 264 scaled training patients as alpha grows: Ridge shrinks their overall size without setting any to exactly 0 (tc from -51 to about -12 at alpha 10, while correlated ldl flips from 27 to -3), and Lasso sets some to exactly 0, keeping 7 of 10 at alpha 2.](media/ridge_lasso_paths.png)
+
 **Regression** predicts a number, such as next-visit SBP. **Classification** predicts a category, such as readmitted or not. Despite its name, **logistic regression** is a classifier: it converts a weighted sum of features to a probability between 0 and 1, then a threshold turns that probability into a label.
 
 ```text
 Age, BMI, today's SBP → linear regression → 146.2 mmHg
 Discharge measurements → logistic regression → 0.72 probability → flag 1 at a 0.5 threshold
 ```
+
+![Logistic regression's S-shaped curve turns a weighted sum of 0.94 into probability 0.72, which is above the 0.5 threshold, so the patient is flagged 1.](media/logistic_threshold.png)
 
 ### Reference Card: Linear Estimators
 
@@ -475,6 +492,8 @@ model.fit(clinic_train, clinic_sbp)
 print(model.predict(clinic_valid).round(1))  # [141.6 147.7]
 ```
 
+![`display(model)` in Jupyter draws the fitted mixed-column model: 2 numeric features pass SimpleImputer and StandardScaler, 1 categorical feature passes SimpleImputer and OneHotEncoder to become 2, and all 4 feed Ridge.](media/sklearn_pipeline_diagram.png)
+
 ![xkcd 2899: Goodhart's Law. A metric that becomes a target stops measuring anything, so choose the metric before comparing models and never tune against the test score.](media/xkcd_2899.png)
 
 ## Measuring Prediction Error
@@ -487,6 +506,8 @@ print(model.predict(clinic_valid).round(1))  # [141.6 147.7]
     - False negatives (FN): readmitted but not flagged.
     - True negatives (TN): neither.
 - Lowering a probability threshold flags more patients: it can catch more true cases while also creating more false alarms. Choose that tradeoff on validation data, then freeze the threshold with the model.
+
+![A Lasso's predictions for 89 validation diabetes patients: left, predicted against actual, flatter than the dashed perfect line; right, residuals centered 14.2 points above 0.](media/validation_diagnostics.png)
 
 ### Reference Card: `sklearn.metrics`
 
@@ -502,6 +523,8 @@ Import each by name: `from sklearn.metrics import mean_absolute_error, r2_score`
 | **Recall** | Of the readmitted patients, how many did we flag? TP / (TP + FN) | `recall_score(y_true, y_pred)` | 0 to 1 |
 | Confusion matrix | How many of each outcome? | `confusion_matrix(y_true, y_pred)` | 2x2 array `[[TN, FP], [FN, TP]]` |
 | Per-class summary | Precision, recall, F1 (one score that balances the two), and support (number of true rows) for each class; `output_dict=True` returns a dict that `pd.DataFrame(...).T` turns into a table | `classification_report(y_true, y_pred)` | Printed table |
+
+![The same Lasso predictions as a flag for progression above 200: TN 55, FP 5, FN 17, TP 12, so recall is 12 / 29 = 0.414 and precision is 12 / 17 = 0.706.](media/confusion_matrix.png)
 
 ### Code Snippet: Comparing on Validation Rows
 
@@ -542,8 +565,6 @@ print((-scores).round(1))
 [4.  0.7 9.6]
 ```
 
-![xkcd 534: Genetic Algorithms. A score can improve while an unmeasured consequence gets much worse; include the costs that matter.](media/xkcd_534.png)
-
 ### Code Snippet: Accuracy Hides Missed Readmissions
 
 A model that always says "no" matches this flag's 0.625 accuracy while catching nobody, and the rarer readmissions are, the higher that accuracy climbs. Screening therefore cares about recall.
@@ -565,12 +586,16 @@ flagged: accuracy=0.625 precision=0.500 recall=0.333
 always_no: accuracy=0.625 precision=0.000 recall=0.000
 ```
 
+![xkcd 534: Genetic Algorithms. A score can improve while an unmeasured consequence gets much worse; include the costs that matter.](media/xkcd_534.png)
+
 ## Permutation Importance: What Does the Model Rely On?
 
 - A metric says how well a model predicts, not which columns it leans on.
 - **Permutation importance** measures that for any fitted model or pipeline, tree models included: score it on validation rows, shuffle one feature column to break its link to the target, and score again; the bigger the drop, the more the model relied on that feature.
 - It is like scrambling one lab value across a stack of charts to see how much worse a clinician's diagnoses get.
 - Correlated features can share or hide importance, and reliance is not causation.
+
+![Shuffling bmi or ltg raises a Lasso's validation MAE by about 10.5 points, bp by 3.79, and hdl by 2.90; age, ldl, and tch add 0.00 because the Lasso set them to 0.](media/permutation_importance.png)
 
 ### Reference Card: `permutation_importance`
 
@@ -611,6 +636,8 @@ display(importance)
 - Refit the frozen pipeline on training + validation rows (same settings, more data), or keep the train-fitted version.
 - Either way, evaluate on the test rows exactly once and report that number, disappointing or not. Going back to tweak the model would turn the test set into a second validation set.
 
+![Validation MAE picks the Lasso (mean baseline 64.13, linear 42.94, ridge 42.62, lasso 42.45), and the frozen Lasso then scores 42.84 on the test rows, opened once.](media/freeze_test_once.png)
+
 ### Reference Card: Freezing and the Final Test
 
 - `model.get_params(deep=False)`: The settings the model was created with; record them, and fix any `random_state`.
@@ -629,8 +656,10 @@ _"Did you ever think that maybe there's more to life than being really, really, 
 
 # Trees and Forests
 
-- **Decision tree**: predicts by asking yes/no questions about the features ("Is age > 60?", then "Is BMI > 30?"). The final group is a **leaf**: regression reports its training outcomes' mean; classification uses their class proportions and predicts the most common class.
+- **Decision tree**: predicts by asking yes/no questions about the features ("Is BMI > 27.2?", then "Is BMI > 33.1?"). The final group is a **leaf**: regression reports its training outcomes' mean; classification uses their class proportions and predicts the most common class.
 - It can bend where a linear model's straight line cannot, but one tree is jumpy: change a few training rows and its questions change.
+
+![A depth-3 regression tree for diabetes progression first asks bmi <= 27.2, then splits on BMI and BP but never age; leaf means run from 101.5 to 268.5, and one leaf holds a single patient.](media/decision_tree.png)
 
 ## From One Tree to a Forest
 
@@ -638,7 +667,7 @@ _"Did you ever think that maybe there's more to life than being really, really, 
 - **Ensemble**: a group of models combined into one prediction; averaging many jumpy trees gives a steadier answer than any one of them: wisdom of crowds.
 - Forests capture **nonlinear** (curved) relationships and **interactions**, where one feature's effect depends on another (age might matter more at high BMI), usually without scaling. Categorical text columns still need encoding.
 
-![Decision tree: one model, one prediction. Random forest: trees trained in parallel on resampled rows, predictions averaged. XGBoost: trees trained in sequence, each learning from the previous error.](media/trees.webp)
+![Decision tree: one model, one prediction. Random forest: trees trained in parallel, predictions averaged. XGBoost: trees trained in sequence, each fit to the previous error.](media/trees.webp)
 
 When `max_features` selects fewer than all columns, the forest considers a fresh random subset at each split; the diagram does not mean each tree keeps one fixed subset. XGBoost's feature sampling is optional.
 
@@ -687,7 +716,7 @@ _Gradient boosting is the Magnum of machine learning: a signature look, built on
 
 - **Hyperparameter**: a setting you choose before fitting, such as the number of trees, depth, or learning rate; the model does not learn it.
 - **Learning rate**: scales each new tree's correction: at 0.1 add a tenth of that tree's fitted update, so the ensemble learns in smaller steps. The update approximates the remaining error; it does not necessarily remove a tenth of it.
-- For squared-error regression each tree fits the ordinary residuals; the "gradient" in the name generalizes that idea to other losses. Step by step, with made-up numbers:
+- For squared-error regression each tree fits the ordinary residuals; the "gradient" in the name generalizes that idea to other **loss** functions (measures of how wrong the predictions are, such as log loss for yes/no targets). Step by step, with made-up numbers:
 
 | Step | What Happens | Example |
 |------|--------------|---------|
@@ -697,10 +726,14 @@ _Gradient boosting is the Magnum of machine learning: a signature look, built on
 | 4 | Add the scaled update to the ensemble | With learning rate 1: [5.4, 3.3, 6.9] |
 | 5 | Recompute targets and repeat | For N rounds, or until validation stops improving |
 
+![Depth-1 boosted trees with learning rate 0.1 move from the mean, 152.1, toward the BMI trend in small steps: training MAE is 64.1 after 1 tree, 56.5 after 10, and 50.1 after 100.](media/boosting_stages.png)
+
 ## `XGBoost` Basics
 
 - **XGBoost** (Extreme Gradient Boosting, "extreme" for its speed and memory engineering): follows the same `fit`/`predict` pattern as `scikit-learn`.
 - **Early stopping**: ends training when validation performance stops improving; validation then helps select the model, so keep a separate test set for the one final evaluation.
+
+![XGBoost's validation log loss on biopsy data is lowest at round 54 (0.1168); with early_stopping_rounds=10, training stops at round 64 of a 500-round budget.](media/xgboost_early_stopping.png)
 
 ### Reference Card: XGBoost
 
@@ -728,13 +761,14 @@ These are toy starting points; choose settings on validation rows for the data a
 
 ### Code Snippet: XGBoost with Early Stopping
 
-Training and validation rows are already separated; the test rows stay sealed.
+`X_train`/`X_valid` hold 30 measurements per breast biopsy, with 114 validation rows; the test rows stay sealed.
 
 ```python
-model = xgb.XGBClassifier(n_estimators=100, max_depth=3, learning_rate=0.1,
+model = xgb.XGBClassifier(n_estimators=500, max_depth=3, learning_rate=0.1,
+                          subsample=0.8, colsample_bytree=0.8,
                           early_stopping_rounds=10, random_state=42)
 model.fit(X_train, y_train, eval_set=[(X_valid, y_valid)], verbose=False)
-print(model.best_iteration)  # zero-based round with the lowest validation loss
+print(model.best_iteration)  # 54: zero-based round with the lowest validation loss
 predicted = model.predict(X_valid)  # one 0/1 label per validation row
 ```
 
@@ -762,14 +796,18 @@ Hidden Layer 2 (32 neurons, ReLU)
 Output Layer (1 neuron, Sigmoid)
 ```
 
-- Training repeats one loop: predict, measure the **loss** (how wrong the predictions are; `binary_crossentropy` for yes/no targets), and let the **optimizer** (such as Adam) nudge every weight to reduce it.
+- Training repeats one loop: predict, measure the loss (`binary_crossentropy` for yes/no targets), and let the **optimizer** (such as Adam) nudge every weight to reduce it.
 - **Epoch**: one pass through the training rows, processed in **batches** of, say, 32.
 - **Representation learning** (learning its own features) pays off where useful features are hard to write by hand. On a clinic table of a few hundred rows, a linear model or boosted trees usually match a network for far less effort, and a network overfits easily, so watch the loss curves.
+
+![A 64-32 network's training loss keeps falling, while its validation loss bottoms out at 0.0726 at epoch 20 and creeps up to 0.0903 by epoch 50.](media/keras_loss_curves.png)
 
 ## `TensorFlow`/`Keras`: The High-Level Approach
 
 - **Keras** (`tf.keras`): TensorFlow's high-level interface: stack layers, `compile()` with a loss and an optimizer, then `fit()` and `predict()` much like `scikit-learn`.
 - **Dropout**: randomly masks a fraction of units during training; all units are active when the model predicts. Like L2, it is a regularization choice to validate against a plain network, not a guarantee against overfitting.
+
+![The plain 64-32 network's validation loss turns up after epoch 20, while with dropout and L2 the two curves fall together; both get 111 of 114 validation biopsies right (0.9737).](media/keras_dropout_curves.png)
 
 ### Reference Card: `tf.keras`
 
@@ -792,7 +830,7 @@ Output Layer (1 neuron, Sigmoid)
 
 ### Code Snippet: A Small Keras Classifier
 
-`X_train_scaled` and `X_valid_scaled` are features scaled with training-fitted settings; one hidden layer is enough to show the API.
+`X_train_scaled` and `X_valid_scaled` are the same biopsy measurements, scaled with training-fitted settings, with the same 114 validation rows; one hidden layer is enough to show the API.
 
 ```python
 model = keras.Sequential([
@@ -807,15 +845,19 @@ probability = model.predict(X_valid_scaled, verbose=0).ravel()
 print(len(history.history['val_loss']), probability.shape)  # 10 (114,)
 ```
 
+![xkcd 2173: Trained a Neural Net. Do the task by hand and you can technically say you trained a neural net to do it.](media/xkcd_2173.png)
+
 ## Comparing Model Families
 
 - Start simple: a well-tuned linear regression often beats a poorly tuned neural network.
 - Dataset, implementation, hardware, and budget rule out universal rankings, so shortlist candidates and measure them in the intended workflow:
 
+![Validation accuracy on the same 114 biopsies: every model beats the majority-class baseline (0.6228, 71 of 114), and logistic regression ties the forest and two networks at 0.9737 (111 of 114).](media/model_comparison.png)
+
 | Model family | Useful role in a shortlist | Potential strengths | Check before choosing |
 |---|---|---|---|
 | Linear models | Simple baseline or inference model | Fast, compact, often easy to explain | Functional form and statistical assumptions |
-| Random forests | Nonlinear tabular candidate | Interactions, limited preprocessing, robust baseline | Latency, calibration, and explanation needs |
+| Random forests | Nonlinear tabular candidate | Interactions, limited preprocessing, robust baseline | Latency, **calibration** (whether predicted probabilities match observed rates, e.g. 30% of patients scored 0.3 are readmitted), and explanation needs |
 | Gradient-boosted trees | Tabular prediction candidate | Flexible nonlinear fits and strong empirical performance | Tuning, calibration, and validation stability |
 | Deep neural networks | Representation-learning candidate | Flexible architectures for images, text, audio, and other complex inputs | Data, compute, deployment, and explanation requirements |
 

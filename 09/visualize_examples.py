@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
 Companion visualization script for Lecture 09: Time Series Analysis
-Generates visualizations for code examples in the lecture README.
+Generates the BONUS figures (types_of_time_series, ewm_comparison) and the
+lecture's two ILI snippet plots (viz_ili_rolling, viz_ili_monthly).
+scripts/generate_lecture_figures.py generates every other lecture figure.
 
 Run this script to generate all example visualizations:
     python3 visualize_examples.py
@@ -113,94 +115,9 @@ print("   ✓ Saved: media/types_of_time_series.png")
 plt.close()
 
 # ============================================================================
-# Visualization 2: Resampling Example
+# Visualization 2: Exponentially Weighted Moving Average
 # ============================================================================
-print("2. Creating 'Resampling Example' visualization...")
-
-fig, axes = plt.subplots(2, 1, figsize=(12, 10))
-fig.suptitle('Resampling: Daily to Monthly Aggregation', fontsize=16, fontweight='bold')
-
-# Daily data (high frequency)
-dates_daily = pd.date_range('2023-01-01', periods=90, freq='D')
-daily_values = 98.6 + np.cumsum(np.random.randn(90) * 0.1)
-ts_daily = pd.Series(daily_values, index=dates_daily)
-
-axes[0].plot(ts_daily.index, ts_daily.values, alpha=0.6, linewidth=1, marker='o', markersize=2)
-axes[0].set_title('High Frequency (Daily) - 90 data points', fontweight='bold', fontsize=12)
-axes[0].set_xlabel('Date')
-axes[0].set_ylabel('Temperature (°F)')
-axes[0].tick_params(axis='x', rotation=45)
-axes[0].grid(True, alpha=0.3)
-
-# Monthly resampled (low frequency)
-ts_monthly = ts_daily.resample('ME').mean()
-
-axes[1].plot(ts_monthly.index, ts_monthly.values, marker='o', markersize=8, 
-             linewidth=2, color='red', label='Monthly Mean')
-axes[1].set_title('Low Frequency (Monthly) - 3 data points', fontweight='bold', fontsize=12)
-axes[1].set_xlabel('Date')
-axes[1].set_ylabel('Average Temperature (°F)')
-axes[1].legend()
-axes[1].tick_params(axis='x', rotation=45)
-axes[1].grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.savefig('media/resampling_example.png', dpi=150, bbox_inches='tight')
-print("   ✓ Saved: media/resampling_example.png")
-plt.close()
-
-# ============================================================================
-# Visualization 3: Rolling Window Operations
-# ============================================================================
-print("3. Creating 'Rolling Window' visualization...")
-
-fig, axes = plt.subplots(2, 1, figsize=(12, 10))
-fig.suptitle('Rolling Window Operations', fontsize=16, fontweight='bold')
-
-# Create time series data
-dates = pd.date_range('2023-01-01', periods=100, freq='D')
-values = 98.6 + np.cumsum(np.random.randn(100) * 0.1)
-ts = pd.Series(values, index=dates)
-
-# Original data
-axes[0].plot(ts.index, ts.values, alpha=0.5, linewidth=1, label='Original Data', color='blue')
-axes[0].plot(ts.index, ts.rolling(window=7).mean(), linewidth=2, 
-             label='7-Day Rolling Mean', color='red')
-axes[0].fill_between(ts.index, 
-                     ts.rolling(window=7).mean() - ts.rolling(window=7).std(),
-                     ts.rolling(window=7).mean() + ts.rolling(window=7).std(),
-                     alpha=0.2, color='red', label='±1 Std Dev')
-axes[0].set_title('Rolling Mean and Standard Deviation (Window=7)', fontweight='bold')
-axes[0].set_xlabel('Date')
-axes[0].set_ylabel('Temperature (°F)')
-axes[0].legend()
-axes[0].tick_params(axis='x', rotation=45)
-axes[0].grid(True, alpha=0.3)
-
-# Rolling window comparison
-axes[1].plot(ts.index, ts.values, alpha=0.3, linewidth=1, label='Original', color='gray')
-axes[1].plot(ts.index, ts.rolling(window=7).mean(), linewidth=2, 
-             label='7-Day Window', color='blue')
-axes[1].plot(ts.index, ts.rolling(window=14).mean(), linewidth=2, 
-             label='14-Day Window', color='green')
-axes[1].plot(ts.index, ts.rolling(window=30).mean(), linewidth=2, 
-             label='30-Day Window', color='red')
-axes[1].set_title('Rolling Mean with Different Window Sizes', fontweight='bold')
-axes[1].set_xlabel('Date')
-axes[1].set_ylabel('Temperature (°F)')
-axes[1].legend()
-axes[1].tick_params(axis='x', rotation=45)
-axes[1].grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.savefig('media/rolling_window.png', dpi=150, bbox_inches='tight')
-print("   ✓ Saved: media/rolling_window.png")
-plt.close()
-
-# ============================================================================
-# Visualization 4: Exponentially Weighted Moving Average
-# ============================================================================
-print("4. Creating 'EWM Comparison' visualization...")
+print("2. Creating 'EWM Comparison' visualization...")
 
 fig, axes = plt.subplots(2, 1, figsize=(12, 10))
 fig.suptitle('Exponentially Weighted vs Simple Moving Average', fontsize=16, fontweight='bold')
@@ -241,92 +158,9 @@ print("   ✓ Saved: media/ewm_comparison.png")
 plt.close()
 
 # ============================================================================
-# Visualization 5: Time Series Indexing
+# Visualization 3: Time Series Plotting (lecture snippet figures)
 # ============================================================================
-print("5. Creating 'Time Series Indexing' visualization...")
-
-fig, axes = plt.subplots(3, 1, figsize=(12, 12))
-fig.suptitle('Time Series Indexing and Selection', fontsize=16, fontweight='bold')
-
-dates = pd.date_range('2023-01-01', periods=365, freq='D')
-ts = pd.Series(100 + np.cumsum(np.random.randn(365) * 0.5), index=dates)
-
-# Full year
-axes[0].plot(ts.index, ts.values, alpha=0.7, linewidth=1)
-axes[0].set_title('Full Year (2023)', fontweight='bold')
-axes[0].set_xlabel('Date')
-axes[0].set_ylabel('Value')
-axes[0].tick_params(axis='x', rotation=45)
-axes[0].grid(True, alpha=0.3)
-
-# January selection
-jan_data = ts['2023-01']
-axes[1].plot(jan_data.index, jan_data.values, marker='o', markersize=4, linewidth=2, color='red')
-axes[1].set_title('January 2023 Selection', fontweight='bold')
-axes[1].set_xlabel('Date')
-axes[1].set_ylabel('Value')
-axes[1].tick_params(axis='x', rotation=45)
-axes[1].grid(True, alpha=0.3)
-
-# Date range selection
-range_data = ts['2023-06-01':'2023-06-30']
-axes[2].plot(range_data.index, range_data.values, marker='o', markersize=4, 
-              linewidth=2, color='green')
-axes[2].set_title('June 2023 Date Range Selection', fontweight='bold')
-axes[2].set_xlabel('Date')
-axes[2].set_ylabel('Value')
-axes[2].tick_params(axis='x', rotation=45)
-axes[2].grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.savefig('media/time_series_indexing.png', dpi=150, bbox_inches='tight')
-print("   ✓ Saved: media/time_series_indexing.png")
-plt.close()
-
-# ============================================================================
-# Visualization 6: Shifting and Lagging
-# ============================================================================
-print("6. Creating 'Shifting and Lagging' visualization...")
-
-fig, axes = plt.subplots(2, 1, figsize=(12, 10))
-fig.suptitle('Shifting and Lagging Operations', fontsize=16, fontweight='bold')
-
-dates = pd.date_range('2023-01-01', periods=30, freq='D')
-ts = pd.Series(70 + np.cumsum(np.random.randn(30) * 0.2), index=dates)
-
-# Shifting
-axes[0].plot(ts.index, ts.values, linewidth=2, label='Original', color='blue')
-axes[0].plot(ts.index, ts.shift(1), linewidth=2, label='shift(1): lag', 
-             color='red', linestyle='--', alpha=0.7)
-axes[0].plot(ts.index, ts.shift(-1), linewidth=2, label='shift(-1): lead', 
-             color='green', linestyle='--', alpha=0.7)
-axes[0].set_title('Shifting Operations', fontweight='bold')
-axes[0].set_xlabel('Date')
-axes[0].set_ylabel('Patient Weight (kg)')
-axes[0].legend()
-axes[0].tick_params(axis='x', rotation=45)
-axes[0].grid(True, alpha=0.3)
-
-# Difference
-axes[1].plot(ts.index, ts.diff(), marker='o', markersize=4, linewidth=2,
-             label='diff(): current minus previous', color='blue')
-axes[1].axhline(y=0, color='gray', linewidth=1)
-axes[1].set_title('Day-to-Day Change', fontweight='bold')
-axes[1].set_xlabel('Date')
-axes[1].set_ylabel('Weight Change (kg)')
-axes[1].tick_params(axis='x', rotation=45)
-axes[1].grid(True, alpha=0.3)
-axes[1].legend(loc='upper left')
-
-plt.tight_layout()
-plt.savefig('media/shifting_lagging.png', dpi=150, bbox_inches='tight')
-print("   ✓ Saved: media/shifting_lagging.png")
-plt.close()
-
-# ============================================================================
-# Visualization 7: Time Series Plotting (lecture snippet figures)
-# ============================================================================
-print("7. Creating 'Influenza-like Illness Visits' plots...")
+print("3. Creating 'Influenza-like Illness Visits' plots...")
 
 # One year of daily influenza-like-illness (ILI) visits with a winter peak
 days = pd.date_range('2023-01-01', '2023-12-31', freq='D')

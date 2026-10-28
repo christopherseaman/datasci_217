@@ -27,7 +27,7 @@ _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is wha
 	- **Split-apply-combine and GroupBy**: `groupby()` aggregation by one or two keys, including named aggregation.
 	- **Pivot tables and cross-tabulations**: `pivot_table()` and `pd.crosstab()`, with totals and fills for absent cells.
 	- **Group coverage and result shapes**: missing keys, unused categories, and `transform`, `filter`, and `apply`.
-	- **Performance optimization**: measuring speed with `%timeit` and memory with `memory_usage()`.
+	- **Performance optimization**: one `.agg()` per split, built-in aggregations over lambdas, and `category` keys, checked with `%timeit` and `memory_usage()`.
 	- **Remote computing with SSH**: `ssh`, `scp`, key pairs, and `tmux` sessions for long jobs.
 	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 7.5 and 10.1 to 10.5; Shotts, _The Linux Command Line_, Chapter 16; MIT _The Missing Semester of Your CS Education_, "Command-line Environment".
 	## Enables
@@ -46,16 +46,7 @@ _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is wha
 - **Combine**: collect the per-group results into a new table.
 - Grouping usually changes the **grain**, what one row represents (Lectures 06 and 07), so name it before and after.
 
-```text
-INPUT: one row per visit    SPLIT by clinic          APPLY mean     COMBINE: one row per clinic
-clinic  wait_min
-North   12            ┌──>  North: 12, 15, 6  ──>   11.0  ──┐     clinic  wait_min
-North   15            │                                     │     East         9.0
-North    6            ├──>  South: 20, 30     ──>   25.0  ──┼──>  North       11.0
-South   20            │                                     │     South       25.0
-South   30            └──>  East: 9           ──>    9.0  ──┘
-East     9
-```
+![Split-apply-combine on the six visits: split by clinic into North (12, 15, 6), South (20, 30), and East (9), apply the mean, and combine into East 9.0, North 11.0, South 25.0](media/split_apply_combine.png)
 
 # Basic GroupBy Operations
 
@@ -169,10 +160,10 @@ East had no new-patient visits, so the East `New` cell is `NaN`: there was nothi
 
 # Pivot Tables and Cross-Tabulations
 
-![The greatest research skill you can have is being a nosy bitch who wants to find out: a pivot table is how you find out](media/research.png)
-
 - **Pivot table**: summarizes one column by two keys at once, one down the rows and one across the columns, such as mean wait by clinic and visit type. It is the two-key `groupby(...).mean().unstack()` in a single call.
 - **Cross-tabulation** (crosstab): the special case that counts the rows in each combination.
+
+![A pivot table as a heatmap: mean wait (minutes) for 100,000 synthetic visits, 6 departments by 5 clinics; Orthopedics waits about 38 minutes and Pediatrics about 15 at every clinic](media/pivot_heatmap.png)
 
 ```text
 LONG: one row per visit                    PIVOT TABLE: mean wait_min, one row per clinic
@@ -184,6 +175,8 @@ South   New         20  ┐ mean → 25.0      South             NaN  25.0
 South   New         30  ┘
 East    Follow-up    9
 ```
+
+![The greatest research skill you can have is being a nosy bitch who wants to find out: a pivot table is how you find out](media/research.png)
 
 ## Basic Pivot Tables
 
@@ -341,6 +334,8 @@ That visit was East's only one, so the default report drops East entirely: six v
 | `filter` | Which visits belong to clinics with at least two visits? | 5 (East dropped) | One row per visit |
 | `apply` | Which two visits (the whole rows) had the longest waits at each clinic? | Depends on the function (5 here) | Depends on the function (up to two visits per clinic here) |
 
+![Four result shapes from the six visits grouped by clinic: agg returns 3 rows, transform 6 rows carrying 11, 11, 11, 25, 25, 9, filter 5 rows with East dropped, and apply with nlargest(2) 5 rows indexed by clinic](media/result_shapes.png)
+
 - Use `agg`, `transform`, or `filter` whenever one fits; a single number such as the longest wait is just `agg('max')`.
 
 ## Transform Operations
@@ -421,6 +416,8 @@ If a clinic has no recorded scores, its median is missing too; the fill leaves t
 	## A group summary does not line up with the rows
 	`visits['clinic_mean_wait'] = visits.groupby('clinic')['wait_min'].mean()` fills every row with `NaN`, without an error: pandas matches a new column to rows by index label (Lecture 04), and the summary is labeled by clinic while the rows are labeled 0 to 5. `.mean().values` fails instead: `ValueError: Length of values (3) does not match length of index (6)`. Use `transform('mean')`.
 </callout>
+
+![xkcd 2118: Normal Distribution. A z-score counts standard deviations from the mean, not a share of patients](media/xkcd_2118.png)
 
 ## Filter Operations
 
@@ -520,13 +517,23 @@ display(top2[['patient_id', 'wait_min']])
 - Built-in aggregations named by string (`'mean'`, `'std'`, `transform('mean')`) run as fast compiled code; a Python `lambda` or `apply` runs once per group and is often 20 to 100 times slower.
 - A repeated text key stored as `category` (Lecture 05) uses far less memory.
 
-![Performance benchmarks on about 100 million rows (lower is better): three separate groupby calls vs one agg, a per-group z-score with apply vs transform, and memory before and after categorical keys](media/perf_combined.png)
+![Performance benchmarks on about 100 million rows (lower is better): three separate groupby calls vs one agg, a per-group z-score with apply vs transform, and memory before and after storing the repeated keys as category](media/perf_combined.png)
 
 ## Measuring Speed and Memory
 
+On 1,000,000 lab results, `%timeit` of three `groupby()` calls, then of one `.agg()`, then the `clinic` column before and after `astype('category')`; timings depend on the machine:
+
+```text
+53.8 ms ± 211 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+30.9 ms ± 163 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+clinic as text:     53.5 MB
+clinic as category: 1.0 MB
+```
+
 ### Reference Card: Measure Before Optimizing
 
-- `%timeit expression`: Time one line in a notebook by running it many times; output looks like `8.8 ms ± 100 μs per loop (mean ± std. dev. of 7 runs, 100 loops each)`.
+- `%timeit expression`: Time one line in a notebook by running it many times; output looks like `30.9 ms ± 163 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)`.
 - `df.memory_usage(deep=True)`: Bytes used by each column, counting the text inside it; shows which column to shrink.
 - `df['key'].astype('category')`: Store a repeated text key as a few labels plus a small code per row; same groups, less memory.
 - `grouped['col'].agg(['mean', 'std', 'count'])`: Several summaries from one split instead of one `groupby()` per summary.
@@ -537,6 +544,8 @@ display(top2[['patient_id', 'wait_min']])
 
 - **SSH** (Secure Shell): opens an encrypted terminal on another computer, a **server** or **host**, so you can run analyses too large or too long for a laptop.
 - **Protected health information** (PHI), records that can identify a person, often may not leave an approved secure server, so you bring your code to the data and take back only permitted results.
+
+![ssh opens a shell on the server, scp copies data.csv up and analysis.csv back, and patient records (PHI) stay on the server](media/ssh_laptop_server.png)
 
 ## Connect and Copy Files
 
@@ -597,7 +606,7 @@ scp data.csv username@server.example:~/data/
 scp username@server.example:~/results/analysis.csv ./
 ```
 
-![Punk is whatever makes you happy that irritates people who are used to having total control: a job that keeps running after you log off is a little punk](media/punk.jpg)
+![xkcd 2659: Unreliable Connection. Wi-Fi that drops at random is why a long job runs inside tmux](media/xkcd_2659.png)
 
 ## Keep Long Jobs Alive with tmux or screen
 
@@ -610,6 +619,8 @@ laptop ── ssh ──> server
                    └─ tmux session "analysis"   (keeps running after you disconnect)
                         └─ python3 analysis.py
 ```
+
+![A tmux session named analysis running analysis.py at step 10 of 120; the green status bar shows the session name, analysis, and the window 0:python3](media/tmux_session.png)
 
 ### Reference Card: tmux Sessions
 

@@ -153,6 +153,8 @@ The lecture sorts series by spacing, regular or irregular. A series can also be 
 - **Additive**: observed = trend + seasonal + residual; seasonal swings have roughly constant size. **Multiplicative**: observed = trend × seasonal × residual; swings grow with the level, and all values must be positive.
 - `period` counts observations per cycle: 7 for a weekly cycle in daily data, 12 for an annual cycle in monthly data. Use regular spacing, no missing values, and at least two complete cycles.
 
+![An additive series for 2023: the daily values (top) are the sum of a straight trend from 100 to 120, a yearly cycle of plus or minus 10, and random noise.](media/viz_components.png)
+
 ### Reference Card: Seasonal Decomposition
 
 ```python

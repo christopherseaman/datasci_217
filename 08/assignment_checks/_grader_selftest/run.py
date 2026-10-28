@@ -12,7 +12,8 @@ check, a summary saved without its key column costs only the columns check,
 and a missing file costs only its own artifact's checks, with no advice to
 rename another required file. A pivot with its axes swapped costs only its
 columns check, margins=True costs only the columns check, which names it as the
-cause of the Total column,
+cause of the Total column, a list for values= or aggfunc= costs only the columns
+check, which names it as the cause of the extra header line,
 and wait_vs_clinic worked out from a wrong clinic_mean_wait costs only the
 clinic_mean_wait check. It also confirms that
 the copy of the visit log in `_value_checks.py` matches
@@ -575,6 +576,23 @@ def run() -> None:
         assert failing(result) == {"mean wait pivot: one row per clinic"}, failing(result)
         assert "Total comes from margins=True" in detail(result, "mean wait pivot: one row per clinic")
 
+        # A list for values= or aggfunc= adds a header level: one argument, charged once by the columns check.
+        for label, arguments in (("values", {"values": ["wait_min"], "aggfunc": "mean"}),
+                                 ("aggfunc", {"values": "wait_min", "aggfunc": ["mean"]})):
+            files = dict(correct)
+            files["output/mean_wait_pivot.csv"] = pd.pivot_table(
+                visits, index="clinic", columns="visit_type", **arguments).to_csv()
+            result = graded(submission(f"pivot-{label}-list", files))
+            assert failing(result) == {"mean wait pivot: columns"}, {name: detail(result, name) for name in failing(result)}
+            assert result["score"] == 96, result["score"]
+            message = detail(result, "mean wait pivot: columns")
+            assert "list for values= or aggfunc= adds a header level" in message and 'values="wait_min", aggfunc="mean"' in message, message
+        # The cells under that extra header line are still compared: a list of the wrong function costs the means too.
+        files["output/mean_wait_pivot.csv"] = pd.pivot_table(
+            visits, values="wait_min", index="clinic", columns="visit_type", aggfunc=["median"]).to_csv()
+        result = graded(submission("pivot-median-list", files))
+        assert failing(result) == {"mean wait pivot: columns", "mean wait pivot: mean waits"}, failing(result)
+
         # wait_vs_clinic worked out from a wrong clinic_mean_wait costs only the clinic_mean_wait check.
         context = visits.copy()
         context["clinic_mean_wait"] = visits.groupby("clinic")["wait_min"].transform("median")
@@ -636,7 +654,7 @@ def run() -> None:
         "semicolon- and tab-separated, "
         f"and index-key submissions earn 100; lost key columns cost only the columns checks; each of the "
         f"{len(NAMES)} single mistakes and each missing file costs only its own checks; swapped axes, margins, "
-        "and a derived column cost only their own checks; feedback and pytest pass."
+        "list arguments to pivot_table, and a derived column cost only their own checks; feedback and pytest pass."
     )
 
 

@@ -43,11 +43,15 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 - **Time series**: one measurement recorded again and again over time, such as an ICU patient's heart rate every minute or a hospital's daily flu admissions.
 - Row order carries meaning: "what was the previous reading?" and "how many admissions this week?" need tools that read dates and times.
 
+![Tufte, _The Visual Display of Quantitative Information_, p. 74: Connecticut traffic deaths for 1955 and 1956 alone suggest a crackdown worked; the 1951 to 1959 series shows 1955 was the peak year.](media/tufte_vdqi_p74_traffic_deaths.png)
+
 ## Forms of Time
 
 - **Timestamp**: one instant, such as the blood draw at `2024-03-01 08:15`.
 - **Period**: a whole span with a start and end, such as "March 2024" in a monthly report.
 - **Elapsed time**: time since a starting point, such as hours since admission.
+
+![One admission, three forms of time: the blood draw's timestamp 2024-03-01 08:15, the period March 2024 (shaded), and elapsed time, 12 hours since admission on February 29 at 20:15.](media/forms_of_time.png)
 
 ## Regular and Irregular Series
 
@@ -56,15 +60,19 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 | **Regular** | A repeating rule (daily, hourly, monthly) | Daily patient temperature readings |
 | **Irregular** | Variable intervals, recorded when something happens | Clinic visit dates |
 
-_Some time series are as regular as a Swiss watch; others are as unpredictable as a toddler's nap schedule._
+![Regular: an hourly monitor on January 5, 2024, with 14 of 24 readings and no rows 08:00 to 17:00. Irregular: one patient charted at 02:00, 03:30, 04:30, 08:00, and 09:00 UTC on November 3, 1 to 3.5 hours apart.](media/regular_irregular.png)
 
 A calendar rule does not always mean equal elapsed time: months have different lengths, and a local day can have 23 or 25 hours when the clocks change.
+
+_Some time series are as regular as a Swiss watch; others are as unpredictable as a toddler's nap schedule._
 
 ## Single Series and Panels
 
 - **Single series**: one history, such as one patient's weight.
 - **Panel**: one history per **entity** (a patient, sensor, or site) stacked in one table with an entity column such as `patient_id`; most calculations run inside each entity's history with Lecture 08's `groupby()`.
 - **Grain**: what one row represents, stated before computing anything: "one heart-rate reading for one patient at one time."
+
+![A panel: three patients' charted heart rates on November 3, 2024, one line per patient_id; P01 rises from 88 to 118 bpm, P02 stays near 70, and P03 falls from 104 to 92.](media/icu_panel_hr_utc.png)
 
 ```text
 patient_id  recorded_at        heart_rate
@@ -122,6 +130,8 @@ For a whole column, use Lecture 05's `pd.to_datetime()`: its `datetime64` values
 | --- | --- | --- |
 | Sorted | `'3/10/2024'`, then `'3/9/2024'` | `2024-03-09`, then `2024-03-10` |
 | Later minus earlier | `TypeError` | `1 days 00:00:00` |
+
+![Four weights from 81.9 to 83.4 kg: as text, '3/9/2024' sorts last and the dates sit evenly spaced; after `pd.to_datetime()`, March 9 comes first and March 12 to 20 spans 8 days.](media/text_vs_datetime_axis.png)
 
 - **`Timestamp`**: one value in the column.
 - **`DatetimeIndex`**: timestamps used as row labels, which date selection, resampling, and time windows all read.
@@ -188,6 +198,8 @@ Index([8, 20, 8], dtype='int32', name='recorded_at')
 | Monthly draws (`MS`) | January 1, February 1, March 1 |
 | Month-end reports (`ME`) | January 31, February 29, March 31 |
 
+![`pd.date_range('2024-01-01', '2024-03-31', freq=...)`: `W-MON` gives 13 Mondays from January 1, `MS` the first of each month, and `ME` each month's last day, including February 29.](media/date_range_aliases.png)
+
 ### Reference Card: Frequency Aliases
 
 | Alias | Meaning | Health example | Older alias that now fails |
@@ -219,7 +231,7 @@ DatetimeIndex(['2024-01-01 08:00:00', '2024-01-01 09:00:00',
 
 ## Basic Time Series Selection
 
-![Slicing by year, month, or date range: `pandas` reads string dates the way a human would.](media/time_series_indexing.png)
+![Hourly heart rate, January 1 to 28, 2024: `.loc['2024-01-15':'2024-01-17']` selects all 72 hours of the three fever days, and `.loc['2024-01-05']` selects one day's 14 rows, none from 08:00 to 17:00.](media/time_series_indexing.png)
 
 ### Reference Card: Calendar Selection
 
@@ -261,6 +273,8 @@ Freq: D, Name: value, dtype: int64
 | --- | --- | --- |
 | March 9, 2024 at 09:00 | UTC-5 | March 9 at 14:00 |
 | March 11, 2024 at 09:00 | UTC-4 | March 11 at 13:00 |
+
+![Four clinic visits on March 15, 2024: by local clock reading, Chicago's 08:30 (CH-01) comes first; in UTC, New York's 09:00 (NY-01, 13:00 UTC) is first and CH-01 (13:30 UTC) second.](media/two_clinics_utc.png)
 
 ### Reference Card: Time Zones
 
@@ -313,6 +327,8 @@ Twice a year, some local clock readings do not name exactly one instant:
 | 2024-11-03 06:00 | 01:00 EST | UTC-5 |
 | 2024-11-03 07:00 | 02:00 EST | UTC-5 |
 
+![New York clock against UTC: on March 10, 2024 the clock skips 02:00 to 03:00, so 02:30 meets no instant; on November 3 it repeats 01:00 to 02:00, so 01:30 meets two (05:30 and 06:30 UTC); both become NaT.](media/ny_clock_changes_2024.png)
+
 By default, `tz_localize()` raises `ValueError` at these times; the arguments below set them aside as `NaT` instead.
 
 ### Reference Card: Daylight-Saving Arguments
@@ -357,7 +373,7 @@ _Time series analysis is 90% datetime wrangling, 5% actual analysis, and 5% swea
 - **Downsampling**: many readings combined into fewer, longer bins.
 - **Upsampling**: readings spread over more, shorter slots, most of which start empty.
 
-![Daily data (many points) resampled to monthly (few): the monthly view smooths out daily swings.](media/resampling_example.png)
+![Downsampling: 91 daily home weights (gray) become 3 month-end means, 82.02, 82.00, and 82.34 kg, each labeled with its month's last day; March's mean barely shows the 84.4 kg peak.](media/resampling_example.png)
 
 ## Basic Resampling
 
@@ -407,6 +423,8 @@ Freq: ME, Name: value, dtype: float64
 | 10:00 | 80 | 10:00 |
 | 11:15 | 78 | 10:00 |
 
+![`resample('2h')` on March 1, 2024: each bin includes its left edge and excludes its right, so 10:00 opens the second bin; the means are 72.3 (3 readings, labeled 08:00) and 79.0 (2 readings, labeled 10:00).](media/resample_bins_2h.png)
+
 ### Reference Card: Bin Edges
 
 - `ts.resample('2h', closed='left', label='left')`: Each bin includes and is named by its start; the default for clock frequencies (`'min'`, `'h'`, `'D'`) and start-anchored ones (`'MS'`).
@@ -437,6 +455,8 @@ display(readings.resample('2h').agg(['mean', 'count']))
 
 Any aggregation that works after `groupby()` works after `resample()`, including several at once and Lecture 08's named aggregation.
 
+![`resample('D').count()` on an hourly monitor, January 1 to 28, 2024: 24 readings on 27 days and 14 on January 5, when it was unplugged for 10 hours.](media/daily_reading_counts.png)
+
 ### Reference Card: Resampling Aggregations
 
 - `ts.resample('D').mean()`, `.sum()`, `.max()`, `.min()`, `.std()`: One summary value per bin
@@ -463,6 +483,8 @@ The `count` column shows that the first weekly mean describes one day and the se
 ## Upsampling: Filling a Finer Grid
 
 `asfreq()` lays a series onto a regular grid without combining observations: values exactly on the grid are kept, and the other slots become `NaN`. Leave the new slots missing, or fill them with Lecture 05's `ffill()` or `interpolate()`.
+
+![Six temperatures charted every 4 hours on January 15, 2024, on an hourly grid: `asfreq()` leaves 15 of 21 slots NaN, `ffill(limit=2)` leaves 5, and `interpolate()` fills all 21 with straight lines.](media/charted_temp_upsampling.png)
 
 ### Reference Card: Upsampling
 
@@ -499,6 +521,8 @@ Resample inside each patient's group (Lecture 08's split-apply-combine); the who
 | --- | --- | --- | --- |
 | 08:00 | 79.0 | 73.5 | 90.0 |
 | 10:00 | 87.0 | 80.0 | 94.0 |
+
+![Two-hour bins on March 1, 2024: P1's means are 73.5 and 80.0 bpm and P2's 90.0 and 94.0; the whole-table means, 79.0 and 87.0, fall between the patients and describe neither.](media/per_patient_bins.png)
 
 ### Reference Card: Grouped Resampling
 
@@ -563,11 +587,7 @@ P1's three `NaN` rows look alike; only the flags show that the grid created 09:0
 
 A **gap run** is a stretch of consecutive grid hours with no reading, such as a monitor unplugged for three hours. With `source_observed` `True` for real readings (the opposite of `grid_created`), a running count of readings stays flat through each run, so its hours share a number:
 
-```text
-source_observed   True  False  False  True  False  False  False
-cumsum()             1      1      1     2      2      2      2
-gap run                     1      1            2      2      2   → 2 runs; the longest is 3 hours
-```
+![`cumsum()` of `source_observed` stays flat through each gap: P1 has runs of 2 and 3 hours (run_id 1 and 2), and P2 has one 1-hour run (run_id 2).](media/gap_run_tiles.png)
 
 - `df['source_observed'] = ~df['grid_created']`: `True` for real readings, including a charted row with a missing value.
 - `df['run_id'] = df.groupby('patient_id')['source_observed'].cumsum()`: Running count of each patient's real readings (`cumsum()` counts `True` as 1), flat through a gap.
@@ -607,7 +627,7 @@ A patient with no gaps has no rows in `runs`; report 0 runs for them rather than
 
 ## Basic Rolling Operations
 
-![A 7-day window smooths daily fluctuations while keeping the trend; the shaded band is the standard deviation, wider where readings vary more.](media/rolling_window.png)
+![Daily mean heart rate (gray dots), a 7-day rolling mean (blue) with its ±1 SD band, and an exponentially weighted mean (EWM, span 7, dashed orange): over the January 15 to 17 fever, EWM rises and falls sooner, peaking at 86.9 bpm against 84.7 on January 17.](media/daily_hr_rolling_ewm.png)
 
 ### Reference Card: Rolling Windows
 
@@ -619,7 +639,7 @@ A patient with no gaps has no rows in `runs`; report 0 runs for them rather than
 - `ts.rolling(window=7, center=True).mean()`: A **centered window**: 3 rows before, the current row, and 3 after, so each value uses later readings
 - `ax.fill_between(ts.index, mean - std, mean + std, alpha=0.2)`: Shade the band in the figure above on a Lecture 07 `Axes`; `alpha` keeps the lines visible through it
 
-A centered window reads future rows: its smooth curve suits describing a completed series, not a feature available at the current row.
+A centered window reads future rows: its smooth curve suits describing a completed series, not a summary built only from readings up to the current row.
 
 ### Code Snippet: Count Window vs Time Window
 
@@ -648,8 +668,6 @@ At 11:00, the count window averages in the 08:00 reading from three hours earlie
 - **Exponentially weighted moving average (EWM)**: an optional alternative to rolling means that weights recent readings more heavily than older ones.
 - `ts.ewm(span=7).mean()` returns one smoothed value per row; a larger `span` means slower decay.
 
-![EWM against a simple moving average: recent readings receive more weight in EWM.](media/ewm_comparison.png)
-
 # LIVE DEMO!
 
 [Open Demo 2 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo2_indexing_resampling.ipynb)
@@ -666,7 +684,7 @@ At 11:00, the count window averages in the 08:00 reading from three hours earlie
 - **Shifting**: sliding values down or up the rows while the dates stay in place.
 - **Lag**: the previous row's value, such as the last visit's blood pressure; a **lead** is the next row's.
 
-![Lag looks back, lead looks ahead, and the difference is the day-to-day change.](media/shifting_lagging.png)
+![Daily weights, March 6 to 14, 2024: `shift(1)` (lag) moves each value one row later and `shift(-1)` (lead) one row earlier; `diff()`, today minus the lag, crosses the 1.0 kg alert line only on March 10, at +1.3 kg.](media/shifting_lagging.png)
 
 Shifting counts rows, not time: with irregular clinic visits, the "previous" reading can be one week or four weeks back.
 
@@ -707,6 +725,8 @@ In a panel, a plain `shift(1)` runs down the whole stacked column (`wrong_previo
 | 3 | P2 | 2024-03-01 09:00:00 | 88 | 95.0 | NaN |
 | 4 | P2 | 2024-03-01 10:00:00 | 86 | 88.0 | 88.0 |
 | 5 | P2 | 2024-03-01 11:00:00 | 84 | 86.0 | 86.0 |
+
+![Six readings on March 1, 2024: grouped `shift(1)` (green) stays inside each patient, plain `shift(1)` hands P1's 11:30 reading of 95 to P2's first row, and `rolling('2h', closed='left')` at P1's 11:30 finds no reading from 09:30, so NaN.](media/grouped_shift_leak.png)
 
 Row 3 is the leak: P2's "previous" heart rate is P1's 95. Sort by patient and time first: `shift()` reads row order, so on unsorted rows a patient's "previous" reading can be a later one.
 
@@ -768,6 +788,8 @@ At P1's 11:30 reading, the previous two readings average 76, but no reading fall
 - **Available**: a feature whose inputs were all reported or otherwise accessible at or before the prediction time; use their availability times, not just when they were measured.
 - **Chronological holdout**: build a method on rows before a cutoff and test it on rows from the cutoff onward, the way it would meet future patients.
 
+![Prediction time 11:00 on March 1, 2024: lactate (resulted 08:45) and troponin (10:50) are available, creatinine (resulted 11:15) is not; at the same cutoff, 4 vitals are `earlier` and 2, including P2's 11:00, are `later_holdout`.](media/lab_availability_timeline.png)
+
 ### Reference Card: Availability and Chronological Blocks
 
 - `labs['resulted_at'] <= prediction_time`: `True` where the value was known at prediction time.
@@ -816,11 +838,15 @@ A chronological split permits earlier history from the same patient on both side
 - **Time-series plot**: readings drawn against time on the x-axis, in order, showing trends, seasonal cycles, and gaps that a summary table hides.
 - Draw the raw readings faintly with a smoother such as a rolling mean over them, let the line break where data is missing, and name the time zone when it matters.
 
+![Tufte, _The Visual Display of Quantitative Information_, p. 30: New York City's weather for 1980 shows 1,888 numbers, daily highs and lows against the normal range plus monthly precipitation and daily humidity.](media/tufte_vdqi_p30_nyc_weather.jpg)
+
 ## Basic Time Series Plots
 
 ![Daily influenza-like illness visits (gray) with the 30-day rolling mean (blue), which follows the winter peak without the daily noise](media/viz_ili_rolling.png)
 
 ![Bar chart of mean daily visits for each calendar month, highest in January and lowest in July](media/viz_ili_monthly.png)
+
+![Daily flu-like illness visits, December 2022 to March 2023: as reported, the line bridges the February 1 to 14 outage; after `asfreq('D')`, the 14 missing days become NaN and the line breaks.](media/ili_outage_gap.png)
 
 ### Reference Card: Time Series Plotting
 

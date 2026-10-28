@@ -246,14 +246,16 @@ colors = ["steelblue", "steelblue", "steelblue", "steelblue", "steelblue", "red"
 
 fig, ax = plt.subplots(figsize=(9, 4))
 bars = ax.bar(labels, full_counts, color=colors)
-ax.bar_label(bars)
-ax.set_title("Visits per clinic; red bars are missing from the default report")
+# Color each count like its bar: Bayview's bar has height 0, so its red 0 is the only mark it gets
+for text, color in zip(ax.bar_label(bars), colors):
+    text.set_color(color)
+ax.set_title("Visits per clinic; red marks the groups missing from the default report")
 ax.set_ylabel("Visits counted")
 plt.tight_layout()
 plt.show()
 ```
 
-**Expect:** five blue bars of about 20,000 visits each, then Bayview labelled `0` with no bar at all and a thin red bar labelled `250` for the visits with no clinic. Neither would appear in a default report, and neither is easy to see even here, which is why a report needs `observed=False` and `dropna=False` to list them.
+**Expect:** five blue bars of about 20,000 visits each, each labelled in blue, then Bayview with no bar at all and a red `0` on the baseline, and a thin red bar labelled `250` in red for the visits with no clinic. Neither would appear in a default report, and neither is easy to see even here, which is why a report needs `observed=False` and `dropna=False` to list them.
 
 
 ### Quartiles Within Each Department
