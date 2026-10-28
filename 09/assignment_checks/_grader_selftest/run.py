@@ -7,8 +7,11 @@ order, CRLF, a BOM, UTF-16, quoting, padding, letter case, number format,
 timestamps in other spellings and zones, other spellings of True and False,
 row-number columns, `NaN` for an empty cell, and `source_row` kept or left out
 where it is optional). An empty directory and the untouched handout earn 0, one
-wrong value or one misnamed column costs exactly its own check, a table saved
-without its key columns costs only the columns check, unconverted clock times
+wrong value or one misnamed column costs exactly its own check, an omitted value
+column costs its columns check and its own values check, two columns saved
+under other names cost only the columns check when their values are right, a
+table saved without its key columns costs only the columns check, a table of
+keys alone earns no value points, unconverted clock times
 cost only Task 1.1's UTC check even where every later table is built from
 them, and a missing file costs only its own artifact's checks. A reading
 dropped or changed in Task 1.1 is charged there once, while correctly derived
@@ -418,7 +421,8 @@ def run() -> None:
         result = graded(root)
         assert result["score"] == 100, {name: detail(result, name) for name in failing(result)}
 
-        # Schema owns an omitted column; recognizable present siblings still need correct values.
+        # An omitted column costs its columns check and its own values check, which names the expected value;
+        # a wrong present sibling is reported beside it, and partial tables earn no vacuous value credit.
         partial = frames["output/lab_availability.csv"].drop(columns="collected_at").copy()
         for label in ("missing", "missing-and-wrong", "header-only", "unrecognizable"):
             changed = partial.copy()
@@ -432,14 +436,73 @@ def run() -> None:
             files = dict(correct)
             files["output/lab_availability.csv"] = changed.to_csv(index=False)
             result = graded(submission("present-siblings-" + label, files))
-            if label == "missing":
-                assert failing(result) == {"lab availability: columns"}, failing(result)
-            elif label == "missing-and-wrong":
+            if label in ("missing", "missing-and-wrong"):
                 assert failing(result) == {"lab availability: columns", "lab availability: collected_at and resulted_at in UTC"}, failing(result)
                 message = detail(result, "lab availability: collected_at and resulted_at in UTC")
-                assert "expected" in message and "resulted_at" in message, message
+                assert "has no collected_at column" in message and "expected collected_at 2026-01-20 16:05:00+00:00 for P01 lactate" in message, message
+                assert "the columns check says what to name it" in message and "Fix it in Task 3.2" in message, message
+                assert ("Also, P01 lactate has resulted_at" in message) == (label == "missing-and-wrong"), message
             else:
                 assert "lab availability: collected_at and resulted_at in UTC" in failing(result), failing(result)
+
+        # Two columns saved under other names: right values cost only the columns check, wrong ones their values
+        # checks too.
+        renamed = frames["output/hourly_grid.csv"].rename(columns={"grid_created": "created", "value_missing": "missing"})
+        files = dict(correct)
+        files["output/hourly_grid.csv"] = renamed.to_csv(index=False)
+        assert failing(graded(submission("renamed-two-right", files))) == {"hourly grid: columns"}
+        renamed.loc[0, ["created", "missing"]] = True
+        files["output/hourly_grid.csv"] = renamed.to_csv(index=False)
+        result = graded(submission("renamed-two-wrong", files))
+        assert failing(result) == {"hourly grid: columns", "hourly grid: grid_created flags", "hourly grid: value_missing flags"}, failing(result)
+        message = detail(result, "hourly grid: grid_created flags")
+        assert "P01 at 12:00 UTC has grid_created True in its created column, expected False" in message, message
+
+        # Two identical renamed columns: the first holds grid_created, the copy is judged as value_missing.
+        copied = frames["output/hourly_grid.csv"].drop(columns="value_missing").rename(columns={"grid_created": "created"})
+        copied["missing"] = copied["created"]
+        files = dict(correct)
+        files["output/hourly_grid.csv"] = copied.to_csv(index=False)
+        result = graded(submission("renamed-copies", files))
+        assert failing(result) == {"hourly grid: columns", "hourly grid: value_missing flags"}, failing(result)
+
+        # One right column saved twice under other names costs only the columns check.
+        doubled = frames["output/chronological_blocks.csv"].rename(columns={"block": "split"})
+        doubled["split2"] = doubled["split"]
+        files = dict(correct)
+        files["output/chronological_blocks.csv"] = doubled.to_csv(index=False)
+        assert failing(graded(submission("renamed-twice", files))) == {"chronological blocks: columns"}
+
+        # A renamed hr_change that follows a wrong previous_hr is not charged for it, with or without an extra
+        # column beside it.
+        wrong_previous = frames["output/past_features.csv"].copy()
+        first = wrong_previous.index[(wrong_previous["patient_id"] == "P01") & wrong_previous["previous_hr"].notna()][0]
+        wrong_previous.loc[first, "previous_hr"] -= 4
+        wrong_previous.loc[first, "hr_change"] += 4
+        for label, changed in (
+            ("renamed-pair", wrong_previous.rename(columns={"previous_hr": "prev", "hr_change": "delta"})),
+            ("renamed-one-plus-extra", wrong_previous.rename(columns={"hr_change": "delta"}).assign(notes="ok")),
+        ):
+            files = dict(correct)
+            files["output/past_features.csv"] = changed.to_csv(index=False)
+            result = graded(submission("previous-wrong-" + label, files))
+            assert failing(result) == {"past features: columns", "past features: previous_hr values"}, (label, failing(result))
+
+        # A dict .agg() saved with index=False keeps source names and loses the keys; right values cost only the
+        # columns check.
+        files = dict(correct)
+        files["output/two_hour_summary.csv"] = summary_from(prepare()).rename(
+            columns={"mean_hr": "heart_rate", "n_rows": "source_row"}).to_csv(index=False)
+        assert failing(graded(submission("agg-dict-no-keys", files))) == {"two-hour summary: columns"}
+
+        # A table of keys alone holds its rows but none of its values.
+        for path, frame in frames.items():
+            artifact = ARTIFACTS[path]
+            files = dict(correct)
+            files[path] = frame[list(artifact.key)].to_csv(index=False)
+            result = graded(submission("keys-only-" + path.split("/")[-1][:-4], files))
+            kept = {name for name in artifact_checks(path) if "one row per" in name or "recorded_at in UTC" in name}
+            assert failing(result) == set(artifact_checks(path)) - kept, (path, failing(result))
 
         # The checks read only output/: poisoned data and code in the submission change nothing.
         (root / "data").mkdir()
@@ -540,6 +603,13 @@ def run() -> None:
             files["output/two_hour_summary.csv"] = summary.to_csv(index=False)
             result = graded(submission(label + "-wrong-summary", files))
             assert failing(result) == {expected, "two-hour summary: mean_hr values"}, failing(result)
+        # Renamed flags that follow the student's own prepared readings are placed by those values.
+        files = dict(correct)
+        files.update(built_from(variants["dropped-missing"]))
+        files["output/hourly_grid.csv"] = grid_from(variants["dropped-missing"]).rename(
+            columns={"grid_created": "created", "value_missing": "missing"}).to_csv(index=False)
+        result = graded(submission("dropped-missing-renamed-flags", files))
+        assert failing(result) == {"prepared vitals: one row per reading", "hourly grid: columns"}, failing(result)
 
         # Saved instants in New York are equivalent; local two-hour bin origins also count.
         vitals = prepare()
@@ -623,7 +693,19 @@ def run() -> None:
 
         files = dict(correct)
         files["output/hourly_grid.csv"] = frames["output/hourly_grid.csv"].drop(columns="value_missing").to_csv(index=False)
-        assert failing(graded(submission("missing-value-column-once", files))) == {"hourly grid: columns"}
+        result = graded(submission("missing-value-column", files))
+        assert failing(result) == {"hourly grid: columns", "hourly grid: value_missing flags"}, failing(result)
+        message = detail(result, "hourly grid: value_missing flags")
+        assert "has no value_missing column" in message and "expected value_missing False for P01 at 12:00 UTC" in message, message
+
+        # An extra column placed by elimination is named in the values feedback.
+        files = dict(correct)
+        files["output/hourly_grid.csv"] = frames["output/hourly_grid.csv"].drop(columns="value_missing").assign(
+            notes="ok").to_csv(index=False)
+        result = graded(submission("missing-value-column-plus-extra", files))
+        assert failing(result) == {"hourly grid: columns", "hourly grid: value_missing flags"}, failing(result)
+        message = detail(result, "hourly grid: value_missing flags")
+        assert "P01 at 12:00 UTC has value_missing ok in its notes column, expected False" in message, message
 
         files = dict(correct)
         duplicate = frames["output/hourly_grid.csv"][["heart_rate"]].map(lambda value: "NA" if pd.isna(value) else f"{value:.2f}")
@@ -743,7 +825,9 @@ def run() -> None:
         "Assignment 09 checks: the data copies, README checkpoints, contract, and numbering, and the handout's "
         "byte-identical checks agree; empty and scaffold earn 0; correct, alternative, with-index, semicolon- and "
         "tab-separated, and index-key "
-        "submissions earn 100; lost key columns cost only the columns check; New York clock times, with every "
+        "submissions earn 100; lost key columns cost only the columns check; an omitted value column also costs its "
+        "values check, renamed columns with right values only the columns check, and a keys-only table its value "
+        "checks; New York clock times, with every "
         f"later table built from them, cost only the UTC check; each of the {len(NAMES)} single mistakes and each "
         "missing file costs only its own checks; feedback names a dropped reading, a table saved over another, and "
         "an ungrouped summary; right-labeled bins cost only the rows check; feedback and pytest pass."

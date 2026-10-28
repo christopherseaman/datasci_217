@@ -16,7 +16,10 @@ commas, semicolons, or tabs. A row for Excelsior, the clinic with
 no visits, is accepted when it shows zero visits, as observed=False writes it.
 A pivot saved with its rows and columns swapped is read the right way round,
 so the swap costs only its columns check. So is a pivot saved with the extra
-header line a list for values= or aggfunc= adds.
+header line a list for values= or aggfunc= adds. A value column the file does
+not hold fails its values check as well as its columns check, so omitted work
+earns no value points; one saved under another name with the right values
+costs only the columns check.
 
 Nothing here imports, runs, or inspects student code.
 """
@@ -212,6 +215,15 @@ MEAN_WAIT_PIVOT = Artifact(
 )
 
 ARTIFACTS = (CLINIC_COUNTS, CLINIC_SUMMARY, VISIT_CONTEXT, CLINIC_VISIT_TYPE, MEAN_WAIT_PIVOT)
+
+# The student's own earlier artifact a later one copies values from, and for each copied column its column there.
+# A values check with earlier=True accepts the copied value, and a misnamed column is placed by it, so an earlier
+# mistake costs points only once.
+EARLIER = {
+    CLINIC_SUMMARY.path: (CLINIC_COUNTS, {column: column for column in ("visit_count", "satisfaction_count", "patient_count")}),
+    VISIT_CONTEXT.path: (CLINIC_SUMMARY, {"clinic_mean_wait": "mean_wait_min"}),
+    MEAN_WAIT_PIVOT.path: (CLINIC_VISIT_TYPE, dict.fromkeys(VISIT_TYPES, "mean_wait_min")),
+}
 
 
 def _assert(condition: object, message: str) -> None:
@@ -485,14 +497,65 @@ def _is_transposed(artifact: Artifact, header: list[str], body: list[list[str]])
     )
 
 
-def _resolve(table: Table, artifact: Artifact) -> dict[str, str]:
+def _earlier(root: Path, artifact: Artifact):
+    """What the student's own earlier artifact saved for the columns `artifact` may copy from it.
+
+    Returns (earlier artifact, {column: its column there}, {casefolded key: rows}, its resolved columns), or
+    None when there is no such artifact or it cannot be read; its own checks charge that.
+    """
+    if artifact.path not in EARLIER:
+        return None
+    prior, columns = EARLIER[artifact.path]
+    try:
+        table = read_table(root, prior)
+        found = _resolve(table, prior, root)
+        grouped, _ = _group(table, prior, found)
+    except (AssertionError, OSError, ValueError, csv.Error):
+        return None
+    return prior, columns, {tuple(part.casefold() for part in key): rows for key, rows in grouped.items()}, found
+
+
+def _copies_earlier(cell: str, earlier, artifact: Artifact, key, column: str, row: dict[str, str], found) -> bool:
+    """True when `cell` repeats the value the student's earlier artifact saved for this row and column."""
+    if earlier is None:
+        return False
+    prior, columns, previous, earlier_found = earlier
+    if columns.get(column) not in earlier_found:
+        return False
+    if artifact.across:
+        # A pivot cell's earlier value is on the (clinic, visit type) row of the long table.
+        prior_key = (key[0].casefold(), column.casefold())
+    else:
+        prior_key = tuple(row.get(found.get(name, ""), "").casefold() for name in prior.key)
+    saved = previous.get(prior_key, [])
+    return len(saved) == 1 and _matches(cell, _number(saved[0][earlier_found[columns[column]]]))
+
+
+def _holds(grouped, artifact: Artifact, saved: str, column: str, earlier, found) -> bool:
+    """True when every row's `saved` cell holds `column`'s expected or earlier-artifact value, and one is not blank."""
+    filled = False
+    for key, rows in grouped.items():
+        expected = artifact.expected(key)[column]
+        for row in rows:
+            cell = row[saved]
+            if not (_matches(cell, expected) or _copies_earlier(cell, earlier, artifact, key, column, row, found)):
+                return False
+            filled = filled or expected is not None
+    return filled
+
+
+def _resolve(table: Table, artifact: Artifact, root: Path | None = None) -> dict[str, str]:
     """Map each expected column to the saved column that holds it.
 
     A column saved under its own name, in any letter case, is found by name. A
     key column saved under another name, such as a blank header over saved
-    index labels, is found by its values. If exactly one expected value column
-    is still unplaced and exactly one unexpected column is left, that column is
-    taken to hold it. A misnamed column then costs only the columns check.
+    index labels, is found by its values. An unexpected column whose values
+    match one unplaced value column, as expected or as the student's own
+    earlier artifact (found under `root`) saved them, is taken to hold it. If
+    exactly one expected value column is still unplaced and exactly one
+    unexpected column is left, that column is taken to hold it. A misnamed
+    column then costs only the columns check, or its values check too when its
+    values are wrong.
     """
     expected = [_fold(column) for column in artifact.columns]
     found = {column: _fold(column) for column in artifact.columns if _fold(column) in table.columns}
@@ -511,6 +574,42 @@ def _resolve(table: Table, artifact: Artifact) -> dict[str, str]:
             spare.remove(candidates[0])
     # A key column is only ever found by name or by its values, never by elimination.
     unplaced = [column for column in artifact.columns if column not in found and column not in artifact.key]
+    if unplaced and spare:
+        try:
+            grouped, _ = _group(table, artifact, found)
+        except AssertionError:
+            grouped = {}
+        earlier = _earlier(root, artifact) if root is not None else None
+        matches = {
+            other: [column for column in unplaced if _holds(grouped, artifact, other, column, earlier, found)]
+            for other in spare
+        }
+        # Pair only one-to-one matches: a spare column that fits two expected columns places neither.
+        for other, columns in matches.items():
+            if len(columns) == 1 and sum(columns[0] in fits for fits in matches.values()) == 1:
+                found[columns[0]] = other
+        spare = [column for column in spare if column not in found.values()]
+        unplaced = [column for column in unplaced if column not in found]
+    # A misnamed wrong clinic_mean_wait matches no expected value, so a misnamed wait_vs_clinic worked out from it
+    # stays unplaced too. Place the one spare pair whose mean is constant within each clinic and whose rows read
+    # wait_min minus mean = diff, so the wrong mean costs only its own values check.
+    if {"clinic_mean_wait", "wait_vs_clinic"} <= set(unplaced) and {"clinic", "wait_min"} <= set(found) and table.rows:
+        clinic = found["clinic"]
+        pairs = [
+            (mean, diff) for mean in spare for diff in spare
+            if mean != diff
+            and len({(row[clinic].casefold(), _finite(row[mean])) for row in table.rows})
+            == len({row[clinic].casefold() for row in table.rows})
+            and all(
+                derived is not None and _matches(row[diff], derived[0])
+                for row in table.rows
+                for derived in [_saved_wait_vs_clinic(row, {"wait_min": found["wait_min"], "clinic_mean_wait": mean})]
+            )
+        ]
+        if len(pairs) == 1:
+            found["clinic_mean_wait"], found["wait_vs_clinic"] = pairs[0]
+            spare = [column for column in spare if column not in pairs[0]]
+            unplaced = [column for column in unplaced if column not in found]
     if len(unplaced) == 1 and len(spare) == 1:
         found[unplaced[0]] = spare[0]
     return found
@@ -613,7 +712,7 @@ def columns_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
             f"down the side, so {_swapped(artifact)} {artifact.task} saves the header line "
             f"{','.join(artifact.columns)}.{_levels_note(table)}",
         )
-        found = _resolve(table, artifact)
+        found = _resolve(table, artifact, root)
         # A saved index with no name leaves its column unheaded; holding the IDs, it is the key column.
         first = table.columns[0] if table.columns else None
         unheaded = {
@@ -656,7 +755,7 @@ def rows_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
 
     def check(root: Path) -> None:
         table = read_table(root, artifact)
-        found = _resolve(table, artifact)
+        found = _resolve(table, artifact, root)
         _assert(
             not any(found.get(column) in table.conflicting_columns for column in artifact.key),
             f"{artifact.path} has repeated key headers with conflicting labels; expected one key value per "
@@ -694,7 +793,7 @@ def values_check(
     cells: str = "all",
     also: Callable[[dict[str, str], dict[str, str]], tuple[float, str] | None] | None = None,
     cause: Callable[[Table, dict[str, str]], str] | None = None,
-    prior: Artifact | None = None,
+    earlier: bool = False,
 ) -> Callable[[Path], None]:
     """Every saved row for an expected key holds the expected values in `columns`.
 
@@ -702,19 +801,23 @@ def values_check(
     ("filled") or to be empty ("empty"). A missing or repeated row costs the
     rows check, not this one: this check compares whatever rows the file does
     hold for the expected keys; absent rows are charged only by the rows check.
+    An expected column the file does not hold fails this check when a held row
+    has a cell to compare in it, so omitted work earns no value points.
 
     `also(row, found)`, for a column worked out from other saved columns, gives
     the value the row's own saved cells imply and how, or None. A cell that
     matches it passes too, so a mistake in the other column costs only that
-    column's check. `prior` accepts values copied from the named earlier artifact,
-    so that an earlier mistake costs points only once. `cause(table, found)`
-    names a likely cause, or returns "".
+    column's check. `earlier` accepts values copied from the student's own
+    earlier artifact (EARLIER), so that an earlier mistake costs points only
+    once. `cause(table, found)` names a likely cause, or returns "".
     """
+
+    def compared(expected: object) -> bool:
+        return not ((cells == "filled" and expected is None) or (cells == "empty" and expected is not None))
 
     def check(root: Path) -> None:
         table = read_table(root, artifact)
-        found = _resolve(table, artifact)
-        # Schema charges omitted columns; judge the present values without skipping sibling mistakes.
+        found = _resolve(table, artifact, root)
         present = tuple(column for column in columns if column in found)
         conflicts = [column for column in present if found.get(column) in table.conflicting_columns]
         _assert(
@@ -734,35 +837,33 @@ def values_check(
             f"{holds}), so its {_join(columns)} values cannot be compared; the rows check says what to fix in "
             f"{artifact.task}.",
         )
-        previous = {}
-        if prior is not None:
-            try:
-                earlier = read_table(root, prior)
-                earlier_found = _resolve(earlier, prior)
-                previous, _ = _group(earlier, prior, earlier_found)
-                previous = {tuple(part.casefold() for part in key): rows for key, rows in previous.items()}
-            except AssertionError:
-                earlier_found = {}
+        saved_earlier = _earlier(root, artifact) if earlier else None
+        # Each absent column with a cell to compare, and the first such held row, for the message. While another
+        # column here is present, two absences are charged elsewhere: a column the student's own earlier file also
+        # lacks (charged there), and in the "empty" check a column whose filled cells the "filled" check charges.
+        absent = {}
+        for column in columns:
+            first = next(
+                (key for key in artifact.rows if key in grouped and compared(artifact.rows[key][column])), None
+            )
+            copied = (
+                saved_earlier is not None and saved_earlier[1].get(column) == column and column not in saved_earlier[3]
+            )
+            if column not in found and first is not None and not (present and (copied or cells == "empty")):
+                absent[column] = first
         wrong = []
         for key, rows in grouped.items():
             expected_row = artifact.expected(key)
             for column in present:
                 expected = expected_row[column]
-                if (cells == "filled" and expected is None) or (cells == "empty" and expected is not None):
+                if not compared(expected):
                     continue
                 given, implied = set(), set()
                 for row in rows:
                     cell = row[found[column]]
                     derived = also(row, found) if also else None
-                    if prior is not None:
-                        prior_key = tuple(row.get(found.get(name, ""), "").casefold() for name in prior.key)
-                        prior_column = "mean_wait_min" if column == "clinic_mean_wait" or artifact is MEAN_WAIT_PIVOT else column
-                        if artifact is MEAN_WAIT_PIVOT:
-                            prior_key = (key[0].casefold(), column.casefold())
-                        saved = previous.get(prior_key, [])
-                        if len(saved) == 1 and prior_column in earlier_found:
-                            if _matches(cell, _number(saved[0][earlier_found[prior_column]])):
-                                continue
+                    if _copies_earlier(cell, saved_earlier, artifact, key, column, row, found):
+                        continue
                     if also and derived is None and "clinic_mean_wait" in found and _number(row[found["clinic_mean_wait"]]) is None and _matches(cell, None):
                         continue
                     if _matches(cell, expected) or (derived is not None and _matches(cell, derived[0])):
@@ -776,10 +877,21 @@ def values_check(
                         + (f" (or {_join(sorted(implied))})" if implied else "")
                     )
         note = cause(table, found) if cause else ""
+        if absent:
+            one = len(absent) == 1
+            message = (
+                f"{artifact.path} has no {_join(absent)} column{'' if one else 's'} (its columns are "
+                f"{table.header()}), so its {_join(absent)} values cannot be compared; expected "
+                + _join(f"{column} {_show(artifact.rows[key][column])} for {_key_name(key)}" for column, key in absent.items())
+                + f", for example. {'That column was' if one else 'Those columns were'} left out of the saved table "
+                f"or saved under another name; the columns check says what to name {'it' if one else 'them'}."
+                + (f" Also, {_listed(wrong)}." if wrong else "")
+            )
+        else:
+            message = f"{artifact.path}: " + _listed(wrong) + "."
         _assert(
-            not wrong,
-            f"{artifact.path}: " + _listed(wrong) + "." + (f" {note}" if note else "")
-            + f" Fix it in {artifact.task}: {hint}",
+            not absent and not wrong,
+            message + (f" {note}" if note else "") + f" Fix it in {artifact.task}: {hint}",
         )
 
     return check
@@ -864,7 +976,7 @@ CHECKS = (
     ),
     Check(
         "clinic summary: count values",
-        values_check(CLINIC_SUMMARY, ("visit_count", "satisfaction_count", "patient_count"), COUNT_HINT, prior=CLINIC_COUNTS),
+        values_check(CLINIC_SUMMARY, ("visit_count", "satisfaction_count", "patient_count"), COUNT_HINT, earlier=True),
     ),
     Check(
         "clinic summary: total_wait_min values",
@@ -909,7 +1021,7 @@ CHECKS = (
             ("clinic_mean_wait",),
             'clinic_mean_wait is groupby("clinic")["wait_min"].transform("mean"): every visit gets its own '
             "clinic's mean wait.",
-            prior=CLINIC_SUMMARY,
+            earlier=True,
             cause=_when_clinic_means_blank(
                 "Every clinic_mean_wait is blank, as happens when the column is assigned from .mean(): that "
                 "summary is labeled by clinic, not by row, so it lines up with no row (Lecture 08's callout "
@@ -980,7 +1092,7 @@ CHECKS = (
             VISIT_TYPES,
             'Each cell is the mean wait_min of that clinic\'s visits of that type: aggfunc="mean".',
             cells="filled",
-            prior=CLINIC_VISIT_TYPE,
+            earlier=True,
         ),
     ),
     Check(

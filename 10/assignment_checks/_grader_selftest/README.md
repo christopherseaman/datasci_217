@@ -20,7 +20,18 @@ assignment with statsmodels, scikit-learn, and pandas from
   where a one-decimal value that rounds something else, a wrong percent, or a
   percent in a column that is not a proportion still costs only its own
   check;
-- an omitted value column costs only the columns check, while an independently wrong present sibling still fails its values check; header-only and unrecognizable partial tables earn no vacuous value credit;
+- an omitted value column costs its columns check and its own values check,
+  whose feedback names the first expected value and a wrong present sibling;
+  two columns saved under other names cost only the columns check when their
+  values are right (judged against the expected values or the student's own
+  earlier artifact), and their values checks too when wrong; renamed columns
+  holding a common slip, and the right values saved under two other names, are
+  still placed; a slip found beside a missing column is charged there, and one
+  charged earlier never excuses a missing column; the feedback names a missing
+  column when the key column is gone too and describes an unheaded column; a
+  prediction too large to square costs its own check instead of crashing; a
+  table of keys alone keeps its rows check but earns no value points;
+  header-only and unrecognizable partial tables earn no vacuous value credit;
 - an empty directory and the untouched handout score 0;
 - each of 45 single mistakes, one per check, costs exactly that check,
   including a misnamed column; a coefficient table saved without its terms

@@ -12,7 +12,7 @@ lecture does, builds submissions in ignored `scratch/`, and confirms that:
   summaries saved with their index, the zero-visit rows `observed=False`
   adds, and every file separated by semicolons (with decimal commas) or by
   tabs, where one wrong value still costs only its own check;
-- an omitted value column costs only the columns check, while an independently wrong present sibling still fails its values check; header-only and unrecognizable partial tables earn no vacuous value credit;
+- an omitted value column costs its columns check and its own values check, whose message names the first expected value, while an independently wrong present sibling is still named; a key-only file earns only its rows check; a pivot that drops Telehealth costs its columns and means checks, not the empty-cell check; a count left out of both Task 1.2 and Task 2.1 costs Task 2.1 only its columns check; a misnamed wrong `clinic_mean_wait` beside a misnamed `wait_vs_clinic` worked out from it costs only the columns and `clinic_mean_wait` checks; two columns renamed with the right values, or with the values copied from the student's own earlier file, cost only the columns check, and two renamed with wrong values also cost both values checks; header-only and unrecognizable partial tables earn no vacuous value credit;
 - an empty directory and the untouched handout score 0;
 - each of 23 single mistakes, one per check, costs exactly that check,
   including a misnamed column; a summary saved with `index=False` after

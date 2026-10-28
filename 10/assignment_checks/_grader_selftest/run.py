@@ -9,7 +9,8 @@ UTF-16, quoting, padding, letter case, rounding, row-number columns, other
 timestamp spellings, 1/0 booleans, the array interface's `const`, and Demo 1's
 `valid` label), and one saved with every row index. An empty directory and the
 untouched handout earn 0, one wrong value or one misnamed column costs exactly
-its own check, and a missing file costs only its own artifact's checks. It also
+its own check, an omitted column costs its columns and values checks, and a
+missing file costs only its own artifact's checks. It also
 recomputes every expected value in `_value_checks.py` from
 `10/assignment/data/`, confirms that the README's checkpoints, contract, and
 task numbering agree with the checks and the notebook, that the handout ships
@@ -553,7 +554,7 @@ def run() -> None:
         result = graded(root)
         assert result["score"] == 100, {name: detail(result, name) for name in failing(result)}
 
-        # Schema owns an omitted column; recognizable present siblings still need correct values.
+        # An omitted column costs its columns check and its own values check; a wrong present sibling is named too.
         partial = frames["output/ols_coefficients.csv"].reset_index().drop(columns="ci_lower").copy()
         for label in ("missing", "missing-and-wrong", "header-only", "unrecognizable"):
             changed = partial.copy()
@@ -567,14 +568,113 @@ def run() -> None:
             files = dict(correct)
             files["output/ols_coefficients.csv"] = changed.to_csv(index=False)
             result = graded(submission("present-siblings-" + label, files))
-            if label == "missing":
-                assert failing(result) == {"coefficients: columns"}, failing(result)
-            elif label == "missing-and-wrong":
+            if label in ("missing", "missing-and-wrong"):
                 assert failing(result) == {"coefficients: columns", "coefficients: confidence interval values"}, failing(result)
                 message = detail(result, "coefficients: confidence interval values")
-                assert "expected" in message and "ci_upper" in message, message
+                assert "has no ci_lower column" in message and "expected ci_lower 47.78 for Intercept" in message, message
+                assert ("Also, Intercept has ci_upper" in message) == (label == "missing-and-wrong"), message
             else:
                 assert "coefficients: confidence interval values" in failing(result), failing(result)
+
+        # One dropped value column fails its values check, which names the expected value and the Task.
+        files = dict(correct)
+        files["output/validation_metrics.csv"] = frames["output/validation_metrics.csv"].drop(columns="mae").to_csv(index=False)
+        result = graded(submission("dropped-mae", files))
+        names = {"validation metrics: columns", "validation metrics: mae values"}
+        assert failing(result) == names and result["score"] == 100 - cost(*names), failing(result)
+        message = detail(result, "validation metrics: mae values")
+        for part in ("has no mae column", "expected mae 7.03 for mean_baseline", "the columns check says what to name it",
+                     "Fix it in Task 3.1"):
+            assert part in message, (part, message)
+        # Two columns renamed with the right values cost only the columns check, judged against the expected
+        # values or, where the check accepts them, the student's own earlier artifact.
+        files = dict(correct)
+        files["output/validation_metrics.csv"] = frames["output/validation_metrics.csv"].rename(
+            columns={"rmse": "root_mse", "r2": "r_squared"}).to_csv(index=False)
+        assert failing(graded(submission("renamed-two-right", files))) == {"validation metrics: columns"}
+        files = dict(correct)
+        frame = frames["output/ols_coefficients.csv"].copy()
+        frame.loc["Intercept", "coef"] += 5
+        files["output/ols_coefficients.csv"] = frame.to_csv()
+        frame = frames["output/ols_residuals.csv"].copy()
+        frame["fitted"] += 5
+        frame["residual"] -= 5
+        files["output/ols_residuals.csv"] = frame.rename(columns={"fitted": "fit", "residual": "resid"}).to_csv(index=False)
+        result = graded(submission("renamed-two-own-earlier", files))
+        assert failing(result) == {"coefficients: coef values", "residuals: columns"}, failing(result)
+        # Two columns renamed with wrong values cost the columns check and both values checks.
+        files = dict(correct)
+        frame = frames["output/validation_metrics.csv"].assign(rmse=[50.0, 60.0], r2=[0.11, 0.22])
+        files["output/validation_metrics.csv"] = frame.rename(columns={"rmse": "root_mse", "r2": "r_squared"}).to_csv(index=False)
+        result = graded(submission("renamed-two-wrong", files))
+        assert failing(result) == {"validation metrics: columns", "validation metrics: rmse values",
+                                   "validation metrics: r2 values"}, failing(result)
+        assert "has no r2 column" in detail(result, "validation metrics: r2 values")
+        # Renamed columns holding a common slip are placed by its values, so the slip costs once.
+        files = dict(correct)
+        frame = frames["output/validation_metrics.csv"].set_index("approach")
+        for column, value in value_checks.BASELINE_FROM_VALIDATION.rows[("mean_baseline",)].items():
+            frame.loc["mean_baseline", column] = value
+        files["output/validation_metrics.csv"] = frame.rename(columns={"rmse": "RMSE (mmHg)", "r2": "R²"}).to_csv()
+        result = graded(submission("renamed-two-slip", files))
+        assert failing(result) == {"validation metrics: columns", "validation metrics: mae values"}, failing(result)
+        # Right values saved twice under other names cost only the columns check.
+        files = dict(correct)
+        frame = frames["output/validation_metrics.csv"]
+        files["output/validation_metrics.csv"] = frame.assign(rmse_a=frame["rmse"], rmse_b=frame["rmse"]).drop(
+            columns="rmse").to_csv(index=False)
+        assert failing(graded(submission("renamed-twice", files))) == {"validation metrics: columns"}
+        # A slip found beside a missing column is charged there; a slip charged earlier never excuses a missing column.
+        for drop, names in (
+            ("mean_ci_lower", {"new-patient intervals: columns", "new-patient intervals: mean-response interval"}),
+            ("obs_ci_lower", {"new-patient intervals: columns", "new-patient intervals: mean-response interval",
+                              "new-patient intervals: prediction interval"}),
+        ):
+            files = dict(correct)
+            files["output/new_patient_intervals.csv"] = frames["output/new_patient_intervals.csv"].assign(
+                **value_checks.INTERVALS_AT_90.rows[value_checks.NEW_PATIENT]).drop(columns=drop).to_csv(index=False)
+            result = graded(submission("at-90-without-" + drop, files))
+            assert failing(result) == names, (drop, failing(result))
+        files = dict(correct)
+        frame = frames["output/test_predictions.csv"]
+        files["output/test_predictions.csv"] = frame.assign(visit_id=np.roll(frame["visit_id"].to_numpy(), -1)).drop(
+            columns="followup_time").to_csv(index=False)
+        result = graded(submission("relabeled-without-followup-time", files))
+        assert failing(result) == {"test predictions: columns", "test predictions: followup_time and sbp_followup values"}, \
+            failing(result)
+        # A prediction too large to square costs its own check instead of crashing the grader.
+        files = dict(correct)
+        frame = frames["output/test_predictions.csv"].astype({"predicted_sbp": object})
+        frame.loc[frame.index[0], "predicted_sbp"] = "1e200"
+        files["output/test_predictions.csv"] = frame.to_csv(index=False)
+        assert failing(graded(submission("huge-prediction", files))) == {"test predictions: predicted_sbp values"}
+        # A missing value column is named even when the key column is gone too, and an unheaded column is described.
+        files = dict(correct)
+        files["output/validation_metrics.csv"] = frames["output/validation_metrics.csv"].drop(
+            columns=["approach", "r2"]).to_csv(index=False)
+        result = graded(submission("no-key-no-r2", files))
+        assert failing(result) == {"validation metrics: columns", "validation metrics: r2 values"}, failing(result)
+        assert "has no r2 column (its columns are mae and rmse)" in detail(result, "validation metrics: r2 values")
+        files = dict(correct)
+        files["output/ols_coefficients.csv"] = frames["output/ols_coefficients.csv"].drop(columns="ci_lower").rename_axis(
+            None).to_csv()
+        result = graded(submission("unheaded-terms-no-ci-lower", files))
+        assert "its columns are a column with no header, coef, std_err and ci_upper" in detail(
+            result, "coefficients: confidence interval values"), detail(result, "coefficients: confidence interval values")
+        # A table of keys alone keeps its rows check but earns no value points.
+        for path, contents, name, expected in (
+            ("output/validation_metrics.csv", "approach\nmean_baseline\nlinear_pipeline\n",
+             "validation metrics: mae values", "has no mae column (its columns are approach), so its values cannot "
+             "be compared; expected mae 7.03 for mean_baseline"),
+            ("output/new_patient_intervals.csv", "age,bmi\n60,31.0\n", "new-patient intervals: mean",
+             "expected mean 150.15 for age 60 and bmi 31.0"),
+        ):
+            files = dict(correct)
+            files[path] = contents
+            result = graded(submission("key-only-" + path.split("/")[1][:-4], files))
+            rows_name = next(check for check in artifact_checks(path) if ": one row" in check)
+            assert failing(result) == set(artifact_checks(path)) - {rows_name}, failing(result)
+            assert expected in detail(result, name), detail(result, name)
 
         # A one-row artifact cannot earn missing values from an entirely unrecognizable key.
         files = dict(correct)
@@ -1129,7 +1229,8 @@ def run() -> None:
         "Assignment 10 checks: the expected values match the data, and the README checkpoints, contract, and "
         "numbering and the handout's byte-identical checks agree; empty and scaffold earn 0; correct, refit, "
         "alternative, with-index, semicolon- and tab-separated, one-decimal, and percent submissions earn 100; a coefficient table without its terms costs only the "
-        f"columns check; each of the {len(NAMES)} single mistakes and each missing file costs only its own checks; "
+        "columns check; an omitted column costs its columns and values checks, and columns renamed with the right values "
+        f"only the columns check; each of the {len(NAMES)} single mistakes and each missing file costs only its own checks; "
         "leaky features, a split on the visit time, and the other common slips land on the checks that name "
         "their cause; feedback and pytest pass."
     )

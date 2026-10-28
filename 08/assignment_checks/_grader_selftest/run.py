@@ -8,7 +8,9 @@ CRLF, a BOM, UTF-16, quoting, padding, letter case, number format, means
 rounded to one decimal, row-number columns, `NaN` for an empty cell, and the
 zero-visit rows `observed=False` adds). An empty directory and the untouched
 handout earn 0, one wrong value or one misnamed column costs exactly its own
-check, a summary saved without its key column costs only the columns check,
+check, an omitted value column costs its columns check and its own values check,
+two columns renamed with the right values cost only the columns check, a key-only
+file earns only its rows check, a summary saved without its key column costs only the columns check,
 and a missing file costs only its own artifact's checks, with no advice to
 rename another required file. A pivot with its axes swapped costs only its
 columns check, margins=True costs only the columns check, which names it as the
@@ -314,7 +316,7 @@ def run() -> None:
         result = graded(root)
         assert result["score"] == 100, {name: detail(result, name) for name in failing(result)}
 
-        # Schema owns an omitted column; recognizable present siblings still need correct values.
+        # An omitted column costs its columns check and its own values check; a present sibling's mistake is still named.
         partial = frames["output/visits_with_context.csv"].drop(columns="satisfaction").copy()
         for label in ("missing", "missing-and-wrong", "header-only", "unrecognizable"):
             changed = partial.copy()
@@ -328,14 +330,104 @@ def run() -> None:
             files = dict(correct)
             files["output/visits_with_context.csv"] = changed.to_csv(index=False)
             result = graded(submission("present-siblings-" + label, files))
-            if label == "missing":
-                assert failing(result) == {"visit context: columns"}, failing(result)
-            elif label == "missing-and-wrong":
+            if label in ("missing", "missing-and-wrong"):
                 assert failing(result) == {"visit context: columns", "visit context: original visit values"}, failing(result)
                 message = detail(result, "visit context: original visit values")
-                assert "expected" in message and "wait_min" in message, message
+                assert "has no satisfaction column" in message and "expected satisfaction 4 for V001" in message, message
+                if label == "missing-and-wrong":
+                    assert "Also, V001 has wait_min 35, expected 18" in message, message
             else:
                 assert "visit context: original visit values" in failing(result), failing(result)
+
+        # One dropped value column fails its own values check, which names the expected value.
+        files = dict(correct)
+        files["output/clinic_counts.csv"] = frames["output/clinic_counts.csv"].drop(columns="patient_count").to_csv(index=False)
+        result = graded(submission("dropped-value-column", files))
+        assert failing(result) == {"clinic counts: columns", "clinic counts: patient_count values"}, failing(result)
+        assert result["score"] == 100 - cost("clinic counts: columns", "clinic counts: patient_count values")
+        message = detail(result, "clinic counts: patient_count values")
+        for part in ("has no patient_count column", "expected patient_count 4 for Mission",
+                     "left out of the saved table or saved under another name", "the columns check says what to name it",
+                     "Fix it in Task 1.2"):
+            assert part in message, (part, message)
+
+        # Two columns renamed with correct values are placed by their values: only the columns check fails.
+        counts_frame = frames["output/clinic_counts.csv"]
+        renamed = counts_frame.rename(columns={"visit_count": "visits", "patient_count": "patients"})
+        files = dict(correct)
+        files["output/clinic_counts.csv"] = renamed.to_csv(index=False)
+        result = graded(submission("renamed-two-right", files))
+        assert failing(result) == {"clinic counts: columns"}, {name: detail(result, name) for name in failing(result)}
+        assert "is missing visit_count and patient_count and also has visits and patients" in detail(
+            result, "clinic counts: columns"), detail(result, "clinic counts: columns")
+
+        # Two columns renamed with wrong values match nothing: the columns check and both values checks fail.
+        wrong_renamed = renamed.copy()
+        wrong_renamed.loc[wrong_renamed["clinic"] == "Mission", ["visits", "patients"]] = [7, 6]
+        files["output/clinic_counts.csv"] = wrong_renamed.to_csv(index=False)
+        result = graded(submission("renamed-two-wrong", files))
+        assert failing(result) == {"clinic counts: columns", "clinic counts: visit_count values",
+                                   "clinic counts: patient_count values"}, failing(result)
+        assert "has no visit_count column" in detail(result, "clinic counts: visit_count values")
+
+        # Two renamed summary columns copied from a wrong earlier file are placed by that file's values:
+        # the copied mistakes cost only their checks in Task 1.2, and the names only the summary's columns check.
+        files = dict(correct)
+        counts_wrong = counts_frame.copy()
+        counts_wrong.loc[counts_wrong["clinic"] == "Mission", "patient_count"] = 6
+        counts_wrong.loc[counts_wrong["clinic"] == "Sunset", "satisfaction_count"] = 5
+        files["output/clinic_counts.csv"] = counts_wrong.to_csv(index=False)
+        summary_wrong = frames["output/clinic_summary.csv"].copy()
+        summary_wrong[["patient_count", "satisfaction_count"]] = counts_wrong[["patient_count", "satisfaction_count"]]
+        summary_wrong = summary_wrong.rename(columns={"patient_count": "patients", "satisfaction_count": "surveys"})
+        files["output/clinic_summary.csv"] = summary_wrong.to_csv(index=False)
+        result = graded(submission("renamed-two-copied", files))
+        assert failing(result) == {"clinic counts: patient_count values", "clinic counts: satisfaction_count values",
+                                   "clinic summary: columns"}, {name: detail(result, name) for name in failing(result)}
+
+        # A key-only file earns its rows check and nothing for the values it left out.
+        files = dict(correct)
+        files["output/clinic_counts.csv"] = counts_frame[["clinic"]].to_csv(index=False)
+        result = graded(submission("key-only", files))
+        assert failing(result) == set(artifact_checks("output/clinic_counts.csv")) - {
+            "clinic counts: one row per clinic"}, failing(result)
+        files = dict(correct)
+        files["output/mean_wait_pivot.csv"] = frames["output/mean_wait_pivot.csv"].iloc[:, :0].to_csv()
+        result = graded(submission("key-only-pivot", files))
+        assert failing(result) == set(artifact_checks("output/mean_wait_pivot.csv")) - {
+            "mean wait pivot: one row per clinic"}, failing(result)
+        assert "expected Telehealth blank for Sunset" in detail(result, "mean wait pivot: empty cell stays empty")
+
+        # A pivot saved after .dropna(axis=1) loses Telehealth: its filled cells cost the means check, and its lost
+        # empty cell is not charged again by the empty-cell check.
+        files = dict(correct)
+        files["output/mean_wait_pivot.csv"] = frames["output/mean_wait_pivot.csv"].dropna(axis=1).to_csv()
+        result = graded(submission("pivot-dropna-columns", files))
+        assert failing(result) == {"mean wait pivot: columns", "mean wait pivot: mean waits"}, failing(result)
+        assert "has no Telehealth column" in detail(result, "mean wait pivot: mean waits")
+
+        # A count left out of Task 1.2 and, copying it, of Task 2.1 costs Task 2.1 only its columns check.
+        files = dict(correct)
+        for path in ("output/clinic_counts.csv", "output/clinic_summary.csv"):
+            files[path] = frames[path].drop(columns="patient_count").to_csv(index=False)
+        result = graded(submission("count-dropped-twice", files))
+        assert failing(result) == {"clinic counts: columns", "clinic counts: patient_count values",
+                                   "clinic summary: columns"}, failing(result)
+        # Left out of Task 2.1 alone, the count is charged there.
+        files["output/clinic_counts.csv"] = correct["output/clinic_counts.csv"]
+        result = graded(submission("count-dropped-later", files))
+        assert failing(result) == {"clinic summary: columns", "clinic summary: count values"}, failing(result)
+
+        # A wrong clinic_mean_wait (medians) and the wait_vs_clinic worked out from it, both misnamed: the pair is
+        # placed by wait_min minus mean = diff, so only the columns and clinic_mean_wait checks fail.
+        medians = frames["output/visits_with_context.csv"].copy()
+        medians["clinic_mean_wait"] = medians.groupby("clinic", observed=True)["wait_min"].transform("median")
+        medians["wait_vs_clinic"] = medians["wait_min"] - medians["clinic_mean_wait"]
+        files = dict(correct)
+        files["output/visits_with_context.csv"] = medians.rename(
+            columns={"clinic_mean_wait": "median_wait", "wait_vs_clinic": "diff"}).to_csv(index=False)
+        result = graded(submission("median-renamed", files))
+        assert failing(result) == {"visit context: columns", "visit context: clinic_mean_wait values"}, failing(result)
 
         # The checks read only output/: poisoned data and code in the submission change nothing.
         (root / "data").mkdir()
@@ -653,7 +745,9 @@ def run() -> None:
         "byte-identical checks agree; empty and scaffold earn 0; correct, plain-string, alternative, with-index, "
         "semicolon- and tab-separated, "
         f"and index-key submissions earn 100; lost key columns cost only the columns checks; each of the "
-        f"{len(NAMES)} single mistakes and each missing file costs only its own checks; swapped axes, margins, "
+        f"{len(NAMES)} single mistakes and each missing file costs only its own checks; an omitted value column "
+        "costs its columns and values checks, and renamed columns with the right values only the columns check; "
+        "swapped axes, margins, "
         "list arguments to pivot_table, and a derived column cost only their own checks; feedback and pytest pass."
     )
 

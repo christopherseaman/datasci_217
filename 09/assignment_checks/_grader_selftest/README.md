@@ -16,7 +16,18 @@ ignored `scratch/`, and confirms that:
   optional, a summary saved with its index, and every file separated by
   semicolons (with decimal commas) or by tabs, where one wrong value still
   costs only its own check;
-- an omitted value column costs only the columns check, while an independently wrong present sibling still fails its values check; header-only and unrecognizable partial tables earn no vacuous value credit;
+- an omitted value column costs its columns check and its own values check,
+  whose feedback names the expected value and a wrong present sibling; two
+  columns saved under other names cost only the columns check when their
+  values are right (judged against the expected values or the student's own
+  prepared readings), and their values checks too when wrong, with feedback
+  naming the saved column; of two identical renamed copies the first is placed
+  and the second judged on its own values; a right column saved twice under
+  other names, and a dict `.agg()` summary saved without its keys, cost only
+  the columns check; a renamed `hr_change` that follows a wrong `previous_hr`
+  costs nothing beyond the `previous_hr` check; a table of keys
+  alone keeps its rows check but earns no value points; header-only and
+  unrecognizable partial tables earn no vacuous value credit;
 - an empty directory and the untouched handout score 0;
 - each of 27 single mistakes, one per check, costs exactly that check,
   including a misnamed column; a summary saved with `index=False` without

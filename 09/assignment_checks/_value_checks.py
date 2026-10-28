@@ -15,6 +15,9 @@ line endings, quoting, a byte-order mark, column order, row order, a leading
 row-number column, number formatting (2 == 2.0 == 2.00), the spelling of
 True and False, and the letter case of labels and headers never cost points,
 and cells may be separated by commas, semicolons, or tabs.
+A value column the file does not hold fails its values check as well as its
+columns check, so omitted work earns no value points; one saved under another
+name with the right values costs only the columns check.
 Timestamps are compared as instants, so any unambiguous way of writing one
 passes: `2026-01-20 18:00:00+00:00`, `2026-01-20T18:00:00Z`,
 `2026-01-20 18:00 UTC`, or the same instant in New York time,
@@ -691,14 +694,54 @@ def read_table(root: Path, artifact: Artifact) -> Table:
     return Table(columns=tuple(positions), rows=rows, repeated=tuple(repeated))
 
 
-def _resolve(table: Table, artifact: Artifact) -> dict[str, str]:
+def _holders(root: Path, table: Table, artifact: Artifact, found: dict[str, str], spare: list[str],
+             unplaced: list[str]) -> dict[str, tuple[str, int]]:
+    """For each spare column, the unplaced value column it agrees with on the most matched rows, and that count.
+
+    A spare column is kept only when one column has the top count and that
+    count covers more than half the rows. The values checks still compare
+    every row, so placing a column earns no value it does not hold; it lets a
+    renamed column with one wrong cell, or one that follows an earlier wrong
+    cell, be judged on its own values. The values are `artifact.rows`; a
+    downstream values check that retries on the student's own prepared
+    readings (`_or_own_prepared`) passes those as its rows, so a column that
+    follows them is placed there.
+    """
+    try:
+        match = _match(root, table, artifact, found)
+    except AssertionError:
+        # Without its key columns, a table whose row count differs cannot be matched in order.
+        return {}
+    pairs = [(match.rows[key], row) for key, rows in match.grouped.items() for row in rows]
+
+    def agree(other: str, column: str) -> int:
+        # A column the rows do not describe, such as heart_rate in the blocks, or expect blank throughout,
+        # is placed only by elimination.
+        if not all(column in values for values, _ in pairs) or all(values[column] is None for values, _ in pairs):
+            return 0
+        return sum(_matches(row[other], values[column]) for values, row in pairs)
+
+    best = {}
+    for other in spare:
+        counts = sorted(((agree(other, column), column) for column in unplaced), reverse=True)
+        top = counts[0][0]
+        if top * 2 > len(pairs) and (len(counts) == 1 or counts[1][0] < top):
+            best[other] = (counts[0][1], top)
+    return best
+
+
+def _resolve(table: Table, artifact: Artifact, root: Path | None = None) -> dict[str, str]:
     """Map each expected column to the saved column that holds it.
 
     A column saved under its own name, in any letter case, is found by name. A
     key column saved under another name, such as a blank header over saved
-    index labels, is found by its values. If exactly one expected value column
-    is still unplaced and exactly one unexpected column is left, that column is
-    taken to hold it. A misnamed column then costs only the columns check.
+    index labels, is found by its values. With `root`, each unplaced value
+    column is taken to be held by the unexpected column that agrees with it on
+    the most rows (see `_holders`); the first wins a tie, so of two copies one
+    is placed. If exactly one expected value column is still unplaced and
+    exactly one unexpected column is left, that column is taken to hold it. A
+    misnamed column then costs only the columns check, or its values check too
+    when its values are wrong.
     """
     known = artifact.allowed
     found = {column: _fold(column) for column in known if _fold(column) in table.columns}
@@ -721,6 +764,13 @@ def _resolve(table: Table, artifact: Artifact) -> dict[str, str]:
             spare.remove(candidates[0])
     # A key column is only ever found by name or by its values, never by elimination.
     unplaced = [column for column in artifact.required if column not in found and column not in artifact.key]
+    if root is not None and unplaced and spare:
+        held: dict[str, int] = {}
+        for other, (column, count) in _holders(root, table, artifact, found, spare, unplaced).items():
+            if column not in held or count > held[column]:
+                found[column], held[column] = other, count
+        spare = [column for column in spare if column not in found.values()]
+        unplaced = [column for column in unplaced if column not in found]
     if len(unplaced) == 1 and len(spare) == 1:
         found[unplaced[0]] = spare[0]
     return found
@@ -951,7 +1001,7 @@ def _own_prepared(root: Path, artifact: Artifact) -> Artifact | None:
         return None
     try:
         table = read_table(root, PREPARED)
-        found = _resolve(table, PREPARED)
+        found = _resolve(table, PREPARED, root)
         if any(column not in found for column in VITALS_COLUMNS):
             return None
         readings = {}
@@ -1039,13 +1089,14 @@ def values_check(artifact: Artifact, columns: tuple[str, ...], hint: str, accept
     """Every saved row for an expected key holds the expected values in `columns`.
 
     A missing or repeated row costs the rows check, not this one: this check
-    compares whatever rows the file does hold for the expected keys.
+    compares whatever rows the file does hold for the expected keys. A column
+    in `columns` the file does not hold fails this check as well as the columns
+    check, so omitted work earns no value points.
     """
 
     def check(root: Path) -> None:
         table = read_table(root, artifact)
-        found = _resolve(table, artifact)
-        # Schema charges omitted columns; judge the present values without skipping sibling mistakes.
+        found = _resolve(table, artifact, root)
         present = tuple(column for column in columns if column in found)
         match = _match(root, table, artifact, found)
         _assert(
@@ -1075,7 +1126,27 @@ def values_check(artifact: Artifact, columns: tuple[str, ...], hint: str, accept
                     return _matches(row[found[column]], own)
                 given = sorted({_given(row[found[column]]) for row in rows if not accepted(row)})
                 if given:
-                    wrong.append(f"{_key_name(key)} has {column} {_join(given)}, expected {_show(expected)}")
+                    # A column placed by its values or by elimination is named, since the file has no column by that name.
+                    saved = found[column]
+                    named = "" if saved == _fold(column) else f" in its {saved or 'unnamed'} column"
+                    wrong.append(f"{_key_name(key)} has {column} {_join(given)}{named}, expected {_show(expected)}")
+        absent = [column for column in columns if column not in found]
+        if absent:
+            held = [key for key in match.rows if key in match.grouped]
+            examples = []
+            for column in absent:
+                key = next((key for key in held if match.rows[key][column] is not None), held[0])
+                examples.append(f"{column} {_show(match.rows[key][column])} for {_key_name(key)}")
+            one = len(absent) == 1
+            _assert(
+                False,
+                f"{artifact.path} has no {_join(absent)} column{'' if one else 's'} (its columns are "
+                f"{_join(table.columns) or 'none'}), so {'its' if one else 'their'} values cannot be compared; "
+                f"expected {_join(examples)}, for example. {'That column was' if one else 'Those columns were'} left "
+                f"out of the saved table or saved under another name; the columns check says what to name "
+                f"{'it' if one else 'them'}." + (f" Also, {_listed(wrong)}." if wrong else "")
+                + f" Fix it in {artifact.task}: {hint}",
+            )
         _assert(not wrong, f"{artifact.path}: " + _listed(wrong) + "." + _fix(root, artifact, match.offset, hint))
 
     return _or_own_prepared(check, artifact, lambda own: values_check(own, columns, hint, False)) if accept_own else check

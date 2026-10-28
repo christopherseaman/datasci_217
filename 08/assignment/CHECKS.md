@@ -19,7 +19,7 @@ All checks passed.
 How the files are read:
 
 - Each check is scored on its own, so one mistake costs only that check's points.
-- A missing column costs the columns check once; values in the remaining columns are still checked. An empty table or one with no recognizable rows earns no value points.
+- A missing column costs the columns check and the values check for that column; values in the other columns are still checked. A column saved under another name with the right values costs only the columns check, and so does a count Task 2.1 leaves out that Task 1.2 also left out. An empty table or one with no recognizable rows earns no value points.
 - Spacing, line endings, quoting, column order, and row order never cost points.
 - Numbers are compared as numbers, so `6`, `6.0`, and `6.00` are the same value. A mean may keep every digit or be rounded to one or two decimals.
 - Clinic names, visit types, IDs, and column names are compared in any letter case.
