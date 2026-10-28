@@ -231,7 +231,7 @@ DatetimeIndex(['2024-01-01 08:00:00', '2024-01-01 09:00:00',
 
 ## Basic Time Series Selection
 
-![Hourly heart rate, January 1 to 28, 2024: `.loc['2024-01-15':'2024-01-17']` selects all 72 hours of the three fever days, and `.loc['2024-01-05']` selects one day's 14 rows, none from 08:00 to 17:00.](media/time_series_indexing.png)
+![Hourly heart rate, January 1 to 28, 2024: a `.loc` date range from January 15 to 17 selects all 72 hours of the three fever days, and `.loc` on January 5 selects that day's 14 rows, none from 08:00 to 17:00.](media/time_series_indexing.png)
 
 ### Reference Card: Calendar Selection
 
