@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import subprocess
 import sys
@@ -33,7 +32,8 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ENV = {**os.environ, "NOTION_KEYRING": "0"}
+sys.path.insert(0, str(ROOT / "scripts"))
+from notion_media import run_ntn  # noqa: E402
 EDIT_TIMEOUT = 180
 
 
@@ -43,8 +43,7 @@ def fail(message: str) -> None:
 
 
 def api(path: str, *arguments: str) -> dict:
-    result = subprocess.run(["ntn", "api", path, *arguments], capture_output=True,
-                            text=True, stdin=subprocess.DEVNULL, env=ENV)
+    result = run_ntn(["ntn", "api", path, *arguments])
     if result.returncode != 0:
         fail(f"{path}: {result.stderr.strip()[:200]}")
     return json.loads(result.stdout) if result.stdout.strip() else {}
@@ -136,9 +135,8 @@ def main() -> int:
         print("  dry run: nothing published")
         return 0
 
-    result = subprocess.run(["ntn", "pages", "edit", page, "--content", built.stdout, "--json"],
-                            capture_output=True, text=True, stdin=subprocess.DEVNULL,
-                            env=ENV, timeout=EDIT_TIMEOUT)
+    result = run_ntn(["ntn", "pages", "edit", page, "--content", built.stdout, "--json"],
+                     timeout=EDIT_TIMEOUT)
     if result.returncode != 0 or '"id"' not in result.stdout[:80]:
         fail(f"publish failed: {(result.stderr or result.stdout).strip()[:300]}")
     print("  published")

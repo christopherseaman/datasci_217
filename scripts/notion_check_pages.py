@@ -14,28 +14,20 @@ Exits non-zero when anything is broken, so it can gate a publish.
 from __future__ import annotations
 
 import json
-import os
 import re
-import subprocess
 import sys
-import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ENV = {**os.environ, "NOTION_KEYRING": "0"}
+sys.path.insert(0, str(ROOT / "scripts"))
+from notion_media import run_ntn  # noqa: E402
 
 
 def blocks(page: str) -> list[dict] | None:
     cursor, found = None, []
     while True:
         query = f"/v1/blocks/{page}/children?page_size=100" + (f"&start_cursor={cursor}" if cursor else "")
-        # Notion rate-limits bursts (HTTP 429), as after a bulk publish; wait and retry.
-        for delay in (0, 5, 15, 30, 60, 120):
-            time.sleep(delay)
-            result = subprocess.run(["ntn", "api", query], capture_output=True, text=True,
-                                    stdin=subprocess.DEVNULL, env=ENV)
-            if result.returncode == 0 or "429" not in result.stderr + result.stdout:
-                break
+        result = run_ntn(["ntn", "api", query])
         if result.returncode != 0:
             return None
         data = json.loads(result.stdout)

@@ -15,6 +15,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -41,6 +42,24 @@ def media_targets(source: Path) -> list[Path]:
     return found
 
 
+RETRY_DELAYS = (0, 5, 15, 30, 60, 120)
+
+
+def run_ntn(command: list[str], stdin_path: Path | None = None, **kwargs) -> subprocess.CompletedProcess:
+    """Run an ntn command, waiting and retrying while Notion rate-limits it (HTTP 429)."""
+    for delay in RETRY_DELAYS:
+        time.sleep(delay)
+        # A file on stdin is reopened each attempt, since a failed attempt has already read it.
+        with (stdin_path.open("rb") if stdin_path else open(os.devnull, "rb")) as handle:
+            result = subprocess.run(command, stdin=handle, capture_output=True,
+                                    env={**os.environ, "NOTION_KEYRING": "0"}, **kwargs)
+        stdout, stderr = (result.stdout.decode(errors="replace"), result.stderr.decode(errors="replace"))
+        result = subprocess.CompletedProcess(command, result.returncode, stdout, stderr)
+        if result.returncode == 0 or "429" not in stderr + stdout:
+            return result
+    return result
+
+
 def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -48,13 +67,8 @@ def digest(path: Path) -> str:
 def upload(path: Path) -> str:
     """Upload one file through the Notion CLI and return its file upload id."""
     content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
-    with path.open("rb") as handle:
-        result = subprocess.run(
-            ["ntn", "files", "create", "--filename", path.name,
-             "--content-type", content_type, "--json"],
-            stdin=handle, capture_output=True, text=True,
-            env={**os.environ, "NOTION_KEYRING": "0"},
-        )
+    result = run_ntn(["ntn", "files", "create", "--filename", path.name,
+                      "--content-type", content_type, "--json"], stdin_path=path)
     if result.returncode != 0:
         raise RuntimeError(f"{path}: upload failed: {result.stderr.strip()[:200]}")
     payload = json.loads(result.stdout)

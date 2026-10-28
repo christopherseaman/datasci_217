@@ -19,12 +19,11 @@ import argparse
 import json
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from notion_media import media_targets, upload  # noqa: E402
+from notion_media import media_targets, run_ntn, upload  # noqa: E402
 
 LINK = re.compile(r"!\[([^]]*)\]\(([^)]+)\)")
 ENV = {**os.environ, "NOTION_KEYRING": "0"}
@@ -34,8 +33,7 @@ def api(path: str, *arguments: str, body: dict | None = None) -> dict:
     command = ["ntn", "api", path, *arguments]
     if body is not None:
         command += ["-d", json.dumps(body)]
-    result = subprocess.run(command, capture_output=True, text=True,
-                            stdin=subprocess.DEVNULL, env=ENV)
+    result = run_ntn(command)
     if result.returncode != 0:
         raise RuntimeError(f"{path}: {result.stderr.strip()[:300]}")
     return json.loads(result.stdout) if result.stdout.strip() else {}
@@ -55,6 +53,11 @@ def page_blocks(page: str) -> list[dict]:
         if block.get("has_children") and block["type"] not in ("child_page", "child_database"):
             found += page_blocks(block["id"])
     return found
+
+
+def parent_of(block: dict) -> str:
+    parent = block.get("parent", {})
+    return parent.get("block_id") or parent.get("page_id")
 
 
 def captioned_images(source: Path) -> list[tuple[str, Path]]:
@@ -102,9 +105,16 @@ def main() -> int:
     # Uncaptioned images have no key, so the nth uncaptioned block on the page gets the nth one in the file.
     # ponytail: nested blocks come after top-level ones in page_blocks, so uncaptioned images inside columns may pair out of order.
     uncaptioned = [path for caption, path in images if not caption]
-    blocks = [b for b in page_blocks(args.page) if b["type"] == "image"]
+    every = page_blocks(args.page)
+    blocks = [b for b in every if b["type"] == "image"]
     by_order = {b["id"]: path for b, path in zip([b for b in blocks if not caption_of(b)], uncaptioned)}
     broken = [b for b in blocks if placeholder(b)]
+    # The image right after each block in its own parent: a rerun after a failed delete finds the copy already there.
+    # page_blocks lists each parent's children together and in page order.
+    after = {}
+    for parent in {parent_of(b) for b in every}:
+        siblings = [b for b in every if parent_of(b) == parent]
+        after.update({a["id"]: b for a, b in zip(siblings, siblings[1:])})
     if not broken:
         print("no placeholder images on this page")
         return 0
@@ -115,6 +125,14 @@ def main() -> int:
         local = wanted.get(caption_key(caption)) if caption else by_order.get(block["id"])
         if local is None:
             skipped.append(caption[:70] or "(no caption)")
+            continue
+        following = after.get(block["id"])
+        if (following and following["type"] == "image" and not placeholder(following)
+                and caption_of(following) == caption):
+            if not args.dry_run:
+                api(f"/v1/blocks/{block['id']}", "-X", "DELETE")
+            print(f"already attached {local.name}; removed its placeholder")
+            repaired += 1
             continue
         if args.dry_run:
             print(f"would attach {local.name} for {caption[:60]!r}")
