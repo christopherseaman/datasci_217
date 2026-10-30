@@ -30,6 +30,14 @@ Each ordinary class has 90 minutes: about 60 of lecture and 30 of core demo walk
 - Exam handouts (06 and 11): each task's Checkpoint names its artifact, header, and line count. Check your work is Restart and Run All, then commit and push. CHECKS.md lists the checks run on the artifacts, the proof of work, and human review shows only category and full credit.
 - The shark-repellent `xkcd/` toolkit searches, audits, and fetches comics (AGENTS.md has the commands). Comics 1205, 1319, and 1513 each appear in one lecture page plus an unused media file in another lecture.
 
+## October 29: Lectures 08 to 10 rework
+
+- Lectures, demos, BONUS, and Assignments 08 to 10 were rebuilt (commit 6d4da93) and Notion pages 08 to 10 plus their BONUS pages republished the same day. Demos and assignments use seeded causal-DAG generators; assignment Parquet lives in `NN/assignment/data/` and the build scripts in `scripts/build_assignmentNN_data.py`.
+- Handout repos ds217-26f-08 to -10 still hold the old small-data versions; republish them before students start (no forks existed on October 29).
+- `notion_push.py` now uploads `<video>` and `<pdf>` tags and recreates `<bookmark url>` tags, so Notion-only media must be added to the repo before a republish. Lecture 08's instructor video and PDFs live in `08/media/`.
+- Awaiting instructor review: Assignment 10's `_cause` now prefers a cause an earlier check already charged; Demo 10 call list targets patients under 150 who cross 150 next week.
+- Unverified: real Colab runs of the new demos and scaffolds, and the tmux steps by hand.
+
 ## Coming up
 
 - The midterm opens with Lecture 06 and its demos reviewed five times and the exam audited on October 21. Untested: the 25 human-review points and a live Colab runtime.
