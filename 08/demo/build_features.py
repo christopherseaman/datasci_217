@@ -1,10 +1,10 @@
-"""Rebuild one row of A1c features per patient month by month through 2025, printing progress, and save the year-end table.
+"""Rebuild one row of A1c features per patient month by month through 2025, printing progress, and save the year-end pilot list.
 
 Run it from the demo folder in a terminal, inside tmux on a server:
 
     python3 build_features.py
 
-It reads data/labs.parquet (written by generate_data.py) and writes output/a1c_features.csv.
+It reads data/labs.parquet (written by generate_data.py) and writes output/pilot_list.csv: Bayview and Excelsior patients whose latest A1c is 9% or more.
 """
 
 import time
@@ -12,15 +12,17 @@ from pathlib import Path
 
 import pandas as pd
 
-labs = pd.read_parquet('data/labs.parquet', columns=['patient_id', 'collected_at', 'test_name', 'result'])
+labs = pd.read_parquet('data/labs.parquet', columns=['patient_id', 'clinic', 'collected_at', 'test_name', 'result'])
 a1c = labs[labs['test_name'] == 'A1c'].dropna(subset=['result']).sort_values('collected_at')
 
 for month in range(1, 13):
     next_month = pd.Timestamp('2025-01-01') + pd.DateOffset(months=month)
     so_far = a1c[a1c['collected_at'] < next_month]
     features = so_far.groupby('patient_id', as_index=False).agg(
+        clinic=('clinic', 'last'),
         tests=('result', 'count'),
         mean_a1c=('result', 'mean'),
+        sd_a1c=('result', 'std'),
         max_a1c=('result', 'max'),
         latest_a1c=('result', 'last'),
     )
@@ -29,5 +31,6 @@ for month in range(1, 13):
     time.sleep(10)
 
 Path('output').mkdir(exist_ok=True)
-features.to_csv('output/a1c_features.csv', index=False)
-print('done: wrote output/a1c_features.csv')
+pilot = features[features['clinic'].isin(['Bayview', 'Excelsior']) & (features['latest_a1c'] >= 9)]
+pilot.to_csv('output/pilot_list.csv', index=False)
+print(f'done: wrote {len(pilot):,} patients to output/pilot_list.csv')

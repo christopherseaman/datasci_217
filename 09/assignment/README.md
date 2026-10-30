@@ -67,7 +67,7 @@ This step saves nothing. In the Task 1.1 cell, `vitals` starts as a copy of the 
 
 ### 1.2 Count each day's readings
 
-The program manager wants one row per New York calendar day: how many readings arrived and from how many episodes. A day binned in UTC would start at 19:00 or 20:00 the evening before in New York, so convert first (Lecture 09's "Localize in the recording zone" callout). Demo 1's step 7 runs the same daily feed check. In the Task 1.2 cell:
+The program manager wants one row per New York calendar day: how many readings arrived and from how many episodes. A day binned in UTC would start at 19:00 or 20:00 the evening before in New York, so convert first (Lecture 09's "Localize in the recording zone" callout). Demo 1's step 6 runs the same daily feed check, and Demo 3's independent practice 1 converts to New York time before `resample("D")`. In the Task 1.2 cell:
 
 1. Build `local`, a copy of `vitals` whose `recorded_at` is converted to `America/New_York` with `.dt.tz_convert()`.
 2. Build `daily`: set `recorded_at` as the index and `resample("D")` with named aggregation (Lecture 08's `(column, function)` pairs):
@@ -103,7 +103,7 @@ A patch that stops sending, because the home hub lost its connection, the patch 
 
 ### 2.2 Compare three heart-rate alert rules
 
-The clinical lead wants to know which rule should page a nurse when the heart rate reaches `ALERT_BPM` (120 bpm). A single reading can spike when the patient moves (a **motion artifact**); a whole hour, or three in a row, is harder to fake. Lecture 09's "Resampling Aggregations" and "Rolling Windows" cards, and Demo 2's independent practice 2 (one reading or a whole hour?), compare the same choices. In the Task 2.2 cell:
+The clinical lead wants to know which rule should page a nurse when the heart rate reaches `ALERT_BPM` (120 bpm). A single reading can spike when the patient moves (a **motion artifact**); a whole hour, or three in a row, is harder to fake. Lecture 09's "Resampling Aggregations" and "Rolling Windows" cards, and Demo 2's independent practice 2 (the morning huddle list), compare the same choices. In the Task 2.2 cell:
 
 1. Build `hourly`: each episode's hourly median heart rate from a grouped `resample("h").median()`, with `reset_index()`. An hour with no reading is `NaN`.
 2. Add `rolling_3h`: within each episode, the mean of the current hour's median and the two before it, from `rolling(3)` inside a grouped `transform()` (Lecture 09's "Past-Only Panel Features" card shows the pattern). With the default `min_periods`, a window with an empty hour is `NaN`, so the rule needs three straight hours.

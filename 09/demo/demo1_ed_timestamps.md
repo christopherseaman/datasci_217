@@ -15,9 +15,15 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 1: Audit Two Years of Emergency Department Timestamps
+# Demo 1: The Winter ED Boarding Report
 
-A health system's four emergency departments (EDs) send a two-year visit extract for a staffing review. Every timestamp arrives as text. Parse and audit the timestamps, measure length of stay, find when patients arrive, select calendar weeks, check that every site reported every day, and build the monthly 4-hour report. All visits and patients are synthetic.
+Riverside Health's Chief Nursing Officer, Dr. Ana Reyes, leads a winter program on patients who wait too long or go unwatched. She has asked the analytics team for three pieces of work, one per demo:
+
+- **Demo 1, ED boarding**: how long patients stay in the four emergency departments (EDs), for the staffing committee.
+- **Demo 2, monitoring on 4 West**: how much of each step-down stay was actually on the bedside monitor, for the patient-safety review.
+- **Demo 3, an early-warning score**: a day-1 training table from the three ward hospitals, for the decision to pilot a score.
+
+**This phase's ask.** On January 7, 2025, the staffing committee decides whether to fund a winter surge nurse team for admitted patients who wait in the ED for an inpatient bed (**boarding**). Dr. Reyes needs four answers by then: which months the share of visits over 4 hours (the system's target) rises, who drives it, whether every ED's data is complete, and arrival counts in the charge nurses' 4-hour blocks for planning shifts. The data is a two-year visit extract with every timestamp stored as text. All visits and patients are synthetic.
 
 Run the cells from top to bottom.
 
@@ -28,7 +34,7 @@ Run the cells from top to bottom.
 
 ## Core walkthrough
 
-### 1. Load the extract
+### 1. The extract arrives as text
 
 This supplied cell downloads `generate_data.py` when the folder lacks it (`urlretrieve(url, path)` saves the file at a web address to `path`), runs its `build()` when a table in `data/` is missing, and reads the ED table. `build()` writes all seven Lecture 09 tables in about 20 seconds, once. It uses a fixed seed, so your values match the ones below.
 
@@ -53,11 +59,11 @@ display(ed.head(3))
 display(ed.dtypes)
 ```
 
-Expect `(627505, 9)`: one row per visit at the Central, Northside, Eastside, and Harbor EDs from January 2023 through December 2024. `arrival_time` and `departure_time` are `str`, so they cannot be subtracted or sorted by time yet. `esi` is the Emergency Severity Index triage level, 1 (most urgent) to 5, and `arrival_mode` is `ambulance` or `walk-in`.
+Expect `(627505, 9)`: one row per visit at the Central, Northside, Eastside, and Harbor EDs from January 2023 through December 2024. `arrival_time` and `departure_time` are `str`, so nothing can be subtracted or sorted by time yet. `esi` is the Emergency Severity Index triage level, 1 (most urgent) to 5.
 
-### 2. Set the report window with `datetime`
+### 2. Which dates does the committee's window cover?
 
-The staffing committee meets on January 7, 2025 and wants the last 28 days before the meeting. One date is a job for Python's `datetime`.
+The committee also wants the last 28 days before the meeting. One date is a job for Python's `datetime`: `strptime()` reads the meeting date as the agenda writes it, `timedelta` counts back, and `strftime()` writes the start date the way the slide will.
 
 ```python
 meeting = datetime.strptime('January 7, 2025', '%B %d, %Y')
@@ -66,11 +72,11 @@ print(meeting)
 print('Window starts', window_start.strftime('%A, %B %d, %Y'))
 ```
 
-Expect `2025-01-07 00:00:00` and `Window starts Tuesday, December 10, 2024`. Step 6 uses both dates to select rows.
+Expect `2025-01-07 00:00:00` and `Window starts Tuesday, December 10, 2024`. Step 5 uses both dates to select rows.
 
-### 3. Parse the timestamps and audit what fails
+### 3. 150 arrival times will not parse
 
-`format=` states the pattern the extract promises, and `errors='coerce'` turns any text that does not fit into `NaT` instead of stopping.
+`pd.to_datetime()` with `format=` states the pattern the extract promises; `errors='coerce'` turns any text that does not fit into `NaT` instead of stopping, so the bad values can be counted and shown.
 
 ```python
 ed['arrival'] = pd.to_datetime(ed['arrival_time'], format='%Y-%m-%d %H:%M', errors='coerce')
@@ -81,11 +87,11 @@ display(ed.loc[ed['arrival'].isna(), 'arrival_time'].value_counts())
 display(ed.groupby('disposition')['departure_time'].apply(lambda s: s.isna().mean()).round(3))
 ```
 
-Expect `150` arrivals that failed and `7701` departures, all of them already missing in the text. The failures come in five kinds of 30 rows each: an empty string, `UNKNOWN`, two dates that do not exist (`2023-02-29`, a non-leap year, and `2024-06-31`), and the hour `24:10`. A plain `pd.to_datetime()` without `errors='coerce'` would stop at the first one. The missing departures are not spread evenly: `0.462` of patients who left without being seen have none, against `0.003` of discharged patients, because nobody checks out a patient who walked out. A length-of-stay summary that drops missing departures under-counts that group.
+Expect `150` arrivals that failed and `7701` departures, all of them already missing in the text. The failures are five codes, 30 rows each: an empty string, `UNKNOWN`, two dates that do not exist (`2023-02-29`, in a non-leap year, and `2024-06-31`), and the hour `24:10`. 150 of 627,505 rows is too few to change any monthly share, so drop them and report the count. The missing departures are not random: `0.462` of patients who left without being seen have none, against `0.003` of discharged patients, because nobody checks out a patient who walked out.
 
-### 4. Length of stay and the 4-hour mark
+### 4. Do admitted patients really wait longest?
 
-Subtracting two datetime columns gives a `timedelta64` column; `.dt.total_seconds() / 3600` turns it into hours. A departure before its arrival is a data-entry error, so count those before any summary.
+Subtracting two datetime columns gives each visit's length of stay as a `timedelta64`; `.dt.total_seconds() / 3600` turns it into hours. A stay below zero is a typing error, so count those before trusting any summary.
 
 ```python
 ed['los_hours'] = (ed['departure'] - ed['arrival']).dt.total_seconds() / 3600
@@ -99,9 +105,9 @@ display(valid.groupby('disposition').agg(visits=('los_hours', 'size'),
                                          share_over_4h=('over_4h', 'mean')).round(2))
 ```
 
-Expect `75` departures before arrival, from `-18.9` to `-22.1` hours in the first three: each departure was typed with the previous day's date. Admitted patients have the longest median stay (`6.88` hours, `0.89` of them over 4 hours), because they wait in the ED for an inpatient bed. Discharged patients have a median of `2.83` hours, with `0.26` over 4 hours.
+Expect `75` departures before arrival, from `-18.9` to `-22.1` hours in the first three: each departure was typed with the previous day's date, so they leave the summary. Admitted patients have the longest median stay, `6.88` hours, and `0.89` of them stay over 4 hours. Discharged patients have a median of `2.83` hours, with `0.26` over 4 hours.
 
-Draw each disposition's stays against the 4-hour mark. Stays over 24 hours are drawn at 24.
+Draw each disposition's stays against the 4-hour target. Stays over 24 hours are drawn at 24.
 
 ```python
 dispositions = sorted(valid['disposition'].unique())
@@ -115,45 +121,16 @@ plt.tight_layout()
 plt.show()
 ```
 
-Expect four panels sharing one hours axis. Most of the admitted bars sit right of the dashed 4-hour line, peaking near 5 to 6 hours, with a spike at 24 for patients who waited over a day for a bed. Discharged stays peak near 2 to 3 hours, left of the line, and `0.96` of patients who left without being seen are gone before the line.
+Expect four panels on one hours axis. Most admitted bars sit right of the dashed 4-hour line, peaking near 5 to 6 hours, with a spike at 24 for patients who waited over a day for a bed. Discharged stays peak near 2 to 3 hours, left of the line.
 
-### 5. When do patients arrive?
+**What we tell Dr. Reyes:** admitted patients are the 4-hour problem; 9 in 10 of them miss the target.
 
-Every visit with a parsed arrival counts here, including the ones with no departure. `.dt.hour` reads the clock hour from each arrival, and `.dt.floor('D')` rounds each arrival down to its date. Dividing the visits per hour by the number of days gives the average arrivals in that hour of a day.
+### 5. The flu-week slice raises `KeyError`
+
+The committee wants a flu-peak week beside a summer week. A `DatetimeIndex` lets `.loc` select by calendar, but this intentional error shows that the index must be sorted first: the extract is ordered by site, so arrivals jump back to January 2023 at each new site.
 
 ```python
 arrived = ed.dropna(subset=['arrival'])
-n_days = arrived['arrival'].dt.floor('D').nunique()
-per_hour = arrived.groupby(arrived['arrival'].dt.hour).size() / n_days
-print('Days:', n_days)
-print('Busiest hour:', per_hour.idxmax(), round(per_hour.max(), 1), ' Quietest hour:', per_hour.idxmin(), round(per_hour.min(), 1))
-
-fig, ax = plt.subplots(figsize=(9, 3.5))
-per_hour.plot(kind='bar', ax=ax, rot=0, color='steelblue')
-ax.set(title='Average ED arrivals by hour of day, all four sites, 2023 to 2024',
-       xlabel='Hour of arrival', ylabel='Arrivals per day in that hour')
-plt.show()
-```
-
-Expect `Days: 731` and `Busiest hour: 11 54.0  Quietest hour: 4 11.1`: about five times as many patients arrive late in the morning as before dawn. The bars climb from 06:00 to 11:00, stay high through 19:00, and fall overnight.
-
-The night shift sees a different mix of patients. Compare the share who arrive by ambulance and the share triaged ESI 1 or 2 by hour group.
-
-```python
-night = (arrived['arrival'].dt.hour >= 23) | (arrived['arrival'].dt.hour < 7)
-display(arrived.groupby(night.map({True: 'night 23:00-06:59', False: 'day 07:00-22:59'})).agg(
-    visits=('visit_id', 'size'),
-    ambulance_share=('arrival_mode', lambda s: (s == 'ambulance').mean()),
-    esi_1_or_2=('esi', lambda s: (s <= 2).mean())).round(3))
-```
-
-Expect `533054` day arrivals and `94301` at night. At night `0.202` arrive by ambulance and `0.198` are triaged ESI 1 or 2, against `0.142` and `0.139` by day: fewer people come in overnight, and more of those who do are very sick.
-
-### 6. Select weeks by date
-
-A `DatetimeIndex` lets `.loc` select by calendar. This intentional error shows why the index must be sorted first: the extract is ordered by site, so the arrivals jump back to January 2023 at each new site.
-
-```python
 by_time = arrived.set_index('arrival')
 print('Sorted?', by_time.index.is_monotonic_increasing)
 try:
@@ -177,11 +154,11 @@ weeks = pd.DataFrame({
 display(weeks)
 ```
 
-Expect `Sorted? True` and `January 2024 visits: 30495`. Every site saw more visits in the flu-peak week of January 1 to 7, 2024 than in July 8 to 14 (Central `2898` against `2476`, Eastside `1556` against `1255`). Both slice endpoints are included, so each week holds 7 full days. The `datetime` values from step 2 work as slice endpoints too: the report window runs from December 10 to the end of the data on December 31 (Central `7545` visits).
+Expect `Sorted? True` and `January 2024 visits: 30495`. Every site saw more visits in the flu-peak week of January 1 to 7, 2024 than in July 8 to 14 (Central `2898` against `2476`, Eastside `1556` against `1255`). Both slice endpoints are included, so each week holds 7 full days. The `datetime` values from step 2 work as endpoints too: the report window runs from December 10 to the end of the data on December 31 (Central `7545` visits).
 
-### 7. Check that every site reported every day
+### 6. Did every ED send data every day?
 
-A missing day can mean a quiet day or a broken data feed. `resample('D').count()` counts each site's visits per calendar day, and a day with no rows gets `0`.
+A day with no rows can mean a quiet day or a broken data feed, and a monthly share built on a broken feed is wrong. `pd.date_range()` lists every calendar day the extract should cover; `resample('D').count()` counts each site's visits per day and gives a day with no rows `0`.
 
 ```python
 all_days = pd.date_range('2023-01-01', '2024-12-31', freq='D')
@@ -198,11 +175,13 @@ ax.set(title='Eastside ED visits per day, June to October 2024', xlabel='Date', 
 plt.show()
 ```
 
-Expect `731 days in the extract`, and `731` daily rows for every site. Central, Northside, and Harbor have `0` days with no visits. Eastside has `9`, August 12 to 20, 2024, in a row: an ED that sees about 170 patients a day did not go quiet for nine days, so its feed failed. The chart draws Eastside's daily counts: about 130 to 220 visits a day, then a flat line at `0` for nine days in mid-August. A monthly count for Eastside in August 2024 would be low because of the feed, not the patients.
+Expect `731 days in the extract`, and `731` daily rows for every site. Central, Northside, and Harbor have `0` days with no visits. Eastside has `9`, August 12 to 20, 2024, in a row: an ED that sees about 170 patients a day did not go quiet for nine days, so its feed failed. The chart shows about 130 to 220 visits a day, then a flat line at `0` for those nine days.
 
-### 8. The monthly 4-hour report
+**What we tell Dr. Reyes:** Eastside's August 2024 visit count is 9 days short because its feed failed. The monthly shares in step 7 use only the days that reported, and the slide footnotes the outage.
 
-The committee tracks the share of visits that last over 4 hours, one row per month. `valid` from step 4 has `over_4h` as `True` or `False`, so a monthly mean is that share. Index it by arrival time first.
+### 7. Which months need the surge team?
+
+The committee's metric is the share of visits over 4 hours, one row per month. `over_4h` is `True` or `False`, so its monthly mean is that share; `resample('ME')` bins by month and labels each row with the month's last day.
 
 ```python
 valid_by_time = valid.set_index('arrival').sort_index()
@@ -216,9 +195,9 @@ ax.set(title='Share of ED visits over 4 hours, by month of arrival', xlabel='Mon
 plt.show()
 ```
 
-Expect the three worst months to be `2023-12-31` (`0.454`), `2024-01-31` (`0.450`), and `2023-01-31` (`0.416`), and the best near `0.38` in spring and late autumn (`2024-11-30`, `0.380`). The line sits near 0.39 most of the year and jumps in December 2023 and January 2024, the flu peak.
+Expect the three worst months to be `2023-12-31` (`0.454`), `2024-01-31` (`0.450`), and `2023-01-31` (`0.416`), and the best near `0.38` (`2024-11-30`, `0.380`). The line sits near 0.39 most of the year and jumps in December 2023 and January 2024, the flu peak.
 
-The labels are month ends: each row covers the month that ends on that date. Split by disposition to see who drives the winter rise.
+Split by disposition to check that admitted patients drive the winter rise.
 
 ```python
 by_disposition = pd.DataFrame({
@@ -228,11 +207,30 @@ by_disposition = pd.DataFrame({
 display(by_disposition.loc['2023-11':'2024-02', ['admitted', 'discharged']].round(3))
 ```
 
-Expect admitted patients to rise from `0.888` over 4 hours in November 2023 to `0.961` in January 2024, and discharged patients from `0.260` to `0.301`. Every patient waits longer when the ED is crowded, and admitted patients also wait for an inpatient bed, which fills in flu season.
+Expect admitted patients to rise from `0.888` over 4 hours in November 2023 to `0.961` in January 2024, and discharged patients from `0.260` to `0.301`. Every patient waits longer in a crowded ED; admitted patients also wait for inpatient beds, which fill in flu season.
 
-### 9. Bin edges for a triage block report
+**What we tell Dr. Reyes:** fund the surge team from mid-December through January; that is when the share over 4 hours rises from about 0.39 to 0.45, and almost every admitted patient misses the target.
 
-The charge nurse counts arrivals in 4-hour blocks and reports each block when it ends. An arrival at exactly 08:00 belongs to the block that just ended, `04:00 to 08:00`. That is `closed='right', label='right'`. Compare it with the default on one day at Central.
+### 8. Which hours does the surge team cover, and why does the 08:00 count not match?
+
+To place the surge team's shifts, start with the hours patients arrive. `.dt.hour` reads the clock hour from each arrival, and `.dt.floor('D')` rounds each arrival down to its date, so dividing the visits per hour by the number of days gives the average arrivals in that hour.
+
+```python
+n_days = arrived['arrival'].dt.floor('D').nunique()
+per_hour = arrived.groupby(arrived['arrival'].dt.hour).size() / n_days
+print('Days:', n_days)
+print('Busiest hour:', per_hour.idxmax(), round(per_hour.max(), 1), ' Quietest hour:', per_hour.idxmin(), round(per_hour.min(), 1))
+
+fig, ax = plt.subplots(figsize=(9, 3.5))
+per_hour.plot(kind='bar', ax=ax, rot=0, color='steelblue')
+ax.set(title='Average ED arrivals by hour of day, all four sites, 2023 to 2024',
+       xlabel='Hour of arrival', ylabel='Arrivals per day in that hour')
+plt.show()
+```
+
+Expect `Days: 731` and `Busiest hour: 11 54.0  Quietest hour: 4 11.1`: about five times as many patients arrive late in the morning as before dawn, and the bars stay high from 10:00 through 19:00. The surge team's shifts belong in those hours.
+
+The charge nurses count arrivals in 4-hour blocks and report each block when it ends. Their 08:00 count for Central on March 7, 2024 does not match a plain `resample('4h')`. Their rule puts an arrival at exactly 08:00 in the block that just ended, `04:00 to 08:00`: that is `closed='right', label='right'`.
 
 ```python
 central_day = by_time.loc['2024-03-07']
@@ -251,15 +249,31 @@ ax.legend(loc='upper left')
 plt.show()
 ```
 
-Expect `Arrivals at exactly 08:00: 1`, then one table with 7 labels: each rule leaves one label empty (`NaN`), and the shared labels hold different counts. By default, bins include their start and carry it as the label: `08:00` means 08:00 to 11:59 and holds `84.0`. With `closed='right', label='right'`, `08:00` means after 04:00 up to and including 08:00 and holds `26.0`: the 25 arrivals from 04:01 to 07:59 plus the one at 08:00. The last right-closed bin is labeled `2024-03-08 00:00`, the end of March 7. In the chart, the blue bar at each label counts the 4 hours after it and the orange bar the 4 hours before it. State the rule whenever a report depends on it.
+Expect `Arrivals at exactly 08:00: 1`, then one table with 7 labels: each rule leaves one label empty (`NaN`), and the shared labels hold different counts. By default, bins include their start and carry it as the label: `08:00` means 08:00 to 11:59 and holds `84.0`. With `closed='right', label='right'`, `08:00` means after 04:00 up to and including 08:00 and holds `26.0`, the nurses' number. In the chart, the blue bar at each label counts the 4 hours after it and the orange bar the 4 hours before it.
+
+**What we tell Dr. Reyes:** the two counts agree once both use the nurses' rule; the slide states it ("blocks end at the labeled hour").
 
 ## Independent practice
 
-Continue on your own after class. These cells reuse `arrived`, `valid`, `by_time`, and `valid_by_time` from the core; if the runtime closed, run the cells above again first.
+These are follow-up requests from the committee and reviewers; continue on your own after class. The cells reuse `arrived`, `valid`, `by_time`, and `valid_by_time` from the core; if the runtime closed, run the cells above again first.
 
-### 1. Find the busiest single hour and name it
+### 1. The night charge nurse asks whether nights are sicker
 
-`.dt.floor('h')` rounds each arrival down to its hour, so `value_counts()` counts every clock hour of the two years. `.dt.strftime()` writes each hour as a short key, such as a file name for that hour's staffing note.
+`.dt.hour` reads the clock hour from each arrival, so a mask picks the night arrivals, 23:00 to 06:59.
+
+```python
+night = (arrived['arrival'].dt.hour >= 23) | (arrived['arrival'].dt.hour < 7)
+display(arrived.groupby(night.map({True: 'night 23:00-06:59', False: 'day 07:00-22:59'})).agg(
+    visits=('visit_id', 'size'),
+    ambulance_share=('arrival_mode', lambda s: (s == 'ambulance').mean()),
+    esi_1_or_2=('esi', lambda s: (s <= 2).mean())).round(3))
+```
+
+Expect `533054` day arrivals and `94301` at night. At night `0.202` arrive by ambulance and `0.198` are triaged ESI 1 or 2, against `0.142` and `0.139` by day: fewer patients come in overnight, and more of them are very sick.
+
+### 2. Staffing wants the three busiest clock hours as file keys
+
+`.dt.floor('h')` rounds each arrival down to its hour, so `value_counts()` counts every clock hour of the two years. `.dt.strftime()` writes each hour as a short key for that hour's staffing note.
 
 ```python
 busiest = arrived['arrival'].dt.floor('h').value_counts().head(3)
@@ -267,11 +281,11 @@ display(busiest)
 print(busiest.index.strftime('%Y%m%d%H').tolist())
 ```
 
-Expect two clock hours during the January 2024 flu peak, `2024-01-07 12:00` (`90` arrivals) and `2024-01-08 12:00` (`87`), then `2024-09-23 16:00` (`85`). Their keys print as `['2024010712', '2024010812', '2024092316']` (year, month, day, hour).
+Expect two clock hours at the January 2024 flu peak, `2024-01-07 12:00` (`90` arrivals) and `2024-01-08 12:00` (`87`), then `2024-09-23 16:00` (`85`). Their keys print as `['2024010712', '2024010812', '2024092316']`.
 
-### 2. Weekly volume, labeled by week end
+### 3. Finance wants weekly volume and the weekend share
 
-`resample('W')` bins by calendar week; each bin ends on a Sunday and carries that Sunday's date as its label.
+`resample('W')` bins by calendar week; each bin ends on a Sunday and carries that Sunday's date. `.dayofweek` numbers Monday `0` through Sunday `6`.
 
 ```python
 weekly = by_time['visit_id'].resample('W').count()
@@ -281,11 +295,11 @@ weekend = by_time.index.dayofweek >= 5
 print('Mean visits per day:', round(weekly.sum() / 731), ' Weekend share of visits:', round(weekend.mean(), 3))
 ```
 
-Expect the first two labels, `Sun 2023-01-01` and `Sun 2023-01-08`: the first bin holds only January 1, a Sunday. The three busiest weeks end `2024-01-07` (`7454` visits), `2023-12-31` (`7367`), and `2024-01-14` (`7187`), all at the flu peak. `Mean visits per day: 858`, and weekends hold `0.272` of visits, a little less than their 2 days in 7 (`0.286`).
+Expect the first two labels, `Sun 2023-01-01` and `Sun 2023-01-08`: the first bin holds only January 1, a Sunday. The three busiest weeks end `2024-01-07` (`7454` visits), `2023-12-31` (`7367`), and `2024-01-14` (`7187`). `Mean visits per day: 858`, and weekends hold `0.272` of visits, a little less than their 2 days in 7 (`0.286`).
 
-### 3. Series and DataFrame shortcuts
+### 4. A colleague's March query raises `KeyError`
 
-`weekly` is a Series with a DatetimeIndex, so `weekly['2024-03']` selects the weeks ending in March 2024 directly. On a DataFrame, square brackets look for a column; this intentional error shows the `KeyError`.
+`weekly` is a Series with a DatetimeIndex, so `weekly['2024-03']` selects the weeks ending in March 2024. On a DataFrame, square brackets look for a column; this intentional error shows the colleague's `KeyError`.
 
 ```python
 print(weekly['2024-03'].shape)
@@ -298,9 +312,9 @@ print(by_time.loc['2024-03'].shape)
 
 Expect `(5,)`: the five weeks ending on a Sunday in March 2024. Then `KeyError: '2024-03'`, then the fix with `.loc`: `(25665, 11)`, every March 2024 visit.
 
-### 4. Follow-up schedules for frequent visitors
+### 5. Care management wants an outreach calendar for frequent visitors
 
-Patients with 4 or more visits in 2024 are enrolled in a care-management program: phone calls every Monday for four weeks from January 6, 2025, a nurse visit on the first of each month for a quarter, and a report at each month's end.
+Patients with 4 or more visits in 2024 join a care-management program: phone calls every Monday for four weeks from January 6, 2025, a nurse visit on the first of each month for a quarter, and a report at each month's end. `pd.date_range()` builds each schedule from a frequency alias.
 
 ```python
 visits_2024 = by_time.loc['2024', 'patient_id'].value_counts()
@@ -313,7 +327,7 @@ display(pd.date_range('2025-01-01', periods=3, freq='ME'))
 
 Expect `Patients: 192210  Frequent visitors: 12627` and a share of `0.208`: about 7% of 2024's patients make a fifth of its visits. Then the four Mondays January 6 to 27, the month starts January 1, February 1, and March 1, and the month ends January 31, February 28, and March 31.
 
-The older alias `'M'` for month end now fails. This intentional error shows the message.
+An older script used `'M'` for month end, which now fails. This intentional error shows the message.
 
 ```python
 try:
@@ -324,7 +338,7 @@ except ValueError as error:
 
 Expect `ValueError: Invalid frequency: M. Failed to parse with error message: ValueError("'M' is no longer supported for offsets. Please use 'ME' instead.")`.
 
-### 5. Monthly means of several columns
+### 6. The committee wants mean stay and age per month in one table
 
 `df.resample('ME').mean()` summarizes every column. A text column such as `site` raises `TypeError`, so select the numeric columns first. This intentional error shows the message.
 
@@ -338,11 +352,11 @@ display(valid_by_time[['los_hours', 'age']].resample('ME').mean().loc['2024-01':
 
 Expect `TypeError: dtype 'str' does not support operation 'mean'`, then three month-end rows. January 2024 has the longest mean stay (`4.99` hours, against `4.21` in February and `4.08` in March); the mean age barely moves (`46.66` to `45.39`).
 
-## Optional extension: overnight arrivals and frequency checks
+## Optional extension: the night shift's share and a feed check
 
 Prerequisite: BONUS.md, Time-of-Day Selection Example, and BONUS.md, Frequency Inference and Specialized Schedules. Nothing in the core route or the assignment needs this. These cells use `by_time` and `arrived` from the core.
 
-`between_time()` keeps a clock range on every day; a range that wraps past midnight, such as 23:00 to 06:59, works too. The night shift wants its share of each site's arrivals.
+The night shift asks what share of each site's arrivals it sees. `between_time()` keeps a clock range on every day; a range that wraps past midnight, such as 23:00 to 06:59, works too.
 
 ```python
 overnight = by_time.between_time('23:00', '06:59')
@@ -351,7 +365,7 @@ display((overnight.groupby('site').size() / by_time.groupby('site').size()).roun
 
 Expect every site between `0.149` and `0.153`: about one arrival in seven comes during the 8 night hours, a third of the day.
 
-`pd.infer_freq()` reads the spacing back from an index. Daily counts with a missing day have no single frequency.
+`pd.infer_freq()` reads the spacing back from an index, a quick feed check before a nightly report runs. Daily counts with a missing day have no single frequency.
 
 ```python
 for site in ['Central', 'Eastside']:
@@ -359,4 +373,4 @@ for site in ['Central', 'Eastside']:
     print(site, pd.infer_freq(site_daily.index))
 ```
 
-Expect `Central D` and `Eastside None`: the nine missing August days break the daily spacing, the same outage step 7 found.
+Expect `Central D` and `Eastside None`: the nine missing August days break the daily spacing, the same outage step 6 found.

@@ -16,14 +16,16 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 2: Forecasting Home Blood Pressure and Building a Nurse Call List
+# Demo 2: Does a Forecast Beat the Nurses' Rule for the Monday Call List?
 
-The remote monitoring program from Demo 1 wants two things from its weekly table of 140,000 patient-weeks:
+Cedar Valley Health's care-management director, Dr. Leah Kim, takes three pieces of work to the November 18, 2025, operations committee. Demo 1 measured BMI's association with SBP and built the weekly forecast table for the remote blood-pressure program. This demo builds the forecast and the call list; Demo 3 builds the post-discharge call list.
 
-- **A forecast** of each patient's mean SBP for the coming week, shown on the care team's dashboard. It must beat the simple rules the team already uses.
-- **A call list**: the pharmacist already reviews every patient whose week averaged 150 mmHg or more. The nurses want to reach patients who are still under 150 this week but will average 150 or more next week, before they lose control. They can make 100 such calls a week.
+**This phase's ask.** By November 4, Dr. Kim needs two answers for the committee, which decides whether a model replaces the rules the care team uses today:
 
-All patients and values are synthetic.
+- **The dashboard forecast**: each patient's mean SBP for the coming week. Today the dashboard repeats this week's mean. How many mmHg better is a model, and does the gain hold over time?
+- **The nurse call list**: the pharmacist already reviews every patient whose week averaged 150 mmHg or more. The nurses want to reach patients still under 150 this week who will average 150 or more next week, before they lose control. They can make 100 such calls a week, and today they call the 100 patients whose week came closest to 150. How many more of the right patients would a model reach?
+
+The data is Demo 1's weekly table of 140,000 patient-weeks. All patients and values are synthetic.
 
 Run the cells from top to bottom.
 
@@ -34,9 +36,9 @@ Run the cells from top to bottom.
 
 ## Core walkthrough
 
-### 1. Rebuild the weekly table with engineered features
+### 1. Rebuild the Monday table with what the program knows at 08:00
 
-This supplied cell repeats Demo 1's steps 7 to 9 in one place: download and build the data if missing, clean the readings, build one row per patient-week from the readings uploaded by Monday 08:00, attach next week's mean as the target, and split on target week. It also builds features from what the program knows at the Monday run:
+This supplied cell repeats Demo 1's steps 7 to 9 in one place: download and build the data if missing, clean the readings, build one row per patient-week from the readings uploaded by Monday 08:00, attach next week's mean as the target, and split on target week. It also builds the features the care team named as signs of a coming change, each known at the Monday run:
 
 - **Recent level**: `sbp_week` (this week's mean), `sbp_4wk` (mean of the last four weekly means, a grouped rolling mean from Lecture 09), and `trend` (change from last week, a grouped `diff()`).
 - **Readings**: `n_readings` and `n_symptom` (readings taken because the patient felt unwell), plus the week's mean reading time on the clock face (`hour_sin`, `hour_cos`, Demo 1 step 8).
@@ -122,12 +124,12 @@ display(fit_rows[features].isna().sum().loc[lambda counts: counts > 0].rename("m
 
 Expect `fit rows: 68324  validation rows: 37980  test rows: 33785`, the same split as Demo 1. One feature has gaps: `bmi`, missing for patients whose enrollment form left it blank (4,852 fit rows).
 
-### 2. Baselines first
+### 2. What do the nurses' current rules score?
 
-Before any model, measure the rules the team could use with no model at all, scored with validation **MAE**:
+A model is worth deploying only if it beats the rules the team could use with no model. Score three, with validation **MAE** (the average miss in mmHg) and RMSE:
 
 - **Training mean**: `DummyRegressor` predicts the fit rows' average for everyone.
-- **Persistence**: next week's mean equals this week's.
+- **Persistence**, the dashboard today: next week's mean equals this week's.
 - **4-week average**: next week's mean equals the mean of the last four weeks.
 
 Every candidate goes into one `results` dictionary keyed by name, so rerunning a cell replaces its row instead of adding a copy.
@@ -151,11 +153,22 @@ score("4-week average", valid["sbp_4wk"])
 display(pd.DataFrame(results).T.round(2))
 ```
 
-Expect MAE of about 10.2 mmHg for the training mean, 4.28 for persistence, and 4.29 for the 4-week average. A patient's own recent weeks say far more than the program-wide mean. Four weeks smooth out more noise than one but lag behind real changes, so the two rules tie. Any model has to beat 4.28 to be worth deploying.
+Expect MAE of about 10.2 mmHg for the training mean, 4.28 for persistence, and 4.29 for the 4-week average. A patient's own recent weeks say far more than the program-wide mean. Four weeks smooth out more noise than one but lag behind real changes, so the two rules tie. Any model has to beat 4.28 to replace the dashboard's rule.
 
-### 3. One pipeline for numeric and categorical columns
+### 3. Does a model beat the rules?
 
-The columns need different preparation: numbers get the training median for missing values and then scaling; categories become 0/1 columns. `ColumnTransformer` routes each group, and the `Pipeline` learns all of it from the fit rows only. The same preparation feeds three linear models, first on the level columns alone and then on every feature.
+The first attempt fits `LinearRegression` straight on the numeric columns. This intentional error shows what happens with the blank BMIs from step 1.
+
+```python
+from sklearn.linear_model import LinearRegression
+
+try:
+    LinearRegression().fit(fit_rows[numeric], y_fit)
+except ValueError as error:
+    print("ValueError:", str(error).splitlines()[0])
+```
+
+Expect `ValueError: Input X contains NaN.` The text columns (`sex`, `clinic`, `device`) would fail next, since a linear model needs numbers. The fix is a pipeline that prepares each group of columns: numbers get the training median for missing values (`SimpleImputer`) and then scaling (`StandardScaler`); categories become 0/1 columns (`OneHotEncoder`). `ColumnTransformer` routes each group, and the `Pipeline` learns all of it from the fit rows only. The same preparation feeds three linear models, first on the level columns alone and then on every feature.
 
 ```python
 from sklearn.compose import ColumnTransformer
@@ -198,9 +211,9 @@ Expect a linear model on the two level columns alone at 3.91 mmHg: weighting thi
 - **The engineered features did real work.** The medication and refill columns tell the model what the level columns cannot: a patient who stopped refilling three drugs is about to rise, and one whose new drug is still taking effect is about to fall.
 - **Regularization changes little here.** With 68,324 rows and 36 prepared columns, Ridge and Lasso land within 0.003 mmHg of plain linear regression. Step 4 shows when the penalty matters.
 
-### 4. Many columns, few rows: when the penalty matters
+### 4. Marina asks for its own model with the intake questionnaire
 
-The Marina clinic wants its own model after its first month, and asks to add the whole intake questionnaire: 30 answers from 1 to 5 about sleep, stress, diet, and mood. That makes 49 numeric columns for 229 patient-weeks from about 100 patients, and the questionnaire answers are constant within a patient, so for them only the patients count. The cell fits each linear model with and without the questionnaire and scores persistence on the same rows.
+The Marina clinic's manager asks whether a clinic could run its own model from one month of data. The cell fits on Marina's January weeks only and scores on its June and July weeks. She also asks to add the whole intake questionnaire: 30 answers from 1 to 5 about sleep, stress, diet, and mood. That makes 49 numeric columns for 229 patient-weeks from about 100 patients, and the questionnaire answers are constant within a patient, so for them only the patients count. Ridge and Lasso were built for this case: many columns for few rows. The cell fits each linear model with and without the questionnaire and scores persistence on the same rows.
 
 ```python
 intake = [column for column in weekly.columns if column.startswith("intake_q")]
@@ -243,11 +256,13 @@ Expect 229 fit rows from 103 patients, persistence at 4.19 mmHg on the same rows
 
 - **The questionnaire adds nothing.** Every model gets worse with the 30 answers added: Lasso by 0.11 mmHg, Ridge by 0.83, and plain linear regression by 1.35. In this synthetic data no answer moves blood pressure.
 - **The penalty limits the damage.** With about two patients per column, plain linear regression fits noise in the answers and misses by 5.58 mmHg, 1.39 worse than persistence. Ridge shrinks every coefficient and recovers part of the loss (5.10). Lasso sets most coefficients to exactly 0: it keeps 12 of the 62 prepared columns (the two level columns, reading time, BMI, prior-year adherence, and six questionnaire answers it took from noise) and misses by 4.26.
-- **No model earns its place here.** On the 19 core columns the three models land between 4.15 and 4.27, within 0.08 of persistence. One clinic's first month is too few rows for its own model.
+- **No model earns its place here.** On the 19 core columns the three models land between 4.15 and 4.27, within 0.08 of persistence.
 
-### 5. Is the gain stable over time? Cross-validate in time order
+**What we tell Marina's manager**: one clinic's first month is too few rows for its own model, and the questionnaire makes every model worse. Marina's patients use the program-wide forecast.
 
-One validation period could be a lucky two months. `TimeSeriesSplit` cuts the fit and validation rows, sorted by target week, into blocks; each fold fits on everything before a block and scores that block. The test rows stay out.
+### 5. Were June and July a lucky two months?
+
+A committee member will ask whether the gain holds outside one validation period. `cross_val_score` with `TimeSeriesSplit` answers that: it cuts the fit and validation rows, sorted by target week, into blocks; each fold fits on everything before a block and scores that block. The test rows stay out.
 
 ```python
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
@@ -276,9 +291,9 @@ plt.close(ax.figure)
 
 Expect four folds scored from mid-March to the end of July, with Ridge between 3.51 and 3.78 mmHg and persistence between 4.05 and 4.35. In the chart the two lines run parallel, Ridge about 0.55 mmHg lower in every fold: the model's lead holds in every period. These folds ignore label arrival inside `dev`, so they compare periods retrospectively; the prospective check is still step 3's validation score.
 
-### 6. The call list: who is about to lose control?
+### 6. Who is about to cross 150? Accuracy says the model is 96% right
 
-The nurses' list covers patients under 150 this week. The target becomes `alert = sbp_next_week >= 150`, and the same preparation feeds a logistic regression fit on those rows. `predict_proba` returns one column per class; `[:, 1]` keeps the probability of crossing 150.
+The call list is a yes/no question, so the target becomes `alert = sbp_next_week >= 150`, and the same preparation feeds a logistic regression fit on patients under 150 this week. `predict_proba` returns one column per class; `[:, 1]` keeps the probability of crossing 150. Before trusting the model's accuracy, compare it with a rule that calls nobody.
 
 ```python
 from sklearn.linear_model import LogisticRegression
@@ -317,11 +332,11 @@ plt.show()
 plt.close(fig)
 ```
 
-Expect about 3,561 patients under 150 each week, of whom about 160 average 150 or more the next week. The alert rate falls from 0.077 in the fit rows to 0.045 in validation: the program lowers blood pressure over time, and summer readings run lower. "Always no" scores 0.955 accuracy while calling nobody. At the default 0.5 threshold the model's accuracy is 0.956, its precision 0.535, and its recall only 0.194: the matrix `[[TN, FP], [FN, TP]]` shows 1,163 crossings missed and 280 caught over nine weeks. The histogram shows why: patients who stay under 150 pile up below 0.05, while those who cross spread from 0 to 1, and most of their orange area lies left of the 0.5 line.
+Expect about 3,561 patients under 150 each week, of whom about 160 average 150 or more the next week. The alert rate falls from 0.077 in the fit rows to 0.045 in validation: the program lowers blood pressure over time, and summer readings run lower. "Always no" scores 0.955 accuracy while calling nobody. At the default 0.5 threshold the model's accuracy is 0.956, its precision 0.535, and its recall only 0.194: the matrix `[[TN, FP], [FN, TP]]` shows 1,163 crossings missed and 280 caught over nine weeks. The histogram shows why: patients who stay under 150 pile up below 0.05, while those who cross spread from 0 to 1, and most of their orange area lies left of the 0.5 line. Accuracy cannot choose the list; recall at the nurses' budget can.
 
-### 7. Fill the 100 calls a week, and compare with the rule
+### 7. Which list fills 100 calls a week best?
 
-A threshold of 0.5 is not what the nurses need: they can make 100 calls a week, so each week's list is the 100 patients with the highest probability. `groupby("week").rank(ascending=False)` numbers each week's patients from the highest score down. The rule the team uses today calls the 100 patients whose week came closest to 150.
+A threshold of 0.5 is not what the nurses need: they can make 100 calls a week, so each week's list is the 100 patients with the highest probability. `groupby("week").rank(ascending=False)` numbers each week's patients from the highest score down. The rule the team uses today calls the 100 patients whose week came closest to 150. Both lists are scored at five budgets, in case the committee changes the nurses' hours.
 
 ```python
 def call_list(name, scores, budget):
@@ -344,11 +359,13 @@ plt.show()
 plt.close(ax.figure)
 ```
 
-Expect the model's line above the rule's at all five budgets, from 25 to 200 calls a week. At 100 calls a week (the dashed line) it reaches 47 of the patients who will cross 150 (recall 0.295, precision 0.473); the rule reaches 28 (recall 0.177, precision 0.288). That is about 19 more patients a week reached before they lose control, for the same calls. Even at 150 calls a week the rule catches fewer (41) than the model at 100.
+Expect the model's line above the rule's at all five budgets, from 25 to 200 calls a week. At 100 calls a week (the dashed line) it reaches 47 of the patients who will cross 150 (recall 0.295, precision 0.473); the rule reaches 28 (recall 0.177, precision 0.288). Even at 150 calls a week the rule catches fewer (41) than the model at 100.
 
-### 8. Freeze, then test once
+**What we tell Dr. Kim**: for the same 100 calls, the model's list reaches about 19 more patients a week before they lose control. Today's rule would need more than 150 calls a week, 50% more call hours, to match it.
 
-The frozen choices: Ridge (alpha=10) as the dashboard forecast, and the logistic call list at 100 calls a week. Refit both on every fit and validation row whose label had arrived by the first test run, then score the test rows once, with the same rules beside them.
+### 8. Freeze the choices and test once for the committee
+
+The frozen choices: Ridge (alpha=10) as the dashboard forecast, and the logistic call list at 100 calls a week. Refit both on every fit and validation row whose label had arrived by the first test run, then score the test rows once, with the same rules beside them. These are the numbers that go on the committee slide.
 
 ```python
 train_valid = pd.concat([train, valid])
@@ -374,13 +391,15 @@ for name, scores in [("model", final_classifier.predict_proba(watch_test[feature
           f" caught per week {(called & alert_test).sum() / watch_test['week'].nunique():.1f}")
 ```
 
-Expect 106,367 final fit rows. On the test weeks, Ridge misses by 4.00 mmHg against 4.55 for persistence, and the call list at 100 calls a week catches 44.8 crossings a week (recall 0.286, precision 0.448) against the rule's 27.9 (recall 0.178, precision 0.284). Both gains hold up on rows that played no part in any choice; these are the numbers to report.
+Expect 106,367 final fit rows. On the test weeks, Ridge misses by 4.00 mmHg against 4.55 for persistence, and the call list at 100 calls a week catches 44.8 crossings a week (recall 0.286, precision 0.448) against the rule's 27.9 (recall 0.178, precision 0.284). Both gains hold up on rows that played no part in any choice.
+
+**What we tell the committee**: on August and September, weeks no choice was tuned on, the forecast misses by 0.55 mmHg less than the dashboard's rule, and the model's call list reaches 17 more patients a week who go on to average 150 or more.
 
 ## Independent practice
 
-### 1. What does the forecast rely on?
+### 1. The care team asks what the forecast leans on
 
-Permutation importance shuffles one column at a time on validation rows. A 10,000-row sample keeps it quick.
+Permutation importance shuffles one column at a time on validation rows and measures how much the MAE worsens. A 10,000-row sample keeps it quick.
 
 ```python
 from sklearn.inspection import permutation_importance
@@ -401,9 +420,9 @@ plt.close(ax.figure)
 
 Expect `sbp_4wk` (shuffling it adds 3.1 mmHg to MAE) and `sbp_week` (2.3) far ahead, as the two longest bars, then `overdue_x_meds` at about 0.29; every other column adds 0.04 or less. The categorical columns (cuff size, device) matter little because their effect on a patient's readings is already inside that patient's averages.
 
-### 2. What the call list relies on
+### 2. A nurse asks why a patient is on the list
 
-Read the logistic regression's coefficients for the numeric columns. They are scaled, so each coefficient is the change in log-odds per standard deviation.
+Read the logistic regression's coefficients for the numeric columns with `named_steps` and `get_feature_names_out()`. They are scaled, so each coefficient is the change in log-odds per standard deviation.
 
 ```python
 names = classifier.named_steps["preprocess"].get_feature_names_out()
@@ -412,9 +431,11 @@ numeric_coefficients = coefficients.filter(like="numeric__")
 display(numeric_coefficients.sort_values(key=abs, ascending=False).head(8).round(2).rename("log-odds per SD"))
 ```
 
-Expect the level columns first (`sbp_4wk` 1.46, `sbp_week` 1.24), then `overdue_x_meds` (0.41) and `weeks_since_change` (0.27). `drug_added_recently` is negative (-0.18): a patient whose new drug is still taking effect is less likely to cross 150.
+Expect the level columns first (`sbp_4wk` 1.46, `sbp_week` 1.24), then `overdue_x_meds` (0.41) and `weeks_since_change` (0.27). `drug_added_recently` is negative (-0.18): a patient whose new drug is still taking effect is less likely to cross 150. The reply to the nurse: high recent readings first, then lapsed refills on several drugs.
 
-### 3. Which columns did Lasso drop on the full data?
+### 3. IT asks which columns the nightly feed could drop
+
+Each column costs a join in the nightly job. Lasso's zero coefficients on the full data show which ones the model ignores.
 
 ```python
 lasso_pipeline = fitted["lasso (alpha=0.05)"]
@@ -424,9 +445,9 @@ print("kept:", (lasso_coef != 0).sum(), "of", len(lasso_coef))
 print("dropped:", list(lasso_coef[lasso_coef == 0].index))
 ```
 
-Expect 15 of 36 coefficients kept. The dropped ones include every category level and `n_symptom`: on 68,324 rows, Lasso at alpha 0.05 finds nothing in them that the level columns do not already carry.
+Expect 15 of 36 coefficients kept. The dropped ones include every category level and `n_symptom`: on 68,324 rows, Lasso at alpha 0.05 finds nothing in them that the level columns do not already carry. Dropping them leaves the Lasso forecast unchanged. Ridge, the frozen choice, never sets a coefficient to exactly 0, so changing the feed means refitting and rescoring it.
 
-### 4. A per-class report for the frozen call list
+### 4. Quality asks for the standard per-class report
 
 ```python
 from sklearn.metrics import classification_report
@@ -438,7 +459,7 @@ display(pd.DataFrame(report).T.round(3))
 
 Expect class `1` to show precision 0.473, recall 0.295, and support 1,443 (the validation patient-weeks that crossed 150).
 
-### 5. R² and the program's effect
+### 5. The dashboard vendor's report shows a negative R² for the program-average tile
 
 ```python
 from sklearn.metrics import r2_score
@@ -451,7 +472,7 @@ print("fit-row mean:", round(y_fit.mean(), 1), " validation mean:", round(y_vali
 
 Expect R² of 0.796 for the linear models and -0.361 for the training mean: the fit rows average 145.6 mmHg and the validation rows 139.2, so predicting the fit rows' mean is worse than predicting the validation rows' own mean. The 6.4 mmHg drop is the program working (added drugs) plus summer.
 
-### 6. Predicted against actual
+### 6. The dashboard team wants predicted against actual
 
 ```python
 plot_rows = valid.sample(3000, random_state=1)
@@ -467,3 +488,45 @@ plt.close(fig)
 ```
 
 Expect the cloud to lie along the dashed line but slightly flatter than it: forecasts for very high and very low weeks are pulled toward the patient's longer average, because part of an extreme week is noise.
+
+### 7. A reviewer asks why we did not use a random 80/20 split
+
+`train_test_split` draws the same number of validation rows at random from the fit and validation weeks, so training sees weeks from every month. Compare its MAE with the time split's, and with the test weeks that neither split saw.
+
+```python
+from sklearn.model_selection import train_test_split
+
+dev = pd.concat([fit_rows, valid])
+random_fit, random_valid = train_test_split(dev, test_size=len(valid), random_state=42)
+splits = {"by target week (step 3)": (fit_rows, valid), "random rows": (random_fit, random_valid)}
+for name, (fit_part, valid_part) in splits.items():
+    model = Pipeline([("preprocess", make_preprocess()), ("model", Ridge(alpha=10))])
+    model.fit(fit_part[features], fit_part["sbp_next_week"])
+    print(f"{name}: validation MAE {mean_absolute_error(valid_part['sbp_next_week'], model.predict(valid_part[features])):.2f}",
+          f" test MAE {mean_absolute_error(test['sbp_next_week'], model.predict(test[features])):.2f}")
+```
+
+Expect a validation MAE of 3.72 for the time split and 3.59 for the random split, and a test MAE near 4.0 for both. The random split promises 0.4 mmHg more than the August and September weeks deliver; the time split comes closer. Random rows let training see later weeks of the same patients, which the Monday run never has. The reply to the reviewer: rows that follow each other in time get split in time.
+
+## Optional extension: hand the frozen forecast to the Monday job
+
+Prerequisite: BONUS.md, Model Serialization.
+
+The Monday job runs in a separate session, so it needs the fitted pipeline as a file, with its feature list and versions beside it. Save it with `joblib`, load it back, and check that the loaded copy predicts the last test week exactly as the original does.
+
+```python
+import joblib
+import sklearn
+
+joblib.dump({"pipeline": final_forecast, "features": features,
+             "trained_through": str(final_rows["target_week"].max().date()),
+             "sklearn_version": sklearn.__version__}, "rpm_forecast.joblib")
+
+package = joblib.load("rpm_forecast.joblib")
+last_week = test[test["week"] == test["week"].max()]
+loaded = package["pipeline"].predict(last_week[package["features"]])
+print(len(last_week), "patients in the last test week; trained through", package["trained_through"])
+print("loaded copy matches:", np.allclose(loaded, final_forecast.predict(last_week[features])))
+```
+
+Expect 2,685 patients in the last test week, `trained through 2025-07-28`, and `loaded copy matches: True`.

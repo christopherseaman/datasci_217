@@ -16,9 +16,17 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 2: A Fourth-Quarter Quality Audit
+# Demo 2: The Fourth-Quarter Quality Packet
 
-The quality team reviews the last quarter of 2025 in three parts: a visit-volume table in the board's template that accounts for every visit, an audit of unusually long waits, and a public satisfaction table that hides groups too small to publish. The source is the same 1.2-million-visit extract as Demo 1, plus the health system's clinic list.
+**Project so far.** Demo 1 gave Dr. Alvarez her 2025 wait scorecard: four clinics miss the 30-minute target, and Bayview's Orthopedics waits nearly doubled after September.
+
+**This phase's ask.** Dr. Sam Whitfield, chair of the Quality Committee, needs the fourth-quarter (October to December) packet by January 9, 2026. The committee uses it to choose which visits its nurses review and what the health system publishes on its website. The packet has three parts:
+
+- A visit-volume table in the committee's template, which lists all nine clinics in a fixed order and must account for every visit.
+- A list of long waits for chart review. The two review nurses can pull about 5,000 charts a quarter.
+- A public satisfaction table that hides any group of 10 or fewer patients.
+
+The source is the same 1.2-million-visit extract as Demo 1, plus the committee's clinic list.
 
 Run the cells from top to bottom.
 
@@ -52,7 +60,7 @@ Expect `(9, 3) (1200000, 10)`.
 
 ## Core walkthrough
 
-### 1. Keep the fourth quarter
+### 1. Pull the fourth quarter
 
 `visit_month` is text such as `2025-10`, so text comparison keeps October to December.
 
@@ -63,11 +71,11 @@ print(f"Q4 visits: {len(q4):,}")
 print(f"No clinic recorded: {q4['clinic'].isna().sum():,}")
 ```
 
-Expect nine clinics in the board's reporting order, ending with Oceanview, which opens on 2026-01-12, then 316,158 Q4 visits, 744 of them with no clinic recorded.
+Expect nine clinics in the committee's reporting order, ending with Oceanview, which opens on 2026-01-12, then 316,158 Q4 visits, 744 of them with no clinic recorded.
 
-### 2. A volume table that accounts for every visit
+### 2. The template lists nine clinics; the summary shows eight
 
-The board's template lists all nine clinics in its own order. Start with the default summary.
+Start with the default summary.
 
 ```python
 default = q4.groupby("clinic")["visit_id"].count()
@@ -75,7 +83,7 @@ display(default)
 print(f"Visits counted: {default.sum():,} of {len(q4):,}")
 ```
 
-Expect eight clinics in alphabetical order, no Oceanview, and 315,414 of 316,158 visits counted: the 744 visits with no clinic vanished without a warning.
+Expect eight clinics in alphabetical order, no Oceanview, and 315,414 of 316,158 visits counted: the 744 visits with no clinic vanished without a warning. The template needs a fixed order, an Oceanview row, and the missing visits.
 
 Declare the template's clinics and order with `pd.Categorical`, then ask for every category (`observed=False`) and the missing key (`dropna=False`).
 
@@ -90,9 +98,9 @@ display(volume)
 print(f"Visits counted: {volume['visits'].sum():,} of {len(q4):,}")
 ```
 
-Expect ten rows: the nine clinics in the template's order, Oceanview with 0 visits, 0 patients, and a `NaN` median (no waits to take a median of), then a `NaN` row with the 744 unrecorded visits. Now all 316,158 visits are counted, and someone can go find the missing clinic names.
+Expect ten rows: the nine clinics in the template's order, Oceanview with 0 visits, 0 patients, and a `NaN` median (no waits to take a median of), then a `NaN` row with the 744 unrecorded visits. Now all 316,158 visits are counted.
 
-Draw the board's chart. A chart axis needs text labels, so the `NaN` key gets the label `No clinic` (`astype(object)` turns the categorical labels into plain values that `fillna` can replace), and `ax.invert_yaxis()` puts the first clinic at the top.
+Draw the packet's chart. A chart axis needs text labels, so the `NaN` key gets the label `No clinic` (`astype(object)` turns the categorical labels into plain values that `fillna` can replace), and `ax.invert_yaxis()` puts the first clinic at the top.
 
 ```python
 import matplotlib.pyplot as plt
@@ -102,15 +110,17 @@ labels = volume.index.astype(object).fillna("No clinic")
 fig, ax = plt.subplots(figsize=(7, 4))
 ax.barh(labels, volume["visits"])
 ax.invert_yaxis()
-ax.set(title="Q4 2025 visits by clinic, board order", xlabel="Visits")
+ax.set(title="Q4 2025 visits by clinic, committee order", xlabel="Visits")
 plt.show()
 ```
 
 Expect ten bars from Mission at the top to `No clinic` at the bottom, with an empty slot for Oceanview (0 visits) and a sliver for the 744 unrecorded visits. The default summary would have drawn eight bars and said nothing about the other two.
 
-### 3. Flag waits that are long for their own clinic and department
+**What we tell Dr. Whitfield:** the table lists all nine clinics and adds up to the 316,158 Q4 visits. 744 visits (0.2%) have no clinic recorded; registration has the list to correct.
 
-A 45-minute wait is routine in Orthopedics and alarming in Behavioral Health, so the audit compares each visit with its own clinic and department.
+### 3. Which waits deserve a chart review?
+
+A 45-minute wait is routine in Orthopedics and alarming in Behavioral Health, so the review compares each visit with the usual wait in its own clinic and department. That needs a group summary on every visit row.
 
 _Intentional mistake:_ attach each department's mean wait as a column.
 
@@ -142,7 +152,7 @@ display(q4[["clinic", "department", "wait_min", "cell_mean", "wait_z"]].head().r
 
 Expect five visits, each with its own cell's mean wait and a z-score, the number of standard deviations above that mean. The first has no recorded wait, so its z-score is `NaN`, as it is for visits with no clinic. The second, a 9-minute Pediatrics wait at Bayview, has a z-score of -0.86, below its cell's mean of 14.58. The index keeps the visits' row numbers from the full extract (883842 onward).
 
-Compare the z-score rule with a flat 60-minute rule, department by department: raw waits against the 60-minute line, and z-scores against the line at 3. `ax.axvline(x)` draws a vertical reference line at `x`.
+The committee's old rule flagged every wait over 60 minutes. Compare it with a z-score rule (more than 3 standard deviations above the cell's mean), department by department: raw waits against the 60-minute line, and z-scores against the line at 3. `ax.axvline(x)` draws a vertical reference line at `x`.
 
 ```python
 fig, axes = plt.subplots(1, 2, figsize=(12, 4), sharey=True)
@@ -166,9 +176,9 @@ flags = q4.groupby("department").agg(
 display(flags)
 ```
 
-Expect the flat rule to flag 7,203 visits, 6,708 of them in Orthopedics (4,721) and Family Medicine (1,987), and none in Behavioral Health. The z-score rule flags 4,497 visits spread across every department, including 438 in Behavioral Health, where a 20-minute wait is far from usual.
+Expect the flat rule to flag 7,203 visits, 6,708 of them in Orthopedics (4,721) and Family Medicine (1,987), and none in Behavioral Health. That is more than the nurses' 5,000 charts, and most of it is Orthopedics doing what Orthopedics usually does. The z-score rule flags 4,497 visits, within the budget, spread across every department, including 438 in Behavioral Health, where a 20-minute wait is far from usual.
 
-A cell's own mean can be the problem. Check Bayview's Orthopedics, where Demo 1 found waits nearly doubled after September.
+Before recommending the z-score rule, check what it cannot see. A cell's own mean can be the problem: Demo 1 found Bayview's Orthopedics waits nearly doubled after September.
 
 ```python
 bayview = q4[(q4["clinic"] == "Bayview") & (q4["department"] == "Orthopedics")]
@@ -178,9 +188,11 @@ print("Over 60 minutes:", bayview["over_60"].sum(), " long for its cell:", bayvi
 
 Expect 6,136 visits with a mean wait of 62.4 minutes: 2,727 are over 60, but only 76 are long for their cell. Compared with its own slow quarter, almost nothing at Bayview looks unusual. The z-score finds odd visits within a group; the group summary (Demo 1's grid) finds the odd group.
 
-### 4. A public satisfaction table that hides small groups
+**What we tell Dr. Whitfield:** switch the chart review to the z-score rule (4,497 charts, every department). Keep Bayview Orthopedics on the agenda as a staffing problem, because a chart review will not flag it.
 
-Public reports of patient data hide any group with 10 or fewer patients. The table uses Q4 survey respondents, grouped by clinic and department.
+### 4. Can every satisfaction cell be published?
+
+The website shows mean satisfaction by clinic and department from Q4 survey respondents. The publication rule hides any group with 10 or fewer patients. First find the cells at risk.
 
 ```python
 respondents = q4.dropna(subset=["satisfaction"])
@@ -193,7 +205,7 @@ display(cells[cells["patients"] < 11])
 
 Expect one cell, Ridgecrest Cardiology: 21 surveys from only 10 patients, because its outreach clinic sees the same regulars every month.
 
-Counting rows would publish that cell; counting distinct patients hides it.
+A size rule is the obvious draft, but it counts surveys. `filter` keeps every row of the groups that pass a test, so the test decides what is published: counting rows would publish that cell; counting distinct patients hides it.
 
 ```python
 by_cell = respondents.groupby(["clinic", "department"], observed=True)
@@ -221,11 +233,15 @@ plt.show()
 
 Expect Ridgecrest's Cardiology cell labeled `suppressed` and its three other blank cells, the departments it does not run, left empty. Scores follow waits: the Behavioral Health row, the shortest wait, is the greenest at every clinic (4.20 to 4.61), and Bayview's Orthopedics, the longest wait, is the reddest cell (2.95).
 
+**What we tell Dr. Whitfield:** the table is ready to publish with one cell suppressed, Ridgecrest Cardiology (10 patients).
+
 ## Independent practice
 
-Run the core walkthrough first.
+Run the core walkthrough first. Each item is a request that came back from the committee.
 
-### 5. Fill the October kiosk gap with each cell's median
+### 5. The committee asks what Excelsior's October waits would have been
+
+Excelsior's kiosk was down for most of October. Fill each missing wait with the median of its own clinic and department, a group-specific fill with `transform`, and compare it with one overall median.
 
 ```python
 october = q4[q4["visit_month"] == "2025-10"]
@@ -241,7 +257,9 @@ print("Excelsior Orthopedics, overall fill:   ", overall_fill[excelsior_ortho].u
 
 Expect Excelsior's October `count` (5,250) far below its `size` (13,363): its kiosk was down for most of the month. The cell-median fill gives Excelsior's missing Orthopedics waits `[32.]`, its own Orthopedics median; the overall fill gives them `[17.]`, the all-visit median. Waits with no clinic recorded stay missing, because their group has no key.
 
-### 6. The volume table as a department-by-clinic pivot
+### 6. Finance wants the volume table as a clinic-by-department grid
+
+The same coverage choices, `observed=False` and `dropna=False`, work in `pivot_table`.
 
 ```python
 volume_grid = pd.pivot_table(q4, values="visit_id", index="clinic", columns="department",
@@ -252,7 +270,9 @@ print("Rows:", len(volume_grid), " total:", volume_grid.to_numpy().sum())
 
 Expect 10 rows: a `NaN` row for the unrecorded visits (listed first here, so find it by its label), the nine clinics, and Oceanview all zeros. The total is 316,158. A count of 0 is a real value here, so `fill_value=0` is right.
 
-### 7. Staffing review: cells by mean and by total wait
+### 7. The staffing subcommittee asks where patient time goes
+
+Two `filter` rules on the clinic and department cells: a mean wait over 40 minutes (slow cells) and a total over 365,000 minutes (cells where patients spend the most time).
 
 ```python
 by_cell_all = q4.groupby(["clinic", "department"], observed=True)
@@ -274,7 +294,9 @@ print(f"filter:   {len(slow):,} visits from 1 cell")
 
 Expect the row mask to keep 24,842 visits from 39 cells, and `filter` all 6,136 visits, short waits included, from Bayview Orthopedics.
 
-### 8. The same z-score with a lambda
+### 8. A reviewer rebuilds the z-scores with a lambda
+
+A reviewer on the committee recomputes the z-scores with `transform` and a `lambda` to check step 3.
 
 ```python
 z_lambda = cell.transform(lambda x: (x - x.mean()) / x.std())
@@ -282,11 +304,13 @@ print("Same index as q4?", z_lambda.index.equals(q4.index))
 print("Largest difference:", (z_lambda - q4["wait_z"]).abs().max())
 ```
 
-Expect `True` and a difference near `2e-14`: the same z-scores, with the lambda running once per cell.
+Expect `True` and a difference near `2e-14`: the same z-scores, so the packet's flags stand.
 
-## Optional extension: `dropna` in a pivot table
+## Optional extension: the visits a pivot table of means drops
 
 Prerequisite: BONUS.md, Group Coverage Edge Cases.
+
+Dr. Whitfield asks whether the 744 unrecorded visits waited longer than the rest. A pivot table's `dropna` setting decides whether they appear at all.
 
 ```python
 for drop in [True, False]:
@@ -296,4 +320,4 @@ for drop in [True, False]:
 display(means.round(1))
 ```
 
-Expect 8 rows with `dropna=True`: the `NaN` group goes because its key is missing, and Oceanview goes because every one of its cells is `NaN`. With `dropna=False`, 10 rows. The `NaN` row, listed first, holds real means, such as 39.2 minutes in Orthopedics, computed from the 744 visits the default report never mentions.
+Expect 8 rows with `dropna=True`: the `NaN` group goes because its key is missing, and Oceanview goes because every one of its cells is `NaN`. With `dropna=False`, 10 rows. The `NaN` row, listed first, holds real means, such as 39.2 minutes in Orthopedics, computed from the 744 visits the default report never mentions. They sit within the range of the clinics' own means, so the unrecorded visits look like a registration slip, not a different kind of visit.

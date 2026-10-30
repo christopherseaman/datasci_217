@@ -15,9 +15,11 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 3: Build a Day-1 Deterioration Cohort from Three Time Zones
+# Demo 3: A Day-1 Early-Warning Cohort from Three Hospitals
 
-A health system wants an early-warning score that runs 24 hours after each ward admission and predicts transfer to the ICU later in the stay. Its hospitals in New York, Chicago, and Phoenix chart vitals on their own wall clocks, and the lab system stores times in UTC. Put every reading on one clock, build past-only features per encounter, keep only the lab results that were known at the prediction time, split the cohort chronologically, and plot one patient's history. All encounters, patients, and values are synthetic.
+Phase 3 of Dr. Reyes's winter program: Demo 2 showed that a patient can go hours without a monitor reading, so the program wants a score that flags deterioration early from routine ward data.
+
+**This phase's ask.** In March, Dr. Reyes and the Chief Medical Information Officer, Dr. Daniel Kim, decide whether to pilot an early-warning score at the system's ward hospitals in New York, Chicago, and Phoenix. The score would run 24 hours after each admission and predict transfer to the ICU later in the stay. Dr. Kim asks the analytics team for the training table first: one row per 2024 ward encounter at hour 24, heart-rate features built only from earlier readings, lab results only if they were reported by then, and a later block of encounters held back to test on. The hospitals chart vitals on their own wall clocks, and the lab system stores times in UTC. All encounters, patients, and values are synthetic.
 
 Run the cells from top to bottom.
 
@@ -28,7 +30,7 @@ Run the cells from top to bottom.
 
 ## Core walkthrough
 
-### 1. Load the encounters, vitals, and labs
+### 1. Load the three hospitals' extracts
 
 This supplied cell downloads `generate_data.py` when the folder lacks it (`urlretrieve(url, path)` saves the file at a web address to `path`), runs its `build()` when a table in `data/` is missing (about 20 seconds, once), and reads three tables. The seed is fixed, so your values match the ones below.
 
@@ -59,9 +61,9 @@ display(labs.head(3))
 
 Expect `(10000, 8) (270306, 6) (57934, 5)`: 10,000 ward encounters in 2024, their charted heart rate and SpO2, and their lab orders. Each encounter has the patient's `age` and admitting `diagnosis`. `admitted_at` and `left_at` are already aware UTC datetimes (`datetime64[us, UTC]`). `recorded_local` is text on each hospital's wall clock, in no particular row order. The lab times are text ending in `Z`, which means UTC.
 
-### 2. Put every site's clock on UTC
+### 2. Three hospitals chart on three wall clocks
 
-Each hospital's readings are localized in the zone where they were charted. This intentional error shows what happens when the New York rows meet the night the clocks fell back, November 3, 2024.
+To order readings and compare them with UTC lab times, every reading needs one clock. `tz_localize()` attaches the zone each hospital charted in, and `tz_convert('UTC')` moves the readings to UTC. This intentional error shows the first attempt at the New York rows, which include the night the clocks fell back, November 3, 2024.
 
 ```python
 ZONES = {'New York': 'America/New_York', 'Chicago': 'America/Chicago', 'Phoenix': 'America/Phoenix'}
@@ -94,7 +96,9 @@ vitals = (localized.dropna(subset=['recorded_at'])
 print(vitals.shape, vitals['recorded_at'].dtype)
 ```
 
-Expect `16` readings set aside: `12` in Chicago and `4` in New York, none in Phoenix, because Arizona does not change its clocks. The table lists `4` readings typed by hand at `2024-03-10 02:30` to `02:59`, an hour that never happened on the spring-forward night, and `12` charted between `2024-11-03 01:01` and `01:55`, the hour that happened twice. Report that count before dropping them. `vitals` keeps `(270290, 7)` rows, sorted by encounter and then time, in `datetime64[us, UTC]`.
+Expect `16` readings set aside: `12` in Chicago and `4` in New York, none in Phoenix, because Arizona does not change its clocks. The table lists `4` readings typed by hand at `2024-03-10 02:30` to `02:59`, an hour that never happened on the spring-forward night, and `12` charted between `2024-11-03 01:01` and `01:55`, the hour that happened twice. `vitals` keeps `(270290, 7)` rows, sorted by encounter and then time, in `datetime64[us, UTC]`.
+
+**What we tell Dr. Kim:** 16 of 270,306 readings are set aside because their wall-clock time names no single instant; the table notes the count.
 
 One Chicago patient, encounter `E08290`, was charted through that night.
 
@@ -134,9 +138,9 @@ plt.show()
 
 Expect the three readings before `01:00` on the dotted daylight line and the `03:56` reading on the dashed standard line. The shaded band, `01:00` to `02:00` on the wall clock, crosses both lines, so those clock times map to two instants an hour apart: `01:24` could be `06:24` or `07:24` UTC.
 
-### 3. Past-only features within each encounter
+### 3. The first feature draft hands one patient's heart rate to the next
 
-The rows stack 10,000 encounters. A plain `shift(1)` runs straight down the column and hands each encounter's first row the previous encounter's last heart rate.
+The score's heart-rate features are the previous reading, its change, and recent means. The rows stack 10,000 encounters, and the first draft used a plain `shift(1)`, which runs straight down the column and hands each encounter's first row the previous encounter's last heart rate. Count the damage.
 
 ```python
 first_row = ~vitals['encounter_id'].duplicated()
@@ -144,7 +148,7 @@ leaked = vitals['heart_rate'].shift(1)[first_row].notna().sum()
 print('First rows:', first_row.sum(), ' given another encounter\'s heart rate:', leaked)
 ```
 
-Expect `First rows: 10000  given another encounter's heart rate: 9866`. Grouping by `encounter_id` keeps every feature inside one stay. Each feature reads only the current row and earlier ones.
+Expect `First rows: 10000  given another encounter's heart rate: 9866`. Grouping by `encounter_id` keeps every feature inside one stay, and each feature reads only earlier rows: `shift(1)` and `diff()` the previous reading, `shift(1)` before `rolling(3)` the three before, and `rolling('8h', closed='left')` the 8 hours before, without the current time.
 
 ```python
 by_encounter = vitals.groupby('encounter_id')['heart_rate']
@@ -183,9 +187,9 @@ plt.show()
 
 Expect the gray step to carry each black dot forward to the next reading time. At `02:00` on January 2 the blue square sits at `61.3`, the mean of the three dots before it, and the orange triangle sits at `70`, the only dot in the 8 hours before. No marker uses the dot directly above it.
 
-### 4. What was known at the prediction time?
+### 4. Which labs had the score seen at hour 24?
 
-The score runs 24 hours after admission. Encounters that ended before then (discharged or already transferred) never get a score, so they leave the cohort.
+The score runs 24 hours after admission, the **prediction time**. Encounters that ended before then (discharged or already transferred) never get a score, so they leave the cohort.
 
 ```python
 encounters['prediction_time'] = encounters['admitted_at'] + pd.Timedelta(hours=24)
@@ -217,9 +221,11 @@ ax.set(title='Labs drawn before the prediction time', xlabel='Lab orders', ylabe
 plt.show()
 ```
 
-Expect median turnarounds of `0.67` hours for lactate, `1.15` for troponin, `1.80` for creatinine, and `45.23` for a blood culture. Among labs drawn by the prediction time, `not yet reported` counts `2136` blood cultures, `1949` creatinines, `49` lactates, and `56` troponins. In the chart, almost the whole blood-culture bar is orange (a culture takes about two days), and about a sixth of the creatinine bar. A filter on `collected_at` would let all 4,190 unreported labs into the score.
+Expect median turnarounds of `0.67` hours for lactate, `1.15` for troponin, `1.80` for creatinine, and `45.23` for a blood culture. Among labs drawn by the prediction time, `not yet reported` counts `2136` blood cultures, `1949` creatinines, `49` lactates, and `56` troponins. In the chart, almost the whole blood-culture bar is orange (a culture takes about two days), and about a sixth of the creatinine bar.
 
-### 5. One row per encounter at the prediction time
+**What we tell Dr. Kim:** blood cultures cannot feed a day-1 score, since almost none are back by hour 24. Lactate, troponin, and most creatinines can. Filtering on `collected_at` would have let 4,190 unreported results into the training table, and the score would test better than it can perform in the pilot.
+
+### 5. One row per encounter at hour 24
 
 The feature row for each encounter is its last reading at or before the prediction time. Sorting by encounter and time already happened, so `groupby().tail(1)` (Lecture 08) keeps the latest row. The latest lactate comes from the available results only.
 
@@ -251,11 +257,13 @@ features['lactate_group'] = np.select([features['last_lactate'] > 2, features['l
 display(features.groupby('lactate_group')['icu_transfer'].agg(['count', 'mean']).round(3))
 ```
 
-Expect transfer rates of `0.052` (`2005` encounters) with a lactate of 2 mmol/L or less, `0.131` (`1074`) over 2, and `0.022` (`6470`) with none reported. A clinician orders a lactate when worried, so whether one was ordered carries signal too.
+Expect transfer rates of `0.052` (`2005` encounters) with a lactate of 2 mmol/L or less, `0.131` (`1074`) over 2, and `0.022` (`6470`) with none reported.
 
-### 6. A chronological holdout
+**What we tell Dr. Kim:** a lactate over 2 mmol/L by hour 24 goes with 2.5 times the transfer rate of a lower one. Whether a lactate was ordered at all carries signal too, because a clinician orders one when worried, so the table keeps `none reported` as its own group.
 
-Build the score on earlier encounters and test it on later ones, the way it would meet future patients. This intentional error compares the aware `prediction_time` column with a naive cutoff.
+### 6. Hold back the last quarter, the way the pilot will meet patients
+
+The pilot will score future patients, so build on earlier encounters and test on the latest ones: a **chronological holdout** from October 1, 2024. This intentional error compares the aware `prediction_time` column with a naive cutoff.
 
 ```python
 try:
@@ -274,11 +282,13 @@ in_both = features.groupby('patient_id')['block'].nunique()
 print('Patients in both blocks:', (in_both == 2).sum(), 'of', len(in_both))
 ```
 
-Expect `7109` earlier encounters (`292` transfers) and `2440` in the holdout (`98`), both near a `0.040` transfer rate. `133` of 8,556 patients were readmitted across the cutoff and appear in both blocks: this split tests later encounters, not entirely unseen patients.
+Expect `7109` earlier encounters (`292` transfers) and `2440` in the holdout (`98`), both near a `0.040` transfer rate. `133` of 8,556 patients were readmitted across the cutoff and appear in both blocks.
 
-### 7. Plot one encounter in UTC
+**What we tell Dr. Kim:** the table is ready, with 7,109 encounters to build on and 2,440 later ones to test on. The holdout tests later encounters; 133 of its patients also appear in the earlier block.
 
-`E05701`, a New York patient admitted with a GI bleed, was transferred on July 29. Draw its readings, a 4-hour rolling mean, and a dashed line at 100 bpm, the usual threshold for tachycardia (a fast heart rate). The axis label names the zone.
+### 7. Show the decision meeting one transfer
+
+Dr. Kim wants one slide of what the score is meant to catch. `E05701`, a New York patient admitted with a GI bleed, was transferred on July 29. Draw its readings, a 4-hour rolling mean, and a dashed line at 100 bpm, the usual threshold for tachycardia (a fast heart rate). The axis label names the zone.
 
 ```python
 one = vitals[vitals['encounter_id'] == 'E05701'].set_index('recorded_at')['heart_rate']
@@ -297,11 +307,11 @@ Expect readings every 4 hours between about 75 and 100 bpm for four days, then h
 
 ## Independent practice
 
-Continue on your own after class. These cells reuse `vitals`, `last_vitals`, and `ZONES` from the core; if the runtime closed, run the cells above again first.
+These are follow-up requests from the hospitals and reviewers; continue on your own after class. These cells reuse `vitals`, `last_vitals`, and `ZONES` from the core; if the runtime closed, run the cells above again first.
 
-### 1. Count days on the local clock
+### 1. New York's daily count does not match the system report
 
-A daily report for the New York hospital counts its days on New York's clock. Convert to the reporting zone before `resample('D')`; binning in UTC starts each New York day at 19:00 or 20:00 the evening before. `vitals` is sorted by encounter, not time, so sort the index before slicing dates.
+The New York hospital counts its readings per day on its own clock, and its numbers differ from a report binned in UTC. Convert to the reporting zone before `resample('D')`; binning in UTC starts each New York day at 19:00 or 20:00 the evening before. `vitals` is sorted by encounter, not time, so sort the index before slicing dates.
 
 ```python
 ny = vitals[vitals['site'] == 'New York'].set_index('recorded_at')['heart_rate'].sort_index()
@@ -319,7 +329,7 @@ for day in ['2024-03-10', '2024-11-03', '2024-11-04']:
 
 Expect the columns to disagree every day, because a New York day starts 4 or 5 hours after a UTC day: `406` and `412` on November 1, `372` and `347` on November 2. November 3 differs most, `337` readings on the New York day against `298` on the UTC day: the shifted start accounts for most of the gap, and that local day also held one extra hour. The second table lines up each New York day with the day before by date: `shift(1, freq='D')` moves the labels a day later, so November 1 has no `yesterday` and a November 6 row holds November 5's `341`. The `date_range` lines print `23`, `25`, and `24` hours: a local daily count on March 10 covers one hour less.
 
-### 2. Audit two leaking candidates
+### 2. A reviewer proposes the next heart rate as a feature
 
 Two tempting features read the row after the current one: the next heart rate (a lead, `shift(-1)`) and a centered 3-reading mean. At each encounter's feature row from step 5, find when that next reading was charted.
 
@@ -335,9 +345,9 @@ print('Median hours after the prediction time:', round(hours_late.median(), 1))
 
 Expect `Feature rows: 9549  next reading after the prediction time: 9428` and a median of `1.9` hours. The other 121 encounters had no later reading. Every feature row is the last reading before the score runs, so a lead or a centered window there reads a value nobody had yet. Use `shift(-1)` only to build a target, never a feature.
 
-### 3. Offsets through the year
+### 3. Phoenix asks why its offset never changes
 
-The same zone name gives different UTC offsets in winter and summer, except in Phoenix.
+The same zone name gives different UTC offsets in winter and summer, except in Phoenix: Arizona does not use daylight saving time.
 
 ```python
 for zone in ZONES.values():

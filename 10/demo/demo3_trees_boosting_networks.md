@@ -16,13 +16,11 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 3: Which Discharged Patients Get a Call? Comparing Model Families for Readmission
+# Demo 3: Which Discharged Patients Should the Transitional-Care Nurses Call?
 
-A health system's transitional-care nurses can call about 10% of discharged patients in the first two days at home. The quality team wants those calls to reach as many as possible of the patients who will be readmitted within 30 days. The data is 235,000 discharges from four hospitals, January 2023 to June 2025, with many patients admitted more than once. Each row carries what the discharge summary and the EHR show at discharge: diagnosis, comorbidity count, labs, prior admissions and ED visits, medications, insurance, and two social flags from the case manager's screen (lives alone, unstable housing).
+Cedar Valley Health's care-management director, Dr. Leah Kim, takes three pieces of work to the November 18, 2025, operations committee. Demos 1 and 2 built the remote blood-pressure program's forecast and its Monday call list. This demo builds the last piece: the post-discharge call list.
 
-The question for this demo: does a random forest, XGBoost, or a neural network rank discharges better than logistic regression, on the same validation discharges and the same 10% call budget?
-
-All patients and values are synthetic.
+**This phase's ask.** The transitional-care nurses can call about 10% of discharged patients in their first two days at home. Today they call the patients with the most admissions in the past year. By November 11, Dr. Kim needs to know how many more patients readmitted within 30 days a model's list would reach for the same calls, and whether a model the committee can read line by line is enough, or a more complex one reaches enough extra patients to be worth it. The committee decides whether the list replaces today's rule. The data is 235,000 discharges from four hospitals, January 2023 to June 2025, with many patients admitted more than once. Each row carries what the discharge summary and the EHR show at discharge: diagnosis, comorbidity count, labs, prior admissions and ED visits, medications, insurance, and two social flags from the case manager's screen (lives alone, unstable housing). All patients and values are synthetic.
 
 Run the cells from top to bottom.
 
@@ -33,9 +31,9 @@ Run the cells from top to bottom.
 
 ## Core walkthrough
 
-### 1. Build the 30-day readmission label
+### 1. Who counts as readmitted?
 
-The extract has one row per discharge but no readmission column; the label comes from each patient's **next** admission, as Demo 1's target came from the next reading:
+The extract has one row per discharge but no readmission column; the label comes from each patient's **next** admission, through a grouped `shift(-1)` as in Demo 1's target. Two groups of rows cannot carry an honest label:
 
 - `readmit_30d` is 1 when the patient's next admission starts within 30 days of this discharge.
 - **In-hospital deaths** (`disposition == "expired"`) cannot be readmitted, so they leave the table.
@@ -80,9 +78,9 @@ plt.close(ax.figure)
 
 Expect `(235391, 24) discharges from 100799 patients`, then 224,256 eligible discharges with a readmission rate of 0.158. The bars show rates differ by diagnosis: 0.056 after orthopedic stays (mostly planned surgery), 0.322 after heart failure, with only heart failure, COPD, GI bleed, and sepsis right of the dashed overall rate.
 
-### 2. Features known at discharge, and a split on label time
+### 2. Which details exist when the nurse calls, and which months can train?
 
-The calls happen right after discharge, so every feature must be known by then. `followup_completed` is not: it records whether the patient made the follow-up appointment 7 to 14 days later. Practice 4 shows what it does to the scores.
+The calls happen in the first two days home, so every feature must be known at discharge. `followup_completed` is not: it records whether the patient made the follow-up appointment 7 to 14 days later. Practice 4 shows what it does to the scores.
 
 The split runs on discharge date, and the prospective rule from Demo 1 applies: training rows must have their label (30 days after discharge) by the first validation discharge, July 1, 2024.
 
@@ -118,16 +116,16 @@ plt.show()
 plt.close(ax.figure)
 ```
 
-Expect 139,465 training discharges, of which 131,927 have their label by July 1 (the 7,538 left out were discharged in June 2024), 47,219 validation and 37,572 test discharges. Three lab columns have gaps of 5% to 10%: labs not drawn, more often before planned surgery and for short stays. The chart shows about 6,500 to 8,100 discharges a month from January 2023 to June 2025, blue through May 2024, one red month (June 2024, labels due after July 1), six orange validation months, and five green test months.
+Expect 139,465 training discharges, of which 131,927 have their label by July 1 (the 7,538 left out were discharged in June 2024), 47,219 validation and 37,572 test discharges. Three lab columns have gaps of about 5% to 9%: labs not drawn, more often before planned surgery and for short stays. The chart shows about 6,500 to 8,100 discharges a month from January 2023 to June 2025, blue through May 2024, one red month (June 2024, labels due after July 1), six orange validation months, and five green test months.
 
-### 3. One preparation step and one comparison rule
+### 3. What do a random list and today's rule catch?
 
-Every model gets the same prepared columns: median-filled and scaled numbers, one-hot categories. The rule is fixed before any model is fit, and it follows the nurses' budget:
+Every model gets the same prepared columns: median-filled and scaled numbers, one-hot categories. The comparison rule is fixed before any model is fit, and it follows the nurses' budget:
 
 - Flag the 10% of validation discharges with the highest predicted probability (the 90th percentile of each model's probabilities is its threshold).
 - Compare **recall** (share of readmitted patients who got a call), **precision** (share of calls that reached one), and the count of readmitted patients called.
 
-Accuracy is in the table too, at the default 0.5 threshold, to show why it cannot choose. The first row is the no-model baseline: every probability below 0.5, so it predicts "no readmission" for everyone, in random order, so its top 10% is a random call list.
+Accuracy is in the table too, at the default 0.5 threshold, to show why it cannot choose. The first row is a random call list: every probability below 0.5, so it predicts "no readmission" for everyone, in random order.
 
 ```python
 from sklearn.compose import ColumnTransformer
@@ -162,7 +160,26 @@ show()
 
 Expect 7,659 validation readmissions, accuracy 0.838 with nobody flagged, and a random call list's recall of 0.102: random calls reach about 10% of readmitted patients (780). 10% of 47,219 validation discharges is about 4,720 calls.
 
-### 4. Logistic regression: the simple candidate
+Today's rule ranks discharges by admissions in the past year, then by comorbidity count. Many patients tie, so `rank(method="first")` breaks the remaining ties by row order and the list stays at exactly 10%. A rule gives no probability, so its accuracy cell stays empty (`NaN`).
+
+```python
+def todays_rule(name, rows):
+    score = rows["n_prior_admits_12m"] * 100 + rows["n_comorbidities"]
+    flag = (score.rank(ascending=False, method="first") <= 0.1 * len(rows)).astype(int)
+    truth = rows["readmit_30d"]
+    comparison[name] = {"accuracy_at_0.5": np.nan, "recall_at_10pct": recall_score(truth, flag),
+                        "precision_at_10pct": precision_score(truth, flag),
+                        "readmitted_called": int((flag & truth).sum())}
+
+todays_rule("today's rule: most prior admissions", valid)
+show()
+```
+
+Expect today's rule at a recall of 0.201 and precision of 0.327: 1,542 readmitted patients called, about twice the random list. Every model below has to beat 1,542.
+
+### 4. A list the committee can read line by line
+
+Logistic regression is the simple candidate: one slope per prepared column, and the committee can read its coefficients.
 
 ```python
 from sklearn.linear_model import LogisticRegression
@@ -173,11 +190,11 @@ compare("logistic regression", logistic.predict_proba(X_valid)[:, 1])
 show()
 ```
 
-Expect accuracy at 0.5 of 0.842, barely above the no-model 0.838, but at the 10% budget a recall of 0.290 and precision of 0.471: 2,224 of the 7,659 readmitted patients get a call, almost three times the random list's 780.
+Expect accuracy at 0.5 of 0.842, barely above the no-model 0.838, but at the 10% budget a recall of 0.290 and precision of 0.471: 2,224 of the 7,659 readmitted patients get a call, 682 more than today's rule and almost three times the random list's 780.
 
-### 5. Random forest
+### 5. Do combinations of risk factors reach more patients?
 
-A forest of 200 trees, each stopping at 50 rows per leaf (`min_samples_leaf`) so it cannot memorize single discharges; `n_jobs=-1` builds trees on every core. On a two-core Colab runtime this takes under a minute.
+A random forest can split on combinations of columns that logistic regression gives one slope each. This one has 200 trees, each stopping at 50 rows per leaf (`min_samples_leaf`) so it cannot memorize single discharges; `n_jobs=-1` builds trees on every core. On a two-core Colab runtime this takes under a minute.
 
 ```python
 from sklearn.ensemble import RandomForestClassifier
@@ -199,9 +216,9 @@ show()
 
 Expect a recall of 0.303, a little above logistic regression (2,319 readmitted patients called against 2,224). In the chart, comorbidity count leads the impurity importances (about 0.16), then medication count, hemoglobin, heart failure, age, and creatinine. (`get_feature_names_out()` names the prepared columns; one-hot columns appear as `categorical__dx_group_heart_failure` and so on.) Impurity importance is measured on the training fit and favors columns with many distinct values; practice 1 compares it with permutation importance.
 
-### 6. XGBoost with early stopping
+### 6. How many more can the same calls reach, and when does adding trees stop helping?
 
-XGBoost takes NumPy arrays here, so the preparation step is fit once and applied to both parts. Early stopping watches validation log loss and stops 30 rounds after the best one.
+XGBoost adds small trees one at a time, each aimed at what the trees so far get wrong, so it needs a stopping point. It takes NumPy arrays here, so the preparation step is fit once and applied to both parts. Early stopping watches validation log loss and stops 30 rounds after the best one.
 
 ```python
 import xgboost as xgb
@@ -231,11 +248,14 @@ plt.close(fig)
 
 Expect best round 284 of a 1,000-round budget (validation log loss 0.3793), with training stopped 30 rounds later. The curve drops steeply over the first 50 rounds, flattens near 0.380 after about 150, and ends at round 314 just past the red line. Recall is 0.308, the best so far: 2,362 readmitted patients called, 138 more than logistic regression. Validation picked the number of rounds, so it is no longer an untouched estimate; the test set stays sealed for that.
 
-### 7. A small neural network
+### 7. The CMIO asks whether "AI" would find more
 
-The network reads the same prepared arrays. `set_random_seed` and `enable_op_determinism` make the run repeat on one machine; another machine can differ in the third decimal.
+The CMIO's "AI" is a neural network. It reads the same prepared arrays. `set_random_seed` and `enable_op_determinism` make the run repeat on one machine; another machine can differ in the third decimal. `evaluate()` reports the validation loss and accuracy the network was compiled with.
 
 ```python
+import os
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import tensorflow as tf
 from tensorflow import keras
 
@@ -254,6 +274,8 @@ history = network.fit(X_fit_ready, y_fit.to_numpy(), epochs=15, batch_size=256,
                       validation_data=(X_valid_ready, y_valid.to_numpy()), verbose=0)
 print("weights:", network.count_params())
 compare("neural network", network.predict(X_valid_ready, verbose=0).ravel())
+loss, accuracy = network.evaluate(X_valid_ready, y_valid.to_numpy(), verbose=0)
+print("validation log loss:", round(loss, 4), " accuracy at 0.5:", round(accuracy, 3))
 
 fig, ax = plt.subplots(figsize=(6, 3.5))
 ax.plot(range(1, 16), history.history["loss"], "o-", label="training")
@@ -264,9 +286,9 @@ plt.show()
 plt.close(fig)
 ```
 
-Expect a training loss that falls quickly over the first two epochs and keeps creeping down, and a validation loss that eases from about 0.387 to 0.383 by the fourth epoch and then stays flat, with no late rise: 131,927 rows give a network of 1,857 weights little room to memorize. Its recall at the budget is 0.300, between logistic regression and the forest. Training takes well under a minute.
+Expect a training loss that falls quickly over the first two epochs and keeps creeping down, and a validation loss that eases from about 0.387 to 0.383 by the fourth epoch and then stays flat, with no late rise: 131,927 rows give a network of 1,857 weights little room to memorize. `evaluate()` gives validation log loss 0.3829 and accuracy 0.844 at 0.5. Its recall at the budget is 0.300, between logistic regression and the forest. Training takes well under a minute.
 
-### 8. Compare on the same rows, freeze, and test once
+### 8. Which list goes to the nurses?
 
 ```python
 show()
@@ -278,9 +300,9 @@ plt.show()
 plt.close(ax.figure)
 ```
 
-Expect, at the 10% budget, recall from 0.290 (logistic regression) to 0.308 (XGBoost), with the network (0.300) and the forest (0.303) between. Every model's accuracy at 0.5 sits between 0.842 and 0.845. The bar chart puts the four families within 140 calls of each other (2,224 to 2,362) and all of them near three times the random list's 780: the model family matters far less than having a model. XGBoost calls 138 more readmitted patients in six months than logistic regression. Trees find combinations of columns and thresholds within a column by splitting; logistic regression gives each column one straight-line slope unless someone writes the combination as a column. Practice 6 tests whether the gap comes from combinations.
+Expect, at the 10% budget, recall from 0.290 (logistic regression) to 0.308 (XGBoost), with the network (0.300) and the forest (0.303) between, and today's rule at 0.201. Every model's accuracy at 0.5 sits between 0.842 and 0.845. The bar chart puts the four families within 140 calls of each other (2,224 to 2,362), all of them 682 to 820 above today's rule's 1,542 and near three times the random list's 780: having a model matters far more than which family. XGBoost calls 138 more readmitted patients in six months than logistic regression. Trees find combinations of columns and thresholds within a column by splitting; logistic regression gives each column one straight-line slope unless someone writes the combination as a column. Practice 6 tests whether the gap comes from combinations.
 
-The frozen choice is XGBoost with its validation-chosen 285 rounds: the most readmitted patients called among the four families, and seconds to train. Refit it on every training and validation discharge whose label had arrived by the first test discharge, then score the test rows once at the 10% budget.
+The frozen choice is XGBoost with its validation-chosen 285 rounds: the most readmitted patients called among the four families, and seconds to train. Refit it on every training and validation discharge whose label had arrived by the first test discharge, then score the test rows once at the 10% budget, beside today's rule on the same rows.
 
 ```python
 train_valid = pd.concat([train, valid])
@@ -292,15 +314,18 @@ final_model.fit(final_preprocess.transform(final_rows[features]), final_rows["re
 
 test_probability = final_model.predict_proba(final_preprocess.transform(test[features]))[:, 1]
 compare("XGBoost on test (frozen)", test_probability, truth=test["readmit_30d"])
+todays_rule("today's rule on test", test)
 print("final fit rows:", len(final_rows), " test readmissions:", test["readmit_30d"].sum())
-show(["XGBoost", "XGBoost on test (frozen)"])
+show(["XGBoost", "XGBoost on test (frozen)", "today's rule on test"])
 ```
 
-Expect 179,288 final fit rows, 5,789 test readmissions, and a test recall of 0.311 with precision 0.479, close to validation's 0.308 and 0.500. That number is the one to report.
+Expect 179,288 final fit rows, 5,789 test readmissions, and a test recall of 0.311 with precision 0.479, close to validation's 0.308 and 0.500. Today's rule on the test discharges reaches a recall of 0.205 and precision of 0.316: 1,186 of the 5,789 readmitted patients, against XGBoost's 1,801.
+
+**What we tell Dr. Kim**: on January to May 2025, discharges no choice was tuned on, the XGBoost list reaches 615 more readmitted patients than today's rule for the same 10% of calls. The four model families differ far less than any of them differs from the rule, so logistic regression stays a fallback if the committee wants coefficients it can read.
 
 ## Independent practice
 
-### 1. Two importance measures for the forest
+### 1. The chief nursing officer asks which discharge details drive the list
 
 Permutation importance on validation rows measures what the forest relies on for new discharges. `scoring="neg_log_loss"` scores probabilities with log loss, the loss the classifiers were trained to reduce; a 10,000-row sample keeps it quick.
 
@@ -316,9 +341,9 @@ display(pd.Series(permuted.importances_mean, index=features).sort_values(ascendi
 
 Expect diagnosis group ahead (0.0135), then comorbidity count (0.0081), medication count (0.0064), prior admissions (0.0047), hemoglobin, age, and follow-up scheduled, with `hospital`, `adi_decile`, and `sex` near 0. Prior admissions and follow-up scheduled are missing from step 5's impurity top six: impurity rewards columns with many distinct values such as the labs, while permutation shuffles a whole original column and measures the loss on new discharges.
 
-### 2. Are the probabilities calibrated?
+### 2. The nurses want to read "30% risk" at face value
 
-The nurses may also read the probability itself ("30% chance"). Group validation discharges into tenths by XGBoost's probability and compare the mean prediction with the observed rate.
+The nurses may read the probability itself to a patient's family. Group validation discharges into tenths by XGBoost's probability and compare the mean prediction with the observed rate.
 
 ```python
 calibration = pd.DataFrame({"predicted": booster.predict_proba(X_valid_ready)[:, 1], "observed": y_valid.to_numpy()})
@@ -328,9 +353,9 @@ display(calibration.groupby("tenth")[["predicted", "observed"]].mean().round(3))
 
 Expect the two columns to rise together from about 0.02 in the lowest tenth to 0.49 in the highest, within 0.010 of each other in every tenth: a predicted 30% means about 30% of those patients come back.
 
-### 3. A forest that memorizes
+### 3. A colleague's forest catches 69% of readmissions
 
-Grow 50 trees with no leaf-size limit and compare recall at the 10% budget on fit rows and validation rows.
+The colleague grew 50 trees with no leaf-size limit and reports recall on the rows it was fit on. Compare recall at the 10% budget on fit rows and validation rows.
 
 ```python
 deep = Pipeline([("preprocess", make_preprocess()),
@@ -344,7 +369,7 @@ for label, X_part, y_part in [("fit rows", X_fit, y_fit), ("validation", X_valid
 
 Expect a fit-row recall of 0.693, far above any validation score: the deep trees memorized the training discharges. Validation recall is 0.317, 0.009 above the frozen XGBoost (about 70 more readmitted patients called), because averaging 50 deep trees cancels much of what each one memorized. This forest was not among the candidates in step 8, and choosing it now, after seeing validation, would turn validation into a second test set; it goes on the list for the next model review. The fit-row score says nothing about new discharges; only the validation score does.
 
-### 4. What a leaked column does
+### 4. A reviewer proposes adding whether the patient kept the follow-up visit
 
 Add `followup_completed`, known only 7 to 14 days after discharge, to the XGBoost features.
 
@@ -358,11 +383,11 @@ compare("XGBoost + followup_completed (leaky)", leaky_model.predict_proba(leaky_
 show(["XGBoost", "XGBoost + followup_completed (leaky)"])
 ```
 
-Expect the leaky model's recall about 2.6 points higher (0.334 against 0.308). The gain is not real: readmitted patients often miss the follow-up because they are back in the hospital, and the column does not exist yet when the nurses make their calls.
+Expect the leaky model's recall about 2.6 points higher (0.334 against 0.308). The gain is not real: readmitted patients often miss the follow-up because they are back in the hospital, and the column does not exist yet when the nurses make their calls. The reply to the reviewer: the column is leakage.
 
-### 5. A faster learning rate
+### 5. IT wants the nightly scoring job to finish sooner
 
-Refit XGBoost with `learning_rate=0.3` and compare the best round and the recall.
+Scoring time grows with the number of trees. Refit XGBoost with `learning_rate=0.3` and compare the best round and the recall.
 
 ```python
 fast = xgb.XGBClassifier(n_estimators=1000, max_depth=4, learning_rate=0.3, subsample=0.8,
@@ -373,9 +398,9 @@ compare("XGBoost (learning rate 0.3)", fast.predict_proba(X_valid_ready)[:, 1])
 show(["XGBoost", "XGBoost (learning rate 0.3)"])
 ```
 
-Expect best round 39 instead of 284, with a slightly worse validation log loss (0.3804) and recall (0.304): bigger steps need fewer trees but land less precisely.
+Expect best round 39 instead of 284, about 7 times fewer trees to score, with a slightly worse validation log loss (0.3804) and recall (0.304): bigger steps need fewer trees but land less precisely. The tradeoff for IT: 0.004 recall, about 30 readmitted patients in six months, for a faster job.
 
-### 6. Can logistic regression catch up with hand-built interactions?
+### 6. The committee prefers a model it can explain
 
 Logistic regression gives each column one slope, so a combination counts only if it is a column. Look for combinations in the fit rows first, with pivot tables (Lecture 08), then write down only what the tables show.
 
@@ -411,7 +436,7 @@ show(["logistic regression", "XGBoost", "logistic + hand-built terms"])
 
 Expect the hand-built logistic model at a recall of 0.298 (2,279 readmitted patients called): 55 more than plain logistic regression and 83 fewer than XGBoost, so the three columns close a little under half the gap. The rest sits in patterns these tables did not look at; a pivot table of `housing_unstable` by `ed_visits_6m` is one place to start. XGBoost needed no tables: its splits search for combinations on their own.
 
-## Optional extension: the sodium curve the trees found
+## Optional extension: the sodium cutoff the cardiology lead asks about
 
 Prerequisite: BONUS.md, Partial Dependence Plots.
 

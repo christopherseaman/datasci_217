@@ -29,6 +29,7 @@ Columns are generated in this causal order (an arrow means "is an input to"):
     severity, daytime -> time off the monitor (imaging, walks, showers)
     daytime movement -> motion artifact spikes in HR; probe slipping -> false low SpO2, then blanks
     fever episodes (more with COPD; sepsis before transfer) -> charted temperature and heart rate
+    high temperature -> rechecked and charted twice under the same round time
 
     Ward
     season, hour, weekday -> admission time; season -> diagnosis (pneumonia and COPD in winter)
@@ -325,6 +326,11 @@ def build_step_down(rng):
     telemetry = pd.concat(tele_parts, ignore_index=True)
     telemetry.insert(1, 'patient_id', telemetry['stay_id'].map(stays.set_index('stay_id')['patient_id']))
     temps = pd.concat(temp_parts, ignore_index=True)
+    # A high reading is often rechecked and charted again under the same round time; a few others are entered twice.
+    recheck = rng.random(len(temps)) < np.where(temps['temperature_f'] >= 99.5, 0.4, 0.003)
+    again = temps[recheck].copy()
+    again['temperature_f'] = (again['temperature_f'] + rng.normal(0, 0.3, len(again))).round(1)
+    temps = pd.concat([temps, again]).sort_values(['stay_id', 'charted_at'], kind='stable').reset_index(drop=True)
     stays = stays[['stay_id', 'patient_id', 'bed', 'age', 'admitted_at', 'left_at', 'outcome']]
     return stays, telemetry, temps
 
@@ -515,6 +521,7 @@ def check(t):
     assert (tele['recorded_at'].dt.minute % 5 == 0).all()
     assert tele['heart_rate'].dropna().between(35, 190).all() and tele['heart_rate'].isna().any()
     assert (stays['outcome'] == 'ICU transfer').sum() >= 25
+    assert t['charted_temps'].duplicated(['stay_id', 'charted_at']).sum() > 0  # rechecked rounds
 
     enc, vit, labs = t['encounters'], t['ward_vitals'], t['labs']
     assert len(enc) == sum(WARD_ENCOUNTERS.values()) and enc['encounter_id'].is_unique
