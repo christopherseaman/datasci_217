@@ -2,7 +2,7 @@
 
 These are the checks that decide the Assignment 10 grade. They read the nine
 CSV files and the one PNG a submission saves in `output/` and compare them
-with values computed from the supplied data in `10/assignment/data/`.
+with values computed from the four Parquet files in `10/assignment/data/`.
 `10/assignment/.github/workflows/tests.yml` downloads them on every student
 push from `christopherseaman/datasci_217@main:10/assignment_checks/` (its
 `CHECKS_REPO`, `CHECKS_REF`, and `CHECKS_PATH`), checks that they run, and
@@ -38,21 +38,29 @@ bundled copy offline or with `--local-checks` / `DS217_LOCAL_CHECKS=1`, so local
 and GitHub runs agree.
 
 `_value_checks.py` holds the expected values as literals, so the checks need
-only the standard library. They come from the lecture's own calls on
-`10/assignment/data/`, and the test predictions and test metrics hold both
-refits the lecture allows (training rows only, or training plus validation
-rows). Change them together with the data files and the notebook; the
-self-test recomputes every one. A change to the check list or to `POINTS`
-belongs in `_value_checks.py` and `grading.py` at once, in the same order:
-`grading.py` pairs the checks with `POINTS` and stops when their counts differ. Keep the
-README's checkpoints and completion contract in agreement with the checks; the
-self-test compares them.
+only the standard library. `scripts/build_assignment10_data.py` generates the
+four Parquet files in `10/assignment/data/` from a fixed seed, works out every
+expected value and the common wrong answers the way the README's steps do,
+writes them into the block between the GENERATED markers, and copies the file
+over its handout twin. Rebuild after any change to the generator or the
+settings it shares with the notebook:
+
+```bash
+uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with pyarrow==25.0.0 \
+    --with statsmodels==0.14.6 --with scikit-learn==1.9.0 python scripts/build_assignment10_data.py
+```
+
+A change to the check list or to `POINTS` belongs in `_value_checks.py` and
+`grading.py` at once, in the same order: `grading.py` pairs the checks with
+`POINTS` and stops when their counts differ. Keep the README's checkpoints and
+completion contract in agreement with the checks; the self-test compares them.
 
 ## Checking the checks
 
 ```bash
-uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with statsmodels==0.14.6 \
-    --with scikit-learn==1.9.0 --with 'pytest>=8,<9' python 10/assignment_checks/_grader_selftest/run.py
+uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with pyarrow==25.0.0 \
+    --with statsmodels==0.14.6 --with scikit-learn==1.9.0 --with 'pytest>=8,<9' \
+    python 10/assignment_checks/_grader_selftest/run.py
 ```
 
 It grades every kind of submission and confirms the handout's copy matches this

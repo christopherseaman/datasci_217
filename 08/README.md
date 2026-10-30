@@ -38,6 +38,16 @@ _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is wha
 	- Copy data to a server with `scp`, run an analysis inside `tmux`, and reattach after the connection drops.
 </callout>
 
+<video src="media/swedish-delight.mp4"></video>
+
+<pdf src="media/RedSoloCupTracking.pdf"></pdf>
+
+<pdf src="media/Regression-Abuse-SIM-44-0.pdf"></pdf>
+
+<bookmark url="https://qz.com/anthropic-mithril-medicine-acquisition-drug-programs-102826"></bookmark>
+
+<pdf src="media/Mithril-technical-report-v0.6-journal-style.pdf"></pdf>
+
 # The Split-Apply-Combine Paradigm
 
 - **Split-apply-combine**: the pattern behind every grouped summary; pandas runs it with `groupby()`. It answers questions such as "What is the average wait at each clinic?" from a visit log with one row per visit, returning one row per clinic.
@@ -45,6 +55,7 @@ _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is wha
 - **Apply**: run a calculation on each group separately (here, the mean of `wait_min`).
 - **Combine**: collect the per-group results into a new table.
 - Grouping usually changes the **grain**, what one row represents (Lectures 06 and 07), so name it before and after.
+- **Where it comes up**: a monthly clinic report (visits and mean wait per clinic), a lab audit (tests per patient), and model features such as each patient's visit count from an encounter log.
 
 ![Split-apply-combine on the six visits: split by clinic into North (12, 15, 6), South (20, 30), and East (9), apply the mean, and combine into East 9.0, North 11.0, South 25.0](media/split_apply_combine.png)
 
@@ -160,7 +171,7 @@ East had no new-patient visits, so the East `New` cell is `NaN`: there was nothi
 
 # Pivot Tables and Cross-Tabulations
 
-- **Pivot table**: summarizes one column by two keys at once, one down the rows and one across the columns, such as mean wait by clinic and visit type. It is the two-key `groupby(...).mean().unstack()` in a single call.
+- **Pivot table**: summarizes one column by two keys at once, one down the rows and one across the columns, such as mean wait by clinic and visit type. It is the two-key `groupby(...).mean().unstack()` in a single call, and the shape of most handed-off reports: departments down the side, clinics or months across.
 - **Cross-tabulation** (crosstab): the special case that counts the rows in each combination.
 
 ![A pivot table as a heatmap: mean wait (minutes) for 100,000 synthetic visits, 6 departments by 5 clinics; Orthopedics waits about 38 minutes and Pediatrics about 15 at every clinic](media/pivot_heatmap.png)
@@ -221,7 +232,7 @@ True
 
 ## Totals and Absent Cells
 
-- **Margins**: a total row and column computed from the underlying rows, not from the cells. In a table of means, a clinic's `Total` is the mean of all its visits, not the average of its cell means.
+- **Margins**: a total row and column computed from the underlying rows, not from the cells. In a table of means, a clinic's `Total` is the mean of all its visits, not the average of its cell means: North's `Total` is 11.0, the mean of its three waits, while averaging its cell means (10.5 and 12.0) gives 11.25.
 
 ### Reference Card: Pivot Table Totals and Fills
 
@@ -341,6 +352,7 @@ That visit was East's only one, so the default report drops East entirely: six v
 ## Transform Operations
 
 - **transform**: computes a statistic for each group and copies it back to every row of that group. The result has the table's length and index, so it can become a new column.
+- **Where it comes up**: comparing each lab value with the patient's own average, flagging waits far above their clinic's usual, and filling a missing value from its own clinic.
 - **z-score**: `(value - group_mean) / group_std`, a row's distance from its group's mean in standard deviations; 0 is the mean, 1 is one standard deviation above it.
 
 ### Reference Card: Transform Operations
@@ -422,6 +434,8 @@ If a clinic has no recorded scores, its median is missing too; the fill leaves t
 ## Filter Operations
 
 - **filter**: runs a test on each whole group and keeps every original row of the groups that pass. Rows are kept or dropped, never changed.
+- A boolean mask such as `visits[visits['wait_min'] > 10]` (Lecture 04) tests each row; `filter` tests each group.
+- **Where it comes up**: public reports of patient data often hide any group with 10 or fewer patients (the CMS cell-size rule), and `filter(lambda g: g['patient_id'].nunique() >= 11)` drops those groups before the report is built.
 
 ### Reference Card: Filter Operations
 
@@ -453,7 +467,7 @@ print(len(busy), heavy['clinic'].unique().tolist())
 5 ['South']
 ```
 
-East (one visit, mean 9) fails both the size and the mean test. Only South's waits total more than 40 minutes (North's add up to 33).
+East (one visit, mean 9) fails both the size and the mean test. Only South's waits total more than 40 minutes (North's add up to 33). The row mask `visits[visits['wait_min'] > 10]` would instead drop North's 6-minute visit; `filter` keeps it, because North as a whole passes.
 
 # LIVE DEMO!
 
@@ -462,6 +476,7 @@ East (one visit, mean 9) fails both the size and the mean test. Only South's wai
 # Apply: Your Own Function per Group
 
 - **apply**: hands each group to your function as a small DataFrame and stitches the results together. The result can be a number, a summary, or several original rows, so its shape depends on what your function returns. It is the slower fallback: use it when no built-in aggregation fits.
+- **Where it comes up**: each patient's two most recent lab results, or each clinic's longest waits for a quality review.
 
 ## Sorting and Keeping Top Rows Within Groups
 
@@ -473,6 +488,7 @@ East (one visit, mean 9) fails both the size and the mean test. Only South's wai
 | `grouped.apply(lambda g: g.sort_values('col'), include_groups=False)` | Sort rows inside each group | Every row, grouped and sorted |
 | `df.nlargest(n, 'col')` | The `n` rows with the largest values in `col`, largest first; ties keep their original order | Up to `n` rows |
 | `grouped.apply(lambda g: g.nlargest(2, 'col'), include_groups=False)` | Keep the top two rows in each group | Up to two rows per group |
+| `df.sort_values('col', ascending=False).groupby('key').head(2)` | The same top two rows without `apply`; `.tail(1)` after an ascending date sort keeps each patient's latest row | Up to two rows per group, original flat index |
 
 ### Code Snippet: Sort Within Clinics and Keep the Two Longest Waits
 
@@ -506,7 +522,7 @@ display(top2[['patient_id', 'wait_min']])
 
 - The index has two levels (a MultiIndex): the clinic, then each visit's original row number.
 - North's rows come back in wait order, and East keeps its single visit because `nlargest(2)` returns as many rows as the group has.
-- In pandas 3, `include_groups=False` is the default and the only allowed value, so your function never receives the clinic column; writing it out keeps the code working on older pandas, such as Colab's 2.2.
+- In pandas 3, `include_groups=False` is the default and the only allowed value, so your function never receives the clinic column; writing it out keeps the code working on pandas 2.2, where the default was still `True`.
 
 ![xkcd 1172: Workflow. Every change breaks someone's workflow, including pandas 3's change to what apply hands your function](media/xkcd_1172.png)
 
@@ -514,29 +530,39 @@ display(top2[['patient_id', 'wait_min']])
 
 - **Performance optimization**: making an analysis run faster or use less memory, which matters once a summary that takes a second on a class example takes minutes on a year of hospital lab results.
 - One `.agg()` call computing several summaries beats calling `groupby()` again for each summary, because every new `groupby()` call redoes the split.
-- Built-in aggregations named by string (`'mean'`, `'std'`, `transform('mean')`) run as fast compiled code; a Python `lambda` or `apply` runs once per group and is often 20 to 100 times slower.
+- Built-in aggregations named by string (`'mean'`, `'std'`, `transform('mean')`) run as fast compiled code; a Python `lambda` or `apply` runs once per group. On 118,032 A1c results from 90,281 patients, a lambda was about 1,500 times slower for a standard deviation and 5,000 times slower for a transform.
 - A repeated text key stored as `category` (Lecture 05) uses far less memory.
 
-![Performance benchmarks on about 100 million rows (lower is better): three separate groupby calls vs one agg, a per-group z-score with apply vs transform, and memory before and after storing the repeated keys as category](media/perf_combined.png)
+![Measured on 2,000,000 synthetic lab results: one agg beats four groupby calls 3.5 to 1, the built-in std beats a lambda about 1,500 to 1, and category keys halve the table's memory](media/perf_combined.png)
 
 ## Measuring Speed and Memory
 
-On 1,000,000 lab results, `%timeit` of three `groupby()` calls, then of one `.agg()`, then the `clinic` column before and after `astype('category')`; timings depend on the machine:
-
-```text
-53.8 ms ± 211 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)
-30.9 ms ± 163 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)
-
-clinic as text:     53.5 MB
-clinic as category: 1.0 MB
-```
-
 ### Reference Card: Measure Before Optimizing
 
-- `%timeit expression`: Time one line in a notebook by running it many times; output looks like `30.9 ms ± 163 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)`.
+- `%timeit expression`: Time one line in a notebook by running it many times; output looks like `48 ms ± 581 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)`.
 - `df.memory_usage(deep=True)`: Bytes used by each column, counting the text inside it; shows which column to shrink.
 - `df['key'].astype('category')`: Store a repeated text key as a few labels plus a small code per row; same groups, less memory.
 - `grouped['col'].agg(['mean', 'std', 'count'])`: Several summaries from one split instead of one `groupby()` per summary.
+
+### Code Snippet: Time One Split and Shrink a Text Key
+
+`labs` holds 2,000,000 synthetic lab results (`patient_id`, `clinic`, `test_name`, `result`) from eight clinics, and `a1c` holds its 118,032 A1c results from 90,281 patients; timings depend on the machine.
+
+```python
+%timeit [a1c.groupby('patient_id')['result'].agg(f) for f in ['mean', 'std', 'count']]
+%timeit a1c.groupby('patient_id')['result'].agg(['mean', 'std', 'count'])
+print(labs['clinic'].memory_usage(deep=True) / 1e6)
+print(labs['clinic'].astype('category').memory_usage(deep=True) / 1e6)
+```
+
+```text
+132 ms ± 1.38 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+48 ms ± 581 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+30.437234
+2.000258
+```
+
+One split is about 2.8 times faster than three. The text `clinic` column takes 30.4 MB; as a category, 2.0 MB.
 
 ![xkcd 1319: Automation. Making code faster is work too, so measure first and spend the effort only where the time goes](media/xkcd_1319.png)
 
@@ -565,6 +591,7 @@ you@laptop:~$
 - **Host key fingerprint**: the code shown on your first connection that identifies the server. Type `yes` only if it matches the fingerprint the administrator published; SSH remembers the server after that.
 - A password prompt shows nothing as you type; that is normal.
 - **SSH key pair**: what most servers use instead of a password. `ssh-keygen` creates the **public key**, `~/.ssh/id_ed25519.pub`, a padlock you install on every server you use, and the **private key**, `~/.ssh/id_ed25519`, the only key that opens it.
+- **SSH agent**: a background program on your laptop (macOS runs one for you) that keeps an unlocked private key in memory, so `ssh` and `scp` stop asking for the passphrase.
 
 <callout icon="⚠️" color="yellow_bg">
 	## Never share your private key
@@ -594,7 +621,7 @@ ssh-keygen -t ed25519 -C "your_email@example.com"
 ```
 
 - Press Enter for the default location, and set a passphrase that protects the private key file.
-- **SSH agent**: a background program on your laptop (macOS runs one for you). `ssh-add` asks for the passphrase once, and the agent keeps the key unlocked until you log out. If `ssh-add` cannot connect to your authentication agent (common in WSL), skip it and type the passphrase when asked.
+- `ssh-add` asks for the passphrase once, and the agent keeps the key unlocked until you log out. If `ssh-add` cannot connect to your authentication agent (common in WSL), skip it and type the passphrase when asked.
 - `Overwrite (y/n)?` means a key already exists: answer `n` and keep using it, because replacing it breaks access to servers that trust its public half.
 
 ### Code Snippet: Upload a File and Download a Result
@@ -602,8 +629,8 @@ ssh-keygen -t ed25519 -C "your_email@example.com"
 Run these from your laptop's prompt, not inside an `ssh` session. The first copies `data.csv` into the server's existing `~/data/` folder; the second copies `analysis.csv` into your current local folder:
 
 ```bash
-scp data.csv username@server.example:~/data/
-scp username@server.example:~/results/analysis.csv ./
+scp data.csv jdoe@analysis.example.org:~/data/
+scp jdoe@analysis.example.org:~/results/analysis.csv ./
 ```
 
 ![xkcd 2659: Unreliable Connection. Wi-Fi that drops at random is why a long job runs inside tmux](media/xkcd_2659.png)

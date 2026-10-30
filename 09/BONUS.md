@@ -17,68 +17,55 @@ The decomposition, forecasting, and autocorrelation examples use `statsmodels`, 
 
 # Period Arithmetic and Fiscal Year Handling
 
-_Periods represent time spans, not specific moments. Understanding periods is crucial for fiscal year analysis and business reporting._
+_Periods represent time spans, not specific moments: a fiscal quarter, a billing month, a reporting year._
 
 ## Period Basics
 
-A **fiscal year** is an organization's reporting year, which may end outside December. `Q-JAN` names quarters by the fiscal year ending in January: fiscal 2012 Q4 runs from November 2011 through January 2012.
+A **fiscal year** is an organization's reporting year, which may end outside December. Many US hospitals run July through June: `Y-JUN` names a year by the June it ends in, so fiscal 2025 runs July 2024 through June 2025, and `Q-JUN` makes July to September its Q1. Budget, volume, and quality reports to a hospital board use these labels.
 
 ### Reference Card: Period Creation and Arithmetic
 
 | Function | Description |
 |----------|-------------|
-| `pd.Period('2011', freq='Y-DEC')` | Annual period ending December |
-| `pd.Period('2011Q4', freq='Q-JAN')` | Quarterly period with fiscal year |
-| `pd.period_range(start, end, freq='M')` | Create period range |
-| `period.asfreq('M', how='start')` | Convert period frequency |
-| `period.to_timestamp()` | Convert period to timestamp |
+| `pd.Period('2025', freq='Y-JUN')` | Fiscal year ending June 2025 |
+| `pd.Period('2025Q1', freq='Q-JUN')` | First quarter of that fiscal year (July to September 2024) |
+| `period + 1` | Next period of the same frequency |
+| `pd.period_range(start, end, freq='M')` | Create a range of monthly periods |
+| `period.asfreq('D', how='start')` | Convert to another frequency; `how` picks the start or end |
+| `period.start_time`, `period.end_time` | First and last instant of the span |
+| `period.to_timestamp()` | Convert a period to a timestamp |
 
-### Code Snippet: Period Arithmetic and Fiscal Quarters
+### Code Snippet: Fiscal Years and Quarters for ED Volume
 
 ```python
-import pandas as pd
-import numpy as np
+fy = pd.Period('2025', freq='Y-JUN')
+print(f"FY2025: {fy.start_time:%Y-%m-%d} to {fy.end_time:%Y-%m-%d}")
+print(f"Plus 1 year: {fy + 1}, minus 2 years: {fy - 2}")
 
-rng = np.random.default_rng(42)
+q1 = pd.Period('2025Q1', freq='Q-JUN')
+print(f"FY2025 Q1: {q1.asfreq('D', how='start')} to {q1.asfreq('D', how='end')}")
 
-# Create annual period
-p = pd.Period('2011', freq='Y-DEC')
-print(f"Period: {p}")
-
-# Period arithmetic
-print(f"Plus 5 years: {p + 5}")   # Shift forward 5 years
-print(f"Minus 2 years: {p - 2}")  # Shift backward 2 years
-
-# Quarterly periods with fiscal year
-p = pd.Period('2012Q4', freq='Q-JAN')  # Fiscal year ending in January
-print(f"Fiscal Q4: {p}")
-print(f"Start date: {p.asfreq('D', how='start')}")
-print(f"End date: {p.asfreq('D', how='end')}")
-
-# Create period range
-periods = pd.period_range('2000-01-01', '2000-06-30', freq='M')
-ts = pd.Series(rng.standard_normal(6), index=periods)
-print("\nPeriod-indexed Series:")
-print(ts)
+ed_visits = pd.Series([4120, 3980, 4310, 4550, 4890, 5020],
+                      index=pd.period_range('2024-07', '2024-12', freq='M'))
+print(ed_visits)
+print(ed_visits.index.asfreq('Q-JUN'))  # fiscal quarter of each month
 ```
 
 ```text
-Period: 2011
-Plus 5 years: 2016
-Minus 2 years: 2009
-Fiscal Q4: 2012Q4
-Start date: 2011-11-01
-End date: 2012-01-31
-
-Period-indexed Series:
-2000-01    0.304717
-2000-02   -1.039984
-2000-03    0.750451
-2000-04    0.940565
-2000-05   -1.951035
-2000-06   -1.302180
-Freq: M, dtype: float64
+FY2025: 2024-07-01 to 2025-06-30
+Plus 1 year: 2026, minus 2 years: 2023
+FY2025 Q1: 2024-07-01 to 2024-09-30
+2024-07    4120
+2024-08    3980
+2024-09    4310
+2024-10    4550
+2024-11    4890
+2024-12    5020
+Freq: M, dtype: int64
+PeriodIndex(['2025Q1', '2025Q1', '2025Q1', '2025Q2', '2025Q2', '2025Q2'], dtype='period[Q-JUN]')
 ```
+
+Calendar 2024 Q3 is fiscal 2025 Q1: the same three months, two labels.
 
 ## Converting Between Timestamps and Periods
 
@@ -93,42 +80,30 @@ Converting a timestamp to a period keeps the containing span, not the original i
 | `pts.to_timestamp()` | Convert periods back to timestamps |
 | `pts.to_timestamp(how='end')` | Use end of period as timestamp |
 
-### Code Snippet: Convert Timestamps to Periods and Back
+### Code Snippet: Month-End Claims Totals as Billing Months
+
+Paid claims, in thousands of dollars, arrive stamped with each month's last day.
 
 ```python
-import pandas as pd
-import numpy as np
-
-rng = np.random.default_rng(42)
-
-# Timestamp-indexed time series
-dates = pd.date_range('2000-01-01', periods=3, freq='ME')
-ts = pd.Series(rng.standard_normal(3), index=dates)
-
-# Convert to periods
-pts = ts.to_period()
-print("Period-indexed:")
-print(pts)
-
-# Convert back to timestamps
-ts_back = pts.to_timestamp()
-print("\nBack to timestamps:")
-print(ts_back)
+claims = pd.Series([812.4, 790.1, 845.9],
+                   index=pd.date_range('2024-01-31', periods=3, freq='ME'))
+monthly = claims.to_period()
+print(monthly)
+print(monthly.to_timestamp())
 ```
 
 ```text
-Period-indexed:
-2000-01    0.304717
-2000-02   -1.039984
-2000-03    0.750451
+2024-01    812.4
+2024-02    790.1
+2024-03    845.9
 Freq: M, dtype: float64
-
-Back to timestamps:
-2000-01-01    0.304717
-2000-02-01   -1.039984
-2000-03-01    0.750451
+2024-01-01    812.4
+2024-02-01    790.1
+2024-03-01    845.9
 Freq: MS, dtype: float64
 ```
+
+The round trip moves each label from month end to month start. A join against a table keyed on month-end dates now misses every row, so keep the period label for monthly joins.
 
 # Advanced Time Series Decomposition
 
@@ -172,7 +147,7 @@ decomposition.seasonal  # Seasonal component
 decomposition.resid     # Residual component
 ```
 
-### Code Snippet: Decompose a Seasonal Disease-Count Series
+### Code Snippet: Decompose Daily ILI Visits
 
 ```python
 import pandas as pd
@@ -182,18 +157,14 @@ from statsmodels.tsa.seasonal import seasonal_decompose
 
 rng = np.random.default_rng(42)
 
-# Create seasonal time series (daily disease cases over 3 years)
+# Daily influenza-like illness (ILI) visits over 3 years: growing catchment, winter peak
 dates = pd.date_range('2020-01-01', periods=365*3, freq='D')
 trend = np.linspace(100, 200, len(dates))
-seasonal = 10 * np.sin(2 * np.pi * np.arange(len(dates)) / 365.25)
+seasonal = 10 * np.cos(2 * np.pi * np.arange(len(dates)) / 365.25)
 noise = rng.normal(0, 5, len(dates))
-values = trend + seasonal + noise
+ili_visits = pd.Series(trend + seasonal + noise, index=dates)
 
-ts = pd.Series(values, index=dates)
-disease_counts = ts
-
-# Decompose time series
-decomposition = seasonal_decompose(ts, model='additive', period=365)
+decomposition = seasonal_decompose(ili_visits, model='additive', period=365)
 
 # Plot decomposition
 fig, axes = plt.subplots(4, 1, figsize=(15, 12))
@@ -205,7 +176,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-The panels show a rising trend, a repeated annual wave, and the remaining noise. The default centered trend uses future observations and leaves gaps at the ends; these components describe a completed series, not features available in real time.
+The panels show a rising trend, a winter wave each year, and the remaining noise. A surveillance team reads an outbreak as a run of large positive residuals, since the trend and the usual winter rise are already removed. The default centered trend uses future observations and leaves gaps at the ends; these components describe a completed series, not features available in real time.
 
 ## STL Decomposition
 
@@ -216,10 +187,10 @@ The panels show a rising trend, a repeated annual wave, and the remaining noise.
 ```python
 from statsmodels.tsa.seasonal import STL
 
-# STL decomposition (more robust to outliers); ts is a Series with a DatetimeIndex
+# STL decomposition; one holiday surge should not bend the trend
 # `period` is the known number of observations per cycle (annual here).
 # `seasonal` is the odd length of STL's seasonal smoother, not the period.
-stl = STL(ts, period=365, seasonal=13, robust=True)
+stl = STL(ili_visits, period=365, seasonal=13, robust=True)
 result = stl.fit()
 
 # Access components
@@ -231,11 +202,11 @@ result.resid     # Residual component
 
 # Time Series Forecasting
 
-_Forecasting uses historical patterns to predict future values. Always be honest about uncertainty and prediction intervals._
+_Forecasting uses historical patterns to predict future values. A staffing office plans nurses for the upper end of the forecast interval, so report the interval with the point forecast._
 
 ## ARIMA Models
 
-**ARIMA** combines past values (**autoregression**, `p`), repeated differences to remove changes in level (**integration**, `d`), and past prediction errors (**moving average**, `q`). `order=(1, 1, 1)` is an example, not a rule for every series. Fit on the earlier chronological block and assess forecasts on later observations.
+**ARIMA** combines past values (**autoregression**, `p`), repeated differences to remove changes in level (**integration**, `d`), and past prediction errors (**moving average**, `q`). `order=(1, 1, 1)` is an example, not a rule for every series. Fit on the earlier chronological block and assess forecasts on later observations: below, the model trains on all but the last 30 days of ILI visits and forecasts those 30.
 
 The **augmented Dickey-Fuller (ADF) test** asks whether the series has a unit root, a source of persistent drift. A small p-value rejects that particular explanation; it does not prove every property is stationary or establish forecast accuracy. Use a nonconstant numeric series with no missing values.
 
@@ -268,13 +239,18 @@ def fit_arima(series, order=(1, 1, 1)):
     forecast_ci = fitted_model.get_forecast(steps=30).conf_int()
     
     return fitted_model, forecast, forecast_ci
+
+train, test = ili_visits.iloc[:-30], ili_visits.iloc[-30:]
+check_stationarity(train)
+model, forecast, forecast_ci = fit_arima(train)
+mae = (test - forecast).abs().mean()  # mean absolute error, visits per day
 ```
 
 statsmodels 0.15 prints a `FutureWarning` about `adfuller`'s return type; it does not change `result[0]` or `result[1]`.
 
 ## Exponential Smoothing
 
-These forecasting models extend a smoothed level with a trend (Holt) or trend and seasonality (Holt-Winters). Here `ts` is the daily series from the decomposition example; its annual cycle is approximately 365 observations. A monthly series would use `seasonal_periods=12`. Forecast steps count observations, so 30 steps here means 30 days. The examples use fixed smoothing coefficients of 0.3 (`optimized=False`), chosen for illustration rather than forecast accuracy.
+These forecasting models extend a smoothed level with a trend (Holt) or trend and seasonality (Holt-Winters). Here `ili_visits` is the daily series from the decomposition example; its annual cycle is approximately 365 observations. A monthly series would use `seasonal_periods=12`. Forecast steps count observations, so 30 steps here means 30 days. The examples use fixed smoothing coefficients of 0.3 (`optimized=False`), chosen for illustration rather than forecast accuracy.
 
 ### Reference Card: Exponential Smoothing Variants
 
@@ -282,24 +258,24 @@ These forecasting models extend a smoothed level with a trend (Holt) or trend an
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 # Simple exponential smoothing
-model = ExponentialSmoothing(ts, trend=None, seasonal=None)
+model = ExponentialSmoothing(ili_visits, trend=None, seasonal=None)
 fitted = model.fit(smoothing_level=0.3, optimized=False)
 forecast = fitted.forecast(steps=30)
 
 # Holt's method (trend)
-model = ExponentialSmoothing(ts, trend='add', seasonal=None)
+model = ExponentialSmoothing(ili_visits, trend='add', seasonal=None)
 fitted = model.fit(smoothing_level=0.3, smoothing_trend=0.3, optimized=False)
 forecast = fitted.forecast(steps=30)
 
 # Holt-Winters (trend + seasonal)
-model = ExponentialSmoothing(ts, trend='add', seasonal='add', seasonal_periods=365)
+model = ExponentialSmoothing(ili_visits, trend='add', seasonal='add', seasonal_periods=365)
 fitted = model.fit(smoothing_level=0.3, smoothing_trend=0.3, smoothing_seasonal=0.3, optimized=False)
 forecast = fitted.forecast(steps=30)
 ```
 
 # Advanced Resampling Operations
 
-_Resampling with periods requires careful handling of period boundaries and conventions._
+_Resampling a period index rolls monthly clinic volumes into years, or spreads an annual figure back over quarters._
 
 ## Resampling with Periods
 
@@ -313,39 +289,35 @@ _Resampling with periods requires careful handling of period boundaries and conv
 
 `QE` and `YE` are timestamp offset aliases used with a `DatetimeIndex`. Period frequencies describe spans and retain aliases such as `Q-DEC` and `Y-DEC`; do not substitute timestamp aliases mechanically.
 
-### Code Snippet: Resample a Period-Indexed DataFrame
+### Code Snippet: Annual Volume Targets for Three Clinics
+
+Monthly visit counts for three community clinics roll up to a mean monthly volume per year; each quarter then inherits its year's figure as a target.
 
 ```python
-import pandas as pd
-import numpy as np
-
 rng = np.random.default_rng(42)
+visits = pd.DataFrame(rng.poisson([620, 410, 890], size=(24, 3)),
+                      index=pd.period_range('2023-01', '2024-12', freq='M'),
+                      columns=['Mission', 'Sunset', 'Bayview'])
 
-# Resample with periods
-frame = pd.DataFrame(rng.standard_normal((24, 4)),
-                     index=pd.period_range('1-2000', '12-2001', freq='M'),
-                     columns=['Colorado', 'Texas', 'New York', 'Ohio'])
-
-# Downsample to annual
-annual = frame.resample('Y-DEC').mean()
-
-# Upsample annual to quarterly
+annual = visits.resample('Y-DEC').mean()
 quarterly = annual.resample('Q-DEC', convention='start').ffill()
-print(annual)
-print(quarterly.head())
+print(annual.round(1))
+print(quarterly.head().round(1))
 ```
 
 ```text
-      Colorado     Texas  New York      Ohio
-2000 -0.099587 -0.376765  0.583130  0.211060
-2001 -0.266281  0.196464 -0.299594 -0.131869
-        Colorado     Texas  New York      Ohio
-2000Q1 -0.099587 -0.376765  0.583130  0.211060
-2000Q2 -0.099587 -0.376765  0.583130  0.211060
-2000Q3 -0.099587 -0.376765  0.583130  0.211060
-2000Q4 -0.099587 -0.376765  0.583130  0.211060
-2001Q1 -0.266281  0.196464 -0.299594 -0.131869
+      Mission  Sunset  Bayview
+2023    615.9   408.8    897.5
+2024    621.8   404.0    880.3
+        Mission  Sunset  Bayview
+2023Q1    615.9   408.8    897.5
+2023Q2    615.9   408.8    897.5
+2023Q3    615.9   408.8    897.5
+2023Q4    615.9   408.8    897.5
+2024Q1    621.8   404.0    880.3
 ```
+
+`ffill()` copies the annual mean into each quarter; it does not estimate quarterly volume. A clinic with a winter surge has quarters above and below its annual figure.
 
 # More Window and Selection Options
 
@@ -398,37 +370,37 @@ print(pd.DataFrame({
 
 _High-frequency data requires special handling for irregular intervals and tick data._
 
-## Tick Data Processing
+## Infusion Pump Event Streams
 
-**Tick data** records an individual event or sensor reading whenever it arrives. A minute bin can contain many readings or none: `last_value` takes the final nonmissing reading, `total_volume` adds the recorded amounts, and `n_obs` counts rows even when a reading's value is missing. Empty bins have no last value and zero rows; their summed volume is zero by pandas' default, not evidence that the sensor measured zero.
+**Tick data** records an individual event or sensor reading whenever it arrives. An infusion pump logs an event at each rate change, bolus, or alarm: a minute bin can hold many events or none. `last_rate` takes the final nonmissing programmed rate, `volume_ml` adds the volume delivered, and `n_events` counts rows even when a rate is missing. Empty bins have no last rate and zero rows; their summed volume is zero by pandas' default, which a pump that was disconnected did not measure.
 
-### Reference Card: Tick Data Processing
+### Reference Card: Event Stream Aggregation
 
 ```python
 import pandas as pd
 
-# Process high-frequency tick data (e.g., sensor readings)
-def process_tick_data(df, freq='1min'):
-    """Aggregate a DatetimeIndex table with ``value`` and ``volume`` columns.
+def summarize_pump_events(events, freq='1min'):
+    """Aggregate pump events indexed by a DatetimeIndex.
 
-    ``n_obs`` counts input rows in each interval; it is not a source
-    column. Add another named aggregation when a separate quantity field
-    should be summed. Choose and document a naive or timezone-aware index
-    before calling; resampling preserves that time basis.
+    ``events`` has ``rate_ml_h`` (programmed rate) and ``volume_ml``
+    (volume delivered since the previous event). ``n_events`` counts rows
+    per bin. Localize or convert the index before calling; resampling
+    keeps that time basis.
     """
-    if not isinstance(df.index, pd.DatetimeIndex):
-        raise TypeError('df must use a DatetimeIndex')
-    resampled = df.sort_index().resample(freq).agg(
-        last_value=('value', 'last'),
-        total_volume=('volume', 'sum'),
-        n_obs=('value', 'size'),
+    if not isinstance(events.index, pd.DatetimeIndex):
+        raise TypeError('events must use a DatetimeIndex')
+    return events.sort_index().resample(freq).agg(
+        last_rate=('rate_ml_h', 'last'),
+        volume_ml=('volume_ml', 'sum'),
+        n_events=('rate_ml_h', 'size'),
     )
-    return resampled
 ```
+
+Mark bins with `n_events == 0` before charting volume, so a disconnection does not read as zero delivery.
 
 # Advanced Time Zone Operations
 
-_Time zones can be complex, especially with daylight saving time transitions and historical data._
+_Clock changes and multi-site data are where time-zone handling breaks overnight vitals and cross-site joins._
 
 ## Resolving Clock-Change Times
 
@@ -471,44 +443,63 @@ DatetimeIndex(['2024-03-10 03:00:00-04:00'], dtype='datetime64[us, America/New_Y
 
 ## Operations Between Different Time Zones
 
-Arithmetic aligns aware indexes by instant, even when their displayed clocks differ. An instant present in only one series produces `NaN` with ordinary addition.
+Arithmetic aligns aware indexes by instant, even when their displayed clocks differ. An instant present in only one series produces `NaN` with ordinary arithmetic.
 
-### Reference Card: Combining Series Across Time Zones
+### Code Snippet: Compare EHR and Device Readings Across Zones
+
+The hospital EHR in New York records clinic systolic pressure; a home-monitoring vendor in Los Angeles stamps the same patient's cuff readings in Pacific time.
 
 ```python
-import pandas as pd
-
-# Combining time series with different time zones
-dates = pd.date_range('2024-03-01 09:00', periods=4, freq='D')
-ts = pd.Series(range(4), index=dates)
-ts1 = ts.tz_localize('Europe/London')
-ts2 = ts1.iloc[2:].tz_convert('Europe/Moscow')
-result = ts1 + ts2  # Aligned on the same instants
-print(result.index.tz)  # UTC
+ehr = pd.Series([132, 128, 135, 130], name='sbp',
+                index=pd.date_range('2024-03-01 09:00', periods=4, freq='D', tz='America/New_York'))
+device = pd.Series([131, 133], name='sbp',
+                   index=ehr.index[2:].tz_convert('America/Los_Angeles'))
+print(device)
+print(ehr - device)  # aligned on instants, returned in UTC
 ```
+
+```text
+2024-03-03 06:00:00-08:00    131
+2024-03-04 06:00:00-08:00    133
+Name: sbp, dtype: int64
+2024-03-01 14:00:00+00:00    NaN
+2024-03-02 14:00:00+00:00    NaN
+2024-03-03 14:00:00+00:00    4.0
+2024-03-04 14:00:00+00:00   -3.0
+Name: sbp, dtype: float64
+```
+
+The 06:00 Pacific and 09:00 Eastern readings match because they are the same instant. The two EHR days without a device reading become `NaN`.
 
 # Custom Frequency Classes
 
-A **custom business-day frequency** follows a weekday rule plus a list of excluded holidays. Use pandas' existing `CustomBusinessDay` class to represent a clinic calendar; the example skips weekends and Christmas without defining a new class.
+A **custom business-day frequency** follows a weekday rule plus a list of excluded holidays. Use pandas' existing `CustomBusinessDay` class to represent a clinic calendar; the example skips weekends, Christmas, and New Year's Day without defining a new class.
 
 ## Custom Business Day Frequencies
 
-### Reference Card: Custom Business Day Frequencies
+### Code Snippet: A Clinic Calendar Over the Holidays
 
 ```python
 import pandas as pd
 from pandas.tseries.offsets import CustomBusinessDay
 
-# Create custom business day (e.g., excluding specific holidays)
-custom_bday = CustomBusinessDay(holidays=['2023-12-25'])
-dates = pd.date_range('2023-12-01', '2023-12-31', freq=custom_bday)
+clinic_day = CustomBusinessDay(holidays=['2024-12-25', '2025-01-01'])
+print(pd.date_range('2024-12-23', '2025-01-03', freq=clinic_day))
 ```
+
+```text
+DatetimeIndex(['2024-12-23', '2024-12-24', '2024-12-26', '2024-12-27',
+               '2024-12-30', '2024-12-31', '2025-01-02', '2025-01-03'],
+              dtype='datetime64[us]', freq='C')
+```
+
+A follow-up call list built on `clinic_day` never schedules a call on a weekend, Christmas, or New Year's Day.
 
 # Time Series Visualization
 
 ## Interactive Time Series Plots
 
-Plotly adds hover labels and zoom to a line plot. `disease_counts` below is the three-year daily series created in the decomposition example.
+Plotly adds hover labels and zoom to a line plot, useful for finding the exact day a surge began. `ili_visits` below is the three-year daily series created in the decomposition example.
 
 ### Reference Card: Interactive Time Series Plot with Plotly
 
@@ -519,10 +510,10 @@ from plotly.subplots import make_subplots
 # Create interactive plot
 fig = go.Figure()
 fig.add_trace(go.Scatter(
-    x=disease_counts.index,
-    y=disease_counts.values,
+    x=ili_visits.index,
+    y=ili_visits.values,
     mode='lines',
-    name='Time Series'
+    name='ILI visits'
 ))
 fig.show()
 ```
@@ -531,7 +522,7 @@ fig.show()
 
 - **Autocorrelation (ACF)**: correlation between a series and its earlier values at each lag.
 - **Partial autocorrelation (PACF)**: the association at one lag after accounting for the shorter lags. Both plots help describe serial dependence; peaks alone do not identify a reliable forecasting model.
-- Use the regular, nonmissing `disease_counts` series above, not the four-row time-zone example. Forty PACF lags need more than 80 observations. Its trend can cause high correlations even without useful short-term predictability.
+- Use the regular, nonmissing `ili_visits` series above. Forty PACF lags need more than 80 observations. Its trend can cause high correlations even without useful short-term predictability.
 
 ### Reference Card: ACF and PACF Plots
 
@@ -541,8 +532,8 @@ from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 # Plot ACF and PACF
 fig, axes = plt.subplots(2, 1, figsize=(12, 8))
-plot_acf(disease_counts, lags=40, ax=axes[0])
-plot_pacf(disease_counts, lags=40, ax=axes[1])
+plot_acf(ili_visits, lags=40, ax=axes[0])
+plot_pacf(ili_visits, lags=40, ax=axes[1])
 plt.tight_layout()
 plt.show()
 ```
@@ -567,33 +558,37 @@ DatetimeIndex(['2024-01-01', '2024-02-01', '2024-03-01'], dtype='datetime64[us]'
 DatetimeIndex(['2024-01-31', '2024-02-29', '2024-03-31'], dtype='datetime64[us]', freq='ME')
 ```
 
-The business-day range skips the weekend of January 6-7. The default business-day rule skips weekends, but keeps holidays; the custom business-day example above excludes Christmas too.
+The business-day range skips the weekend of January 6-7. The default business-day rule skips weekends, but keeps holidays; the clinic calendar above excludes Christmas and New Year's Day too.
 
 # Time-of-Day Selection Example
 
 ## Selecting Repeated Clock Times
 
+Shift reports pick the same clock window every day: the 07:00 to 19:00 day shift, or the noon census count.
+
 ### Reference Card: Time-of-Day Selection
 
-- `ts.between_time('09:00', '17:00')`: Readings from 09:00 to 17:00 each day, both ends included
+- `ts.between_time('07:00', '19:00')`: Readings from 07:00 to 19:00 each day, both ends included
 - `ts.at_time('12:00')`: Readings at 12:00 each day
 - `ts.loc[ts.index < ts.index.min() + pd.Timedelta(days=10)]`: First 10 days; a `.loc` slice would add the reading exactly 10 days in
 - `ts.loc[ts.index > ts.index.max() - pd.Timedelta(days=10)]`: Last 10 days
 
-### Code Snippet: Time-of-Day Selection
+### Code Snippet: Day-Shift and Noon ED Census
 
 ```python
-hourly = pd.Series(range(24 * 7), index=pd.date_range('2023-01-01', periods=24 * 7, freq='h'))
-print(hourly.between_time('09:00', '17:00').shape)   # 9 readings a day for 7 days
-print(hourly.at_time('12:00').head(3))              # one noon reading per day
-print(hourly.loc[hourly.index < hourly.index.min() + pd.Timedelta(days=3)].shape)
+rng = np.random.default_rng(42)
+ed_census = pd.Series(rng.integers(8, 40, 24 * 7),
+                      index=pd.date_range('2024-01-01', periods=24 * 7, freq='h'))
+print(ed_census.between_time('07:00', '19:00').shape)   # 13 hourly counts a day for 7 days
+print(ed_census.at_time('12:00').head(3))               # one noon count per day
+print(ed_census.loc[ed_census.index < ed_census.index.min() + pd.Timedelta(days=3)].shape)
 ```
 
 ```text
-(63,)
-2023-01-01 12:00:00    12
-2023-01-02 12:00:00    36
-2023-01-03 12:00:00    60
+(91,)
+2024-01-01 12:00:00    31
+2024-01-02 12:00:00    35
+2024-01-03 12:00:00    37
 Freq: 24h, dtype: int64
 (72,)
 ```
@@ -671,24 +666,29 @@ The main lecture uses a declared frequency for hourly grids and ordinary calenda
 - `pd.infer_freq(ts.index)`: Infer the frequency alias, such as `'D'`; `None` for irregular spacing
 - `ts.asfreq(freq)`: Conform to a new timestamp grid without combining observations
 
-### Code Snippet: Frequency Inference
-
-`days` numbers consecutive dates from January 1, 2023, starting at 0. The irregular `visits` fall on January 2, January 9, and February 6, 2024.
+### Code Snippet: Daily Census Against Clinic Visit Dates
 
 ```python
-print(pd.infer_freq(days.index))
-print(days.asfreq('W').head(3))   # keeps Sunday values; averages nothing
-print(pd.infer_freq(visits))     # irregular clinic visits
+rng = np.random.default_rng(42)
+census = pd.Series(rng.integers(18, 31, 21),
+                   index=pd.date_range('2023-01-01', periods=21, freq='D'))
+print(pd.infer_freq(census.index))
+print(census.asfreq('W'))   # Sunday census only; averages nothing
+
+visit_dates = pd.DatetimeIndex(['2024-01-02', '2024-01-09', '2024-02-06'])
+print(pd.infer_freq(visit_dates))
 ```
 
 ```text
 D
-2023-01-01     0
-2023-01-08     7
-2023-01-15    14
+2023-01-01    19
+2023-01-08    27
+2023-01-15    27
 Freq: W-SUN, dtype: int64
 None
 ```
+
+A ward census exported daily infers `'D'`. One patient's clinic visits, a week apart then four weeks apart, infer `None`, so `resample()` suits them and `asfreq()` does not.
 
 ## Specialized Schedule Aliases
 

@@ -3,35 +3,33 @@
 Builds submissions in ignored `scratch/`, answers the assignment with pandas
 the way the lecture does, and confirms what each kind of submission scores:
 a correct one earns 100, and so do one built from plain text keys instead of
-the ordered categorical and one written differently (column and row order,
-CRLF, a BOM, UTF-16, quoting, padding, letter case, number format, means
-rounded to one decimal, row-number columns, `NaN` for an empty cell, and the
-zero-visit rows `observed=False` adds). An empty directory and the untouched
-handout earn 0, one wrong value or one misnamed column costs exactly its own
-check, an omitted value column costs its columns check and its own values check,
-two columns renamed with the right values cost only the columns check, a key-only
-file earns only its rows check, a summary saved without its key column costs only the columns check,
-and a missing file costs only its own artifact's checks, with no advice to
-rename another required file. A pivot with its axes swapped costs only its
-columns check, margins=True costs only the columns check, which names it as the
-cause of the Total column, a list for values= or aggfunc= costs only the columns
-check, which names it as the cause of the extra header line,
-and wait_vs_clinic worked out from a wrong clinic_mean_wait costs only the
-clinic_mean_wait check. It also confirms that
-the copy of the visit log in `_value_checks.py` matches
-`08/assignment/data/clinic_visits.csv`, that the README's checkpoints and
-completion contract agree with the checks, that the handout ships every file in
-`CHECKS_FILES` byte for byte and no other Python file, and that the handout
-notebook ships with its outputs cleared.
+the ordered categorical, one built with observed=False, and one written
+differently (column and row order, CRLF, a BOM, UTF-16, quoting, padding,
+letter case, number format, rounding, row-number columns, `NaN` for an empty
+cell, semicolons or tabs). An empty directory and the untouched handout earn
+0, one wrong value or one misnamed column costs exactly its own check, an
+omitted value column and renamed columns with the right values cost only the
+columns check, and a missing file costs only its own artifact's checks. The
+plausible mistakes (a peer median over every priority, `>=` for `>`, a dose
+filter over every modality, top reports over every priority, a row mask in
+place of filter, `fill_value=0`, swapped pivot axes, margins, list arguments)
+each cost only their own checks, with messages naming the cause. It also
+confirms that the frozen values in `_value_checks.py` match
+`08/assignment/data/imaging_exams.parquet` and the generator, that the README's
+checkpoints and the completion contract agree with the checks and the README
+prints no answer expressions, that the
+handout ships every file in `CHECKS_FILES` byte for byte and no other Python
+file, and that the handout notebook ships with its outputs cleared.
 
-    uv run --python 3.13 --with pandas==3.0.5 --with 'pytest>=8,<9' \\
-        python 08/assignment_checks/_grader_selftest/run.py
+    uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with pyarrow==25.0.0 \\
+        --with 'pytest>=8,<9' python 08/assignment_checks/_grader_selftest/run.py
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 import codecs
+import io
 import json
 import os
 import re
@@ -48,74 +46,70 @@ os.environ["DS217_LOCAL_CHECKS"] = "1"
 
 CHECKS = Path(__file__).resolve().parents[1]
 HANDOUT = CHECKS.parent / "assignment"
-SCRATCH = CHECKS.parents[1] / "scratch"
+REPO = CHECKS.parents[1]
+SCRATCH = REPO / "scratch"
 sys.path.insert(0, str(CHECKS))
+sys.path.insert(0, str(REPO / "scripts"))
+sys.dont_write_bytecode = True
 import _value_checks as value_checks  # noqa: E402
+import build_assignment08_data as generator  # noqa: E402
 from grading import POINTS, grade_submission  # noqa: E402
 
 NAMES = [check.name for check in value_checks.CHECKS]
 POINTS_BY_NAME = dict(zip(NAMES, POINTS, strict=True))
 ARTIFACTS = {artifact.path: artifact for artifact in value_checks.ARTIFACTS}
-PREFIX = {
-    "output/clinic_counts.csv": "clinic counts:",
-    "output/clinic_summary.csv": "clinic summary:",
-    "output/visits_with_context.csv": "visit context:",
-    "output/clinic_visit_type_summary.csv": "clinic and visit type:",
-    "output/mean_wait_pivot.csv": "mean wait pivot:",
-}
-COUNTS = {"visit_count": ("visit_id", "size"), "satisfaction_count": ("satisfaction", "count"),
-          "patient_count": ("patient_id", "nunique")}
-WAITS = {"total_wait_min": ("wait_min", "sum"), "mean_wait_min": ("wait_min", "mean")}
+SUMMARY, PAIRS, DELAYED = "output/site_summary.csv", "output/site_modality_summary.csv", "output/delayed_stat_exams.csv"
+DOSE, SLOWEST, PIVOT = "output/ct_dose_review.csv", "output/slowest_stat_reports.csv", "output/median_report_pivot.csv"
+PREFIX = {SUMMARY: "site summary:", PAIRS: "site and modality:", DELAYED: "delayed STAT exams:",
+          DOSE: "CT dose review:", SLOWEST: "slowest STAT reports:", PIVOT: "median report pivot:"}
+DELAYED_COLUMNS = ["exam_id", "site", "modality", "wait_hr", "peer_median_wait_hr", "wait_vs_peer_hr"]
+EXAMS = pd.read_parquet(HANDOUT / "data" / "imaging_exams.parquet")
 
 
-def read_visits() -> pd.DataFrame:
-    return pd.read_csv(HANDOUT / "data" / "clinic_visits.csv")
-
-
-def solve(categorical: bool = True, observed: bool = True) -> dict[str, pd.DataFrame]:
+def solve(categorical: bool = True, observed: bool = True, use_filter: bool = False) -> dict[str, pd.DataFrame]:
     """Answer the assignment with the lecture's pandas calls; returns {artifact path: frame to save}."""
-    visits = read_visits()
+    exams = EXAMS.copy()
     if categorical:
-        visits["clinic"] = pd.Categorical(visits["clinic"], categories=list(value_checks.CLINIC_ORDER), ordered=True)
-        per_clinic = visits.groupby("clinic", observed=False).size()
-        assert per_clinic.to_dict() == {"Mission": 6, "Sunset": 5, "Bayview": 4, "Excelsior": 0}, per_clinic
+        exams["site"] = pd.Categorical(exams["site"], categories=list(value_checks.SITE_ORDER), ordered=True)
+        per_site = exams.groupby("site", observed=False).size()
+        assert per_site["Eastport"] == 0 and per_site["Valley"] == 25384, per_site
 
-    by_clinic = visits.groupby("clinic", as_index=False, observed=observed)
-    clinic_counts = by_clinic.agg(**COUNTS)
-    clinic_summary = by_clinic.agg(**COUNTS, **WAITS)
+    site_summary = exams.groupby("site", as_index=False, observed=observed).agg(
+        exam_count=("exam_id", "size"), report_count=("report_hr", "count"), patient_count=("patient_id", "nunique"),
+        total_scan_min=("scan_min", "sum"), mean_scan_min=("scan_min", "mean"))
+    site_modality = exams.groupby(["site", "modality"], as_index=False, observed=observed).agg(
+        exam_count=("exam_id", "size"), median_wait_hr=("wait_hr", "median"),
+        median_report_hr=("report_hr", "median"))
 
-    context = visits.copy()
-    context["clinic_mean_wait"] = visits.groupby("clinic", observed=True)["wait_min"].transform("mean")
-    context["wait_vs_clinic"] = context["wait_min"] - context["clinic_mean_wait"]
-    assert "clinic_mean_wait" not in visits.columns
+    stat = exams[exams["priority"] == "STAT"].copy()
+    stat["peer_median_wait_hr"] = stat.groupby(["site", "modality"], observed=observed)["wait_hr"].transform("median")
+    stat["wait_vs_peer_hr"] = stat["wait_hr"] - stat["peer_median_wait_hr"]
+    delayed = stat[stat["wait_hr"] > 8][DELAYED_COLUMNS]
+    assert len(stat) == 152925 and len(delayed) == 190
 
-    pairs = visits.groupby(["clinic", "visit_type"], as_index=False, observed=observed).agg(
-        visit_count=("visit_id", "size"), mean_wait_min=("wait_min", "mean"))
+    ct = exams[exams["modality"] == "CT"]
+    dose = ct[ct.groupby("patient_id")["dose_msv"].transform("sum") >= 100]
+    if use_filter:
+        assert ct.groupby("patient_id").filter(lambda g: g["dose_msv"].sum() >= 100).equals(dose)
+    assert len(dose) == 1253 and dose["patient_id"].nunique() == 159 and len(ct[ct["dose_msv"] >= 100]) == 0
 
-    pivot = pd.pivot_table(visits, values="wait_min", index="clinic", columns="visit_type", aggfunc="mean",
+    slowest = stat.groupby("site", observed=observed).apply(lambda g: g.nlargest(3, "report_hr"), include_groups=False)
+    slowest = slowest.reset_index(level="site")[["exam_id", "site", "modality", "report_hr"]]
+
+    pivot = pd.pivot_table(exams, values="report_hr", index="site", columns="modality", aggfunc="median",
                            observed=observed, dropna=observed)
-    twin = visits.groupby(["clinic", "visit_type"], observed=True)["wait_min"].mean().unstack()
     if observed:
-        assert pivot.equals(twin)
-        assert int(pivot.isna().sum().sum()) == 1
-    assert pd.crosstab(visits["clinic"], visits["visit_type"]).loc["Sunset", "Telehealth"] == 0
+        twin = exams.groupby(["site", "modality"], observed=True)["report_hr"].median().unstack()
+        assert pivot.equals(twin) and int(pivot.isna().sum().sum()) == 1
+    assert pd.crosstab(exams["site"], exams["modality"]).loc["Valley", "MRI"] == 0
 
-    return {
-        "output/clinic_counts.csv": clinic_counts,
-        "output/clinic_summary.csv": clinic_summary,
-        "output/visits_with_context.csv": context,
-        "output/clinic_visit_type_summary.csv": pairs,
-        "output/mean_wait_pivot.csv": pivot,
-    }
+    return {SUMMARY: site_summary, PAIRS: site_modality, DELAYED: delayed,
+            DOSE: dose[["exam_id", "patient_id", "dose_msv"]], SLOWEST: slowest, PIVOT: pivot}
 
 
 def as_files(frames: dict[str, pd.DataFrame]) -> dict[str, str]:
-    """The way the README saves each frame: index=False, except the pivot, which keeps its clinic index."""
-    return {
-        path: frame.to_csv() if path == "output/mean_wait_pivot.csv" else frame.to_csv(index=False)
-        for path, frame in frames.items()
-    }
-
+    """The way the README saves each frame: index=False, except the pivot, which keeps its site index."""
+    return {path: frame.to_csv() if path == PIVOT else frame.to_csv(index=False) for path, frame in frames.items()}
 
 
 def failing(result: dict) -> set[str]:
@@ -138,13 +132,14 @@ def cli_report(checks: Path, root: Path) -> dict:
     return report
 
 
-def graded(root: Path) -> dict:
+def graded(root: Path, both_clis: bool = True) -> dict:
     """Grade in-process and through both CLIs, and insist all three agree."""
     result = grade_submission(root)
     assert result["schema"] == "datasci217/grading-result/v1"
     assert result["max-score"] == 100 == sum(POINTS)
-    assert cli_report(CHECKS, root) == result, root
-    assert cli_report(HANDOUT, root) == result, root
+    if both_clis:
+        assert cli_report(CHECKS, root) == result, root
+        assert cli_report(HANDOUT, root) == result, root
     return result
 
 
@@ -157,20 +152,16 @@ def artifact_checks(path: str) -> list[str]:
 
 
 def check_supplied_data() -> None:
-    """The copy of the visit log in _value_checks.py matches the handout's data file and notebook."""
-    visits = read_visits()
-    assert tuple(visits.columns) == value_checks.VISIT_COLUMNS
-    as_dicts = {
-        row.pop("visit_id"): {name: (None if pd.isna(value) else value) for name, value in row.items()}
-        for row in visits.to_dict("records")
-    }
-    assert as_dicts == value_checks.VISITS, as_dicts
-    assert sorted(visits["visit_type"].unique()) == list(value_checks.VISIT_TYPES)
-    assert set(visits["clinic"]) == set(value_checks.OBSERVED) and value_checks.UNUSED == ("Excelsior",)
-    assert sorted(path.name for path in (HANDOUT / "data").iterdir()) == ["clinic_visits.csv"]
+    """The handout's Parquet file is the generator's output, and the frozen values match it."""
+    assert sorted(path.name for path in (HANDOUT / "data").iterdir()) == ["imaging_exams.parquet"]
+    assert EXAMS.equals(generator.build()), "data/imaging_exams.parquet differs from build_assignment08_data.build()"
+    for name, value in generator.expected(EXAMS).items():
+        assert getattr(value_checks, name) == value, f"{name} in _value_checks.py differs from the data; rerun the build"
+    assert value_checks.UNUSED == ("Eastport",)
     notebook = json.loads((HANDOUT / "assignment.ipynb").read_text(encoding="utf-8"))
     source = "\n".join("".join(cell["source"]) for cell in notebook["cells"])
-    assert f"CLINIC_ORDER = {list(value_checks.CLINIC_ORDER)!r}".replace("'", '"') in source
+    assert f"SITE_ORDER = {list(value_checks.SITE_ORDER)!r}".replace("'", '"') in source
+    assert "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/assignment/data" in source
 
 
 def check_readme() -> None:
@@ -187,9 +178,18 @@ def check_readme() -> None:
     for path, name, _ in contract:
         assert name.strip().startswith(PREFIX[path]), (path, name)
     first = value_checks.CHECKS[0].name
-    assert f"[FIX ]  0/{POINTS[0]}  {first}\n         {value_checks._missing(HANDOUT, value_checks.CLINIC_COUNTS)}" in checks_md
+    assert f"[FIX ]  0/{POINTS[0]}  {first}\n         {value_checks._missing(HANDOUT, value_checks.SITE_SUMMARY_TABLE)}" in checks_md
     last = value_checks.CHECKS[-1].name
     assert f"[PASS]  {POINTS[-1]}/{POINTS[-1]}  {last}\n\nScore: 100/100" in checks_md
+    for count in (len(value_checks.SITE_MODALITY), len(value_checks.DELAYED_STAT)):
+        assert f"then {count} rows" in readme, count
+    assert f"then {len(value_checks.CT_DOSE_REVIEW):,} rows" in readme
+    # No full answer expressions: the README names methods and snippets but never prints a finished call.
+    for leaked in ('ct["dose_msv"] >=', '"size"', '"count"', '"nunique"', '"median"', 'transform("sum")',
+                   "include_groups=", "fill_value=0", "index=False"):
+        assert leaked not in readme, leaked
+    for text in (readme, checks_md):
+        assert "\u2014" not in text and "\u2013" not in text, "no em or en dashes"
     # The README and the notebook number their tasks the same way.
     notebook = json.loads((HANDOUT / "assignment.ipynb").read_text(encoding="utf-8"))
     notebook_headings = [
@@ -214,9 +214,10 @@ def check_handout_files() -> None:
     assert sorted(listed) == shipped, (listed, shipped)
     for name in listed:
         assert (HANDOUT / name).read_bytes() == (CHECKS / name).read_bytes(), f"{name} differs from the handout copy"
+    # A student's gitignored .venv/ and the downloaded .checks/ cache are not part of the handout.
     handout_python = sorted(
         path.relative_to(HANDOUT).as_posix() for path in HANDOUT.rglob("*.py")
-        if "__pycache__" not in path.parts and ".venv" not in path.parts
+        if "__pycache__" not in path.parts and ".venv" not in path.parts and ".checks" not in path.parts
     )
     assert handout_python == sorted(name for name in listed if name.endswith(".py")), handout_python
     assert not (HANDOUT / "_grader_selftest").exists()
@@ -229,37 +230,40 @@ def check_handout_files() -> None:
 def alternative() -> dict[str, str | bytes]:
     """The same answers written the way another careful student might: {artifact path: file contents}.
 
-    Built with observed=False, so every table also carries the zero-visit rows.
+    Built with observed=False, so the summaries also carry the zero-exam rows.
     """
     frames = solve(observed=False)
 
-    counts = frames["output/clinic_counts.csv"]
-    counts = counts[list(reversed(counts.columns))].copy()
-    counts["clinic"] = counts["clinic"].astype(str).str.upper()
+    summary = frames[SUMMARY]
+    summary = summary[list(reversed(summary.columns))].copy()
+    summary["site"] = summary["site"].astype(str).str.upper()
+    summary["mean_scan_min"] = summary["mean_scan_min"].round(1)
 
-    summary = frames["output/clinic_summary.csv"].copy()
-    summary["mean_wait_min"] = summary["mean_wait_min"].round(1)
+    pairs = frames[PAIRS].iloc[::-1].copy()
+    pairs[["median_wait_hr", "median_report_hr"]] = pairs[["median_wait_hr", "median_report_hr"]].round(1)
 
-    context = frames["output/visits_with_context.csv"].copy()
-    context = context[["wait_vs_clinic", "clinic_mean_wait", *value_checks.VISIT_COLUMNS]].round(2)
-    context.columns = [column.title() for column in context.columns]
+    delayed = frames[DELAYED][list(reversed(DELAYED_COLUMNS))].round(2)
+    delayed.columns = [column.title() for column in delayed.columns]
 
-    pairs = frames["output/clinic_visit_type_summary.csv"].iloc[::-1]
+    # The flat route without apply keeps the same exams, with their original row labels as the index.
+    stat = EXAMS[EXAMS["priority"] == "STAT"]
+    slowest = stat.sort_values("report_hr", ascending=False).groupby("site").head(3)[["modality", "report_hr", "site",
+                                                                                       "exam_id"]]
 
-    pivot = frames["output/mean_wait_pivot.csv"][["Telehealth", "New", "Follow-up"]].round(1).reset_index()
-    pivot = pivot.rename(columns={"clinic": "CLINIC"})
+    pivot = frames[PIVOT][["X-ray", "Ultrasound", "MRI", "CT"]].round(1).reset_index().rename(columns={"site": "SITE"})
 
     return {
-        # Columns reversed, upper-case clinic names, CRLF, and UTF-16, as Windows PowerShell 5.1 writes.
-        "output/clinic_counts.csv": codecs.BOM_UTF16_LE + counts.to_csv(index=False, lineterminator="\r\n").encode("utf-16-le"),
-        # A leading row-number column, a BOM, every cell quoted, NaN for the empty mean, means to one decimal.
-        "output/clinic_summary.csv": "﻿" + summary.to_csv(quoting=1, na_rep="NaN"),
-        # Title-case headers, columns shuffled, two decimals, a trailing space on each line, no final newline.
-        "output/visits_with_context.csv": "\n".join(line + " " for line in context.to_csv(index=False).splitlines()),
-        # Rows reversed, two-decimal numbers, and a space after every comma.
-        "output/clinic_visit_type_summary.csv": pairs.to_csv(index=False, float_format="%.2f").replace(",", ", "),
-        # reset_index() saved with its row numbers, visit types reversed, one decimal, and an all-empty Excelsior row.
-        "output/mean_wait_pivot.csv": pivot.to_csv(),
+        # Columns reversed, upper-case site names, one decimal, CRLF, and UTF-16, as Windows PowerShell 5.1 writes.
+        SUMMARY: codecs.BOM_UTF16_LE + summary.to_csv(index=False, lineterminator="\r\n").encode("utf-16-le"),
+        # A leading row-number column, a BOM, every cell quoted, NaN for the empty medians, rows reversed.
+        PAIRS: "﻿" + pairs.to_csv(quoting=1, na_rep="NaN"),
+        # Title-case headers, columns reversed, two decimals, a trailing space on each line, no final newline.
+        DELAYED: "\n".join(line + " " for line in delayed.to_csv(index=False).splitlines()),
+        # Rows sorted by patient, a space after every comma.
+        DOSE: frames[DOSE].sort_values(["patient_id", "exam_id"]).to_csv(index=False).replace(",", ", "),
+        SLOWEST: slowest.to_csv(),
+        # reset_index() saved with its row numbers, modalities reversed, one decimal, an all-empty Eastport row.
+        PIVOT: pivot.to_csv(),
     }
 
 
@@ -286,7 +290,7 @@ def run() -> None:
     check_supplied_data()
     check_readme()
     check_handout_files()
-    frames = solve()
+    frames = solve(use_filter=True)
     correct = as_files(frames)
 
     SCRATCH.mkdir(exist_ok=True)
@@ -303,430 +307,268 @@ def run() -> None:
                     (root / path).write_text(contents, encoding="utf-8", newline="")
             return root
 
+        def only(name: str, files: dict[str, str | bytes], expected: set[str], *parts: str, check: str = "") -> dict:
+            """Grade `files` and insist exactly `expected` fail; each of `parts` must appear in `check`'s message."""
+            result = graded(submission(name, files), both_clis=False)
+            assert failing(result) == expected, (name, {other: detail(result, other) for other in failing(result)})
+            assert result["score"] == 100 - cost(*expected), (name, result["score"])
+            assert check or len(expected) == 1 or not parts, name
+            message = detail(result, check or next(iter(expected))) if parts else ""
+            for part in parts:
+                assert part in message, (name, part, message)
+            return result
+
+        def changed(path: str, text: str | bytes) -> dict[str, str | bytes]:
+            files = dict(correct)
+            files[path] = text
+            return files
+
         empty = workspace / "empty"
         empty.mkdir()
         assert graded(empty)["score"] == 0
         scaffold = workspace / "scaffold"
-        shutil.copytree(HANDOUT, scaffold, ignore=shutil.ignore_patterns("__pycache__", ".pytest_cache", ".venv"))
+        shutil.copytree(HANDOUT, scaffold, ignore=shutil.ignore_patterns("__pycache__", ".pytest_cache", ".venv", ".checks"))
         result = graded(scaffold)
         assert result["score"] == 0 and failing(result) == set(NAMES)
-        assert detail(result, NAMES[0]).startswith("output/clinic_counts.csv is missing"), detail(result, NAMES[0])
+        assert detail(result, NAMES[0]).startswith("output/site_summary.csv is missing"), detail(result, NAMES[0])
 
         root = submission("correct", correct)
         result = graded(root)
         assert result["score"] == 100, {name: detail(result, name) for name in failing(result)}
-
-        # An omitted column costs its columns check and its own values check; a present sibling's mistake is still named.
-        partial = frames["output/visits_with_context.csv"].drop(columns="satisfaction").copy()
-        for label in ("missing", "missing-and-wrong", "header-only", "unrecognizable"):
-            changed = partial.copy()
-            if label == "missing-and-wrong":
-                changed.loc[changed.index[0], "wait_min"] += 17
-            elif label == "header-only":
-                changed = changed.iloc[:0]
-            elif label == "unrecognizable":
-                changed = changed.iloc[:1].astype(object)
-                changed.iloc[0, :] = "WRONG"
-            files = dict(correct)
-            files["output/visits_with_context.csv"] = changed.to_csv(index=False)
-            result = graded(submission("present-siblings-" + label, files))
-            if label in ("missing", "missing-and-wrong"):
-                assert failing(result) == {"visit context: columns", "visit context: original visit values"}, failing(result)
-                message = detail(result, "visit context: original visit values")
-                assert "has no satisfaction column" in message and "expected satisfaction 4 for V001" in message, message
-                if label == "missing-and-wrong":
-                    assert "Also, V001 has wait_min 35, expected 18" in message, message
-            else:
-                assert "visit context: original visit values" in failing(result), failing(result)
-
-        # One dropped value column fails its own values check, which names the expected value.
-        files = dict(correct)
-        files["output/clinic_counts.csv"] = frames["output/clinic_counts.csv"].drop(columns="patient_count").to_csv(index=False)
-        result = graded(submission("dropped-value-column", files))
-        assert failing(result) == {"clinic counts: columns", "clinic counts: patient_count values"}, failing(result)
-        assert result["score"] == 100 - cost("clinic counts: columns", "clinic counts: patient_count values")
-        message = detail(result, "clinic counts: patient_count values")
-        for part in ("has no patient_count column", "expected patient_count 4 for Mission",
-                     "left out of the saved table or saved under another name", "the columns check says what to name it",
-                     "Fix it in Task 1.2"):
-            assert part in message, (part, message)
-
-        # Two columns renamed with correct values are placed by their values: only the columns check fails.
-        counts_frame = frames["output/clinic_counts.csv"]
-        renamed = counts_frame.rename(columns={"visit_count": "visits", "patient_count": "patients"})
-        files = dict(correct)
-        files["output/clinic_counts.csv"] = renamed.to_csv(index=False)
-        result = graded(submission("renamed-two-right", files))
-        assert failing(result) == {"clinic counts: columns"}, {name: detail(result, name) for name in failing(result)}
-        assert "is missing visit_count and patient_count and also has visits and patients" in detail(
-            result, "clinic counts: columns"), detail(result, "clinic counts: columns")
-
-        # Two columns renamed with wrong values match nothing: the columns check and both values checks fail.
-        wrong_renamed = renamed.copy()
-        wrong_renamed.loc[wrong_renamed["clinic"] == "Mission", ["visits", "patients"]] = [7, 6]
-        files["output/clinic_counts.csv"] = wrong_renamed.to_csv(index=False)
-        result = graded(submission("renamed-two-wrong", files))
-        assert failing(result) == {"clinic counts: columns", "clinic counts: visit_count values",
-                                   "clinic counts: patient_count values"}, failing(result)
-        assert "has no visit_count column" in detail(result, "clinic counts: visit_count values")
-
-        # Two renamed summary columns copied from a wrong earlier file are placed by that file's values:
-        # the copied mistakes cost only their checks in Task 1.2, and the names only the summary's columns check.
-        files = dict(correct)
-        counts_wrong = counts_frame.copy()
-        counts_wrong.loc[counts_wrong["clinic"] == "Mission", "patient_count"] = 6
-        counts_wrong.loc[counts_wrong["clinic"] == "Sunset", "satisfaction_count"] = 5
-        files["output/clinic_counts.csv"] = counts_wrong.to_csv(index=False)
-        summary_wrong = frames["output/clinic_summary.csv"].copy()
-        summary_wrong[["patient_count", "satisfaction_count"]] = counts_wrong[["patient_count", "satisfaction_count"]]
-        summary_wrong = summary_wrong.rename(columns={"patient_count": "patients", "satisfaction_count": "surveys"})
-        files["output/clinic_summary.csv"] = summary_wrong.to_csv(index=False)
-        result = graded(submission("renamed-two-copied", files))
-        assert failing(result) == {"clinic counts: patient_count values", "clinic counts: satisfaction_count values",
-                                   "clinic summary: columns"}, {name: detail(result, name) for name in failing(result)}
-
-        # A key-only file earns its rows check and nothing for the values it left out.
-        files = dict(correct)
-        files["output/clinic_counts.csv"] = counts_frame[["clinic"]].to_csv(index=False)
-        result = graded(submission("key-only", files))
-        assert failing(result) == set(artifact_checks("output/clinic_counts.csv")) - {
-            "clinic counts: one row per clinic"}, failing(result)
-        files = dict(correct)
-        files["output/mean_wait_pivot.csv"] = frames["output/mean_wait_pivot.csv"].iloc[:, :0].to_csv()
-        result = graded(submission("key-only-pivot", files))
-        assert failing(result) == set(artifact_checks("output/mean_wait_pivot.csv")) - {
-            "mean wait pivot: one row per clinic"}, failing(result)
-        assert "expected Telehealth blank for Sunset" in detail(result, "mean wait pivot: empty cell stays empty")
-
-        # A pivot saved after .dropna(axis=1) loses Telehealth: its filled cells cost the means check, and its lost
-        # empty cell is not charged again by the empty-cell check.
-        files = dict(correct)
-        files["output/mean_wait_pivot.csv"] = frames["output/mean_wait_pivot.csv"].dropna(axis=1).to_csv()
-        result = graded(submission("pivot-dropna-columns", files))
-        assert failing(result) == {"mean wait pivot: columns", "mean wait pivot: mean waits"}, failing(result)
-        assert "has no Telehealth column" in detail(result, "mean wait pivot: mean waits")
-
-        # A count left out of Task 1.2 and, copying it, of Task 2.1 costs Task 2.1 only its columns check.
-        files = dict(correct)
-        for path in ("output/clinic_counts.csv", "output/clinic_summary.csv"):
-            files[path] = frames[path].drop(columns="patient_count").to_csv(index=False)
-        result = graded(submission("count-dropped-twice", files))
-        assert failing(result) == {"clinic counts: columns", "clinic counts: patient_count values",
-                                   "clinic summary: columns"}, failing(result)
-        # Left out of Task 2.1 alone, the count is charged there.
-        files["output/clinic_counts.csv"] = correct["output/clinic_counts.csv"]
-        result = graded(submission("count-dropped-later", files))
-        assert failing(result) == {"clinic summary: columns", "clinic summary: count values"}, failing(result)
-
-        # A wrong clinic_mean_wait (medians) and the wait_vs_clinic worked out from it, both misnamed: the pair is
-        # placed by wait_min minus mean = diff, so only the columns and clinic_mean_wait checks fail.
-        medians = frames["output/visits_with_context.csv"].copy()
-        medians["clinic_mean_wait"] = medians.groupby("clinic", observed=True)["wait_min"].transform("median")
-        medians["wait_vs_clinic"] = medians["wait_min"] - medians["clinic_mean_wait"]
-        files = dict(correct)
-        files["output/visits_with_context.csv"] = medians.rename(
-            columns={"clinic_mean_wait": "median_wait", "wait_vs_clinic": "diff"}).to_csv(index=False)
-        result = graded(submission("median-renamed", files))
-        assert failing(result) == {"visit context: columns", "visit context: clinic_mean_wait values"}, failing(result)
+        size = sum((root / path).stat().st_size for path in correct)
+        assert size < 100_000, f"a complete output/ is {size} bytes"
 
         # The checks read only output/: poisoned data and code in the submission change nothing.
         (root / "data").mkdir()
-        (root / "data" / "clinic_visits.csv").write_text("poison\n", encoding="utf-8")
+        (root / "data" / "imaging_exams.parquet").write_text("poison\n", encoding="utf-8")
         for name in ("grading.py", "_value_checks.py", "check_assignment.py"):
             (root / name).write_text("raise RuntimeError('submission code must not run')\n", encoding="utf-8")
         assert graded(root)["score"] == 100
 
-        # Plain text keys, with no ordered categorical: alphabetical rows and columns score the same.
-        result = graded(submission("plain-strings", as_files(solve(categorical=False))))
-        assert result["score"] == 100, {name: detail(result, name) for name in failing(result)}
+        for label, files in (("plain-strings", as_files(solve(categorical=False))),
+                             ("observed-false", as_files(solve(observed=False))),
+                             ("alternative", alternative())):
+            result = graded(submission(label, files))
+            assert result["score"] == 100, (label, {name: detail(result, name) for name in failing(result)})
 
-        result = graded(submission("alternative", alternative()))
-        assert result["score"] == 100, {name: detail(result, name) for name in failing(result)}
-
-        # Saved with the row index everywhere, as to_csv() does without index=False.
+        # Saved with the row index everywhere, as to_csv() does without index=False, and with apply's MultiIndex.
         root = workspace / "with-index"
         (root / "output").mkdir(parents=True)
         for path, frame in frames.items():
             frame.to_csv(root / path)
+        stat = EXAMS[EXAMS["priority"] == "STAT"]
+        stat.groupby("site").apply(lambda g: g.nlargest(3, "report_hr"), include_groups=False)[
+            ["exam_id", "modality", "report_hr"]].to_csv(root / SLOWEST)
         assert graded(root)["score"] == 100
 
         # Cells separated by semicolons, with a European spreadsheet's decimal commas, or by tabs: full marks.
         def separated(sep: str, decimal: str = ".") -> dict[str, str]:
-            return {
-                path: frame.to_csv(index=path == "output/mean_wait_pivot.csv", sep=sep, decimal=decimal)
-                for path, frame in frames.items()
-            }
+            return {path: frame.to_csv(index=path == PIVOT, sep=sep, decimal=decimal) for path, frame in frames.items()}
 
         semicolons = separated(";", ",")
-        assert any(re.search(r";-?\d+,\d", text) for text in semicolons.values() if isinstance(text, str))
+        assert any(re.search(r";-?\d+,\d", text) for text in semicolons.values())
         for label, files in (("semicolons", semicolons), ("tabs", separated("\t"))):
             result = graded(submission(label, files))
             assert result["score"] == 100, (label, {name: detail(result, name) for name in failing(result)})
-        # One wrong value in a semicolon-separated file still costs only its own check.
-        wrong = frames["output/clinic_summary.csv"].copy()
-        wrong.loc[wrong["clinic"] == "Mission", "mean_wait_min"] = 15.5
+        wrong = frames[SUMMARY].copy()
+        wrong.loc[wrong["site"] == "Valley", "mean_scan_min"] = 15.5
         files = separated(";", ",")
-        files["output/clinic_summary.csv"] = wrong.to_csv(index=False, sep=";", decimal=",")
-        result = graded(submission("semicolons-one-wrong-value", files))
-        assert failing(result) == {"clinic summary: mean_wait_min values"}, {name: detail(result, name) for name in failing(result)}
-        message = detail(result, "clinic summary: mean_wait_min values")
-        assert "Mission has mean_wait_min 15.5" in message, message
+        files[SUMMARY] = wrong.to_csv(index=False, sep=";", decimal=",")
+        only("semicolons-one-wrong-value", files, {"site summary: mean_scan_min values"}, "Valley has mean_scan_min 15.5")
 
-        # Summaries grouped without as_index=False and saved with their index keep their keys: full marks.
-        visits = read_visits()
-        files = dict(correct)
-        files["output/clinic_counts.csv"] = visits.groupby("clinic").agg(**COUNTS).to_csv()
-        files["output/clinic_visit_type_summary.csv"] = visits.groupby(["clinic", "visit_type"]).agg(
-            visit_count=("visit_id", "size"), mean_wait_min=("wait_min", "mean")).to_csv()
-        assert graded(submission("index-keys", files))["score"] == 100
+        # Summaries grouped without as_index=False keep their keys when saved with the index: full marks.
+        exams = EXAMS
+        index_files = dict(correct)
+        index_files[SUMMARY] = exams.groupby("site").agg(
+            exam_count=("exam_id", "size"), report_count=("report_hr", "count"), patient_count=("patient_id", "nunique"),
+            total_scan_min=("scan_min", "sum"), mean_scan_min=("scan_min", "mean")).to_csv()
+        index_files[PAIRS] = exams.groupby(["site", "modality"]).agg(
+            exam_count=("exam_id", "size"), median_wait_hr=("wait_hr", "median"),
+            median_report_hr=("report_hr", "median")).to_csv()
+        assert graded(submission("index-keys", index_files))["score"] == 100
+        # Saved with index=False they lose their key columns: only the columns checks fail.
+        lost = dict(correct)
+        lost[SUMMARY] = pd.read_csv(io.StringIO(index_files[SUMMARY]), index_col=0).to_csv(index=False)
+        lost[PAIRS] = pd.read_csv(io.StringIO(index_files[PAIRS]), index_col=[0, 1]).to_csv(index=False)
+        lost[PIVOT] = frames[PIVOT].to_csv(index=False)
+        only("lost-keys", lost, {"site summary: columns", "site and modality: columns", "median report pivot: columns"},
+             "is missing site", check="site summary: columns")
 
-        # The same summaries saved with index=False lose their key columns: only the columns checks fail.
-        files["output/clinic_counts.csv"] = visits.groupby("clinic").agg(**COUNTS).to_csv(index=False)
-        files["output/clinic_visit_type_summary.csv"] = visits.groupby(["clinic", "visit_type"]).agg(
-            visit_count=("visit_id", "size"), mean_wait_min=("wait_min", "mean")).to_csv(index=False)
-        files["output/mean_wait_pivot.csv"] = frames["output/mean_wait_pivot.csv"].to_csv(index=False)
-        result = graded(submission("lost-keys", files))
-        lost = {"clinic counts: columns", "clinic and visit type: columns", "mean wait pivot: columns"}
-        assert failing(result) == lost, {name: detail(result, name) for name in failing(result)}
-        assert "is missing clinic" in detail(result, "clinic counts: columns"), detail(result, "clinic counts: columns")
+        # An omitted value column costs only its columns check; two renamed with the right values the same.
+        only("dropped-value-column", changed(SUMMARY, frames[SUMMARY].drop(columns="patient_count").to_csv(index=False)),
+             {"site summary: columns"}, "is missing patient_count")
+        renamed = frames[SUMMARY].rename(columns={"exam_count": "exams", "patient_count": "patients"})
+        only("renamed-two-right", changed(SUMMARY, renamed.to_csv(index=False)), {"site summary: columns"},
+             "is missing exam_count and patient_count and also has exams and patients")
+        wrong_renamed = renamed.copy()
+        wrong_renamed.loc[wrong_renamed["site"] == "Valley", ["exams", "patients"]] = [7, 6]
+        only("renamed-two-wrong", changed(SUMMARY, wrong_renamed.to_csv(index=False)),
+             {"site summary: columns", "site summary: exam_count values", "site summary: patient_count values"},
+             "no saved column holds exam_count", "expected exam_count 129876 for Downtown",
+             check="site summary: exam_count values")
+        only("key-only", changed(SUMMARY, frames[SUMMARY][["site"]].to_csv(index=False)), {"site summary: columns"},
+             "is missing exam_count, report_count, patient_count, total_scan_min and mean_scan_min")
+        only("pivot-dropna-columns", changed(PIVOT, frames[PIVOT].dropna(axis=1).to_csv()),
+             {"median report pivot: columns"}, "is missing MRI")
+        only("delayed-without-site", changed(DELAYED, frames[DELAYED].drop(columns="site").to_csv(index=False)),
+             {"delayed STAT exams: columns"}, "is missing site")
 
-        files = dict(correct)
-        counts = files["output/clinic_counts.csv"]
-        files["output/clinic_counts.csv"] = "\n".join(
-            line + "," + line.split(",")[1] for line in counts.splitlines())
-        assert graded(submission("duplicate-header", files))["score"] == 100
-        files["output/clinic_counts.csv"] = files["output/clinic_counts.csv"].replace("Mission,6,", "Mission,99,")
-        result = graded(submission("conflicting-duplicate", files))
-        assert failing(result) == {"clinic counts: visit_count values"}, failing(result)
+        # Plausible mistakes, each charged once with a message that names the cause. A selection that shares no row
+        # with the expected one leaves the values check nothing to compare, so it costs that check too.
+        stat = EXAMS[EXAMS["priority"] == "STAT"].copy()
+        all_priorities = EXAMS.groupby(["site", "modality"])["wait_hr"].transform("median")
+        stat["peer_median_wait_hr"] = all_priorities[stat.index]
+        stat["wait_vs_peer_hr"] = stat["wait_hr"] - stat["peer_median_wait_hr"]
+        only("peer-over-every-priority", changed(DELAYED, stat[stat["wait_hr"] > 8][DELAYED_COLUMNS].to_csv(index=False)),
+             {"delayed STAT exams: peer_median_wait_hr values"}, "over all the STAT exams")
+        stat["peer_median_wait_hr"] = stat.groupby(["site", "modality"])["wait_hr"].transform("median")
+        stat["wait_vs_peer_hr"] = stat["wait_hr"] - stat["peer_median_wait_hr"]
+        at_least = stat[stat["wait_hr"] >= 8][DELAYED_COLUMNS]
+        assert len(at_least) > 190
+        only("delayed-at-least-8", changed(DELAYED, at_least.to_csv(index=False)),
+             {"delayed STAT exams: one row per delayed exam"}, "also has a row for", '"> 8"')
+        late = stat[stat["wait_hr"] > 8].copy()
+        late["peer_median_wait_hr"] = late.groupby(["site", "modality"])["wait_hr"].transform("median")
+        late["wait_vs_peer_hr"] = late["wait_hr"] - late["peer_median_wait_hr"]
+        only("peer-after-selecting", changed(DELAYED, late[DELAYED_COLUMNS].to_csv(index=False)),
+             {"delayed STAT exams: peer_median_wait_hr values"}, "before keeping the ones over 8 hours")
+        assigned = stat.copy()
+        assigned["peer_median_wait_hr"] = stat.groupby("site")["wait_hr"].median()
+        assigned["wait_vs_peer_hr"] = assigned["wait_hr"] - assigned["peer_median_wait_hr"]
+        only("peer-from-median-summary", changed(DELAYED, assigned[assigned["wait_hr"] > 8][DELAYED_COLUMNS].to_csv(index=False)),
+             {"delayed STAT exams: peer_median_wait_hr values"}, "Every peer_median_wait_hr is blank", "transform")
+        renamed_pair = late[DELAYED_COLUMNS].rename(columns={"peer_median_wait_hr": "typical", "wait_vs_peer_hr": "gap"})
+        only("peer-wrong-and-renamed", changed(DELAYED, renamed_pair.to_csv(index=False)),
+             {"delayed STAT exams: columns", "delayed STAT exams: peer_median_wait_hr values"})
 
-        # A conflicting duplicate cannot hide behind a correct occurrence in either order.
-        counts_frame = frames["output/clinic_counts.csv"]
-        for wrong_first in (False, True):
-            original = counts_frame.to_csv(index=False).splitlines()
-            changed = [original[0] + ",visit_count"]
-            for line in original[1:]:
-                cells = line.split(",")
-                duplicate = cells[1] if wrong_first else "99"
-                if wrong_first:
-                    cells[1] = "99"
-                changed.append(",".join(cells) + "," + duplicate)
-            files = dict(correct)
-            files["output/clinic_counts.csv"] = "\n".join(changed)
-            result = graded(submission(f"conflicting-duplicate-{wrong_first}", files))
-            assert failing(result) == {"clinic counts: visit_count values"}, failing(result)
-            assert result["score"] == 96
-        files = dict(correct)
-        original = counts_frame.to_csv(index=False).splitlines()
-        files["output/clinic_counts.csv"] = "\n".join(
-            line + "," + ("visit_count" if i == 0 else str(float(line.split(",")[1])))
-            for i, line in enumerate(original))
-        assert graded(submission("numeric-equivalent-duplicate", files))["score"] == 100
-        files["output/clinic_counts.csv"] = "\n".join(
-            line + "," + ("visit_count" if i == 0 else "") for i, line in enumerate(original))
-        assert graded(submission("blank-duplicate", files))["score"] == 100
+        every_modality = EXAMS[EXAMS.groupby("patient_id")["dose_msv"].transform("sum") >= 100]
+        only("dose-over-every-modality", changed(DOSE, every_modality[["exam_id", "patient_id", "dose_msv"]].to_csv(index=False)),
+             {"CT dose review: whole patients kept"}, "also has a row for", "grouping every modality")
+        ct = EXAMS[EXAMS["modality"] == "CT"]
+        result = graded(submission("dose-row-mask", changed(DOSE, ct[ct["dose_msv"] >= 100][
+            ["exam_id", "patient_id", "dose_msv"]].to_csv(index=False))), both_clis=False)
+        assert failing(result) == {"CT dose review: whole patients kept", "CT dose review: original exam values"}
+        assert "A row mask" in detail(result, "CT dose review: whole patients kept")
+        only("dose-all-columns", changed(DOSE, EXAMS.loc[frames[DOSE].index].to_csv(index=False)),
+             {"CT dose review: columns"}, "also has")
 
-        # CSV readers differ by Python version on NUL; a broken file is unreadable on both.
-        files = dict(correct)
-        files["output/clinic_counts.csv"] = b"\xff\xfe\x00"
-        result = graded(submission("nul-byte-file", files))
-        assert failing(result) == {name for name in NAMES if name.startswith(PREFIX["output/clinic_counts.csv"])}, failing(result)
+        every_priority = EXAMS.groupby("site").apply(lambda g: g.nlargest(3, "report_hr"), include_groups=False)
+        only("slowest-every-priority", changed(SLOWEST, every_priority.reset_index(level="site")[
+            ["exam_id", "site", "modality", "report_hr"]].to_csv(index=False)),
+            {"slowest STAT reports: three per site", "slowest STAT reports: original exam values"}, "keep the STAT exams",
+            check="slowest STAT reports: three per site")
+        smallest = stat.groupby("site").apply(lambda g: g.nsmallest(3, "report_hr"), include_groups=False)
+        only("slowest-nsmallest", changed(SLOWEST, smallest.reset_index(level="site")[
+            ["exam_id", "site", "modality", "report_hr"]].to_csv(index=False)),
+            {"slowest STAT reports: three per site", "slowest STAT reports: original exam values"}, "largest report_hr",
+            check="slowest STAT reports: three per site")
+
+        only("pivot-fill-0", changed(PIVOT, pd.pivot_table(EXAMS, values="report_hr", index="site", columns="modality",
+                                                         aggfunc="median", fill_value=0).to_csv()),
+             {"median report pivot: empty cell stays empty"}, "Valley has MRI 0", "expected blank", "filling it with 0")
+        only("pivot-mean", changed(PIVOT, pd.pivot_table(EXAMS, values="report_hr", index="site", columns="modality",
+                                                       aggfunc="mean").to_csv()),
+             {"median report pivot: median reports"}, 'aggfunc="median"')
+        only("pivot-swapped", changed(PIVOT, pd.pivot_table(EXAMS, values="report_hr", index="modality", columns="site",
+                                                          aggfunc="median").to_csv()),
+             {"median report pivot: columns"}, "swapped", 'index="site" and columns="modality"')
+        margins = pd.pivot_table(EXAMS, values="report_hr", index="site", columns="modality", aggfunc="median",
+                                 margins=True, margins_name="Total")
+        only("pivot-margins", changed(PIVOT, margins.to_csv()), {"median report pivot: columns"},
+             "Total comes from margins=True", "also has Total;")
+        only("pivot-margins-row-only", changed(PIVOT, margins.drop(columns="Total").to_csv()),
+             {"median report pivot: one row per site"}, "Total comes from margins=True")
+        for label, arguments in (("values", {"values": ["report_hr"], "aggfunc": "median"}),
+                                 ("aggfunc", {"values": "report_hr", "aggfunc": ["median"]})):
+            only(f"pivot-{label}-list", changed(PIVOT, pd.pivot_table(EXAMS, index="site", columns="modality",
+                                                                      **arguments).to_csv()),
+                 {"median report pivot: columns"}, "list for values= or aggfunc= adds a header level",
+                 'values="report_hr", aggfunc="median"')
+        only("pivot-mean-list", changed(PIVOT, pd.pivot_table(EXAMS, values="report_hr", index="site",
+                                                            columns="modality", aggfunc=["mean"]).to_csv()),
+             {"median report pivot: columns", "median report pivot: median reports"})
+        only("pivot-dropna", changed(PIVOT, frames[PIVOT].dropna().to_csv()), {"median report pivot: one row per site"},
+             "is missing Valley")
+
+        # A mistake copied from the long table into the pivot is charged at its source.
+        pairs, pivot = correct[PAIRS], correct[PIVOT]
+        files = changed(PAIRS, edit(pairs, "Valley|CT", "median_report_hr", "9.9"))
+        files[PIVOT] = edit(pivot, "Valley", "CT", "9.9")
+        only("copied-pair-error", files, {"site and modality: median_report_hr values"})
+
+        # A zero-exam row must show zero exams; a file holding only that optional row earns no value checks.
+        summary = correct[SUMMARY]
+        only("blank-eastport", changed(SUMMARY, summary + "Eastport,,,,,\n"),
+             {"site summary: exam_count values", "site summary: report_count values",
+              "site summary: patient_count values", "site summary: total_scan_min values"},
+             "Eastport has exam_count blank, expected 0", check="site summary: exam_count values")
+        only("eastport-only", changed(SUMMARY, summary.splitlines()[0] + "\nEastport,0,0,0,0,\n"),
+             set(artifact_checks(SUMMARY)) - {"site summary: columns"})
+
+        # Repeated headers: an identical duplicate is fine, a conflicting one costs its values check.
+        lines = summary.splitlines()
+        files = changed(SUMMARY, "\n".join(line + "," + line.split(",")[1] for line in lines))
+        assert graded(submission("duplicate-header", files), both_clis=False)["score"] == 100
+        files[SUMMARY] = files[SUMMARY].replace("Valley,25384,", "Valley,99,")
+        only("conflicting-duplicate", files, {"site summary: exam_count values"})
+        only("nul-byte-file", changed(SUMMARY, b"\xff\xfe\x00"), set(artifact_checks(SUMMARY)))
 
         # One mistake costs exactly its own check.
-        counts, summary = correct["output/clinic_counts.csv"], correct["output/clinic_summary.csv"]
-        context, pairs = correct["output/visits_with_context.csv"], correct["output/clinic_visit_type_summary.csv"]
-        pivot = correct["output/mean_wait_pivot.csv"]
+        delayed, dose, slowest = correct[DELAYED], correct[DOSE], correct[SLOWEST]
+        first_dose = dose.splitlines()[1].split(",")[0]
         mistakes = {
-            "clinic counts: columns": ("output/clinic_counts.csv", counts.replace("patient_count", "patients", 1)),
-            "clinic counts: one row per clinic": ("output/clinic_counts.csv", drop_last_row(counts)),
-            "clinic counts: visit_count values": ("output/clinic_counts.csv", edit(counts, "Mission", "visit_count", "7")),
-            "clinic counts: satisfaction_count values": (
-                "output/clinic_counts.csv", edit(counts, "Sunset", "satisfaction_count", "5")),
-            "clinic counts: patient_count values": ("output/clinic_counts.csv", edit(counts, "Mission", "patient_count", "6")),
-            "clinic summary: columns": (
-                "output/clinic_summary.csv", "\n".join(line + ",x" for line in summary.splitlines()) + "\n"),
-            "clinic summary: one row per clinic": ("output/clinic_summary.csv", summary + summary.splitlines()[2] + "\n"),
-            "clinic summary: count values": (
-                "output/clinic_summary.csv", edit(summary, "Bayview", "satisfaction_count", "3")),
-            "clinic summary: total_wait_min values": (
-                "output/clinic_summary.csv", edit(summary, "Mission", "total_wait_min", "96")),
-            "clinic summary: mean_wait_min values": (
-                "output/clinic_summary.csv", edit(summary, "Sunset", "mean_wait_min", "31.5")),
-            "visit context: columns": ("output/visits_with_context.csv", context.replace("wait_vs_clinic", "wait_diff", 1)),
-            "visit context: one row per visit": ("output/visits_with_context.csv", drop_last_row(context)),
-            "visit context: original visit values": (
-                "output/visits_with_context.csv", edit(context, "V003", "satisfaction", "0.0")),
-            "visit context: clinic_mean_wait values": (
-                "output/visits_with_context.csv", edit(context, "V010", "clinic_mean_wait", "14.333333333333334")),
-            "visit context: wait_vs_clinic values": (
-                "output/visits_with_context.csv", edit(context, "V001", "wait_vs_clinic", "-3.666666666666666")),
-            "clinic and visit type: columns": (
-                "output/clinic_visit_type_summary.csv", pairs.replace("visit_type", "type", 1)),
-            "clinic and visit type: one row per pair": ("output/clinic_visit_type_summary.csv", drop_last_row(pairs)),
-            "clinic and visit type: visit_count values": (
-                "output/clinic_visit_type_summary.csv", edit(pairs, "Mission|Follow-up", "visit_count", "2")),
-            "clinic and visit type: mean_wait_min values": (
-                "output/clinic_visit_type_summary.csv", edit(pairs, "Sunset|New", "mean_wait_min", "18.25")),
-            "mean wait pivot: columns": ("output/mean_wait_pivot.csv", pivot.replace("Telehealth", "Tele", 1)),
-            "mean wait pivot: one row per clinic": ("output/mean_wait_pivot.csv", pivot + "All,14.6,27.0,6.33\n"),
-            "mean wait pivot: mean waits": ("output/mean_wait_pivot.csv", edit(pivot, "Bayview", "New", "13.0")),
-            "mean wait pivot: empty cell stays empty": ("output/mean_wait_pivot.csv", edit(pivot, "Sunset", "Telehealth", "0.0")),
+            "site summary: columns": (SUMMARY, summary.replace("patient_count", "patients", 1)),
+            "site summary: one row per site": (SUMMARY, drop_last_row(summary)),
+            "site summary: exam_count values": (SUMMARY, edit(summary, "Valley", "exam_count", "25383")),
+            "site summary: report_count values": (SUMMARY, edit(summary, "Valley", "report_count", "25384")),
+            "site summary: patient_count values": (SUMMARY, edit(summary, "Valley", "patient_count", "25384")),
+            "site summary: total_scan_min values": (SUMMARY, edit(summary, "Valley", "total_scan_min", "359151")),
+            "site summary: mean_scan_min values": (SUMMARY, edit(summary, "Valley", "mean_scan_min", "14.5")),
+            "site and modality: columns": (PAIRS, pairs.replace("modality", "type", 1)),
+            "site and modality: one row per pair": (PAIRS, drop_last_row(pairs)),
+            "site and modality: exam_count values": (PAIRS, edit(pairs, "Valley|X-ray", "exam_count", "11984")),
+            "site and modality: median_wait_hr values": (PAIRS, edit(pairs, "Valley|X-ray", "median_wait_hr", "13.0")),
+            "site and modality: median_report_hr values": (PAIRS, edit(pairs, "Valley|X-ray", "median_report_hr", "5.5")),
+            "delayed STAT exams: columns": (DELAYED, delayed.replace("wait_vs_peer_hr", "wait_diff", 1)),
+            "delayed STAT exams: one row per delayed exam": (DELAYED, drop_last_row(delayed)),
+            "delayed STAT exams: original exam values": (DELAYED, edit(delayed, "E0000544", "modality", "CT")),
+            "delayed STAT exams: peer_median_wait_hr values": (
+                DELAYED, edit(delayed, "E0000544", "peer_median_wait_hr", "3.0")),
+            "delayed STAT exams: wait_vs_peer_hr values": (DELAYED, edit(delayed, "E0000544", "wait_vs_peer_hr", "-15.7")),
+            "CT dose review: columns": (DOSE, dose.replace("dose_msv", "dose", 1)),
+            "CT dose review: whole patients kept": (DOSE, drop_last_row(dose)),
+            "CT dose review: original exam values": (DOSE, edit(dose, first_dose, "dose_msv", "50")),
+            "slowest STAT reports: columns": (SLOWEST, slowest.replace("modality", "type", 1)),
+            "slowest STAT reports: three per site": (SLOWEST, drop_last_row(slowest)),
+            "slowest STAT reports: original exam values": (SLOWEST, edit(slowest, "E0313443", "report_hr", "1.0")),
+            "median report pivot: columns": (PIVOT, pivot.replace("X-ray", "Xray", 1)),
+            "median report pivot: one row per site": (PIVOT, pivot + "All,1.5,12.0,5.5,3.0\n"),
+            "median report pivot: median reports": (PIVOT, edit(pivot, "Valley", "CT", "2.5")),
+            "median report pivot: empty cell stays empty": (PIVOT, edit(pivot, "Valley", "MRI", "0.0")),
         }
         assert sorted(mistakes) == sorted(NAMES)
-        for number, (name, (path, changed)) in enumerate(mistakes.items()):
-            files = dict(correct)
-            files[path] = changed
-            result = graded(submission(f"mistake-{number:02}", files))
-            assert failing(result) == {name}, (name, {other: detail(result, other) for other in failing(result)})
-            assert result["score"] == 100 - cost(name), (name, result["score"])
+        for number, (name, (path, text)) in enumerate(mistakes.items()):
+            only(f"mistake-{number:02}", changed(path, text), {name})
+        message = detail(graded(submission("feedback-sign", changed(*mistakes["delayed STAT exams: wait_vs_peer_hr values"])),
+                                both_clis=False), "delayed STAT exams: wait_vs_peer_hr values")
+        assert "E0000544 has wait_vs_peer_hr -15.7, expected 15.7" in message and "minus" in message, message
 
-        # A missing file costs only its own artifact's checks.
+        # A missing file costs only its own artifact's checks, and is never told to take another required file's name.
         for number, path in enumerate(correct):
             files = {other: text for other, text in correct.items() if other != path}
-            result = graded(submission(f"missing-{number}", files))
+            result = graded(submission(f"missing-{number}", files), both_clis=False)
             assert failing(result) == set(artifact_checks(path)), (path, failing(result))
-
-        # A zero-visit row must show zero visits: Excelsior with blank counts costs the count checks.
+            assert not any("Found" in detail(result, name) for name in failing(result)), path
         files = dict(correct)
-        files["output/clinic_counts.csv"] = counts + "Excelsior,,,\n"
-        result = graded(submission("blank-excelsior", files))
-        assert failing(result) == {
-            "clinic counts: visit_count values", "clinic counts: satisfaction_count values",
-            "clinic counts: patient_count values"}, failing(result)
-        assert "Excelsior has visit_count blank, expected 0" in detail(result, "clinic counts: visit_count values")
-
-        # A pivot saved after .dropna() loses Sunset's row and with it the cell that should stay empty.
-        files = dict(correct)
-        files["output/mean_wait_pivot.csv"] = frames["output/mean_wait_pivot.csv"].dropna().to_csv()
-        result = graded(submission("pivot-dropna", files))
-        assert failing(result) == {
-            "mean wait pivot: one row per clinic"}, failing(result)
-
-        # Only the optional zero-visit row earns no value checks: there is nothing required to compare.
-        files = dict(correct)
-        files["output/clinic_counts.csv"] = counts.splitlines()[0] + "\nExcelsior,0,0,0\n"
-        result = graded(submission("excelsior-only", files))
-        assert failing(result) == set(artifact_checks("output/clinic_counts.csv")) - {"clinic counts: columns"}, (
-            failing(result))
-
-        # Feedback names what was expected and what was found.
-        files = dict(correct)
-        files["output/mean_wait_pivot.csv"] = pd.pivot_table(
-            visits, values="wait_min", index="clinic", columns="visit_type", aggfunc="mean", fill_value=0).to_csv()
-        result = graded(submission("feedback-fill", files))
-        assert failing(result) == {"mean wait pivot: empty cell stays empty"}, failing(result)
-        message = detail(result, "mean wait pivot: empty cell stays empty")
-        assert "Sunset has Telehealth 0" in message and "expected blank" in message and "filling it with 0" in message, message
-        files = dict(correct)
-        files["output/visits_with_context.csv"] = mistakes["visit context: wait_vs_clinic values"][1]
-        message = detail(graded(submission("feedback-sign", files)), "visit context: wait_vs_clinic values")
-        assert "V001 has wait_vs_clinic -3.666666666666666, expected 3.67" in message and "minus" in message, message
-        files = dict(correct)
-        files["output/clinic_visit_type_summary.csv"] = mistakes["clinic and visit type: columns"][1]
-        message = detail(graded(submission("feedback-columns", files)), "clinic and visit type: columns")
-        assert "is missing visit_type and also has type" in message and "as_index=False" in message, message
-
-        # A missing file is never told to take another required file's name, however alike the two names are.
-        tasks_1_to_2_2 = ("output/clinic_counts.csv", "output/clinic_summary.csv", "output/visits_with_context.csv")
-        result = graded(submission("midway", {path: correct[path] for path in tasks_1_to_2_2}))
-        assert failing(result) == set(artifact_checks("output/clinic_visit_type_summary.csv")) | set(
-            artifact_checks("output/mean_wait_pivot.csv")), failing(result)
-        assert not any("Found" in detail(result, name) for name in failing(result)), [
-            detail(result, name) for name in failing(result)]
-        files = {path: text for path, text in correct.items() if path != "output/clinic_summary.csv"}
-        message = detail(graded(submission("summary-missing", files)), "clinic summary: columns")
-        assert "Found" not in message, message
-        files = dict(correct)
-        files["output/clinic_visit_types_summary.csv"] = files.pop("output/clinic_visit_type_summary.csv")
-        message = detail(graded(submission("typo-name", files)), "clinic and visit type: columns")
-        assert message.endswith("Found output/clinic_visit_types_summary.csv; save it as "
-                                "output/clinic_visit_type_summary.csv instead."), message
-
-        # A pivot with index= and columns= swapped is read the right way round: only its columns check fails.
-        files = dict(correct)
-        files["output/mean_wait_pivot.csv"] = pd.pivot_table(
-            visits, values="wait_min", index="visit_type", columns="clinic", aggfunc="mean").to_csv()
-        result = graded(submission("pivot-swapped", files))
-        assert failing(result) == {"mean wait pivot: columns"}, {name: detail(result, name) for name in failing(result)}
-        message = detail(result, "mean wait pivot: columns")
-        assert "swapped" in message and 'index="clinic" and columns="visit_type"' in message, message
-
-        # margins=True adds a Total row and column: one argument, charged once by the columns check, which names it.
-        files = dict(correct)
-        margins = pd.pivot_table(
-            visits, values="wait_min", index="clinic", columns="visit_type", aggfunc="mean", margins=True,
-            margins_name="Total")
-        files["output/mean_wait_pivot.csv"] = margins.to_csv()
-        result = graded(submission("pivot-margins", files))
-        assert failing(result) == {"mean wait pivot: columns"}, failing(result)
-        assert result["score"] == 100 - cost("mean wait pivot: columns"), result["score"]
-        assert "Total comes from margins=True" in detail(result, "mean wait pivot: columns")
-        # Headers are quoted as the file writes them, not lowercased.
-        assert "also has Total;" in detail(result, "mean wait pivot: columns"), detail(result, "mean wait pivot: columns")
-        # A Total row with no Total column is still charged by the rows check.
-        files["output/mean_wait_pivot.csv"] = margins.drop(columns="Total").to_csv()
-        result = graded(submission("pivot-margins-row-only", files))
-        assert failing(result) == {"mean wait pivot: one row per clinic"}, failing(result)
-        assert "Total comes from margins=True" in detail(result, "mean wait pivot: one row per clinic")
-
-        # A list for values= or aggfunc= adds a header level: one argument, charged once by the columns check.
-        for label, arguments in (("values", {"values": ["wait_min"], "aggfunc": "mean"}),
-                                 ("aggfunc", {"values": "wait_min", "aggfunc": ["mean"]})):
-            files = dict(correct)
-            files["output/mean_wait_pivot.csv"] = pd.pivot_table(
-                visits, index="clinic", columns="visit_type", **arguments).to_csv()
-            result = graded(submission(f"pivot-{label}-list", files))
-            assert failing(result) == {"mean wait pivot: columns"}, {name: detail(result, name) for name in failing(result)}
-            assert result["score"] == 96, result["score"]
-            message = detail(result, "mean wait pivot: columns")
-            assert "list for values= or aggfunc= adds a header level" in message and 'values="wait_min", aggfunc="mean"' in message, message
-        # The cells under that extra header line are still compared: a list of the wrong function costs the means too.
-        files["output/mean_wait_pivot.csv"] = pd.pivot_table(
-            visits, values="wait_min", index="clinic", columns="visit_type", aggfunc=["median"]).to_csv()
-        result = graded(submission("pivot-median-list", files))
-        assert failing(result) == {"mean wait pivot: columns", "mean wait pivot: mean waits"}, failing(result)
-
-        # wait_vs_clinic worked out from a wrong clinic_mean_wait costs only the clinic_mean_wait check.
-        context = visits.copy()
-        context["clinic_mean_wait"] = visits.groupby("clinic")["wait_min"].transform("median")
-        context["wait_vs_clinic"] = context["wait_min"] - context["clinic_mean_wait"]
-        files = dict(correct)
-        files["output/visits_with_context.csv"] = context.to_csv(index=False)
-        result = graded(submission("context-median", files))
-        assert failing(result) == {"visit context: clinic_mean_wait values"}, failing(result)
-
-        # A column assigned from .mean() is blank on every row, and the message names that likely cause.
-        context["clinic_mean_wait"] = visits.groupby("clinic")["wait_min"].mean()
-        context["wait_vs_clinic"] = context["wait_min"] - context["clinic_mean_wait"]
-        files["output/visits_with_context.csv"] = context.to_csv(index=False)
-        result = graded(submission("context-mean-not-transform", files))
-        assert failing(result) == {"visit context: clinic_mean_wait values"}
-        message = detail(result, "visit context: clinic_mean_wait values")
-        assert "Every clinic_mean_wait is blank" in message and "transform" in message, message
-
-        # A mistake copied from an earlier artifact is charged at its source.
-        files = dict(correct)
-        for path in ("output/clinic_counts.csv", "output/clinic_summary.csv"):
-            files[path] = edit(files[path], "Mission", "patient_count", "6")
-        result = graded(submission("copied-count-error", files))
-        assert failing(result) == {"clinic counts: patient_count values"}, failing(result)
-        files = dict(correct)
-        files["output/clinic_visit_type_summary.csv"] = edit(pairs, "Sunset|New", "mean_wait_min", "99")
-        files["output/mean_wait_pivot.csv"] = edit(pivot, "Sunset", "New", "99")
-        result = graded(submission("copied-pair-error", files))
-        assert failing(result) == {"clinic and visit type: mean_wait_min values"}, failing(result)
-        files = dict(correct)
-        files["output/clinic_summary.csv"] = edit(summary, "Sunset", "mean_wait_min", "99")
-        changed = frames["output/visits_with_context.csv"].copy()
-        changed.loc[changed["clinic"] == "Sunset", "clinic_mean_wait"] = 99
-        changed["wait_vs_clinic"] = changed["wait_min"] - changed["clinic_mean_wait"]
-        files["output/visits_with_context.csv"] = changed.to_csv(index=False)
-        result = graded(submission("copied-clinic-mean-error", files))
-        assert failing(result) == {"clinic summary: mean_wait_min values"}, failing(result)
+        files["output/site_modalities_summary.csv"] = files.pop(PAIRS)
+        message = detail(graded(submission("typo-name", files), both_clis=False), "site and modality: columns")
+        assert message.endswith("Found output/site_modalities_summary.csv; save it as "
+                                "output/site_modality_summary.csv instead."), message
 
         # pytest, which GitHub runs, reports one test per check.
         for name, expected_failures in (("correct", 0), ("scaffold", len(NAMES))):
             target = workspace / f"pytest-{name}"
-            shutil.copytree(HANDOUT, target, ignore=shutil.ignore_patterns("__pycache__", ".pytest_cache", ".venv"))
+            shutil.copytree(HANDOUT, target, ignore=shutil.ignore_patterns("__pycache__", ".pytest_cache", ".venv", ".checks"))
             if name == "correct":
                 for path, text in correct.items():
                     (target / path).write_text(text, encoding="utf-8")
@@ -741,14 +583,11 @@ def run() -> None:
                 assert finished.returncode == 0 and f"{len(NAMES)} passed" in summary_line, finished.stdout
 
     print(
-        "Assignment 08 checks: the visit-log copy, README checkpoints, contract, and numbering, and the handout's "
-        "byte-identical checks agree; empty and scaffold earn 0; correct, plain-string, alternative, with-index, "
-        "semicolon- and tab-separated, "
-        f"and index-key submissions earn 100; lost key columns cost only the columns checks; each of the "
-        f"{len(NAMES)} single mistakes and each missing file costs only its own checks; an omitted value column "
-        "costs its columns and values checks, and renamed columns with the right values only the columns check; "
-        "swapped axes, margins, "
-        "list arguments to pivot_table, and a derived column cost only their own checks; feedback and pytest pass."
+        "Assignment 08 checks: the data, the frozen values, README checkpoints, contract, and numbering, and the "
+        "handout's byte-identical checks agree; empty and scaffold earn 0; correct, plain-string, observed=False, "
+        "alternative, with-index, index-key, semicolon- and tab-separated submissions earn 100; each of the "
+        f"{len(NAMES)} single mistakes, each plausible mistake, and each missing file costs only its own checks; "
+        "feedback and pytest pass."
     )
 
 

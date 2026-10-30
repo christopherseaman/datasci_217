@@ -16,324 +16,191 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 3: Flexible Models: Trees, Boosting, and Neural Networks
+# Demo 3: Which Discharged Patients Get a Call? Comparing Model Families for Readmission
 
-A breast lump is biopsied with a fine needle, and a digitized image of the cells gives 30 measurements of their nuclei: size, shape, and texture. From those measurements, is the lump malignant?
+A health system's transitional-care nurses can call about 10% of discharged patients in the first two days at home. The quality team wants those calls to reach as many as possible of the patients who will be readmitted within 30 days. The data is 235,000 discharges from four hospitals, January 2023 to June 2025, with many patients admitted more than once. Each row carries what the discharge summary and the EHR show at discharge: diagnosis, comorbidity count, labs, prior admissions and ED visits, medications, insurance, and two social flags from the case manager's screen (lives alone, unstable housing).
 
-- Fit a baseline and logistic regression.
-- Fit a random forest, gradient-boosted trees with XGBoost, and three small neural networks on the same training, validation, and test rows.
-- A selection rule written before any model is fitted picks the winner.
-- Evaluate the winner on the test rows exactly once.
-- **Data:** the 569 biopsies are real and de-identified.
+The question for this demo: does a random forest, XGBoost, or a neural network rank discharges better than logistic regression, on the same validation discharges and the same 10% call budget?
+
+All patients and values are synthetic.
 
 Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas and XGBoost in Colab; restart and rerun if asked. Intel Mac: run this demo in Colab (no local TensorFlow). Mac XGBoost load error: brew install libomp
-%pip install -q --no-warn-conflicts pandas==3.0.5 xgboost==2.1.4
+# Installs the course's pandas, pyarrow (for Parquet), and XGBoost in Colab; if Colab asks, restart and rerun from the top. Intel Mac: run this demo in Colab (no local TensorFlow). Mac XGBoost load error: brew install libomp
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 xgboost==2.1.4
 ```
 
-**Core route:** Parts 1 to 5, 7, 8, 10, and 11, skipping the subsections marked independent practice. Part 6, Part 9, and those subsections are independent practice for outside class. The comparison includes only candidates you ran. Run any independent practice before the final test; after seeing test results, do not use these variants to make a new selection on that test set.
+## Core walkthrough
 
-## 1. Load the biopsy measurements
+### 1. Build the 30-day readmission label
 
-`load_breast_cancer(as_frame=True)` ships with scikit-learn and returns the table in its `.frame`, the label in its `.target`, and the 30 measurement names in its `.feature_names`. Each row is one biopsy; the 30 columns are ten nucleus measurements (radius, texture, perimeter, area, smoothness, compactness, concavity, concave points, symmetry, fractal dimension), each summarized three ways across the cells in the image: the `mean`, the standard error (`error`), and the `worst` (mean of the three largest values). Its target codes malignant as 0, so flip it to make **malignant = 1**, the class we want to catch.
+The extract has one row per discharge but no readmission column; the label comes from each patient's **next** admission, as Demo 1's target came from the next reading:
+
+- `readmit_30d` is 1 when the patient's next admission starts within 30 days of this discharge.
+- **In-hospital deaths** (`disposition == "expired"`) cannot be readmitted, so they leave the table.
+- The label is known 30 days after discharge (its **label time**). The extract ends on June 30, 2025, so discharges after May 31 have incomplete follow-up and leave the table too; keeping them would count unseen readmissions as 0.
 
 ```python
-from IPython.display import Markdown
+from pathlib import Path
+from urllib.request import urlretrieve
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.datasets import load_breast_cancer
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.inspection import permutation_importance
+
+REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/10/demo"
+TABLES = ["pcp_visits", "rpm_patients", "rpm_readings", "discharges"]
+if not Path("generate_data.py").exists():
+    urlretrieve(f"{REPO_RAW}/generate_data.py", "generate_data.py")
+if not all(Path(f"data/{name}.parquet").exists() for name in TABLES):
+    import generate_data
+    generate_data.build()
+
+discharges = pd.read_parquet("data/discharges.parquet").sort_values(["patient_id", "admit_date"])
+print(discharges.shape, "discharges from", discharges["patient_id"].nunique(), "patients")
+
+next_admit = discharges.groupby("patient_id")["admit_date"].shift(-1)
+discharges["readmit_30d"] = ((next_admit - discharges["discharge_date"]).dt.days <= 30).astype(int)
+discharges["label_time"] = discharges["discharge_date"] + pd.Timedelta(days=30)
+
+extract_end = pd.Timestamp("2025-06-30")
+cohort = discharges[(discharges["disposition"] != "expired") & (discharges["label_time"] <= extract_end)]
+cohort = cohort.sort_values("discharge_date").reset_index(drop=True)
+print("eligible discharges:", len(cohort), " readmission rate:", round(cohort["readmit_30d"].mean(), 3))
+display(cohort.groupby("dx_group")["readmit_30d"].agg(["mean", "size"]).sort_values("mean").round(3))
+```
+
+Expect `(235391, 24) discharges from 100799 patients`, then 224,256 eligible discharges with a readmission rate of 0.158. Rates differ by diagnosis: 0.056 after orthopedic stays (mostly planned surgery), 0.322 after heart failure.
+
+### 2. Features known at discharge, and a split on label time
+
+The calls happen right after discharge, so every feature must be known by then. `followup_completed` is not: it records whether the patient made the follow-up appointment 7 to 14 days later. Practice 4 shows what it does to the scores.
+
+The split runs on discharge date, and the prospective rule from Demo 1 applies: training rows must have their label (30 days after discharge) by the first validation discharge, July 1, 2024.
+
+```python
+numeric = ["age", "los_days", "n_prior_admits_12m", "ed_visits_6m", "n_comorbidities", "n_meds",
+           "sodium", "hemoglobin", "creatinine", "adi_decile"]
+categorical = ["hospital", "sex", "insurance", "lives_alone", "housing_unstable", "admit_source",
+               "dx_group", "disposition", "followup_scheduled"]
+features = numeric + categorical
+
+train = cohort[cohort["discharge_date"] < "2024-07-01"]
+valid = cohort[(cohort["discharge_date"] >= "2024-07-01") & (cohort["discharge_date"] < "2025-01-01")]
+test = cohort[cohort["discharge_date"] >= "2025-01-01"]
+fit_rows = train[train["label_time"] <= valid["discharge_date"].min()]
+assert fit_rows["label_time"].max() <= valid["discharge_date"].min()
+
+X_fit, y_fit = fit_rows[features], fit_rows["readmit_30d"]
+X_valid, y_valid = valid[features], valid["readmit_30d"]
+print("train:", len(train), " fit rows:", len(fit_rows), " valid:", len(valid), " test:", len(test))
+display(X_fit[numeric].isna().mean().round(3).rename("share_missing"))
+```
+
+Expect 139,465 training discharges, of which 131,927 have their label by July 1 (the 7,538 left out were discharged in June 2024), 47,219 validation and 37,572 test discharges. Three lab columns have gaps of 5% to 10%: labs not drawn, more often before planned surgery and for short stays.
+
+### 3. One preparation step and one comparison rule
+
+Every model gets the same prepared columns: median-filled and scaled numbers, one-hot categories. The rule is fixed before any model is fit, and it follows the nurses' budget:
+
+- Flag the 10% of validation discharges with the highest predicted probability (the 90th percentile of each model's probabilities is its threshold).
+- Compare **recall** (share of readmitted patients who got a call), **precision** (share of calls that reached one), and the count of readmitted patients called.
+
+Accuracy is in the table too, at the default 0.5 threshold, to show why it cannot choose. The first row is the no-model baseline: every probability below 0.5, so it predicts "no readmission" for everyone, in random order, so its top 10% is a random call list.
+
+```python
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+def make_preprocess(categorical_columns=categorical):
+    numeric_steps = Pipeline([("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())])
+    return ColumnTransformer([("numeric", numeric_steps, numeric),
+                              ("categorical", OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+                               categorical_columns)])
+
+def compare(name, probability, truth=y_valid):
+    flag = (probability >= pd.Series(probability).quantile(0.9)).astype(int)
+    comparison[name] = {"accuracy_at_0.5": accuracy_score(truth, probability >= 0.5),
+                        "recall_at_10pct": recall_score(truth, flag),
+                        "precision_at_10pct": precision_score(truth, flag),
+                        "readmitted_called": int((flag & truth).sum())}
+
+def show(rows=None):
+    table = pd.DataFrame(comparison).T.astype({"readmitted_called": int}).round(3)
+    display(table if rows is None else table.loc[rows])
+
+comparison = {}
+no_model = np.random.default_rng(0).uniform(0, 0.01, len(y_valid))
+compare("no model (random call list)", no_model)
+print("validation readmissions:", y_valid.sum())
+show()
+```
+
+Expect 7,659 validation readmissions, accuracy 0.838 with nobody flagged, and a random call list's recall of 0.102: random calls reach about 10% of readmitted patients (780). 10% of 47,219 validation discharges is about 4,720 calls.
+
+### 4. Logistic regression: the simple candidate
+
+```python
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 
-cancer = load_breast_cancer(as_frame=True)
-biopsies = cancer.frame
-biopsies['malignant'] = (cancer.target == 0).astype(int)
-feature_cols = cancer.feature_names.tolist()
-
-def confusion_table(actual, predicted):
-    """Confusion matrix as a labeled table."""
-    return pd.DataFrame(confusion_matrix(actual, predicted),
-                        index=['actual benign', 'actual malignant'],
-                        columns=['predicted benign', 'predicted malignant'])
-
-print(biopsies.shape)
-print(feature_cols[:4])
-display(biopsies[['mean radius', 'mean texture', 'mean area', 'worst area', 'malignant']].head(5))
-display(biopsies['malignant'].value_counts())
-print(f"Share malignant: {biopsies['malignant'].mean():.1%}")
+logistic = Pipeline([("preprocess", make_preprocess()), ("model", LogisticRegression(max_iter=1000))])
+logistic.fit(X_fit, y_fit)
+compare("logistic regression", logistic.predict_proba(X_valid)[:, 1])
+show()
 ```
 
-**Expect:** `(569, 32)` (30 measurements, the original `target`, and the new `malignant` column), the first four names `['mean radius', 'mean texture', 'mean perimeter', 'mean area']`, a table of the first five biopsies (four measurements and the label), then 357 benign (0) and 212 malignant (1) biopsies: `Share malignant: 37.3%`.
+Expect accuracy at 0.5 of 0.842, barely above the no-model 0.838, but at the 10% budget a recall of 0.290 and precision of 0.471: 2,224 of the 7,659 readmitted patients get a call, almost three times the random list's 780.
 
-## 2. Split, scale, and fix the selection rule
+### 5. Random forest
 
-Reserve the test rows first, then split the rest into training and validation rows. `stratify` keeps the share of malignant biopsies the same in every part.
-
-Trees split on one column at a time, so they use the raw columns. Logistic regression and neural networks train by small repeated adjustments that work far better when every feature is on a similar scale, so they get a scaled copy, with the scaler fitted on the training rows only.
+A forest of 200 trees, each stopping at 50 rows per leaf (`min_samples_leaf`) so it cannot memorize single discharges; `n_jobs=-1` builds trees on every core. On a two-core Colab runtime this takes under a minute.
 
 ```python
-X = biopsies[feature_cols].values
-y = biopsies['malignant'].values
+from sklearn.ensemble import RandomForestClassifier
 
-X_train_valid, X_test, y_train_valid, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y)
-X_train, X_valid, y_train, y_valid = train_test_split(
-    X_train_valid, y_train_valid, test_size=0.25, random_state=42, stratify=y_train_valid)
+forest = Pipeline([("preprocess", make_preprocess()),
+                   ("model", RandomForestClassifier(n_estimators=200, min_samples_leaf=50,
+                                                    n_jobs=-1, random_state=42))])
+forest.fit(X_fit, y_fit)
+compare("random forest", forest.predict_proba(X_valid)[:, 1])
 
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_valid_scaled = scaler.transform(X_valid)
-
-print(f"Training:   {X_train.shape}, {y_train.mean():.1%} malignant")
-print(f"Validation: {X_valid.shape}, {y_valid.mean():.1%} malignant")
-print(f"Test:       {X_test.shape}, {y_test.mean():.1%} malignant")
+names = forest.named_steps["preprocess"].get_feature_names_out()
+impurity = pd.Series(forest.named_steps["model"].feature_importances_, index=names)
+display(impurity.sort_values(ascending=False).head(6).round(3).rename("importance"))
+show()
 ```
 
-**Expect:**
+Expect a recall of 0.303, a little above logistic regression (2,319 readmitted patients called against 2,224). Comorbidity count leads the impurity importances (0.158), then medication count, hemoglobin, heart failure, age, and creatinine. (`get_feature_names_out()` names the prepared columns; one-hot columns appear as `categorical__dx_group_heart_failure` and so on.) Impurity importance is measured on the training fit and favors columns with many distinct values; practice 1 compares it with permutation importance.
 
-```text
-Training:   (341, 30), 37.2% malignant
-Validation: (114, 30), 37.7% malignant
-Test:       (114, 30), 36.8% malignant
-```
+### 6. XGBoost with early stopping
 
-The three parts keep nearly the same share of malignant biopsies, which is what `stratify` is for.
-
-**The selection rule, written down before any model is fitted:**
-
-- The highest validation accuracy wins.
-- One validation row is worth 0.9 percentage points of accuracy, so candidates within one row of the best count as tied.
-- A tie goes to the _simplest_ candidate: the one with the fewest settings to tune and the fastest fit.
-
-Writing the rule down now stops the final table from being read backwards to justify a favorite. Every model's confusion matrix is shown too, because a missed malignancy (a false negative) is the costliest mistake here.
-
-## 3. A baseline and the simplest candidate
-
-For a yes/no target, the baseline idea is to predict the most common training class for every row. Then fit logistic regression, the linear model for yes/no targets, so every flexible model below has a real bar to clear.
-
-```python
-majority_class = int(pd.Series(y_train).mode()[0])
-baseline_pred = np.full(len(y_valid), majority_class)
-baseline_acc = accuracy_score(y_valid, baseline_pred)
-print(f"Majority class in training rows: {majority_class}")
-print(f"Baseline validation accuracy: {baseline_acc:.4f}")
-
-lr = LogisticRegression(max_iter=1000, random_state=42)
-lr.fit(X_train_scaled, y_train)
-lr_pred = lr.predict(X_valid_scaled)
-lr_acc = accuracy_score(y_valid, lr_pred)
-candidate_accuracy = {'Majority-class baseline': baseline_acc, 'Logistic regression': lr_acc}
-valid_predictions = {'Logistic regression': lr_pred}
-print(f"Logistic regression validation accuracy: {lr_acc:.4f}")
-display(Markdown('**Confusion matrix**'))
-display(confusion_table(y_valid, lr_pred))
-display(Markdown('**Classification report**'))
-report = pd.DataFrame(classification_report(y_valid, lr_pred, output_dict=True)).T.drop('accuracy')
-report['support'] = report['support'].astype(int)
-display(report.round(2))
-```
-
-**Expect:**
-
-```text
-Majority class in training rows: 0
-Baseline validation accuracy: 0.6228
-Logistic regression validation accuracy: 0.9737
-                  predicted benign  predicted malignant
-actual benign                   69                    2
-actual malignant                 1                   42
-              precision  recall  f1-score  support
-0                  0.99    0.97      0.98       71
-1                  0.95    0.98      0.97       43
-macro avg          0.97    0.97      0.97      114
-weighted avg       0.97    0.97      0.97      114
-```
-
-Calling every biopsy benign is right 71 times out of 114, so 0.623 is the score to beat, not 0. Logistic regression gets 111 of 114 right: two benign biopsies flagged as malignant, and one malignant biopsy missed. In the report, class `1` (malignant) has recall 0.98: it caught 42 of the 43 malignant biopsies.
-
-## 4. Random forest, and two ways to read it
-
-A random forest grows many trees on random resamples of the training rows. This classifier averages their class probabilities and predicts the class with the largest average. It can capture curved relationships and interactions, and it needs no scaling.
-
-```python
-rf_model = RandomForestClassifier(
-    n_estimators=100,     # number of trees
-    max_depth=5,          # maximum depth of each tree
-    min_samples_split=5,  # rows a question needs before it splits
-    random_state=42,
-    n_jobs=-1,
-)
-rf_model.fit(X_train, y_train)
-
-rf_acc = accuracy_score(y_valid, rf_model.predict(X_valid))
-candidate_accuracy['Random forest'] = rf_acc
-valid_predictions['Random forest'] = rf_model.predict(X_valid)
-print(f"Training accuracy:   {accuracy_score(y_train, rf_model.predict(X_train)):.4f}")
-print(f"Validation accuracy: {rf_acc:.4f}")
-display(confusion_table(y_valid, rf_model.predict(X_valid)))
-display(pd.DataFrame(rf_model.predict_proba(X_valid)[:3].round(3),
-                     columns=['p_benign', 'p_malignant']))
-```
-
-**Expect:**
-
-```text
-Training accuracy:   0.9941
-Validation accuracy: 0.9737
-                  predicted benign  predicted malignant
-actual benign                   70                    1
-actual malignant                 2                   41
-   p_benign  p_malignant
-0     0.997        0.003
-1     0.066        0.934
-2     0.998        0.002
-```
-
-Nearly perfect on the rows it learned and 111 of 114 on rows it has never seen, the same count as logistic regression, but with a different mix of mistakes: one false alarm and two missed malignancies instead of two and one.
-
-### Independent practice: two importance measures
-
-Which columns does the forest lean on? There are two answers, measured on different data. `feature_importances_` comes from the _training_ fit and exists only for tree models. `permutation_importance` shuffles one validation column at a time and measures how far accuracy falls, so it reports held-out reliance for any fitted model.
-
-```python
-perm = permutation_importance(
-    rf_model, X_valid, y_valid,
-    scoring='accuracy', n_repeats=10, random_state=42, n_jobs=-1,
-)
-rf_importance = pd.DataFrame({
-    'impurity': rf_model.feature_importances_,
-    'accuracy_drop': perm.importances_mean,
-    'drop_std': perm.importances_std,
-}, index=feature_cols).sort_values('impurity', ascending=False)
-display(rf_importance.head(8).round(3))
-```
-
-**Expect:**
-
-```text
-                      impurity  accuracy_drop  drop_std
-worst concave points     0.140          0.013     0.010
-worst area               0.135          0.014     0.011
-mean concave points      0.112          0.000     0.000
-worst perimeter          0.098          0.011     0.007
-mean radius              0.068          0.000     0.000
-mean perimeter           0.068          0.000     0.000
-mean concavity           0.068          0.005     0.004
-worst radius             0.062          0.006     0.006
-```
-
-The two columns agree at the top: `worst concave points` and `worst area` matter by both measures. Lower down they disagree. `mean concave points` is third by impurity, yet shuffling it costs no validation accuracy at all, and neither does shuffling `mean radius` or `mean perimeter`. Many of these 30 columns measure nearly the same thing (radius, perimeter, and area all describe size), so when one is shuffled the forest still has its twins, and the importance spreads across the group. Read the top of this ranking, not the bottom, and read neither column as a causal effect.
-
-## 5. XGBoost
-
-XGBoost builds its trees in sequence, each one aimed at what the ensemble so far still gets wrong. It follows the same fit/predict pattern. Versions can change importances, early-stopping rounds, and predictions; the outputs below are one reference run, not required exact scores.
+XGBoost takes NumPy arrays here, so the preparation step is fit once and applied to both parts. Early stopping watches validation log loss and stops 30 rounds after the best one.
 
 ```python
 import xgboost as xgb
 
-xgb_model = xgb.XGBClassifier(
-    n_estimators=100, max_depth=3, learning_rate=0.1,
-    subsample=0.8, colsample_bytree=0.8,
-    random_state=42, n_jobs=-1,
-)
-xgb_model.fit(X_train, y_train)
-xgb_acc = accuracy_score(y_valid, xgb_model.predict(X_valid))
-candidate_accuracy['XGBoost (100 rounds)'] = xgb_acc
-valid_predictions['XGBoost (100 rounds)'] = xgb_model.predict(X_valid)
-print(f"XGBoost validation accuracy: {xgb_acc:.4f}")
-display(confusion_table(y_valid, xgb_model.predict(X_valid)))
+preprocess = make_preprocess().fit(X_fit)
+X_fit_ready = preprocess.transform(X_fit)
+X_valid_ready = preprocess.transform(X_valid)
+
+booster = xgb.XGBClassifier(n_estimators=1000, max_depth=4, learning_rate=0.05,
+                            subsample=0.8, colsample_bytree=0.8,
+                            early_stopping_rounds=30, random_state=42, n_jobs=-1)
+booster.fit(X_fit_ready, y_fit, eval_set=[(X_valid_ready, y_valid)], verbose=False)
+print("best round:", booster.best_iteration, " validation log loss:", round(booster.best_score, 4))
+compare("XGBoost", booster.predict_proba(X_valid_ready)[:, 1])
+show()
 ```
 
-**Expect:**
+Expect best round 284 of a 1,000-round budget (validation log loss 0.3793), with training stopped 30 rounds later, and a recall of 0.308, the best so far: 2,362 readmitted patients called, 138 more than logistic regression. Validation picked the number of rounds, so it is no longer an untouched estimate; the test set stays sealed for that.
 
-```text
-XGBoost validation accuracy: 0.9649
-                  predicted benign  predicted malignant
-actual benign                   69                    2
-actual malignant                 2                   41
-```
+### 7. A small neural network
 
-XGBoost gets 110 of 114, one fewer than the forest.
-
-### Independent practice: compare tree importances
-
-The fit above stands alone. Run Part 4's independent-practice importance cell before this comparison plot.
-
-```python
-top_features = rf_importance.index[:8].tolist()
-importance_comparison = pd.DataFrame({
-    'random forest': rf_model.feature_importances_,
-    'XGBoost': xgb_model.feature_importances_,
-}, index=feature_cols).loc[top_features]
-display(importance_comparison.round(3))
-
-fig, ax = plt.subplots(figsize=(9, 4))
-importance_comparison.plot(kind='bar', ax=ax)
-ax.set_ylabel('Impurity-based importance')
-ax.set_title("The random forest's top eight features, in both models")
-ax.tick_params(axis='x', rotation=45)
-plt.show()
-plt.close(fig)
-```
-
-**Expect:** this table, then a bar chart of the same numbers:
-
-```text
-                      random forest  XGBoost
-worst concave points          0.140    0.084
-worst area                    0.135    0.038
-mean concave points           0.112    0.167
-worst perimeter               0.098    0.251
-mean radius                   0.068    0.004
-mean perimeter                0.068    0.000
-mean concavity                0.068    0.058
-worst radius                  0.062    0.152
-```
-
-In the bar chart XGBoost leans hardest on `worst perimeter` (0.251), which the forest ranks fourth, and it ignores `mean perimeter` entirely. Each library computes importance its own way, and among near-twin columns a model can pick any one, so compare rankings, not numbers.
-
-## 6. Independent practice: early stopping
-
-Early stopping scores the validation rows after every boosting round and stops when the score stops improving, so you can set a generous round budget. Because the validation rows now help _fit_ this model, its validation score is no longer on equal footing with the others.
-
-```python
-xgb_early_stop = xgb.XGBClassifier(
-    n_estimators=500,            # a generous budget; early stopping decides where to stop
-    max_depth=3, learning_rate=0.1,
-    subsample=0.8, colsample_bytree=0.8,   # Part 5's settings, so the round count is the only change
-    early_stopping_rounds=10,    # in the constructor since XGBoost 2.0
-    random_state=42, n_jobs=-1,
-)
-xgb_early_stop.fit(X_train, y_train, eval_set=[(X_valid, y_valid)], verbose=False)
-xgb_early_acc = accuracy_score(y_valid, xgb_early_stop.predict(X_valid))
-candidate_accuracy['XGBoost (early stopped)'] = xgb_early_acc
-valid_predictions['XGBoost (early stopped)'] = xgb_early_stop.predict(X_valid)
-
-print(f"Best iteration: {xgb_early_stop.best_iteration} (of a 500-round budget)")
-print(f"Best validation loss: {xgb_early_stop.best_score:.4f}")
-print(f"XGBoost, 100 fixed rounds: validation accuracy {xgb_acc:.4f}")
-print(f"XGBoost, early stopped:    validation accuracy {xgb_early_acc:.4f}")
-```
-
-**Expect:**
-
-```text
-Best iteration: 54 (of a 500-round budget)
-Best validation loss: 0.1168
-XGBoost, 100 fixed rounds: validation accuracy 0.9649
-XGBoost, early stopped:    validation accuracy 0.9474
-```
-
-Validation loss is lowest at iteration 54 (counted from 0), so early stopping keeps 55 rounds, about half of Part 5's 100. The early-stopped model gets 108 of 114, two rows fewer than 100 fixed rounds: the round with the lowest validation loss is not always the round with the highest accuracy. Those same 114 rows chose its round count. Part 10 comes back to that.
-
-## 7. Build and compile a neural network
+The network reads the same prepared arrays. `set_random_seed` and `enable_op_determinism` make the run repeat on one machine; another machine can differ in the third decimal.
 
 ```python
 import tensorflow as tf
@@ -341,249 +208,181 @@ from tensorflow import keras
 
 keras.utils.set_random_seed(42)
 tf.config.experimental.enable_op_determinism()
-```
 
-The seed and deterministic operations help repeat a run in the same environment. TensorFlow versions and hardware can still change the numbers below.
-
-A `Sequential` model is a straight stack of layers. Two hidden ReLU layers followed by one sigmoid unit is a standard starting point for a yes/no target. Compiling attaches the **optimizer** that updates the weights (Adam), the **loss** it minimizes (`binary_crossentropy` for a yes/no target), and the metrics reported each epoch.
-
-```python
-n_features = X_train.shape[1]  # 30 nucleus measurements
-
-model = keras.Sequential([
-    keras.layers.Input(shape=(n_features,)),
-    keras.layers.Dense(64, activation='relu', name='hidden1'),
-    keras.layers.Dense(32, activation='relu', name='hidden2'),
-    keras.layers.Dense(1, activation='sigmoid', name='output'),
+network = keras.Sequential([
+    keras.layers.Input(shape=(X_fit_ready.shape[1],)),
+    keras.layers.Dense(32, activation="relu"),
+    keras.layers.Dropout(0.2),
+    keras.layers.Dense(16, activation="relu"),
+    keras.layers.Dense(1, activation="sigmoid"),
 ])
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-model.summary()
-```
+network.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+history = network.fit(X_fit_ready, y_fit.to_numpy(), epochs=15, batch_size=256,
+                      validation_data=(X_valid_ready, y_valid.to_numpy()), verbose=0)
+print("weights:", network.count_params())
+compare("neural network", network.predict(X_valid_ready, verbose=0).ravel())
 
-**Expect:** a table with three `Dense` layers of 1,984, 2,080, and 33 weights, and `Total params: 4,097 (16.00 KB)`. The first layer has 30 × 64 weights plus 64 intercepts: 1,984. That is 4,097 weights for 341 training rows, which is why the loss curves in the next part are worth watching.
-
-## 8. Train and read the curves
-
-An **epoch** is one pass through the training rows; `batch_size=32` updates the weights after every 32 rows. `validation_data` scores the validation rows after every epoch, which is what lets you diagnose the training.
-
-```python
-history = model.fit(
-    X_train_scaled, y_train,
-    epochs=50, batch_size=32,
-    validation_data=(X_valid_scaled, y_valid),
-    verbose=0,
-)
-
-history_df = pd.DataFrame(history.history)
-history_df['epoch'] = range(1, len(history_df) + 1)
-display(history_df.set_index('epoch').tail(3).round(4))
-
-best_row = history_df.loc[history_df['val_loss'].idxmin()]
-print(f"Lowest validation loss: {best_row['val_loss']:.4f} at epoch {best_row['epoch']:.0f}")
-
-valid_loss, valid_accuracy = model.evaluate(X_valid_scaled, y_valid, verbose=0)
-print(f"Validation loss after epoch 50: {valid_loss:.4f}")
-print(f"Validation accuracy: {valid_accuracy:.4f}")
-nn_pred = (model.predict(X_valid_scaled, verbose=0) > 0.5).astype(int).flatten()
-candidate_accuracy['Neural net 64-32'] = accuracy_score(y_valid, nn_pred)
-valid_predictions['Neural net 64-32'] = nn_pred
-display(confusion_table(y_valid, nn_pred))
-```
-
-**Expect:** TensorFlow may first print log lines in red, such as `WARNING: All log messages before absl::InitializeLog() is called are written to STDERR` or a line starting `E0000` that mentions `use_unbounded_threadpool`. They come from TensorFlow's internals, not from your code, and do not change the results. Then:
-
-```text
-       accuracy    loss  val_accuracy  val_loss
-epoch
-48          1.0  0.0075        0.9737    0.0896
-49          1.0  0.0071        0.9737    0.0898
-50          1.0  0.0067        0.9737    0.0903
-
-Lowest validation loss: 0.0726 at epoch 20
-Validation loss after epoch 50: 0.0903
-Validation accuracy: 0.9737
-                  predicted benign  predicted malignant
-actual benign                   69                    2
-actual malignant                 1                   42
-```
-
-The network gets every training row right and 111 of 114 validation rows, with the same confusion matrix as logistic regression.
-
-```python
-fig, ax = plt.subplots(figsize=(7, 4))
-ax.plot(history_df['epoch'], history_df['loss'], label='training loss')
-ax.plot(history_df['epoch'], history_df['val_loss'], label='validation loss')
-ax.set_xlabel('Epoch')
-ax.set_ylabel('Binary cross-entropy loss')
-ax.set_title('Training and validation loss')
+fig, ax = plt.subplots(figsize=(6, 3.5))
+ax.plot(range(1, 16), history.history["loss"], "o-", label="training")
+ax.plot(range(1, 16), history.history["val_loss"], "s--", label="validation")
+ax.set(xlabel="Epoch", ylabel="Log loss", title="Validation loss flattens after a few epochs")
 ax.legend()
 plt.show()
 plt.close(fig)
 ```
 
-**Expect:** both curves fall steeply for the first ten epochs. After that, training loss keeps falling toward 0, while validation loss bottoms out at epoch 20 (0.0726) and then creeps back up to 0.0903. That widening gap is overfitting starting: the network is memorizing its 341 training rows, and it is the signal early stopping watches for. Accuracy has not suffered yet, but the model is growing more confident than the validation rows justify.
+Expect a training loss that falls quickly over the first two epochs and keeps creeping down, and a validation loss that eases from about 0.387 to 0.383 by the fourth epoch and then stays flat, with no late rise: 131,927 rows give a network of 1,857 weights little room to memorize. Its recall at the budget is 0.300, between logistic regression and the forest. Training takes well under a minute.
 
-## 9. Independent practice: two network variants
-
-Depth, width, and regularization are settings to validate, not upgrades. Train one variant with more layers and units, and one with **dropout** (randomly masking 30% of a layer's outputs during training) plus an L2 penalty on the weights. Same epochs and batch size, so the comparison is fair.
-
-Compare the three on validation accuracy, not loss. Keras adds the L2 penalty to the loss it reports, on training and validation rows alike, so the regularized network's loss is on a different scale from the other two.
+### 8. Compare on the same rows, freeze, and test once
 
 ```python
-model_deep = keras.Sequential([
-    keras.layers.Input(shape=(n_features,)),
-    keras.layers.Dense(128, activation='relu'),
-    keras.layers.Dense(64, activation='relu'),
-    keras.layers.Dense(32, activation='relu'),
-    keras.layers.Dense(16, activation='relu'),
-    keras.layers.Dense(1, activation='sigmoid'),
-])
-model_deep.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-model_deep.fit(X_train_scaled, y_train, epochs=50, batch_size=32,
-               validation_data=(X_valid_scaled, y_valid), verbose=0)
-deep_loss, deep_acc = model_deep.evaluate(X_valid_scaled, y_valid, verbose=0)
-deep_pred = (model_deep.predict(X_valid_scaled, verbose=0) > 0.5).astype(int).flatten()
-
-model_reg = keras.Sequential([
-    keras.layers.Input(shape=(n_features,)),
-    keras.layers.Dense(64, activation='relu', kernel_regularizer=keras.regularizers.l2(0.01)),
-    keras.layers.Dropout(0.3),
-    keras.layers.Dense(32, activation='relu', kernel_regularizer=keras.regularizers.l2(0.01)),
-    keras.layers.Dropout(0.3),
-    keras.layers.Dense(1, activation='sigmoid'),
-])
-model_reg.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-history_reg = model_reg.fit(X_train_scaled, y_train, epochs=50, batch_size=32,
-                            validation_data=(X_valid_scaled, y_valid), verbose=0)
-reg_loss, reg_acc = model_reg.evaluate(X_valid_scaled, y_valid, verbose=0)
-reg_pred = (model_reg.predict(X_valid_scaled, verbose=0) > 0.5).astype(int).flatten()
-candidate_accuracy['Neural net 128-64-32-16'] = accuracy_score(y_valid, deep_pred)
-candidate_accuracy['Neural net 64-32 + dropout/L2'] = accuracy_score(y_valid, reg_pred)
-valid_predictions['Neural net 128-64-32-16'] = deep_pred
-valid_predictions['Neural net 64-32 + dropout/L2'] = reg_pred
-
-display(pd.DataFrame({
-    'network': ['64-32', '128-64-32-16', '64-32 + dropout/L2'],
-    'weights': [model.count_params(), model_deep.count_params(), model_reg.count_params()],
-    'valid_accuracy': [valid_accuracy, deep_acc, reg_acc],
-}).set_index('network').round(4))
-
-reg_history_df = pd.DataFrame(history_reg.history)
-fig, axes = plt.subplots(1, 2, figsize=(11, 4))
-axes[0].plot(history_df['epoch'], history_df['loss'], label='training loss')
-axes[0].plot(history_df['epoch'], history_df['val_loss'], label='validation loss')
-axes[0].set_title('Plain 64-32')
-axes[1].plot(history_df['epoch'], reg_history_df['loss'], label='training loss')
-axes[1].plot(history_df['epoch'], reg_history_df['val_loss'], label='validation loss')
-axes[1].set_title('64-32 + dropout/L2 (loss includes the L2 penalty)')
-for ax in axes:
-    ax.set_xlabel('Epoch')
-    ax.set_ylabel('Loss')
-    ax.legend()
-plt.show()
-plt.close(fig)
+show()
 ```
 
-**Expect:** TensorFlow may print a `WARNING:tensorflow:... triggered tf.function retracing` message while the networks predict one after another; it is about speed, not a failure. Then:
+Expect, at the 10% budget, recall from 0.290 (logistic regression) to 0.308 (XGBoost), with the network (0.300) and the forest (0.303) between. Every model's accuracy at 0.5 sits between 0.842 and 0.845. XGBoost calls 138 more readmitted patients in six months than logistic regression (2,362 against 2,224). Trees find combinations of columns and thresholds within a column by splitting; logistic regression gives each column one straight-line slope unless someone writes the combination as a column. Practice 6 tests whether the gap comes from combinations.
 
-```text
-                    weights  valid_accuracy
-network
-64-32                  4097          0.9737
-128-64-32-16          14849          0.9649
-64-32 + dropout/L2     4097          0.9737
-```
-
-More than three times the weights buys one _fewer_ correct validation row (110 of 114). In the plots, the plain network's validation loss turns up after epoch 20, while the regularized network's training and validation curves fall together all the way to epoch 50: dropout and the L2 penalty closed the gap. It did not change the accuracy, 111 of 114. On a table this small, regularization is a setting to validate, not an upgrade.
-
-## 10. Compare every candidate
-
-One validation set, one metric, and every model you fitted. The core route has five rows. Independent practice adds three candidates, including the early-stopped XGBoost, whose round count was chosen using validation rows.
+The frozen choice is XGBoost with its validation-chosen 285 rounds: the most readmitted patients called among the four families, and seconds to train. Refit it on every training and validation discharge whose label had arrived by the first test discharge, then score the test rows once at the 10% budget.
 
 ```python
-comparison = pd.DataFrame({'valid_accuracy': pd.Series(candidate_accuracy)})
-comparison.index.name = 'model'
-comparison['correct_of_114'] = (comparison['valid_accuracy'] * len(y_valid)).round().astype(int)
-display(comparison.round(4))
+train_valid = pd.concat([train, valid])
+final_rows = train_valid[train_valid["label_time"] <= test["discharge_date"].min()]
+final_preprocess = make_preprocess().fit(final_rows[features])
+final_model = xgb.XGBClassifier(n_estimators=booster.best_iteration + 1, max_depth=4, learning_rate=0.05,
+                                subsample=0.8, colsample_bytree=0.8, random_state=42, n_jobs=-1)
+final_model.fit(final_preprocess.transform(final_rows[features]), final_rows["readmit_30d"])
+
+test_probability = final_model.predict_proba(final_preprocess.transform(test[features]))[:, 1]
+compare("XGBoost on test (frozen)", test_probability, truth=test["readmit_30d"])
+print("final fit rows:", len(final_rows), " test readmissions:", test["readmit_30d"].sum())
+show(["XGBoost", "XGBoost on test (frozen)"])
 ```
 
-**Expect:**
+Expect 179,288 final fit rows, 5,789 test readmissions, and a test recall of 0.311 with precision 0.479, close to validation's 0.308 and 0.500. That number is the one to report.
 
-```text
-                               valid_accuracy  correct_of_114
-model
-Majority-class baseline                0.6228              71
-Logistic regression                    0.9737             111
-Random forest                          0.9737             111
-XGBoost (100 rounds)                   0.9649             110
-XGBoost (early stopped)                0.9474             108
-Neural net 64-32                       0.9737             111
-Neural net 128-64-32-16                0.9649             110
-Neural net 64-32 + dropout/L2          0.9737             111
-```
+## Independent practice
 
-This reference run includes independent practice. The core table omits early-stopped XGBoost and the two network variants. In this run every candidate clears the baseline by a wide margin, and all seven land within three rows of each other.
+### 1. Two importance measures for the forest
 
-### Independent practice: compare individual errors
-
-Identical scores do not mean identical predictions. List the validation rows each model gets wrong, and which of those are missed malignancies.
+Permutation importance on validation rows measures what the forest relies on for new discharges. `scoring="neg_log_loss"` scores probabilities with log loss, the loss the classifiers were trained to reduce; a 10,000-row sample keeps it quick.
 
 ```python
-row_numbers = np.arange(len(y_valid))
-for name, pred in valid_predictions.items():
-    wrong = row_numbers[pred != y_valid]
-    missed_malignant = row_numbers[(pred == 0) & (y_valid == 1)]
-    print(f"{name:30s} wrong on rows {wrong.tolist()}, missed malignant {missed_malignant.tolist()}")
+from sklearn.inspection import permutation_importance
+
+sample = valid.sample(10000, random_state=42)
+permuted = permutation_importance(forest, sample[features], sample["readmit_30d"],
+                                  scoring="neg_log_loss", n_repeats=5, random_state=42)
+display(pd.Series(permuted.importances_mean, index=features).sort_values(ascending=False).round(4)
+        .rename("log_loss_increase"))
 ```
 
-**Expect:**
+Expect diagnosis group ahead (0.0135), then comorbidity count (0.0081), medication count (0.0064), prior admissions (0.0047), hemoglobin, age, and follow-up scheduled, with `hospital`, `adi_decile`, and `sex` near 0. Prior admissions and follow-up scheduled are missing from step 5's impurity top six: impurity rewards columns with many distinct values such as the labs, while permutation shuffles a whole original column and measures the loss on new discharges.
 
-```text
-Logistic regression            wrong on rows [9, 10, 75], missed malignant [9]
-Random forest                  wrong on rows [9, 10, 45], missed malignant [9, 45]
-XGBoost (100 rounds)           wrong on rows [9, 10, 45, 98], missed malignant [9, 45]
-XGBoost (early stopped)        wrong on rows [9, 10, 45, 68, 93, 98], missed malignant [9, 45, 68]
-Neural net 64-32               wrong on rows [9, 10, 75], missed malignant [9]
-Neural net 128-64-32-16        wrong on rows [9, 10, 34, 98], missed malignant [9]
-Neural net 64-32 + dropout/L2  wrong on rows [9, 10, 75], missed malignant [9]
-```
+### 2. Are the probabilities calibrated?
 
-- **Row 9** is a malignant biopsy that every model calls benign. None of these fitted candidates fixes it; it is worth a pathologist's look.
-- **Same score, different mistakes:** logistic regression and the forest both get 111 right, but the forest misses a second malignancy (row 45) where logistic regression raises a false alarm (row 75). For a screening tool that difference matters more than the tie in accuracy.
-- **The early-stopped XGBoost** misses two more malignancies (rows 45 and 68) than logistic regression. It stopped where validation loss was lowest, and those same 114 rows chose its round count, so even a good score here would reflect that selection; that is another reason to reserve the independent test.
-
-### Apply the selection rule (core)
-
-Now apply Part 2's rule to your table. In the reference run, with or without independent practice, logistic regression ties for best at 111, and the tie goes to **logistic regression**, 30 coefficients and an intercept. This one small split does not establish that the model families perform equally well. If your versions give a different result, apply the same predeclared rule before opening the test set; the final cell below is specifically the logistic-regression choice.
+The nurses may also read the probability itself ("30% chance"). Group validation discharges into tenths by XGBoost's probability and compare the mean prediction with the observed rate.
 
 ```python
-assert max(candidate_accuracy.values()) - lr_acc <= 1 / len(y_valid) + 1e-12, 'Apply the selection rule to this run before opening the test set.'
+calibration = pd.DataFrame({"predicted": booster.predict_proba(X_valid_ready)[:, 1], "observed": y_valid.to_numpy()})
+calibration["tenth"] = pd.qcut(calibration["predicted"], 10, labels=False) + 1
+display(calibration.groupby("tenth")[["predicted", "observed"]].mean().round(3))
 ```
 
-## 11. Freeze, then test once
+Expect the two columns to rise together from about 0.02 in the lowest tenth to 0.49 in the highest, within 0.010 of each other in every tenth: a predicted 30% means about 30% of those patients come back.
 
-Freezing means the features, preprocessing, and settings stop changing. Refit the frozen configuration on the training and validation rows together (more data, no new choices), with a scaler fitted on those same rows, and score it on the test rows exactly once.
+### 3. A forest that memorizes
+
+Grow 50 trees with no leaf-size limit and compare recall at the 10% budget on fit rows and validation rows.
 
 ```python
-final_scaler = StandardScaler()
-X_train_valid_scaled = final_scaler.fit_transform(X_train_valid)
-X_test_scaled = final_scaler.transform(X_test)
-
-final_model = LogisticRegression(max_iter=1000, random_state=42)
-final_model.fit(X_train_valid_scaled, y_train_valid)
-
-test_pred = final_model.predict(X_test_scaled)
-print(f"Final test accuracy, frozen logistic regression: {accuracy_score(y_test, test_pred):.4f}")
-display(confusion_table(y_test, test_pred))
+deep = Pipeline([("preprocess", make_preprocess()),
+                 ("model", RandomForestClassifier(n_estimators=50, n_jobs=-1, random_state=42))])
+deep.fit(X_fit, y_fit)
+for label, X_part, y_part in [("fit rows", X_fit, y_fit), ("validation", X_valid, y_valid)]:
+    probability = deep.predict_proba(X_part)[:, 1]
+    flag = probability >= pd.Series(probability).quantile(0.9)
+    print(label, "recall at 10%:", round(recall_score(y_part, flag), 3))
 ```
 
-**Expect:**
+Expect a fit-row recall of 0.693, far above any validation score: the deep trees memorized the training discharges. Validation recall is 0.317, 0.009 above the frozen XGBoost (about 70 more readmitted patients called), because averaging 50 deep trees cancels much of what each one memorized. This forest was not among the candidates in step 8, and choosing it now, after seeing validation, would turn validation into a second test set; it goes on the list for the next model review. The fit-row score says nothing about new discharges; only the validation score does.
 
-```text
-Final test accuracy, frozen logistic regression: 0.9649
-                  predicted benign  predicted malignant
-actual benign                   71                    1
-actual malignant                 3                   39
+### 4. What a leaked column does
+
+Add `followup_completed`, known only 7 to 14 days after discharge, to the XGBoost features.
+
+```python
+leaky = features + ["followup_completed"]
+leaky_preprocess = make_preprocess(categorical + ["followup_completed"]).fit(fit_rows[leaky])
+leaky_model = xgb.XGBClassifier(n_estimators=booster.best_iteration + 1, max_depth=4, learning_rate=0.05,
+                                subsample=0.8, colsample_bytree=0.8, random_state=42, n_jobs=-1)
+leaky_model.fit(leaky_preprocess.transform(fit_rows[leaky]), y_fit)
+compare("XGBoost + followup_completed (leaky)", leaky_model.predict_proba(leaky_preprocess.transform(valid[leaky]))[:, 1])
+show(["XGBoost", "XGBoost + followup_completed (leaky)"])
 ```
 
-110 of 114 test biopsies are right: one false alarm and three missed malignancies out of 42. Test accuracy (0.965) is one row below validation (0.974), within the noise of 114 rows. Three missed cancers is the number to take to the clinical team. If misses cost that much more than false alarms, the next project would pick its threshold or metric for recall before looking at the test set again; going back now to try the early-stopped XGBoost on these rows would turn the test set into a second validation set.
+Expect the leaky model's recall about 2.6 points higher (0.334 against 0.308). The gain is not real: readmitted patients often miss the follow-up because they are back in the hospital, and the column does not exist yet when the nurses make their calls.
+
+### 5. A faster learning rate
+
+Refit XGBoost with `learning_rate=0.3` and compare the best round and the recall.
+
+```python
+fast = xgb.XGBClassifier(n_estimators=1000, max_depth=4, learning_rate=0.3, subsample=0.8,
+                         colsample_bytree=0.8, early_stopping_rounds=30, random_state=42, n_jobs=-1)
+fast.fit(X_fit_ready, y_fit, eval_set=[(X_valid_ready, y_valid)], verbose=False)
+print("best round:", fast.best_iteration, " validation log loss:", round(fast.best_score, 4))
+compare("XGBoost (learning rate 0.3)", fast.predict_proba(X_valid_ready)[:, 1])
+show(["XGBoost", "XGBoost (learning rate 0.3)"])
+```
+
+Expect best round 39 instead of 284, with a slightly worse validation log loss (0.3804) and recall (0.304): bigger steps need fewer trees but land less precisely.
+
+### 6. Can logistic regression catch up with hand-built interactions?
+
+Logistic regression gives each column one slope, so a combination counts only if it is a column. Look for combinations in the fit rows first, with pivot tables (Lecture 08), then write down only what the tables show.
+
+```python
+fit_view = fit_rows.assign(age_75_plus=fit_rows["age"] >= 75,
+                           sent_home=fit_rows["disposition"].isin(["home", "home_health"]))
+display(fit_view.pivot_table(index="dx_group", columns="followup_scheduled", values="readmit_30d").round(3))
+display(fit_view.pivot_table(index=["lives_alone", "age_75_plus"], columns="sent_home", values="readmit_30d").round(3))
+sodium_band = pd.cut(fit_view["sodium"], [100, 130, 133, 135, 137, 140, 145, 170])
+display(fit_view.groupby(sodium_band, observed=True)["readmit_30d"].agg(["mean", "size"]).round(3))
+```
+
+Expect three patterns, each worth one column:
+
+- **Heart failure without follow-up**: 0.461 against 0.247 with a scheduled visit. Every other diagnosis gains only 1 to 5 points from follow-up.
+- **Living alone, 75 and over, sent home**: 0.290, while the same patients sent to a facility run 0.245 and every other group runs lower at home than elsewhere.
+- **Sodium at 133 or below**: 0.241 to 0.300, against 0.119 to 0.162 above 133. The risk steps up below 133 rather than rising evenly, so one straight-line slope fits it poorly.
+
+```python
+def add_terms(frame):
+    frame = frame.copy()
+    frame["hf_no_followup"] = (frame["dx_group"] == "heart_failure") & ~frame["followup_scheduled"]
+    frame["alone_75_home"] = frame["lives_alone"] & (frame["age"] >= 75) & frame["disposition"].isin(["home", "home_health"])
+    frame["sodium_133_or_less"] = frame["sodium"] <= 133
+    return frame
+
+terms = ["hf_no_followup", "alone_75_home", "sodium_133_or_less"]
+handmade = Pipeline([("preprocess", make_preprocess(categorical + terms)), ("model", LogisticRegression(max_iter=1000))])
+handmade.fit(add_terms(fit_rows)[features + terms], y_fit)
+compare("logistic + hand-built terms", handmade.predict_proba(add_terms(valid)[features + terms])[:, 1])
+show(["logistic regression", "XGBoost", "logistic + hand-built terms"])
+```
+
+Expect the hand-built logistic model at a recall of 0.298 (2,279 readmitted patients called): 55 more than plain logistic regression and 83 fewer than XGBoost, so the three columns close a little under half the gap. The rest sits in patterns these tables did not look at; a pivot table of `housing_unstable` by `ed_visits_6m` is one place to start. XGBoost needed no tables: its splits search for combinations on their own.
+
+## Optional extension: the sodium curve the trees found
+
+Prerequisite: BONUS.md, Partial Dependence Plots.
+
+Partial dependence varies one column across a grid while averaging the forest's predictions over everything else. Run on 5,000 fit rows:
+
+```python
+from sklearn.inspection import partial_dependence
+
+curve = partial_dependence(forest, X_fit.sample(5000, random_state=0), ["sodium"], grid_resolution=15)
+display(pd.Series(curve["average"][0], index=curve["grid_values"][0], name="mean predicted risk").round(3))
+```
+
+Expect a curve: predicted risk falls from 0.205 at 131 mmol/L to about 0.155 at 135 and stays nearly flat above it, the same step practice 6's table shows. Logistic regression gives sodium one straight-line slope, so it cannot represent this bend.

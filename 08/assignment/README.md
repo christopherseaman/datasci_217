@@ -1,22 +1,25 @@
-# Assignment 08: Grouped Summaries of Clinic Visits
+# Assignment 08: Grouped Summaries of an Imaging Network
 
 ## Overview
 
-Group a clinic visit log by clinic and by clinic and visit type, compare each visit with its clinic's mean, and pivot the mean waits, saving each result for the checks.
+Summarize a year of imaging exams by site and modality, flag delayed STAT exams against their peers, build a CT radiation-dose review list, pull each site's slowest STAT reports, and pivot report times, saving each result for the checks.
 
-`data/clinic_visits.csv` is a synthetic visit log from three neighborhood clinics, one row per visit.
+`data/imaging_exams.parquet` is a synthetic export from a regional imaging network: 540,228 exams in 2025, one row per exam, at three hospitals (Downtown, Harbor, Northgate) and five outpatient imaging centers. A ninth site, Eastport, opens in 2026 and has no exams yet. Valley has no MRI scanner.
 
-- `visit_id`, `clinic`, and `patient_id` (some patients come more than once).
-- `visit_type`: `New`, `Follow-up`, or `Telehealth`.
-- `wait_min`: minutes from check-in to being seen.
-- `satisfaction`: the 1 to 5 survey score, blank for the three visits whose survey never came back.
-- A fourth clinic, Excelsior, opened this month and has no visits yet; Sunset had no telehealth visits.
+- `exam_id`, `patient_id` (most patients have several exams), `site`, and `exam_date`.
+- `age`, `sex`, and `setting`: `ED`, `Inpatient`, or `Outpatient`.
+- `priority`: `STAT` (scan now, mostly from the ED), `Urgent`, or `Routine`.
+- `modality` (`CT`, `MRI`, `Ultrasound`, or `X-ray`) and `body_region`.
+- `scan_min`: minutes the patient spent on the scanner table.
+- `dose_msv`: the exam's **effective radiation dose** in millisieverts (mSv), blank for MRI and ultrasound, which use no ionizing radiation. A chest X-ray is about 0.02 mSv; an abdomen and pelvis CT is about 10.
+- `wait_hr`: hours from the order to the scan.
+- `report_hr`: hours from the scan to the radiologist's signed report, blank for the 2,262 exams whose report was not signed when the data were pulled.
+- `reader_id`: the radiologist who signed it.
 
 ```text
-visit_id,clinic,patient_id,visit_type,wait_min,satisfaction
-V001,Mission,P101,New,18,4
-V002,Mission,P102,Follow-up,12,5
-V003,Mission,P101,Follow-up,9,
+exam_id,patient_id,site,exam_date,age,sex,setting,priority,modality,body_region,scan_min,dose_msv,wait_hr,report_hr,reader_id
+E0000001,P077750,Northgate,2025-01-01,67,M,Inpatient,Routine,Ultrasound,Abdomen/Pelvis,28,,43.3,11.12,T04
+E0000003,P198046,Northgate,2025-01-01,70,M,Inpatient,STAT,CT,Head,12,2.188,2.6,2.11,T02
 ```
 
 ## Setup
@@ -30,8 +33,8 @@ V003,Mission,P101,Follow-up,9,
     uv sync
     ```
 3. Open `assignment.ipynb` and select the `.venv` Python as the kernel.
-4. Run the notebook's first two code cells.
-    - Expect: `pandas: 3.0.5` and `data folder found: True`, then `visits: (15, 6)`.
+4. Run the notebook's first two code cells. The second downloads `data/imaging_exams.parquet` (11 MB) if the folder lacks it, then reads it.
+    - Expect: `pandas: 3.0.5` and `pyarrow: 25.0.0`, then `exams: (540228, 15)` and the first five exams.
 
 ## Files
 
@@ -39,8 +42,8 @@ V003,Mission,P101,Follow-up,9,
 assignment/
 ├── assignment.ipynb        # the notebook you complete
 ├── data/
-│   └── clinic_visits.csv   # supplied visit log; keep it exactly as handed out
-├── pyproject.toml          # supplied: the project's packages, numpy, pandas, and ipykernel
+│   └── imaging_exams.parquet  # supplied exam log; keep it exactly as handed out
+├── pyproject.toml          # supplied: numpy, pandas, pyarrow (for Parquet), and ipykernel
 ├── uv.lock                 # supplied: the exact versions `uv sync` installs
 ├── .python-version         # supplied: tells uv to use Python 3.13
 ├── CHECKS.md               # supplied: what each check looks for
@@ -48,93 +51,121 @@ assignment/
 ├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
 ├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
 └── output/
-    ├── clinic_counts.csv              # you generate in Task 1.2
-    ├── clinic_summary.csv             # you generate in Task 2.1
-    ├── visits_with_context.csv        # you generate in Task 2.2
-    ├── clinic_visit_type_summary.csv  # you generate in Task 2.3
-    └── mean_wait_pivot.csv            # you generate in Task 3.1
+    ├── site_summary.csv           # you generate in Task 1.2
+    ├── site_modality_summary.csv  # you generate in Task 2.1
+    ├── delayed_stat_exams.csv     # you generate in Task 2.2
+    ├── ct_dose_review.csv         # you generate in Task 2.3
+    ├── slowest_stat_reports.csv   # you generate in Task 2.4
+    └── median_report_pivot.csv    # you generate in Task 3.1
 ```
 
-## Task 1: Count each clinic's visits
+## Task 1: Summarize each site
 
-The visit log has one row per visit, and every answer in Tasks 1 and 2.1 has one row per clinic: grouping changes the grain, as Lecture 08's "The Split-Apply-Combine Paradigm" section shows.
+The exam log has one row per exam. Every answer in Task 1 has one row per site: grouping changes the grain, as Lecture 08's "The Split-Apply-Combine Paradigm" section shows.
 
-### 1.1 Put the clinics in reporting order
+### 1.1 Put the sites in reporting order
 
-This step saves nothing. The clinic manager lists clinics as Mission, Sunset, Bayview, Excelsior, which is not alphabetical, and wants to see that Excelsior has had no visits. Lecture 08's "A Reporting Order and an Unused Clinic" snippet does the same. In the Task 1.1 cell:
+This step saves nothing. The network's board lists sites in the order of `SITE_ORDER`, hospitals first, and wants to see that Eastport has no exams yet.
 
-1. Replace `visits["clinic"]` with an ordered categorical: `pd.Categorical()` with `CLINIC_ORDER` as its `categories` and `ordered=True`. It prints `clinic dtype: category`.
-2. Count the visits at each clinic with `groupby()` on `clinic`, `observed=False`, and `.size()`, and name the result `visits_per_clinic`. It lists Mission 6, Sunset 5, Bayview 4, and Excelsior 0, in that order.
+1. Overwrite the `site` column with an ordered categorical in `SITE_ORDER`, as Lecture 08's "A Reporting Order and an Unused Clinic" snippet does.
+    - Expect: `site dtype: category`.
+2. Count the exams at each site as `exams_per_site`, keeping the unused category, as the same snippet does with `observed`.
+    - Expect: nine sites in `SITE_ORDER`, starting with Downtown 129,876 and ending with Valley 25,384 and Eastport 0.
 
-The rest of the assignment groups with `observed=True`, which lists only the three clinics that have visits, still in this order.
+The rest of the assignment groups with `observed=True`, which lists the eight sites with exams, still in this order.
 
-### 1.2 Count visits, satisfaction scores, and patients
+### 1.2 Count exams, reports, and patients, and total the scanner time
 
-In the Task 1.2 cell:
+The operations director wants one row per site. In the Task 1.2 cell:
 
-1. Group `visits` by `clinic` with `as_index=False` and `observed=True`, and build `clinic_counts` with named aggregation, as Lecture 08's "Count and Summarize Each Clinic" snippet does:
-    - `visit_count`: `"size"` of `visit_id`, every visit at the clinic.
-    - `satisfaction_count`: `"count"` of `satisfaction`, the visits with a survey score; `count` skips the blanks.
-    - `patient_count`: `"nunique"` of `patient_id`, each patient once, however many times they came.
+1. Build `site_summary` from one `groupby()` on `site` with named aggregation, keeping `site` as a column, as Lecture 08's "Count and Summarize Each Clinic" snippet does. Its reference card lists the functions. The five new columns:
+    - `exam_count`: every exam at the site.
+    - `report_count`: the exams with a signed report. Pick the function that skips blank `report_hr` cells.
+    - `patient_count`: each patient once, however many exams they had.
+    - `total_scan_min` and `mean_scan_min`: the total and the mean of `scan_min`.
+    - Expect: `rows: 8`.
+2. Save it to `SITE_SUMMARY_PATH` without the index. Leave the means unrounded.
 
-    It prints `rows: 3`.
-2. Save `clinic_counts` to `CLINIC_COUNTS_PATH` with `index=False`.
+> **Checkpoint: `output/site_summary.csv`**
+> The header line `site,exam_count,report_count,patient_count,total_scan_min,mean_scan_min`, then eight rows, Downtown to Valley. Valley reads `Valley,25384,25280,12905,359150,14.148...`: 25,384 exams from 12,905 patients.
 
-> **Checkpoint: `output/clinic_counts.csv`**
-> The header line `clinic,visit_count,satisfaction_count,patient_count`, then three rows: Mission, Sunset, and Bayview. Mission reads `Mission,6,5,4`: six visits, five with a survey score, from four patients.
+## Task 2: Compare sites, modalities, and single exams
 
-## Task 2: Summarize, compare, and use two keys
+### 2.1 Summarize each site and modality
 
-### 2.1 Add wait totals and means
+Grouping by two keys gives one row per observed pair, as Lecture 08's "Grouping by Two Keys" section shows. In the Task 2.1 cell:
 
-In the Task 2.1 cell:
+1. Build `site_modality` from a `groupby()` on `site` and `modality`, with both kept as columns and three named aggregations: `exam_count` (every exam), `median_wait_hr`, and `median_report_hr`. Waits are skewed: a few routine MRIs wait weeks, so the median describes a typical exam better than the mean.
+    - Expect: `rows: 31`. Valley has no MRI pair.
+2. Save it to `SITE_MODALITY_PATH` without the index.
 
-1. Build `clinic_summary` the way you built `clinic_counts`, with the same three counts and two more named aggregations: `total_wait_min`, the `"sum"` of `wait_min`, and `mean_wait_min`, its `"mean"`. It prints `rows: 3`.
-2. Save `clinic_summary` to `CLINIC_SUMMARY_PATH` with `index=False`. Leave the means unrounded.
+> **Checkpoint: `output/site_modality_summary.csv`**
+> The header line `site,modality,exam_count,median_wait_hr,median_report_hr`, then 31 rows. Northgate's MRI row reads `Northgate,MRI,12900,227.5,10.86...`: a typical MRI there waited about nine and a half days.
 
-> **Checkpoint: `output/clinic_summary.csv`**
-> The header line `clinic,visit_count,satisfaction_count,patient_count,total_wait_min,mean_wait_min`, then three rows. Sunset reads `Sunset,5,3,3,126,25.2`.
+### 2.2 Flag STAT exams that waited far longer than their peers
 
-### 2.2 Compare each visit with its clinic
+A STAT exam should be scanned within about an hour. The ED quality lead wants every STAT exam that waited more than 8 hours, with the typical STAT wait for the same site and modality beside it. `transform` gives every row its group's summary, as Lecture 08's "Compare Each Visit with Its Clinic" snippet does with a mean and Demo 2's step 3 does for each clinic and department. In the Task 2.2 cell:
 
-`transform` gives every visit its own clinic's mean, so the result keeps one row per visit, as Lecture 08's "Compare Each Visit with Its Clinic" snippet shows. In the Task 2.2 cell:
+1. Build `stat`, the STAT exams only, with a row mask on `priority` (Lecture 04). Take a copy so new columns go on it.
+2. Add `peer_median_wait_hr`: the median `wait_hr` of each exam's site and modality, from a grouped `transform`. Compute it on every STAT exam before keeping the delayed ones; a median of only the delayed exams would compare them with one another.
+3. Add `wait_vs_peer_hr`: how many hours longer than its peer median the exam waited.
+    - Expect: `STAT exams: 152925`.
+4. Build `delayed_stat`: the STAT exams that waited more than 8 hours (strictly more), with the six columns of the checkpoint header.
+    - Expect: `delayed: 190`.
+5. Save it to `DELAYED_STAT_PATH` without the index.
 
-1. Make `visits_with_context`, a `.copy()` of `visits`, so `visits` itself stays unchanged.
-2. Add the column `clinic_mean_wait`: group `visits` by `clinic` with `observed=True`, select `wait_min`, and call `transform()` with `"mean"`.
-3. Add the column `wait_vs_clinic`: `wait_min` minus `clinic_mean_wait`. A visit that waited longer than its clinic's mean gets a positive number.
+> **Checkpoint: `output/delayed_stat_exams.csv`**
+> The header line `exam_id,site,modality,wait_hr,peer_median_wait_hr,wait_vs_peer_hr`, then 190 rows. Exam E0000544, a STAT MRI at Downtown, waited 17.4 hours against a peer median of 1.7, so its `wait_vs_peer_hr` is 15.7.
 
-    It prints `rows: 15` and `visits unchanged: True`.
-4. Save `visits_with_context` to `CONTEXT_PATH` with `index=False`.
+### 2.3 Build a CT radiation-dose review list
 
-> **Checkpoint: `output/visits_with_context.csv`**
-> The header line `visit_id,clinic,patient_id,visit_type,wait_min,satisfaction,clinic_mean_wait,wait_vs_clinic`, then 15 rows, V001 to V015, one per visit. V007 waited 32 minutes at Sunset, whose mean is 25.2, so its `wait_vs_clinic` is 6.8 (the file may show 6.800000000000001, which is the same value).
+The radiation safety officer reviews every patient whose CT doses this year add up to 100 mSv or more, a level linked to a measurable rise in lifetime cancer risk. The review needs all of those patients' CTs, the low-dose head scans included. `filter` tests each group as a whole and keeps all of its rows or none, as Lecture 08's "Keep Clinics by Size, Mean, or Total" snippet does with a total and Demo 2's step 4 does with a patient count. In the Task 2.3 cell:
 
-### 2.3 Summarize each clinic and visit type
+1. Build `ct`, the CT exams only, with a row mask on `modality`.
+2. Build `dose_review`: group `ct` by patient and `.filter()` with a `lambda` that keeps a patient whose `dose_msv` adds up to at least 100. The `lambda` runs once for each of the 87,663 CT patients, so the cell takes 10 to 30 seconds.
+    - Expect: `rows: 1253` and `patients: 159`.
+3. Build `row_mask` for contrast: a plain row mask that keeps each CT whose own `dose_msv` is at least 100.
+    - Expect: `row mask rows: 0`. No single CT comes close to 100 mSv (the highest is 46.5), so a per-scan test misses every patient the review is for.
+4. Build `fast_review`, the same rows from a row mask on each patient's total, broadcast to every CT by a grouped `transform` as in Task 2.2. Demo 3's step 5 shows why a built-in function beats a `lambda`.
+    - Expect: `same rows as filter: True` in well under a second.
+5. Save `dose_review`'s `exam_id`, `patient_id`, and `dose_msv` to `CT_DOSE_PATH` without the index.
 
-Grouping by two keys gives one row per observed pair, as Lecture 08's "Grouping by Two Keys" section shows. In the Task 2.3 cell:
+> **Checkpoint: `output/ct_dose_review.csv`**
+> The header line `exam_id,patient_id,dose_msv`, then 1,253 rows, every CT of the 159 patients. Patient P177810 has 32 of them, adding up to 192.4 mSv.
 
-1. Group `visits` by `["clinic", "visit_type"]` with `as_index=False` and `observed=True`, and build `clinic_type_summary` with two named aggregations: `visit_count`, the `"size"` of `visit_id`, and `mean_wait_min`, the `"mean"` of `wait_min`. It prints `rows: 8`: Sunset had no telehealth visits, so it has two pairs instead of three.
-2. Save `clinic_type_summary` to `CLINIC_TYPE_PATH` with `index=False`.
+### 2.4 Pull each site's three slowest STAT reports
 
-> **Checkpoint: `output/clinic_visit_type_summary.csv`**
-> The header line `clinic,visit_type,visit_count,mean_wait_min`, then eight rows, one per clinic and visit type pair that has visits. Sunset's new-patient row reads `Sunset,New,2,36.5`.
+For the monthly quality meeting, each site reviews its three STAT exams whose signed report took longest. `apply` hands each site's rows to your function, as Lecture 08's "Sort Within Clinics and Keep the Two Longest Waits" snippet and Demo 3's step 2 show with `nlargest()`. In the Task 2.4 cell:
 
-## Task 3: Pivot the mean waits
+1. Build `slowest`: group `stat` from Task 2.2 by site and `.apply()` a `lambda` that keeps each site's three largest `report_hr`. Leave the grouping column out of what the `lambda` receives, as the snippet does.
+    - Expect: `rows: 24` and `index levels: 2`: the site, then each exam's original row number.
+2. Move `site` from the index back into a column (Lecture 06's `reset_index()`, for that one level), and keep the four columns of the checkpoint header. Demo 3's step 2 also shows the flat route without `apply`, which keeps the same 24 exams.
+3. Save it to `SLOWEST_PATH` without the index.
+
+> **Checkpoint: `output/slowest_stat_reports.csv`**
+> The header line `exam_id,site,modality,report_hr`, then 24 rows, three per site. Downtown's slowest is E0313443, an X-ray whose report took 14.82 hours.
+
+## Task 3: Pivot the report times
 
 ### 3.1 Build the pivot table and check it
 
-A pivot table lays Task 2.3's means out as a grid, one row per clinic and one column per visit type, as Lecture 08's "A Pivot Table and Its GroupBy Twin" snippet shows. In the Task 3.1 cell:
+A pivot table lays Task 2.1's median report times out as a grid, one row per site and one column per modality, as Lecture 08's "A Pivot Table and Its GroupBy Twin" snippet shows. In the Task 3.1 cell:
 
-1. Build `mean_wait_pivot` with `pd.pivot_table()` on `visits`: `wait_min` as `values`, `clinic` as `index`, `visit_type` as `columns`, `aggfunc="mean"`, and `observed=True`.
-2. Build its twin, `groupby_twin`: group `visits` by `clinic` and `visit_type` with `observed=True`, take the mean of `wait_min`, and move `visit_type` into columns with `.unstack()`. It prints `pivot matches its groupby twin: True` and `empty cells: 1`. That empty cell is Sunset's `Telehealth`: no telehealth visit happened there, so there is no wait to average.
-3. Save `mean_wait_pivot` to `PIVOT_PATH` with its index, so leave out `index=False`: the clinic names are the index, and saving it writes them as the first column. Leave the empty cell empty. `fill_value=0` would report a zero-minute wait that never happened.
+1. Build `report_pivot` with `pd.pivot_table()` on `exams`: the median `report_hr`, sites as rows, modalities as columns, observed pairs only.
+2. Build its twin, `groupby_twin`: the same medians from a two-key `groupby()`, with `modality` moved into columns by `.unstack()`, as the snippet does.
+    - Expect: `pivot matches its groupby twin: True` and `empty cells: 1`. That cell is Valley's MRI: no MRI happened there, so there is no report time to take the median of.
+3. Save `report_pivot` to `PIVOT_PATH` with its index: the site names are the index, and saving writes them as the first column. Leave the empty cell empty. Filling it with 0 would report reads signed instantly at a scanner that does not exist.
 
-> **Checkpoint: `output/mean_wait_pivot.csv`**
-> The header line `clinic,Follow-up,New,Telehealth`, then three rows: Mission, Sunset, and Bayview. Sunset's `Telehealth` cell is empty.
+The hospitals sign a CT in about 1.1 to 1.6 hours and the centers in about 10: more than half of the hospitals' CTs are STAT exams from the ED.
 
-### 3.2 Count the visits in each pair
+> **Checkpoint: `output/median_report_pivot.csv`**
+> The header line `site,CT,MRI,Ultrasound,X-ray`, then eight rows, Downtown to Valley. Valley's `MRI` cell is empty.
 
-This step saves nothing. In the Task 3.2 cell, count the visits in each clinic and visit type pair with `pd.crosstab()`, `clinic` down the rows and `visit_type` across the columns, and name the result `visit_counts`. The same Lecture 08 snippet ends with one. Sunset's `Telehealth` cell shows `0`: zero visits is a real count, while the pivot of means leaves the same cell empty.
+### 3.2 Count the exams in each pair
+
+This step saves nothing. In the Task 3.2 cell, count the exams for each site and modality with `pd.crosstab()`, sites down the rows and modalities across the columns, and name the result `exam_counts`. The same Lecture 08 snippet ends with one.
+
+- Expect: eight rows and four columns. Valley's `MRI` cell shows `0`: zero exams is a real count, while the pivot of medians leaves the same cell empty.
 
 ## Check your work
 

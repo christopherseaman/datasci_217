@@ -52,7 +52,7 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 
 ## The Modeling Landscape
 
-- More flexible models fit more complex patterns but can also overfit (fit noise in the training rows); flexibility does not guarantee better predictions.
+- More flexible models fit more complex patterns but can also **overfit**: fit the noise in the training rows, so predictions for new patients get worse.
 - Shortlist libraries by the question, then compare candidates on held-out rows from the workflow you intend to use.
 
 ![The usual rule of thumb, not a measured ranking: flexible models such as neural networks and boosted ensembles sit high on predictive power and low on interpretability, linear regression the reverse.](media/interpretability_tradeoff.webp)
@@ -101,7 +101,7 @@ Array:   sm.OLS(clinic['sbp'], sm.add_constant(clinic[['age', 'bmi']]))  interce
 | `smf.ols('sbp ~ age + bmi', data=df)` | Build a formula-based OLS model from DataFrame columns (`import statsmodels.formula.api as smf`). | Unfitted model |
 | `sm.OLS(y, sm.add_constant(X))` | Build an array-based OLS model; `sm.add_constant(X)` adds the intercept column (`import statsmodels.api as sm`). | Unfitted model |
 | `'sbp ~ ' + ' + '.join(predictors)` | Build a formula string from a list of column names. | `'sbp ~ age + bmi'` |
-| `C(column)` in a formula | Treat a column as categorical: one level becomes the reference and each other level gets its own coefficient, compared with the reference. This is Lecture 05's `drop_first=True`: with an intercept, a 0/1 column for every level would be redundant, because those columns always add up to 1. | Extra coefficient rows |
+| `C(column)` in a formula | Treat a column as categorical: each level except the reference gets a coefficient, compared with the reference. Like Lecture 05's `drop_first=True`: the dropped level is the reference, since all-level 0/1 columns would duplicate the intercept. | Extra coefficient rows |
 | `np.log(age)`, `I(bmi ** 2)`, `age:bmi`, `age * bmi` in a formula | Transform a column inside the formula; `I()` makes `**` ordinary arithmetic. `a:b` adds only the interaction (product) term, so one feature's slope can depend on the other; `a * b` is shorthand for `a + b + a:b`. | Extra coefficient rows named after each term |
 | `model.fit()` | Estimate the coefficients. | Results object |
 | `results.summary()` | Print coefficients, uncertainty, fit statistics, and diagnostics. | Formatted text table |
@@ -154,7 +154,7 @@ print(smf.ols('sbp ~ np.log(age) + I(bmi ** 2)', data=clinic).fit().params.index
 
 ![xkcd 552: Correlation. "Correlation doesn't imply causation, but it does waggle its eyebrows suggestively and gesture furtively while mouthing 'look over there'."](media/xkcd_552.png)
 
-## Uncertainty, Residuals, and New-Patient Intervals
+## Uncertainty and New-Patient Intervals
 
 A coefficient is an estimate from one sample, so it comes with uncertainty:
 
@@ -163,32 +163,21 @@ A coefficient is an estimate from one sample, so it comes with uncertainty:
 - A **p-value** asks: if the true coefficient were 0 and the model assumptions held, how surprising would an estimate at least this far from 0, relative to its standard error, be? It is not the probability that a hypothesis is true.
 - An **association** means two variables move together; **causation** means changing one would change the other. A coefficient from observational records describes an association, so "losing weight would lower SBP by b2" needs additional causal evidence, such as a randomized trial.
 
-After fitting, check the model's assumptions:
+A new patient gets two intervals:
 
-- A **residuals-versus-fitted plot** checks the straight-line assumption:
-    - Shapeless cloud around zero: encouraging.
-    - Curve: the straight-line form is wrong.
-    - Funnel: the spread is not constant.
-- The default standard errors and intervals assume independent errors with constant spread around the correct mean; the small-sample intervals also assume normally distributed errors. A residual plot can reveal problems but cannot prove these assumptions, especially with repeated readings from the same patient.
-- A new patient gets two intervals:
-    - **Mean-response interval**: where the _average_ SBP of all 55-year-olds with BMI 30 probably lies.
-    - **Prediction interval**: where _one_ such patient's SBP probably lies; it adds person-to-person variation, so it is always wider.
+- **Mean-response interval**: where the _average_ SBP of all 55-year-olds with BMI 30 probably lies.
+- **Prediction interval**: where _one_ such patient's SBP probably lies; it adds person-to-person variation, so it is always wider.
 
-![Two residuals-versus-fitted plots. Left: the clinic fit's residuals scatter without pattern around a dashed zero line. Right: a straight line fitted to curved data leaves a U-shaped pattern.](media/ols_residuals_vs_fitted.png)
+![At age 55 the mean-response band (blue) is far narrower than the prediction band (orange): the BMI 30 patient's 147.2 has a mean interval of 144.3 to 150.2 and a prediction interval of 131.4 to 163.0.](media/ols_intervals.png)
 
-![Anscombe's quartet: four datasets share one fitted line, y = 3.00 + 0.50x, and R² = 0.67, but only plots show that II curves, III has one point far off the line, and IV rests on a single point.](media/anscombe_quartet.png)
-
-### Reference Card: OLS Uncertainty and Diagnostics
+### Reference Card: OLS Uncertainty
 
 | Method / attribute | Purpose & arguments | Typical output |
 | :--- | :--- | :--- |
 | `results.bse` | Standard error of each coefficient. | Series indexed by term |
 | `results.conf_int(alpha=0.05)` | Lower and upper 95% bounds. | DataFrame with columns `0` and `1` |
 | `results.pvalues` | p-value for each coefficient, testing "the true coefficient is 0". | Series |
-| `results.fittedvalues` / `results.resid` | One fitted value and one residual (observed minus fitted) per row. | Series |
 | `results.get_prediction(new_rows).summary_frame(alpha=0.05)` | Intervals for new rows: `mean`, `mean_ci_lower`, `mean_ci_upper` (mean response) and `obs_ci_lower`, `obs_ci_upper` (individual prediction); `.conf_int(obs=True)` returns only the prediction bounds. | DataFrame |
-| `ax.scatter(results.fittedvalues, results.resid)`, `ax.axhline(0, color='gray', linestyle='--')` | Residuals-versus-fitted plot; the reference line sits at 0. | Axes |
-| `fig.savefig(path)`, `plt.show()`, `plt.close(fig)` | Save, display, then close; an unclosed figure stays in memory. | PNG on disk |
 
 ### Code Snippet: Uncertainty and a New-Patient Interval
 
@@ -215,11 +204,30 @@ display(results.get_prediction(new_patient).summary_frame(alpha=0.05).round(1))
 - `age` row: holding BMI fixed, each extra year is associated with about 0.66 mmHg higher fitted SBP (95% CI 0.48 to 0.84).
 - Both intervals contain the slopes the data were simulated with.
 - A p-value printed as 0.0000 is below 0.00005, not exactly 0.
-- For the new patient the mean-response interval is about 6 mmHg wide, the prediction interval about 32.
+- For the new patient the mean-response interval is about 6 mmHg wide, the prediction interval about 32: a clinic can be confident about the average 55-year-old, much less about the one in the exam room.
 
-![At age 55 the mean-response band (blue) is far narrower than the prediction band (orange): the BMI 30 patient's 147.2 has a mean interval of 144.3 to 150.2 and a prediction interval of 131.4 to 163.0.](media/ols_intervals.png)
+![xkcd 882: Significant. Test twenty jelly-bean colors at p < 0.05 and one of them will look significant by chance.](media/xkcd_882.png)
 
-![xkcd 539: Boyfriend. One clear outlier on a box plot makes a statistically significant other.](media/xkcd_539.png)
+## Checking Residuals
+
+The default standard errors and intervals assume independent errors with constant spread around the correct mean; the small-sample intervals also assume normally distributed errors. A **residuals-versus-fitted plot** checks the straight-line form and the constant spread:
+
+- Shapeless cloud around zero: encouraging.
+- Curve: the straight-line form is wrong.
+- Funnel: the spread is not constant.
+- A plot can reveal problems but cannot prove the assumptions. Repeated readings from the same patient break independence even when the cloud looks fine.
+
+![Two residuals-versus-fitted plots. Left: the clinic fit's residuals scatter without pattern around a dashed zero line. Right: a straight line fitted to curved data leaves a U-shaped pattern.](media/ols_residuals_vs_fitted.png)
+
+![Anscombe's quartet: four datasets share one fitted line, y = 3.00 + 0.50x, and R² = 0.67, but only plots show that II curves, III has one point far off the line, and IV rests on a single point.](media/anscombe_quartet.png)
+
+### Reference Card: Residual Diagnostics
+
+| Method / attribute | Purpose & arguments | Typical output |
+| :--- | :--- | :--- |
+| `results.fittedvalues` / `results.resid` | One fitted value and one residual (observed minus fitted) per row. | Series |
+| `ax.scatter(results.fittedvalues, results.resid)`, `ax.axhline(0, color='gray', linestyle='--')` | Residuals-versus-fitted plot; the reference line sits at 0. | Axes |
+| `fig.savefig(path)`, `plt.show()`, `plt.close(fig)` | Save, display, then close; an unclosed figure stays in memory. | PNG on disk |
 
 ### Code Snippet: Residuals Versus Fitted Values
 
@@ -244,11 +252,13 @@ plt.close(fig)
 | 1 | 144.5 | 145.1 | -0.6 |
 | 2 | 139.6 | 142.0 | -2.4 |
 
-![xkcd 882: Significant. Test twenty jelly-bean colors at p < 0.05 and one of them will look significant by chance.](media/xkcd_882.png)
+The plot is the left panel of the residuals figure above: no curve, no funnel.
+
+![xkcd 539: Boyfriend. One clear outlier on a box plot makes a statistically significant other.](media/xkcd_539.png)
 
 # Prediction: Features, Targets, and Honest Splits
 
-- **Prediction**: estimating an unknown outcome, such as _this_ patient's SBP at the next visit. Future readings from known patients and readings from entirely new patients are different tasks: keep whole patients out of training when evaluating the latter.
+- **Prediction**: estimating an unknown outcome, such as _this_ patient's SBP at the next visit. Predicting known patients' future readings and predicting entirely new patients are different tasks; to evaluate the second, keep each held-out patient's rows out of training.
 - A model can always describe the rows it was fitted on, so its error there says nothing about the next patient; a prediction model is judged only on rows kept out of its fitting.
 
 ## Feature Availability
@@ -272,7 +282,7 @@ Keep a candidate feature only if it is known by prediction time: `candidates['re
 
 ## Cyclic Time Features
 
-- A visit's hour is known as soon as the row exists, but as a plain number it misleads a model: 23:00 and 00:00 are an hour apart, while 23 and 0 sit at opposite ends of the range.
+- Blood pressure follows a daily rhythm, so a reading's hour is a useful feature, known as soon as the row exists. As a plain number it misleads a model: 23:00 and 00:00 are an hour apart, while 23 and 0 sit at opposite ends of the range.
 - The sine and cosine of `2 * np.pi * hour / 24` place each hour on a clock face instead, so hour 23 lands as close to hour 0 as hour 1 does.
 
 ![Hours 0, 1, 12, and 23: as plain numbers 23 and 0 sit 23 apart; on the (hour_cos, hour_sin) circle, 23, 0, and 1 are neighbors 0.26 apart and 12 sits opposite.](media/cyclic_hours.png)
@@ -284,8 +294,7 @@ Keep a candidate feature only if it is known by prediction time: `candidates['re
 | `df['timestamp'].dt.hour` | Hour of day from a datetime column; `.dt.dayofyear` for the yearly cycle in the last row. | Integer Series |
 | `np.sin(2 * np.pi * df['hour'] / 24)` | The hour's height on the clock face; `np.pi` is the constant π, and `np.sin()` works column-wise like Lecture 03's `np.sqrt()`. | Float Series, -1 to 1 |
 | `np.cos(2 * np.pi * df['hour'] / 24)` | Its side-to-side position. Pair it with the sine: either column alone gives two different hours the same value. | Float Series, -1 to 1 |
-| `2 * np.pi * df['wind_direction_deg'] / 360` | Angle for wind direction: pair its sine and cosine so 359° and 0° are neighbors. | Float Series |
-| `2 * np.pi * (df['dayofyear'] - 1) / 366` | Subtract 1 when the count starts at 1, so the first day sits at angle 0. Divide by the cycle's length: 7 for day of the week; a fixed 366 for the year is an approximation, leaving a two-step gap from December 31 to January 1 in non-leap years. | Float Series |
+| `2 * np.pi * (df['dayofyear'] - 1) / 366` | Yearly cycle: subtract 1 because `dayofyear` starts at 1, then divide by the cycle length (7 for `.dt.dayofweek`, which starts at 0). A fixed 366 leaves a small gap from December 31 to January 1 in non-leap years. | Float Series |
 
 ### Code Snippet: Hours on a Clock Face
 
@@ -315,7 +324,7 @@ To estimate performance honestly, give rows three roles:
 
 Comparing the errors on these sets shows two failure modes:
 
-- **Overfitting**: a model memorizing its training rows instead of learning patterns that carry over, like memorizing the practice exam's answers and then failing the real exam. A much lower training error than validation error can warn of it, but a changed patient mix or time period can also create a gap.
+- Overfitting: a model memorizing its training rows instead of learning patterns that carry over, like memorizing the practice exam's answers and then failing the real exam. A much lower training error than validation error can warn of it, but a changed patient mix or time period can also create a gap.
 - **Underfitting**: a model too simple to capture the pattern, so both errors stay high.
 
 ![Curves fit to 30 diabetes patients' progression against BMI and scored on 402 others in the same BMI range: degree 0 underfits (train MAE 64, validation 68), degree 1 fits (52, 53), and degree 10 overfits (45, 82).](media/overfit_polynomial.png)
@@ -336,9 +345,8 @@ Comparing the errors on these sets shows two failure modes:
 
 Disjoint target periods are only the first check:
 
-- **Prospective evaluation** (made as forecasts would be in use): every training label must already be available when the first validation prediction is made. If outcomes arrive a week later, remove training rows whose labels arrive after that cutoff; do the same before refitting for test.
+- **Prospective evaluation** (made as forecasts would be in use): every training label must already be available when the first validation prediction is made. Remove training rows whose labels arrive after that cutoff, using each label's actual arrival time when it differs from the target time; do the same before refitting for test.
 - **Retrospective comparison**: a split that ignores this delay compares historical periods; it is not evidence that the fitted model could have made those forecasts in real time.
-- If labels arrive later than their target time, compare their actual availability times instead.
 
 ![210 weekly home readings from 30 patients by target time: 91 training rows have labels known by the first validation prediction (Feb 2 01:58), 29 arrive later and are not fitted, 60 rows validate, and 30 test.](media/target_time_split.png)
 
@@ -346,7 +354,7 @@ Disjoint target periods are only the first check:
 
 - `df['visit_date'] + pd.Timedelta(days=7)`: Target time for a next-week target.
 - `df[df['target_date'] < cutoff]`, `df[(df['target_date'] >= start) & (df['target_date'] < end)]`: Rows whose target falls before a cutoff, or inside one period.
-- `df['target_utc'] < pd.Timestamp('2024-01-01', tz='America/Chicago')`: With aware UTC target times, write a local-midnight boundary as an aware timestamp in the local zone; pandas compares the instants, so this boundary is 06:00 UTC and nothing needs converting.
+- `df['target_utc'] < pd.Timestamp('2024-01-01', tz='America/Chicago')`: Compare aware UTC target times with a local-midnight boundary written in the local zone; pandas compares instants (06:00 UTC here), so nothing needs converting.
 - `len(part)`, `part['target_date'].min()`, `part['target_date'].max()`: Each partition's size and target-time range; check before fitting.
 - `fit_rows = train[train['target_date'] <= valid['visit_date'].min()]`: Keep only training labels available by the earliest validation prediction; assumes each label arrives at its target time.
 - `assert fit_rows['target_date'].max() <= valid['visit_date'].min()`: Check that fitting does not read labels from after the first forecast cutoff.
@@ -404,7 +412,7 @@ Create estimator and choose settings
 | `model.score(X, y)` | Return the estimator's default score (R² for regressors; for classifiers, accuracy, the fraction predicted correctly; both defined below). | Float |
 | `cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=3), scoring=...)` | Cross-validate rows sorted by time (the splitter uses row position, not dates; `df.sort_values('target_date')` first): each fold fits a fresh copy on earlier rows and scores the next block (`from sklearn.model_selection import cross_val_score, TimeSeriesSplit`). | One score per fold (array) |
 
-## Linear Regression for Prediction
+## Linear Models for Prediction
 
 `LinearRegression` fits the same least-squares line as `statsmodels` without standard errors, p-values, or diagnostics, but it plugs into pipelines beside dozens of other model families.
 
@@ -579,12 +587,18 @@ for name, predicted in [('flagged', flagged), ('always_no', always_no)]:
     precision = precision_score(actual, predicted, zero_division=0)
     recall = recall_score(actual, predicted)
     print(f'{name}: accuracy={accuracy:.3f} precision={precision:.3f} recall={recall:.3f}')
+
+print(confusion_matrix(actual, flagged))
 ```
 
 ```text
 flagged: accuracy=0.625 precision=0.500 recall=0.333
 always_no: accuracy=0.625 precision=0.000 recall=0.000
+[[4 1]
+ [2 1]]
 ```
+
+The matrix reads `[[TN, FP], [FN, TP]]`: one readmission caught, two missed, one false alarm.
 
 ![xkcd 534: Genetic Algorithms. A score can improve while an unmeasured consequence gets much worse; include the costs that matter.](media/xkcd_534.png)
 
@@ -669,7 +683,7 @@ _"Did you ever think that maybe there's more to life than being really, really, 
 
 ![Decision tree: one model, one prediction. Random forest: trees trained in parallel, predictions averaged. XGBoost: trees trained in sequence, each fit to the previous error.](media/trees.webp)
 
-When `max_features` selects fewer than all columns, the forest considers a fresh random subset at each split; the diagram does not mean each tree keeps one fixed subset. XGBoost's feature sampling is optional.
+The figure simplifies one detail: with `max_features` below the column count, a forest draws a fresh random subset of columns at every split, not one fixed subset per tree.
 
 ### Reference Card: Random Forests
 
@@ -688,22 +702,26 @@ When `max_features` selects fewer than all columns, the forest considers a fresh
 
 ### Code Snippet: Random-Forest Classification
 
-`X` holds 200 rows of four random feature columns, and the label `y` is 1 when the first two columns sum to more than 0, so only they matter.
+`X_train` and `X_valid` hold 30 cell-nucleus measurements per breast biopsy (scikit-learn's breast cancer data), split with `stratify=y` into 341 training and 114 validation rows, 37% malignant in each; `y` is 1 for malignant. The test rows stay sealed.
 
 ```python
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y)
-
-model = RandomForestClassifier(n_estimators=100, random_state=42)
+model = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
 model.fit(X_train, y_train)
-print(f"Feature importance: {model.feature_importances_.round(3)}")
+print(round(accuracy_score(y_valid, model.predict(X_valid)), 4))  # 0.9737: 111 of 114
+
+importance = pd.Series(model.feature_importances_, index=X_train.columns, name='importance')
+display(importance.sort_values(ascending=False).head(5).round(3))
 ```
 
-```text
-Feature importance: [0.411 0.451 0.072 0.066]
-```
+|  | importance |
+| --- | --- |
+| worst concave points | 0.140 |
+| worst area | 0.130 |
+| mean concave points | 0.105 |
+| worst perimeter | 0.099 |
+| mean concavity | 0.068 |
 
-The forest leans on the two columns that built the label.
+The forest leans on the size and shape of the most irregular nuclei. `worst area` and `worst perimeter` are near copies of each other, so they split the credit one of them would get alone.
 
 # The Secret Weapon: Gradient Boosting
 
@@ -723,7 +741,7 @@ _Gradient boosting is the Magnum of machine learning: a signature look, built on
 | 1 | The ensemble so far predicts | [5.0, 3.0, 7.0] |
 | 2 | Compute the next-step targets | Residuals: [0.5, 0.2, -0.2] |
 | 3 | A new tree predicts those targets | Fitted updates: [0.4, 0.3, -0.1] |
-| 4 | Add the scaled update to the ensemble | With learning rate 1: [5.4, 3.3, 6.9] |
+| 4 | Add the scaled update to the ensemble | With learning rate 0.1: [5.04, 3.03, 6.99] |
 | 5 | Recompute targets and repeat | For N rounds, or until validation stops improving |
 
 ![Depth-1 boosted trees with learning rate 0.1 move from the mean, 152.1, toward the BMI trend in small steps: training MAE is 64.1 after 1 tree, 56.5 after 10, and 50.1 after 100.](media/boosting_stages.png)
@@ -761,7 +779,7 @@ These are toy starting points; choose settings on validation rows for the data a
 
 ### Code Snippet: XGBoost with Early Stopping
 
-`X_train`/`X_valid` hold 30 measurements per breast biopsy, with 114 validation rows; the test rows stay sealed.
+The same biopsy split as the forest: 341 training and 114 validation rows, test rows sealed.
 
 ```python
 model = xgb.XGBClassifier(n_estimators=500, max_depth=3, learning_rate=0.1,
@@ -778,7 +796,7 @@ predicted = model.predict(X_valid)  # one 0/1 label per validation row
 
 - **Neural network**: a stack of **layers** of simple units.
 - **Neuron**: takes a weighted sum of its inputs plus an intercept, a tiny linear regression, and bends the result with an **activation function**.
-- "Deep" means several layers, so later layers combine patterns that earlier ones found, which lets a network learn its own features from images, text, or audio.
+- "Deep" means several layers, so later layers combine patterns that earlier ones found. This **representation learning** lets a network learn its own features from images, text, or audio.
 
 ## How a Network Learns
 
@@ -798,7 +816,7 @@ Output Layer (1 neuron, Sigmoid)
 
 - Training repeats one loop: predict, measure the loss (`binary_crossentropy` for yes/no targets), and let the **optimizer** (such as Adam) nudge every weight to reduce it.
 - **Epoch**: one pass through the training rows, processed in **batches** of, say, 32.
-- **Representation learning** (learning its own features) pays off where useful features are hard to write by hand. On a clinic table of a few hundred rows, a linear model or boosted trees usually match a network for far less effort, and a network overfits easily, so watch the loss curves.
+- Representation learning pays off where useful features are hard to write by hand. On a clinic table of a few hundred rows, a linear model or boosted trees usually match a network for far less effort, and a network overfits easily, so watch the loss curves.
 
 ![A 64-32 network's training loss keeps falling, while its validation loss bottoms out at 0.0726 at epoch 20 and creeps up to 0.0903 by epoch 50.](media/keras_loss_curves.png)
 
@@ -849,8 +867,8 @@ print(len(history.history['val_loss']), probability.shape)  # 10 (114,)
 
 ## Comparing Model Families
 
-- Start simple: a well-tuned linear regression often beats a poorly tuned neural network.
-- Dataset, implementation, hardware, and budget rule out universal rankings, so shortlist candidates and measure them in the intended workflow:
+- A well-tuned linear regression often beats a poorly tuned neural network.
+- Dataset, implementation, hardware, and budget rule out universal rankings, so the same validation rows decide:
 
 ![Validation accuracy on the same 114 biopsies: every model beats the majority-class baseline (0.6228, 71 of 114), and logistic regression ties the forest and two networks at 0.9737 (111 of 114).](media/model_comparison.png)
 

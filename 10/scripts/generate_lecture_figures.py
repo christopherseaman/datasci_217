@@ -1,12 +1,12 @@
 """Render Lecture 10's generated figures into ../media/.
 
 Every figure is computed from the lecture's snippet data (the 60-patient `clinic`
-table) or from the demos' data and code, and the numbers its caption states are
-asserted against the values the lecture and demos print.
+table), from scikit-learn's diabetes and breast-cancer datasets, or from small simulated
+home readings. None uses the demos' data; the numbers each caption states are asserted below.
 
-Run from the repository root. TensorFlow is needed for the four Demo 3 figures
+Run from the repository root. TensorFlow is needed for the four biopsy-model figures
 (xgboost_early_stopping, keras_loss_curves, keras_dropout_curves, model_comparison),
-since demo3() reruns the demo in order:
+since biopsy_models() refits every candidate in order:
     uv run --project 10/demo python 10/scripts/generate_lecture_figures.py
 Pass figure function names to render only those, for example `intervals decision_tree`.
 """
@@ -89,8 +89,8 @@ def diabetes():
 
 
 @cache
-def demo1_readings():
-    """Demo 1, Part 8: 210 weekly home readings from 30 patients."""
+def home_readings():
+    """210 simulated weekly home readings from 30 patients, for the target-time split figure."""
     rng = np.random.default_rng(217)
     mondays = pd.date_range("2026-01-05", periods=8, freq="W-MON")
     routine_hours = [7, 8, 9, 19, 21, 23, 0]
@@ -119,8 +119,8 @@ def demo1_readings():
 
 
 @cache
-def demo2():
-    """Demo 2: the diabetes split, the four candidates, and the frozen Lasso's test score."""
+def diabetes_split():
+    """The diabetes split, four candidates, and the frozen Lasso's test score."""
     frame = diabetes()
     X, y = frame[DIABETES_FEATURES], frame["progression"]
     X_train_valid, X_test, y_train_valid, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -146,8 +146,8 @@ def demo2():
 
 
 @cache
-def demo3():
-    """Demo 3: every candidate in the demo's order, so TensorFlow's seeded run repeats."""
+def biopsy_models():
+    """Every biopsy candidate in a fixed order, so TensorFlow's seeded run repeats."""
     cancer = load_breast_cancer(as_frame=True)
     X = cancer.frame[cancer.feature_names.tolist()].values
     y = (cancer.target == 0).astype(int).values
@@ -453,8 +453,8 @@ def overfit_polynomial():
 
 
 def target_time_split():
-    """Demo 1's 210 readings by target time, colored by role, with the label-availability cutoff."""
-    readings = demo1_readings()
+    """The 210 simulated readings by target time, colored by role, with the label-availability cutoff."""
+    readings = home_readings()
     train = readings[readings["target_time"] < "2026-02-09"]
     valid = readings[(readings["target_time"] >= "2026-02-09") & (readings["target_time"] < "2026-02-23")]
     test = readings[readings["target_time"] >= "2026-02-23"]
@@ -485,8 +485,8 @@ def target_time_split():
 # ------------------------------------------------------------- scikit-learn
 
 def ridge_lasso_paths():
-    """Coefficient paths on Demo 2's 264 scaled training rows; Lasso at alpha 2 keeps 7 of 10."""
-    d = demo2()
+    """Coefficient paths on the 264 scaled diabetes training rows; Lasso at alpha 2 keeps 7 of 10."""
+    d = diabetes_split()
     X = StandardScaler().fit_transform(d["X_train"])
     y = d["y_train"]
     alphas = np.logspace(-2, 3, 120)
@@ -543,8 +543,8 @@ def logistic_threshold():
 
 
 def validation_diagnostics():
-    """Demo 2, Part 8: the Lasso's 89 validation predictions against actual, and their residuals."""
-    d = demo2()
+    """The Lasso's 89 validation predictions against actual, and their residuals."""
+    d = diabetes_split()
     predicted = d["models"]["lasso (alpha=2)"].predict(d["X_valid"])
     residual = d["y_valid"] - predicted
     assert len(residual) == 89 and round(residual.mean(), 1) == 14.2
@@ -566,8 +566,8 @@ def validation_diagnostics():
 
 
 def confusion_matrix_figure():
-    """Demo 2, Part 10: the Lasso flag at progression above 200 on 89 validation patients."""
-    d = demo2()
+    """The Lasso flag at progression above 200 on 89 validation patients."""
+    d = diabetes_split()
     actual = (d["y_valid"] > 200).astype(int)
     flagged = (d["models"]["lasso (alpha=2)"].predict(d["X_valid"]) > 200).astype(int)
     (tn, fp), (fn, tp) = confusion_matrix(actual, flagged)
@@ -596,8 +596,8 @@ def confusion_matrix_figure():
 
 
 def permutation_importance_chart():
-    """Demo 2, Part 9: increase in validation MAE when each column is shuffled."""
-    d = demo2()
+    """Increase in validation MAE when each column is shuffled."""
+    d = diabetes_split()
     result = permutation_importance(d["models"]["lasso (alpha=2)"], d["X_valid"], d["y_valid"],
                                     scoring="neg_mean_absolute_error", n_repeats=10, random_state=42)
     table = pd.DataFrame({"mean": result.importances_mean, "std": result.importances_std},
@@ -620,8 +620,8 @@ def permutation_importance_chart():
 
 
 def freeze_test_once():
-    """Demo 2: four validation MAEs that pick the Lasso, then its single test MAE."""
-    d = demo2()
+    """Four validation MAEs that pick the Lasso, then its single test MAE."""
+    d = diabetes_split()
     rows = list(d["valid_mae"].items())
     fig, ax = plt.subplots(figsize=(8, 3.6))
     labels = [name for name, _ in rows] + ["frozen Lasso, test rows"]
@@ -689,8 +689,8 @@ def boosting_stages():
 
 
 def xgboost_early_stopping():
-    """Demo 3, Part 6: validation log loss per round; best round 54, stopped 10 rounds later."""
-    d = demo3()
+    """Validation log loss per round; best round 54, stopped 10 rounds later."""
+    d = biopsy_models()
     curve, best = d["xgb_curve"], d["best_iteration"]
     assert len(curve) == best + 11 and round(curve[best], 4) == 0.1168
     fig, ax = plt.subplots(figsize=(7.5, 4))
@@ -709,8 +709,8 @@ def xgboost_early_stopping():
 # ----------------------------------------------------------- deep learning
 
 def keras_loss_curves():
-    """Demo 3, Part 8: the 64-32 network's training and validation loss over 50 epochs."""
-    history = demo3()["plain"]
+    """The 64-32 network's training and validation loss over 50 epochs."""
+    history = biopsy_models()["plain"]
     best = history["val_loss"].idxmin()
     assert best == 20 and round(history["val_loss"][20], 4) == 0.0726 and round(history["val_loss"][50], 4) == 0.0903
     fig, ax = plt.subplots(figsize=(7.5, 4))
@@ -728,8 +728,8 @@ def keras_loss_curves():
 
 
 def keras_dropout_curves():
-    """Demo 3, Part 9: plain 64-32 against 64-32 with dropout and L2, same validation accuracy."""
-    d = demo3()
+    """Plain 64-32 against 64-32 with dropout and L2, same validation accuracy."""
+    d = biopsy_models()
     accuracy = d["accuracy"]
     assert round(accuracy["Neural net 64-32"], 4) == round(accuracy["Neural net 64-32 + dropout/L2"], 4) == 0.9737
     fig, axes = plt.subplots(1, 2, figsize=(11, 4))
@@ -745,8 +745,8 @@ def keras_dropout_curves():
 
 
 def model_comparison():
-    """Demo 3, Part 10: validation accuracy for every candidate on the same 114 biopsies."""
-    d = demo3()
+    """Validation accuracy for every candidate on the same 114 biopsies."""
+    d = biopsy_models()
     names = list(d["accuracy"])
     fig, ax = plt.subplots(figsize=(8.5, 4.2))
     for i, name in enumerate(names):

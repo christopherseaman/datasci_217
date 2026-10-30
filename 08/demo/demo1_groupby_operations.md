@@ -16,402 +16,204 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 1: GroupBy Summaries and Pivot Tables
+# Demo 1: The 2025 Clinic Operations Report
 
-A health system's visit log has one row per clinic visit: 100,000 synthetic visits across five clinics and six departments.
+The operations director wants the year-end report for a health system's eight clinics: how busy each clinic was, how long patients waited, and where the waits were worst. The source is the 2025 visit extract, 1.2 million synthetic visits with one row per visit.
 
-- **Questions answered:** how long each department's patients wait, how many patients each sees, and how that differs by clinic.
-- **Tools:** `groupby`, named aggregation, two-key groups, pivot tables with totals, and cross-tabulations.
-
-Run the cells from top to bottom; each **Expect** line says what the output should show.
+Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5
+# Installs the course's pandas and pyarrow (for Parquet) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
 ```
 
-## Part 1: One Row per Group
-
-The live core runs through Part 4. Stop at **Independent practice after class**; the remaining variations use the core results and can be completed later.
-
-The visit log has one row per visit. Every question in this part has an answer with one row per department, so each answer is a split (by `department`), an apply (mean, count, ...), and a combine.
-
-### Build the Visit Log
-
-The next cell generates the log. You do not need to follow every line: it draws a fixed set of patients, gives each visit a clinic, a department, a wait, and a satisfaction score, and leaves some surveys blank. The seed makes every run produce the same table.
+This supplied cell downloads `generate_data.py` when it is missing, runs `generate_data.build()` to write the tables into `data/` if they are not there yet (about 30 seconds), then loads the visit extract.
 
 ```python
-import numpy as np
+from pathlib import Path
+from urllib.request import urlretrieve
+
 import pandas as pd
-from IPython.display import Markdown
 
-rng = np.random.default_rng(42)
-n_visits = 100_000
-n_patients = 30_000
+REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/demo"
+if not Path("generate_data.py").exists():
+    urlretrieve(f"{REPO_RAW}/generate_data.py", "generate_data.py")
+if not all(Path(f"data/{name}.parquet").exists() for name in ["clinics", "visits", "labs"]):
+    import generate_data
+    generate_data.build()
 
-# One age per patient; about 15% of patients are children
-patient_age = np.where(
-    rng.random(n_patients) < 0.15,
-    rng.integers(0, 18, n_patients),
-    rng.integers(18, 96, n_patients),
-)
-
-# Each visit belongs to one patient; patients visit about three times each
-who = rng.integers(0, n_patients, n_visits)
-visits = pd.DataFrame({
-    "visit_id": [f"V{i:06d}" for i in range(1, n_visits + 1)],
-    "patient_id": [f"P{i:05d}" for i in who],
-    "age": patient_age[who],   # each visit gets its patient's age (fancy indexing, Lecture 03)
-    "clinic": rng.choice(["North", "South", "East", "West", "Central"], n_visits),
-    "visit_type": rng.choice(["New", "Follow-up"], n_visits, p=[0.3, 0.7]),
-})
-
-# Children go to Pediatrics; adults to one of five adult departments
-adult_departments = ["Family Medicine", "Cardiology", "Orthopedics", "Endocrinology", "Dermatology"]
-visits["department"] = np.where(
-    visits["age"] < 18,
-    "Pediatrics",
-    rng.choice(adult_departments, n_visits, p=[0.40, 0.20, 0.17, 0.13, 0.10]),
-)
-
-# Typical wait (minutes) and its spread differ by department; walk-in Family Medicine varies most
-typical_wait = {"Orthopedics": 38, "Cardiology": 30, "Endocrinology": 26,
-                "Family Medicine": 22, "Dermatology": 18, "Pediatrics": 15}
-wait_spread = {"Orthopedics": 10, "Cardiology": 9, "Endocrinology": 8,
-               "Family Medicine": 14, "Dermatology": 6, "Pediatrics": 5}
-# Waits are skewed right (a few very long, none below 1 minute): a gamma draw with that mean and spread
-typical = visits["department"].map(typical_wait)
-spread = visits["department"].map(wait_spread)
-visits["wait_min"] = rng.gamma(shape=(typical / spread) ** 2, scale=spread**2 / typical).round()
-visits["wait_min"] = visits["wait_min"].clip(lower=1).astype(int)
-
-# Satisfaction survey, 1 (poor) to 5 (excellent): longer waits, lower scores
-visits["satisfaction"] = (5.5 - visits["wait_min"] / 15 + rng.normal(0, 0.8, n_visits)).round()
-visits["satisfaction"] = visits["satisfaction"].clip(lower=1, upper=5)
-# About 3% of surveys were never returned
-visits.loc[rng.random(n_visits) < 0.03, "satisfaction"] = np.nan
-
+visits = pd.read_parquet("data/visits.parquet")
 print(visits.shape)
-print(f"Distinct patients: {visits['patient_id'].nunique():,}")
-print(f"Visits with no satisfaction survey: {visits['satisfaction'].isna().sum():,}")
+```
+
+Expect `(1200000, 10)`.
+
+## Core walkthrough
+
+### 1. Name the grain
+
+```python
 display(visits.head())
+print(f"Distinct patients: {visits['patient_id'].nunique():,}")
+print("Months:", visits["visit_month"].min(), "to", visits["visit_month"].max())
+print(f"No clinic recorded: {visits['clinic'].isna().sum():,}")
+print(f"No wait recorded:   {visits['wait_min'].isna().sum():,}")
+print(f"Surveys returned:   {visits['satisfaction'].notna().sum():,}")
 ```
 
-**Expect:** `(100000, 8)`, 28,929 distinct patients, and 2,982 visits with no survey, then five visits with eight columns: IDs, age, clinic, visit type, department, wait, and satisfaction (`NaN` where no survey came back). The grain is one row per visit, so a patient who came three times has three rows.
+Expect five visits with ten columns, then 193,873 distinct patients, months `2025-01` to `2025-12`, 2,862 visits with no clinic, 28,973 with no wait (the check-in kiosk missed them), and 431,984 returned satisfaction surveys (1 to 5). The grain is one row per visit, so a patient seen ten times has ten rows.
 
-### Basic Aggregation
+### 2. One row per clinic: the scorecard
 
-```python
-# One mean per department: split by department, average wait_min, combine
-dept_wait = visits.groupby("department")["wait_min"].mean()
-display(dept_wait.round(1))
-```
-
-**Expect:** six rows in alphabetical order. Orthopedics has the longest mean wait (38.0 minutes) and Pediatrics the shortest (15.0).
-
-### Named Aggregation: One Flat Row per Department
-
-Each keyword below becomes an output column, and its value is a `(source column, function)` pair.
+Each keyword names an output column; its value is a `(source column, function)` pair.
 
 ```python
-dept_report = visits.groupby("department", as_index=False).agg(
+scorecard = visits.groupby("clinic", as_index=False).agg(
     visits=("visit_id", "size"),
     patients=("patient_id", "nunique"),
-    rated=("satisfaction", "count"),
+    surveys=("satisfaction", "count"),
     mean_wait=("wait_min", "mean"),
     median_wait=("wait_min", "median"),
-    longest_wait=("wait_min", "max"),
 )
-display(dept_report.round(1))
-
-# Checkpoint: name the grain before and after
-print(f"\nInput grain:  one row per visit      -> {len(visits):,} rows")
-print(f"Output grain: one row per department -> {len(dept_report)} rows")
-print(f"Visits accounted for: {dept_report['visits'].sum():,}")
+scorecard["visits_per_patient"] = scorecard["visits"] / scorecard["patients"]
+scorecard["survey_rate"] = scorecard["surveys"] / scorecard["visits"]
+display(scorecard.sort_values("visits", ascending=False).round(2))
 ```
 
-**Expect:** six rows with flat column names and `visits` adding up to 100,000. `patients` is smaller than `visits` in every row because patients come back: Pediatrics saw 4,285 children across 14,672 visits. `rated` is smaller than `visits` too, because `count` skips the blank surveys while `size` counts every row.
+Expect eight rows, busiest first. Mission is the busiest clinic (260,579 visits from 62,546 patients) and the slowest (mean wait 24.05 minutes, median 20.0). Ridgecrest, the rural clinic, is the smallest (36,367 visits) and the fastest (median 11.0). Every clinic's mean is above its median, because a few very long waits pull the mean up. Parkside has the fewest visits per patient (2.65) because it opened in July. Survey rates run from 0.32 at Bayview and 0.33 at Excelsior, in the most deprived neighborhoods, to 0.41 at Marina, in the least: the surveys underrepresent the patients those two clinics serve.
+
+Before handing this over, check that the scorecard accounts for every visit.
 
 ```python
-# Checkpoint: the size/count gap is exactly the surveys that never came back
-gap = dept_report["visits"].sum() - dept_report["rated"].sum()
-print(f"Visits without a satisfaction score: {gap:,}")
-print(f"Blank satisfaction values:           {visits['satisfaction'].isna().sum():,}")
-
-# Checkpoint: nunique does not add up across groups
-print(f"\nSum of per-department patients: {dept_report['patients'].sum():,}")
-print(f"Distinct patients overall:      {visits['patient_id'].nunique():,}")
+print(f"Visits in the scorecard: {scorecard['visits'].sum():,}")
+print(f"Rows in the extract:     {len(visits):,}")
+print(f"Gap:                     {len(visits) - scorecard['visits'].sum():,}")
+print(f"Sum of clinic patients:  {scorecard['patients'].sum():,}")
+print(f"Distinct patients:       {visits['patient_id'].nunique():,}")
 ```
 
-**Expect:** `2,982` twice: the whole size/count gap is the unreturned surveys. The per-department patient counts add up to 63,091, more than twice the 28,929 distinct patients, because an adult seen in both Cardiology and Endocrinology counts once in each. Row counts add up across groups; distinct counts do not.
+Expect a gap of 2,862: exactly the visits with no clinic recorded, which `groupby` dropped without a warning. Report the gap beside the table. The clinic patient counts add up to 304,914, more than the 193,873 distinct patients, because a patient seen at two clinics counts once at each: visit counts add up across groups, distinct counts do not.
 
-## Part 2: Grouping by Two Keys
+### 3. Where are waits worst? Department by clinic
 
-Two keys means one group per observed combination. The result carries a MultiIndex, one level per key; `.unstack()` moves the inner level into columns so the same numbers read as a grid.
-
-### Summarize by Department and Clinic
+One group per observed (department, clinic) pair; `.unstack()` moves the clinics into columns.
 
 ```python
-by_dept_clinic = visits.groupby(["department", "clinic"]).agg({
-    "wait_min": ["mean", "count"],
-    "satisfaction": "mean",
-})
-print(f"Groups: {len(by_dept_clinic)}")
-by_dept_clinic.head(10).round(1)
+wait_grid = visits.groupby(["department", "clinic"])["wait_min"].median().unstack()
+display(wait_grid)
 ```
 
-**Expect:** `Groups: 30` (six departments × five clinics, all observed), then the first 10 rows of a two-level index: Cardiology's five clinics, then Dermatology's. Cardiology waits about 30 minutes at every clinic.
+Expect a 7 by 8 grid of median waits. Orthopedics is the slowest department at every clinic that runs it (21 to 37 minutes), and Bayview's Orthopedics median, 37.0, is the highest cell in the table. Mission has the longest median in every other department, 2 to 6 minutes above Sunset. The `NaN` cells are departments a clinic does not run, such as Orthopedics at Marina: no visits, so no median.
+
+Bayview stands out, so look at its Orthopedics waits month by month.
 
 ```python
-# The same means as a grid: one row per department, one column per clinic
-wait_grid = visits.groupby(["department", "clinic"])["wait_min"].mean().unstack()
-wait_grid.round(1)
+bayview_ortho = visits[(visits["clinic"] == "Bayview") & (visits["department"] == "Orthopedics")]
+display(bayview_ortho.groupby("visit_month")["wait_min"].agg(["size", "median"]))
 ```
 
-**Expect:** a 6 × 5 grid with clinics in alphabetical order (Central, East, North, South, West). Each row is nearly flat: clinic was assigned at random, so the department, not the clinic, sets the wait.
+Expect 1,722 to 2,197 visits a month throughout, with a median of 30 to 34 minutes from January to August, then 56 to 59 from September on. Volume stayed level while the wait nearly doubled (Bayview lost an orthopedic surgeon in September). The yearly cell of 37.0 hid that jump.
 
-## Part 3: Pivot Tables
+### 4. The same grid as a pivot table, and visit counts with totals
 
-A pivot table is the two-key grouping from Part 2 in one call: `index` picks the row key, `columns` the column key, and `aggfunc` the summary in each cell.
-
-### The Pivot Table and Its GroupBy Twin
+`pivot_table` builds the grid in one call.
 
 ```python
-wait_pivot = pd.pivot_table(
-    visits, values="wait_min", index="department", columns="clinic", aggfunc="mean",
-)
-display(wait_pivot.round(1))
-print("\nSame table as groupby(...).mean().unstack()?", wait_pivot.equals(wait_grid))
-
-# sort=False keeps whichever key turned up first in the rows
-unsorted = pd.pivot_table(
-    visits, values="wait_min", index="department", columns="clinic", aggfunc="mean",
-    sort=False,
-)
-print("\nRow order with sort=True: ", list(wait_pivot.index))
-print("Row order with sort=False:", list(unsorted.index))
+median_wait = pd.pivot_table(visits, values="wait_min", index="department",
+                             columns="clinic", aggfunc="median")
+print("Same as the groupby grid?", median_wait.equals(wait_grid))
 ```
 
-**Expect:** the same 6 × 5 grid as `wait_grid`, then `True`. `sort=True` lists departments alphabetically; `sort=False` lists them in the order each first appears in the rows: Family Medicine, Dermatology, Pediatrics, Orthopedics, Cardiology, Endocrinology. Pass `sort=` when a reader will compare your table with another one.
+Expect `True`.
 
-### Totals with `margins`
+The director also wants visit counts by department and clinic, with totals. Here an absent department really has zero visits, so `fill_value=0` is correct.
 
 ```python
-# Total patient-minutes spent waiting, with a Total row and column
-wait_totals = pd.pivot_table(
-    visits, values="wait_min", index="department", columns="clinic",
-    aggfunc="sum", margins=True, margins_name="Total",
-)
-display(wait_totals)
-
-# Checkpoint: the corner cell is every minute of waiting in the log
-print(f"\nCorner cell:     {wait_totals.loc['Total', 'Total']:,.0f}")
-print(f"Sum of wait_min: {visits['wait_min'].sum():,.0f}")
+volume = pd.pivot_table(visits, values="visit_id", index="department", columns="clinic",
+                        aggfunc="count", fill_value=0, margins=True, margins_name="Total")
+display(volume)
+print(f"Corner cell: {volume.loc['Total', 'Total']:,}")
 ```
 
-**Expect:** a `Total` row and column, and `2,476,462` on both checkpoint lines. Totals come from the raw rows, not from adding up rounded cells.
+Expect seven department rows plus `Total`, eight clinic columns plus `Total`, and `0` where a clinic does not run a department (Dermatology and Endocrinology at Parkside, four specialties at Ridgecrest). Ridgecrest's Cardiology count is 180, from its monthly outreach clinic. The corner cell is 1,197,138, the scorecard's total.
 
-## Part 4: Cross-Tabulations
+### 5. Volume by month with `crosstab`
 
-`pd.crosstab()` is the counting special case: hand it two columns and it reports how many rows fall in each combination.
-
-### Count Every Combination
+`crosstab` counts rows for each pair of values directly.
 
 ```python
-visit_counts = pd.crosstab(visits["department"], visits["clinic"], margins=True)
-display(visit_counts)
-print("\nGrand total:", visit_counts.loc["All", "All"])
+by_month = pd.crosstab(visits["visit_month"], visits["clinic"], margins=True, margins_name="Total")
+display(by_month)
 ```
 
-**Expect:** six department rows plus an `All` row, five clinic columns plus an `All` column; the grand total is `100000`. An absent combination would show `0` here, not `NaN`: crosstab counts rows, and no rows is a count of zero.
+Expect 12 month rows plus `Total`. Parkside shows `0` through June, then 5,575 in July: it opened on July 7. In the same month Sunset falls from 21,075 to 16,386 visits, because Parkside's patients used to go to Sunset. December (114,171) and January (111,492) are the busiest months, the winter respiratory season. A crosstab cell with no rows is a real count of 0.
 
+## Independent practice
 
-## Independent practice after class
+Run the core walkthrough first.
 
-Run the core first. These variations retain the same visit log and summaries.
+### 6. What a margin averages
 
-### Several Summaries per Column
+In a table of means, the `Total` column is the mean of all the department's visits, not the average of its cells.
 
 ```python
-# Several summaries per column: a dictionary gives two-level column labels
-dept_stats = visits.groupby("department").agg({
-    "wait_min": ["mean", "median", "std", "min", "max"],
-    "age": ["mean", "max"],
-    "satisfaction": "mean",
-})
-dept_stats.round(1)
+mean_wait = pd.pivot_table(visits, values="wait_min", index="department", columns="clinic",
+                           aggfunc="mean", margins=True, margins_name="Total")
+ortho = mean_wait.loc["Orthopedics"]
+print("Total column:          ", round(ortho["Total"], 2))
+print("Average of clinic cells:", round(ortho.drop("Total").mean(), 2))
 ```
 
-**Expect:** six rows in alphabetical order. Pediatrics' mean age is 8.5 and its oldest patient is 17, because only children go there. Satisfaction runs opposite to wait: 4.4 in Pediatrics, 3.0 in Orthopedics. The columns have two levels (`wait_min` over `mean`, `median`, ...) because `.agg()` received a dictionary.
+Expect two different numbers, 36.27 and 34.44. Mission, slow and busy, has the most Orthopedics visits, so it counts for more in the `Total`. The empty Marina and Ridgecrest cells are `NaN`, and `.mean()` skips them.
 
+### 7. A median is only as good as the count behind it
 
-### Plot Means and Distributions
+```python
+wait_stats = pd.pivot_table(visits, values="wait_min", index="department", columns="clinic",
+                            aggfunc=["count", "median"])
+display(wait_stats["count"])
+display(wait_stats["median"])
+```
+
+Expect two 7 by 8 tables. Most cells rest on thousands of waits, but Ridgecrest's Cardiology median (14.0) rests on 178, because 2 of its 180 visits have no recorded wait. The counts print as `178.0` because the absent cells are `NaN`, which forces the column to floats.
+
+### 8. New patients wait longer
+
+```python
+by_type = visits.groupby(["clinic", "visit_type"])["wait_min"].mean().unstack()
+by_type["extra_for_new"] = by_type["New"] - by_type["Follow-up"]
+display(by_type.round(1))
+
+long_again = by_type[["Follow-up", "New"]].stack()
+print("Rows after stack():", len(long_again))
+```
+
+Expect eight clinic rows. New patients wait about 3 minutes longer at every clinic (2.5 to 4.0). `stack()` turns the two columns back into an index level: 16 rows, one per clinic and visit type.
+
+### 9. Draw the median-wait grid as a heatmap
 
 ```python
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Two views of the same groups (Lecture 07): the means, and the spread behind them
-fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-
-dept_wait.sort_values().plot(kind="bar", ax=axes[0], color="steelblue")
-axes[0].set_title("Mean wait by department")
-axes[0].set_ylabel("Mean wait (minutes)")
-axes[0].set_xlabel("")
-axes[0].tick_params(axis="x", rotation=45)
-
-sns.boxplot(data=visits, x="department", y="wait_min", order=dept_wait.sort_values().index, ax=axes[1])
-axes[1].set_title("Wait distribution by department")
-axes[1].set_ylabel("Wait (minutes)")
-axes[1].set_xlabel("")
-axes[1].tick_params(axis="x", rotation=45)
-
-plt.tight_layout()
+fig, ax = plt.subplots(figsize=(10, 4.5))
+sns.heatmap(median_wait, annot=True, fmt=".0f", cmap="YlOrRd", ax=ax)
+ax.set(title="Median wait (minutes) by department and clinic, 2025", xlabel="Clinic", ylabel="")
 plt.show()
 ```
 
-**Expect:** two panels. The bars climb from Pediatrics (shortest mean wait) to Orthopedics (longest). In the box plot, Family Medicine's box and whiskers are the widest and its outliers reach past two hours: its mean is middling, but its waits are the least predictable.
+Expect the Orthopedics row darkest, Bayview's Orthopedics cell the darkest of all, the Mission column a shade darker than its neighbors, and blank cells where a clinic does not run a department.
 
-
-### A Small Table You Can Read Row by Row
-
-The 100,000-row result is too tall to check by eye. Two days of visit counts from two clinics make the same structure easy to follow.
+### 10. Patients, not visits, per department
 
 ```python
-daily = pd.DataFrame({
-    "day": ["Mon", "Mon", "Mon", "Mon", "Tue", "Tue", "Tue", "Tue"],
-    "clinic": ["North", "North", "South", "South", "North", "North", "South", "South"],
-    "department": ["Cardiology", "Pediatrics", "Cardiology", "Pediatrics",
-                   "Cardiology", "Pediatrics", "Cardiology", "Dermatology"],
-    "visits": [42, 35, 38, 51, 40, 30, 36, 18],
-    "no_shows": [3, 5, 2, 6, 4, 2, 1, 2],
-})
-display(daily)
+patients = pd.pivot_table(visits, values="patient_id", index="department", columns="clinic",
+                          aggfunc="nunique", fill_value=0)
+display(patients)
 
-# Select the numeric columns first: summing "day" would glue the text together
-two_day = daily.groupby(["clinic", "department"])[["visits", "no_shows"]].sum()
-display(two_day)
-display(two_day["visits"].unstack())
+per_patient = visits.groupby("department").agg(visits=("visit_id", "size"), patients=("patient_id", "nunique"))
+per_patient["visits_per_patient"] = per_patient["visits"] / per_patient["patients"]
+display(per_patient.sort_values("visits_per_patient", ascending=False).round(2))
 ```
 
-**Expect:** 8 input rows become 5 groups, one per observed clinic and department pair. North Cardiology shows `82` visits and `7` no-shows (42 + 40 and 3 + 4). In the grid, the North `Dermatology` cell is `NaN`: North logged no Dermatology visits on either day, which is not the same as a count someone recorded as zero.
-
-
-### Work with the MultiIndex
-
-Run the preceding small-table practice first. `two_day` has two index levels: `clinic` on the outside, `department` inside.
-
-```python
-# .loc on the outer level keeps the inner level as the index
-display(Markdown("**North only**"))
-display(two_day.loc["North"])
-
-# reset_index() (Lecture 06) turns both levels back into ordinary columns
-display(Markdown("**Flattened**"))
-display(two_day.reset_index())
-```
-
-**Expect:** North's two departments, Cardiology and Pediatrics, with `department` as the index; then 5 rows with `clinic` and `department` as ordinary columns and a `0..4` index.
-
-
-### Several Summaries at Once
-
-```python
-# aggfunc as a list gives two-level column labels: result["count"], result["mean"]
-wait_multi = pd.pivot_table(
-    visits, values="wait_min", index="department", columns="clinic",
-    aggfunc=["count", "mean"],
-)
-display(Markdown("**Visits behind each cell**"))
-display(wait_multi["count"])
-display(Markdown("**Mean wait in each cell**"))
-display(wait_multi["mean"].round(1))
-# .sum() adds up each clinic's column; the second .sum() adds those totals
-print("\nTotal visits counted:", wait_multi["count"].sum().sum())
-```
-
-**Expect:** two tables with the same shape, and `Total visits counted: 100000`. The smallest cell is Dermatology at North with 1,647 visits, so every mean rests on well over a thousand visits. Read the two tables together: a mean is only as trustworthy as the count underneath it.
-
-
-### Absent Cells: `NaN` or Zero?
-
-```python
-# Nurses scheduled per department and clinic; Dermatology has no South clinic
-nurses = pd.DataFrame({
-    "department": ["Cardiology", "Cardiology", "Pediatrics", "Pediatrics", "Dermatology"],
-    "clinic": ["North", "South", "North", "South", "North"],
-    "nurses": [4, 6, 9, 5, 2],
-})
-
-raw = pd.pivot_table(nurses, values="nurses", index="department", columns="clinic", aggfunc="sum")
-display(Markdown("**The absent combination shows as NaN**"))
-display(raw)
-
-filled = pd.pivot_table(nurses, values="nurses", index="department", columns="clinic",
-                        aggfunc="sum", fill_value=0)
-display(Markdown("**fill_value=0: Dermatology really has no nurses in the South**"))
-display(filled)
-```
-
-**Expect:** the Dermatology `South` cell is `NaN` in the first table and `0` in the second, and the other cells are unchanged. For a count of nurses, zero is the true answer, so `fill_value=0` is right here. It would be wrong for a mean wait: filling an empty cell with 0 would report a zero-minute wait that never happened.
-
-
-### Read a Pivot Table as a Heatmap
-
-```python
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-# A pivot table is already the shape sns.heatmap() wants (Lecture 07)
-fig, ax = plt.subplots(figsize=(9, 5))
-# fmt=".1f" writes each value with one decimal, like an f-string's :.1f
-sns.heatmap(wait_pivot, annot=True, fmt=".1f", cmap="YlOrRd", ax=ax)
-ax.set_title("Mean wait (minutes) by department and clinic")
-ax.set_xlabel("Clinic")
-ax.set_ylabel("")
-plt.tight_layout()
-plt.show()
-```
-
-**Expect:** horizontal bands of color: Orthopedics darkest, Pediatrics palest, and each row nearly one color across the clinics. A heatmap makes that pattern obvious in a way a table of 30 numbers does not.
-
-
-### Back to Long Form
-
-```python
-# stack() moves the columns back into the index, undoing unstack()
-long_form = wait_pivot.stack()
-display(long_form.head(6).round(1))
-print("\nRows in long form:", len(long_form))
-print("Round trip back to the grid?", long_form.unstack().equals(wait_pivot))
-```
-
-**Expect:** 30 rows (six departments × five clinics) and `True`: wide and long are two layouts of the same summary.
-
-
-### Summarize a Third Column Instead of Counting
-
-```python
-# values= plus aggfunc= turns crosstab into a pivot table
-mean_wait = pd.crosstab(visits["department"], visits["clinic"],
-                        values=visits["wait_min"], aggfunc="mean")
-display(mean_wait.round(1))
-print("\nSame numbers as the pivot table?", mean_wait.round(6).equals(wait_pivot.round(6)))
-```
-
-**Expect:** the same grid as the pivot table, and `True`.
-
-
-### Two-Level Rows
-
-```python
-# Bin age into bands (Lecture 05), then use two row keys
-visits["age_band"] = pd.cut(
-    visits["age"], bins=[-1, 17, 39, 64, 120], labels=["0-17", "18-39", "40-64", "65+"],
-)
-band_counts = pd.crosstab([visits["department"], visits["age_band"]], visits["clinic"])
-display(band_counts)
-print("\nRows in the table:", len(band_counts))
-```
-
-**Expect:** 16 rows, not 24 (six departments × four bands). Pediatrics has only a `0-17` row and the adult departments have none, because a combination with no visits never becomes a row.
+Expect counts well below the visit counts in step 4, and Ridgecrest's Cardiology at 10 patients: ten regulars account for all 180 outreach visits. In the second table, Pediatrics has the most visits per patient (5.37), because every child's visits land in one department while an adult's spread across several; Dermatology has the fewest (1.96).

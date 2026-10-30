@@ -1,5 +1,5 @@
 #!/bin/sh
-# Download the Lecture 09 demo notebooks and their environment records into a new folder, ~/09-demo.
+# Download the Lecture 09 demo notebooks, their data generator, and their environment records into a new folder, ~/09-demo.
 # Run it with:
 #   curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/09/demo/setup_demo.sh | sh
 
@@ -22,11 +22,12 @@ curl -fsSL "$base_url/setup_demo.sh" -o setup_demo.sh
 curl -fsSL "$base_url/.python-version" -o .python-version
 curl -fsSL "$base_url/pyproject.toml" -o pyproject.toml
 curl -fsSL "$base_url/uv.lock" -o uv.lock
-curl -fsSL "$base_url/demo1_datetime_fundamentals.ipynb" -o demo1_datetime_fundamentals.ipynb
-curl -fsSL "$base_url/demo2_indexing_resampling.ipynb" -o demo2_indexing_resampling.ipynb
-curl -fsSL "$base_url/demo3_visualization_automation.ipynb" -o demo3_visualization_automation.ipynb
+curl -fsSL "$base_url/generate_data.py" -o generate_data.py
+curl -fsSL "$base_url/demo1_ed_timestamps.ipynb" -o demo1_ed_timestamps.ipynb
+curl -fsSL "$base_url/demo2_telemetry_coverage.ipynb" -o demo2_telemetry_coverage.ipynb
+curl -fsSL "$base_url/demo3_deterioration_cohort.ipynb" -o demo3_deterioration_cohort.ipynb
 
-echo "Made ~/09-demo with the three Lecture 09 demo notebooks, .python-version, pyproject.toml, and uv.lock."
+echo "Made ~/09-demo with the three Lecture 09 demo notebooks, generate_data.py, and their environment records."
 
 # The piped script cannot change the student's shell directory, so it builds the environment here.
 command -v uv >/dev/null 2>&1 || { echo "uv is not installed. Install it from https://docs.astral.sh/uv/ and run this script again."; exit 1; }

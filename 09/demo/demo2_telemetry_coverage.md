@@ -15,364 +15,267 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 2: Resampling Summaries, Patient Grids, and Rolling Windows
+# Demo 2: Audit a Step-Down Unit's Telemetry Coverage
 
-An ICU patient's bedside monitor records vitals every hour for four weeks. The monitor was unplugged for part of one day, and the patient ran a fever for three days.
-
-- Summarize the readings by day and week, and count what the monitor missed.
-- Lay sparse charted readings onto an hourly grid.
-- Resample two patients separately.
-- Smooth the daily series with rolling windows and an EWM.
-- Patient values are synthetic.
+A 24-bed step-down unit keeps its patients on bedside telemetry: a monitor writes heart rate and oxygen saturation (SpO2) every 5 minutes. The quality team asks two questions about January to March 2024: how much of each stay was actually monitored, and which stays had long gaps? Then a rapid-response review looks at one patient who was transferred to the ICU. All stays and readings are synthetic.
 
 Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5
+# Installs the course's pandas and pyarrow (for Parquet) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
 ```
 
+## Core walkthrough
+
+### 1. Load the stays and the monitor feed
+
+This supplied cell downloads `generate_data.py` when the folder lacks it (`urlretrieve(url, path)` saves the file at a web address to `path`), runs its `build()` when a table in `data/` is missing (about 20 seconds, once), and reads two tables. The seed is fixed, so your values match the ones below.
+
 ```python
+from pathlib import Path
+from urllib.request import urlretrieve
+
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
+
+REPO_RAW = 'https://raw.githubusercontent.com/christopherseaman/datasci_217/main/09/demo'
+TABLES = ['stays', 'telemetry', 'charted_temps']
+if not Path('generate_data.py').exists():
+    urlretrieve(f'{REPO_RAW}/generate_data.py', 'generate_data.py')
+if not all(Path(f'data/{name}.parquet').exists() for name in TABLES):
+    import generate_data
+    generate_data.build()
+
+stays = pd.read_parquet('data/stays.parquet')
+telemetry = pd.read_parquet('data/telemetry.parquet')
+print(stays.shape, telemetry.shape)
+display(stays.head(3))
+display(telemetry.head(3))
+display(stays['outcome'].value_counts())
+print('Readmitted patients:', stays['patient_id'].duplicated().sum())
 ```
 
-The core walkthrough is sections 1 to 8. Sections 9 to 11 are independent practice for outside class: section 9 reuses `monitor` from section 1; sections 10 and 11 each build their own data.
+Expect `(713, 7) (548923, 5)`: 713 stays and over half a million readings. Most stays end in discharge (`667`); `25` end in an ICU transfer, and `21` were still on the unit when the extract ran on March 31. `55` stays belong to a patient who had an earlier stay, so `stay_id` (not `patient_id`) names one continuous monitoring episode.
 
-## 1. One patient's monitor export
-
-The monitor writes one row per hour for January 1 to 28, 2024, with heart rate (bpm), temperature (°F), and oxygen saturation (`spo2`, %). `rng` makes the same "random" values on every run (Lecture 03). Two events are built in for the summaries to reveal:
-
-- A fever from January 15 through 17: temperature up 2.5 °F, heart rate up 15 bpm.
-- A 10-hour disconnection on January 5, 08:00 through 17:00: no rows at all.
+Stays differ a lot in length, and some readings have a heart rate or SpO2 missing.
 
 ```python
-rng = np.random.default_rng(42)
-hours = pd.date_range('2024-01-01', periods=24 * 28, freq='h')
-monitor = pd.DataFrame({
-    'heart_rate': rng.normal(78, 4, len(hours)).round().astype(int),  # mean 78, standard deviation 4
-    'temperature': (98.4 + rng.normal(0, 0.2, len(hours))).round(1),
-    'spo2': rng.integers(95, 100, len(hours)),
-}, index=hours)
-
-fever = (monitor.index >= '2024-01-15') & (monitor.index < '2024-01-18')
-monitor.loc[fever, 'temperature'] += 2.5
-monitor.loc[fever, 'heart_rate'] += 15
-
-unplugged = pd.date_range('2024-01-05 08:00', periods=10, freq='h')
-monitor = monitor[~monitor.index.isin(unplugged)]
-
-print(monitor.shape)
-display(monitor.loc['2024-01-05 06:00':'2024-01-05 19:00'])
+display(telemetry.groupby('stay_id').size().describe().round(0))
+display(telemetry[['heart_rate', 'spo2']].isna().sum())
 ```
 
-**Expect:** `(662, 3)`: 28 days × 24 hours is 672, minus the 10 missing hours. The January 5 rows jump straight from `07:00` to `18:00`.
+Expect a median of `658` readings per stay (about 2.3 days), from `27` to `3837`. `4299` heart rates are missing (a lead came off) and `21168` SpO2 values (the finger probe came off).
 
-Two masks built the story:
+### 2. Hourly summaries, one stay at a time
 
-- `fever`: comparing a `DatetimeIndex` with a date string compares instants, so it is `True` from January 15 at 00:00 up to, but not including, January 18.
-- `isin()` (Lecture 05) marks the 10 unplugged hours, and `~` keeps every other row.
-
-
-## 2. Daily summaries: averages, extremes, and counts
-
-A daily mean alone hides the disconnection. Adding `count` shows how many readings each day's mean stands on.
+Resample inside each stay, as in Lecture 08's split-apply-combine: a bin that mixed two patients would describe neither. A full hour holds 12 readings, so the reading count shows coverage beside each summary. `source_row` is a column of ones, so its `count` includes readings whose heart rate is missing.
 
 ```python
-daily = monitor['heart_rate'].resample('D').agg(['mean', 'min', 'max', 'count'])
-print(daily.shape)
-display(daily.loc['2024-01-04':'2024-01-06'].round(1))
-print('Days with fewer than 24 readings:', (daily['count'] < 24).sum())
-```
-
-**Expect:** `(28, 4)`. January 5 has `count` `14` while its neighbors have `24`; its mean (`77.9`) looks as ordinary as theirs, which is exactly why the count belongs next to it. One day has fewer than 24 readings.
-
-Named aggregation (Lecture 08) takes a different column and function for each output column.
-
-```python
-daily_named = monitor.resample('D').agg(
-    mean_hr=('heart_rate', 'mean'),
-    max_temp=('temperature', 'max'),
-    n_readings=('heart_rate', 'count'),
-)
-display(daily_named.loc['2024-01-13':'2024-01-19'].round(1))
-```
-
-**Expect:** the fever days, January 15 to 17, show `mean_hr` near 93 (`93.2`, `93.6`, `92.7`) and `max_temp` above 101 °F (`101.2`, `101.4`, `101.5`); the days around them sit near 78 bpm and 98.8 °F.
-
-A dictionary asks for different summaries of different columns. Weeks end on Sunday and January 1, 2024 was a Monday, so the four weeks are complete.
-
-```python
-weekly = monitor.resample('W').agg({'heart_rate': ['mean', 'max'], 'temperature': ['mean', 'max']})
-display(weekly.round(1))
-```
-
-**Expect:** four rows labeled `2024-01-07`, `01-14`, `01-21`, and `01-28`. Only the week ending January 21 stands out: mean heart rate `84.4`, maximum temperature `101.5`.
-
-
-## 3. Upsampling charted temperatures
-
-During the fever, a nurse also charted temperature by hand every four hours. To line these up with the hourly monitor, lay them on an hourly grid and choose how to fill the new slots.
-
-```python
-charted_temp = pd.Series(
-    [101.0, 100.8, 100.9, 101.2, 100.6, 100.9],
-    index=pd.date_range('2024-01-15 00:00', periods=6, freq='4h'),
-)
-hourly = pd.DataFrame({
-    'asfreq': charted_temp.resample('h').asfreq(),
-    'ffill_2': charted_temp.resample('h').ffill(limit=2),
-    'interpolate': charted_temp.resample('h').interpolate(),
-})
-display(hourly.head(9))
-print(hourly.shape)
-display(hourly.isna().sum())
-```
-
-**Expect:** 21 hourly rows, 00:00 through 20:00. `asfreq` leaves `15` slots empty; `ffill(limit=2)` carries each reading two hours forward and still leaves `5` empty (the third hour after each reading); `interpolate` fills all of them with a straight line, such as `100.900` at 02:00. The filled values are estimates, not measurements.
-
-The 02:00 interpolated estimate uses the 04:00 reading, which had not happened at 02:00. It describes the completed record; it is not an input available to a score running at 02:00.
-
-
-## 4. Two patients: resample each separately
-
-A step-down unit charts vitals for two patients at irregular hours. P01 is deteriorating; P02 is stable. At 12:00 a nurse started a row for P01 but did not record the heart rate.
-
-```python
-charted = pd.DataFrame({
-    'patient_id': ['P01', 'P01', 'P01', 'P01', 'P01', 'P02', 'P02', 'P02', 'P02'],
-    'recorded_at': pd.to_datetime([
-        '2024-01-15 08:00', '2024-01-15 09:00', '2024-01-15 12:00', '2024-01-15 13:00', '2024-01-15 14:00',
-        '2024-01-15 09:00', '2024-01-15 10:00', '2024-01-15 11:00', '2024-01-15 14:00',
-    ]),
-    'heart_rate': [88, 92, np.nan, 104, 110, 71, 69, 74, 72],
-    'spo2': [96, 95, 94, 93, 91, 98, 98, 97, 98],
-})
-display(charted)
-```
-
-**Expect:** nine rows with `spo2` beside `heart_rate`, five for P01 and four for P02; row 2 (P01 at 12:00) has `NaN` heart rate.
-
-Resampling the whole table averages the two patients together.
-
-```python
-display(charted.set_index('recorded_at')['heart_rate'].resample('2h').mean().round(1))
-```
-
-**Expect:** `83.7` for the 08:00 bin, a mix of P01's 88 and 92 with P02's 71 that describes neither patient.
-
-Group by patient first, then resample inside each group. A `source_row` column of ones counts the rows that exist, including the one whose heart rate is missing.
-
-```python
-charted['source_row'] = 1
-per_patient = (
-    charted.set_index('recorded_at')
-    .groupby('patient_id')
-    .resample('2h')
+telemetry['source_row'] = 1
+hourly = (
+    telemetry.set_index('recorded_at')
+    .groupby('stay_id')
+    .resample('h')
     .agg(mean_hr=('heart_rate', 'mean'),
-         n_hr=('heart_rate', 'count'),
-         n_rows=('source_row', 'count'))
+         median_hr=('heart_rate', 'median'),
+         max_hr=('heart_rate', 'max'),
+         min_spo2=('spo2', 'min'),
+         n_readings=('source_row', 'count'))
     .reset_index()
 )
-display(per_patient)
+print(hourly.shape)
+display(hourly.head(4).round({'mean_hr': 1}))
 ```
 
-**Expect:** eight rows, four two-hour bins per patient. P01's 08:00 bin has `mean_hr` `90.0` from 2 readings; P02's is `71.0` from 1. P01's 12:00 bin shows `n_hr` `1` but `n_rows` `2`: two rows were charted, and only one had a heart rate. Empty bins (P01 at 10:00, P02 at 12:00) show `NaN` and counts of `0`.
+Expect `(49244, 7)`: one row per stay per clock hour, from each stay's first hour to its last. `S0001`'s first hour, `00:00`, has only `7` readings, because the patient arrived at 00:25; its next hours have `12`. Its `02:00` hour has a `min_spo2` of `79.0` while the mean heart rate stays near 67: a probe slipping off a finger reads falsely low before it goes blank.
 
-
-## 5. Each patient's hourly grid
-
-An hourly grid gives every patient one row per hour from their first reading to their last. `asfreq()` keeps only readings exactly on the grid, so check that every timestamp sits on the hour first.
+`stay_id` matters here. Grouping by `patient_id` instead puts a readmitted patient's two stays into one history, and the grid fills the weeks between them with empty hours.
 
 ```python
-print('All on the hour:', charted['recorded_at'].eq(charted['recorded_at'].dt.floor('h')).all())
+by_patient = telemetry.set_index('recorded_at').groupby('patient_id')['source_row'].resample('h').count()
+print('Hours grouped by stay:', len(hourly), ' by patient:', len(by_patient))
+print('Empty hours by stay:', (hourly['n_readings'] == 0).sum(), ' by patient:', (by_patient == 0).sum())
+```
 
-grid = (
-    charted.set_index('recorded_at')
-    .groupby('patient_id')[['heart_rate', 'source_row']]
+Expect `49244` hours by stay against `76456` by patient, and `1230` empty hours against `28470`. The extra 27,240 empty hours are time at home between admissions, not monitoring gaps.
+
+### 3. How much of each hour was monitored?
+
+`pd.cut()` (Lecture 05) sorts each stay-hour by its reading count.
+
+```python
+coverage = pd.cut(hourly['n_readings'], bins=[-1, 0, 11, 12], labels=['none', 'partial', 'full'])
+display(coverage.value_counts(normalize=True).round(3))
+empty_hour = hourly.loc[hourly['n_readings'] == 0, 'recorded_at'].dt.hour
+print('Empty hours starting 09:00 to 20:00:', round(empty_hour.between(9, 20).mean(), 3))
+```
+
+Expect `0.868` of stay-hours `full` (all 12 readings), `0.107` `partial` (a short break, or the first or last hour of a stay), and `0.025` `none`: 1,230 whole hours with no reading at all. `0.773` of those empty hours start between 09:00 and 20:00, when patients go to imaging, walk the hall, or shower.
+
+### 4. Find each stay's gap runs
+
+A **gap run** is a stretch of consecutive empty hours. `observed` is `True` for an hour with at least one reading. Its running count per stay stays flat through a gap, so each gap's hours share a `run_id`.
+
+```python
+hourly['observed'] = hourly['n_readings'] > 0
+hourly['run_id'] = hourly.groupby('stay_id')['observed'].cumsum()
+runs = (hourly[~hourly['observed']]
+        .groupby(['stay_id', 'run_id'])
+        .size()
+        .rename('gap_hours')
+        .reset_index())
+print(len(runs), 'gap runs')
+display(runs['gap_hours'].value_counts().sort_index())
+```
+
+Expect `606 gap runs`. Most are one empty hour (`364`), but `130` last 3 to 8 hours, long enough to miss a deterioration, and one lasts `11`.
+
+A stay with no gaps has no rows in `runs`. A left merge (Lecture 06) onto every stay keeps those stays, and `fillna(0)` records their zero runs.
+
+```python
+per_stay = runs.groupby('stay_id')['gap_hours'].agg(n_gaps='count', longest_gap='max').reset_index()
+audit = stays[['stay_id', 'outcome']].merge(per_stay, on='stay_id', how='left', validate='one_to_one')
+audit = audit.fillna({'n_gaps': 0, 'longest_gap': 0})
+print('Stays with no empty hour:', (audit['n_gaps'] == 0).sum(), 'of', len(audit))
+print('Stays with a gap of 3 hours or more:', (audit['longest_gap'] >= 3).sum())
+display(audit.sort_values(['longest_gap', 'n_gaps'], ascending=False).head(3))
+display(audit.groupby('outcome')['longest_gap'].agg(stays='size', share_3h_or_more=lambda s: (s >= 3).mean()).round(3))
+```
+
+Expect `Stays with no empty hour: 342 of 713` and `111` stays with a gap of 3 hours or more, the list the quality team reviews. The top row is `S0299`, with one gap of `11.0` hours. The last table shows that `0.280` of ICU transfers had a 3-hour gap (7 of 25), against `0.151` of discharged stays (101 of 667). With only 25 transfers, a gap in two or three of them moves that share by about 10 points, so this quarter's data cannot tell whether the monitor misses sicker patients more often.
+
+### 5. Review one ICU transfer: count window or time window?
+
+Stay `S0297` went to the ICU at 23:45 on February 9. That afternoon the patient was off the monitor for more than six hours. Compare a 12-reading window (one hour when no reading is missing) with a 1-hour time window around the return.
+
+```python
+s0297 = telemetry[telemetry['stay_id'] == 'S0297'].set_index('recorded_at')['heart_rate'].dropna()
+windows = pd.DataFrame({
+    'heart_rate': s0297,
+    'last_12_readings': s0297.rolling(12).mean(),
+    'last_1_hour': s0297.rolling('1h').mean(),
+})
+display(windows.loc['2024-02-09 13:00':'2024-02-09 20:30'].round(1))
+```
+
+Expect the jump from `13:15` straight to `20:10`. At 20:10, `last_12_readings` is `97.6`, still mostly readings from before the gap, while `last_1_hour` is `120.0`, the 20:10 reading alone. By 20:30 the count window has climbed only to `108.0`; the time window reads `124.0`. A count window follows rows; a time window follows the clock.
+
+Plot the last 24 hours: the raw readings, a 1-hour rolling mean with a band of plus or minus one rolling standard deviation, and an exponentially weighted mean (EWM) with `span=12`, which reacts faster.
+
+```python
+last_day = s0297.loc['2024-02-08 23:45':]
+mean_1h = last_day.rolling('1h').mean()
+sd_1h = last_day.rolling('1h').std()
+
+fig, ax = plt.subplots(figsize=(10, 4))
+ax.plot(last_day.index, last_day, '.', color='gray', markersize=3, label='Reading (every 5 min)')
+ax.plot(mean_1h.index, mean_1h, color='#0072B2', label='1-hour rolling mean')
+ax.fill_between(mean_1h.index, mean_1h - sd_1h, mean_1h + sd_1h, color='#0072B2', alpha=0.2, label='± 1 SD')
+ax.plot(last_day.index, last_day.ewm(span=12).mean(), color='#D55E00', linestyle='--', label='EWM, span 12')
+ax.set(title='Stay S0297: heart rate in the 24 hours before ICU transfer',
+       xlabel='Time (unit clock)', ylabel='Heart rate (bpm)')
+ax.legend(loc='upper left')
+ax.grid(alpha=0.3)
+plt.show()
+print('First hour mean:', round(last_day.iloc[:12].mean(), 1), ' Last hour mean:', round(last_day.iloc[-12:].mean(), 1))
+```
+
+Expect `First hour mean: 88.3  Last hour mean: 123.1`. The band drifts from about 80 bpm overnight to about 95 by 13:00. The gray dots stop after 13:15 and resume at 20:10, and both lines draw a straight segment across that gap. After it, the 1-hour mean starts near 120, while the dashed EWM starts near 100 and takes under an hour to catch up: like a count window, EWM weights rows, so it still carries the readings from before the gap.
+
+## Independent practice
+
+Continue on your own after class. These cells reuse `stays`, `telemetry`, `hourly`, and `s0297` from the core; if the runtime closed, run the cells above again first.
+
+### 1. A monthly unit report
+
+A unit-level count is a fine thing to resample across patients: one admission is one event, whoever it is. Index the stays by admission time, then summarize each month with a different aggregation per column.
+
+```python
+stays['los_days'] = (stays['left_at'] - stays['admitted_at']).dt.total_seconds() / 86400
+stays['icu_transfer'] = stays['outcome'] == 'ICU transfer'
+monthly = stays.set_index('admitted_at').resample('ME').agg(
+    {'stay_id': 'count', 'los_days': ['mean', 'max'], 'icu_transfer': 'sum', 'age': 'median'})
+display(monthly.round(1))
+```
+
+Expect three month-end rows, `2024-01-31` to `2024-03-31`, with `250`, `225`, and `238` admissions, mean stays of `3.0`, `2.8`, and `2.8` days, `9`, `5`, and `11` ICU transfers, and a median age of `67` or `68`. `icu_transfer` is `True` or `False`, so its `sum` counts transfers.
+
+### 2. Daily worst heart rate: one reading or a whole hour?
+
+The morning huddle lists any stay whose heart rate topped 120 bpm the day before. A single 5-minute reading can be a motion artifact: when the patient moves, the monitor can count the jolts as beats. Compare the daily maximum of the raw readings with the daily maximum of the hourly medians from step 2.
+
+```python
+raw_daily = telemetry.set_index('recorded_at').groupby('stay_id')['heart_rate'].resample('D').max()
+hour_daily = hourly.set_index('recorded_at').groupby('stay_id')['median_hr'].resample('D').max()
+outcome = stays.set_index('stay_id')['outcome']
+for name, daily in [('raw reading', raw_daily), ('hourly median', hour_daily)]:
+    flagged = daily[daily > 120].reset_index()['stay_id'].unique()
+    print(f'{name:>13}: {len(flagged)} stays flagged,',
+          (outcome[flagged] == 'ICU transfer').sum(), 'of', (outcome == 'ICU transfer').sum(), 'ICU transfers')
+both = pd.DataFrame({'raw_max': raw_daily, 'hourly_median_max': hour_daily})
+one_reading = both[(both['raw_max'] > 120) & (both['hourly_median_max'] <= 120)]
+print('Stay-days flagged by a reading but by no hour:', len(one_reading))
+stay, day = one_reading.index[0]
+that_day = telemetry[(telemetry['stay_id'] == stay) & (telemetry['recorded_at'].dt.floor('D') == day)]
+display(that_day.sort_values('heart_rate', ascending=False).head(4))
+```
+
+Expect `raw reading: 364 stays flagged, 21 of 25 ICU transfers` and `hourly median: 19 stays flagged, 12 of 25 ICU transfers`. A raw maximum flags half the unit, mostly for single readings: `495` stay-days are flagged by a reading but by no hour. The example, `S0002` on January 1, has one reading of `142.0` at 23:10 and none above `102.0` the rest of the day. The hourly median cuts the list from 364 stays to 19 but catches 9 fewer transfers, so neither rule replaces looking at the trend.
+
+### 3. Charted temperatures on an hourly grid
+
+Nurses chart temperature every 4 hours, on the hour. To line them up with the hourly monitor table, lay each stay's temperatures on an hourly grid. `asfreq()` keeps only readings exactly on the grid, so check that first.
+
+```python
+temps = pd.read_parquet('data/charted_temps.parquet')
+print(temps.shape)
+print('All on the hour:', temps['charted_at'].eq(temps['charted_at'].dt.floor('h')).all())
+display(temps['charted_at'].dt.hour.value_counts().sort_index())
+
+temps['source_row'] = 1
+temp_grid = (
+    temps.set_index('charted_at')
+    .groupby('stay_id')[['temperature_f', 'source_row']]
     .resample('h')
     .asfreq()
     .reset_index()
 )
-grid['grid_created'] = grid['source_row'].isna()
-grid['value_missing'] = grid['source_row'].notna() & grid['heart_rate'].isna()
-display(grid.drop(columns='source_row'))
-display(grid[['grid_created', 'value_missing']].sum())
+temp_grid['grid_created'] = temp_grid['source_row'].isna()
+temp_grid['value_missing'] = temp_grid['source_row'].notna() & temp_grid['temperature_f'].isna()
+print(temp_grid.shape)
+display(temp_grid[['grid_created', 'value_missing']].sum())
 ```
 
-**Expect:** `All on the hour: True`, then 13 rows: P01 from 08:00 to 14:00 (7 hours) and P02 from 09:00 to 14:00 (6 hours). Four rows are `grid_created` (P01 at 10:00 and 11:00, P02 at 12:00 and 13:00), and one is `value_missing` (P01 at 12:00). All five show `NaN` heart rate; only the flags tell the empty hours from the charted row with no value.
+Expect `(11245, 3)` charted temperatures, `All on the hour: True`, and fewer `04:00` rounds (`1614`) than any other round (about `1930`): nurses skip the night round for stable patients who are asleep. The grid has `(46035, 6)` rows. `34790` are `grid_created`: three empty hours between rounds, and more where a round was missed. `190` are `value_missing`: a nurse started a row but entered no temperature.
 
-Now count each patient's **gap runs**, the stretches of consecutive hours with no charted row, as the lecture's "Count Gap Runs per Patient" snippet does. `source_observed` is the opposite of `grid_created`, so P01's 12:00 row counts as observed: a nurse charted it, even without a heart rate. The running count of observed rows stays flat through a gap, so each gap's hours share a `run_id`.
+Fill one stay's grid two ways. `ffill(limit=3)` carries each temperature forward up to the next round; `interpolate()` draws straight lines, which uses the next round's reading.
 
 ```python
-grid['source_observed'] = ~grid['grid_created']
-grid['run_id'] = grid.groupby('patient_id')['source_observed'].cumsum()
-runs = (grid[~grid['source_observed']]
-        .groupby(['patient_id', 'run_id'])
-        .size()
-        .rename('gap_hours')
-        .reset_index())
-display(runs)
-display(runs.groupby('patient_id')['gap_hours'].agg(['count', 'max']))
+one = temps[temps['stay_id'] == 'S0297'].set_index('charted_at')['temperature_f']
+display(pd.DataFrame({
+    'asfreq': one.resample('h').asfreq(),
+    'ffill_3': one.resample('h').ffill(limit=3),
+    'interpolate': one.resample('h').interpolate(),
+}).tail(9))
 ```
 
-**Expect:** two runs, one per patient, each 2 hours long: P01's 10:00 and 11:00 (`run_id` `2`) and P02's 12:00 and 13:00 (`run_id` `3`). The summary shows `count` `1` and `max` `2` for both patients. A patient with no gaps would have no rows in `runs`, so report 0 runs for them.
+Expect the last three rounds of S0297's stay, `98.3`, `98.4`, and `99.0` °F at 12:00, 16:00, and 20:00. `ffill_3` repeats each round for three hours. `interpolate` climbs from 16:00 and reaches `98.850` at 19:00, a value that needs the 20:00 reading, which no score running at 19:00 could have seen. Filled values are estimates, not measurements.
 
+### 4. Centered and early-starting windows
 
-## 6. Compare two recent windows
-
-Use P02's charted readings from section 4. Its last two readings are at 11:00 and 14:00; the 11:00 one is outside the two hours ending at 14:00.
+A centered window looks forward as well as back, which suits a retrospective chart review but not an alert. `min_periods` lets a trailing window start before it is full.
 
 ```python
-patient = charted[charted['patient_id'] == 'P02'].set_index('recorded_at')['heart_rate'].sort_index()
-patient_windows = pd.DataFrame({
-    'heart_rate': patient,
-    'last_2_readings': patient.rolling(2).mean(),
-    'last_2_hours': patient.rolling('2h').mean(),
+hourly_297 = hourly[hourly['stay_id'] == 'S0297'].set_index('recorded_at')['mean_hr']
+compare = pd.DataFrame({
+    'hourly_mean': hourly_297,
+    'trailing_6h': hourly_297.rolling(6).mean(),
+    'trailing_6h_min3': hourly_297.rolling(6, min_periods=3).mean(),
+    'centered_6h_min3': hourly_297.rolling(6, min_periods=3, center=True).mean(),
 })
-display(patient_windows)
+display(compare.head(4).round(1))
+display(compare.tail(12).round(1))
 ```
 
-**Expect:** four rows. At 14:00, `last_2_readings` is `73.0`, averaging 74 and 72 bpm; `last_2_hours` is `72.0`, because only the 14:00 reading falls inside that window. A count window follows rows; a time window follows elapsed time.
-
-
-## 7. Rolling windows and EWM on the daily means
-
-Smooth the daily mean heart rate four ways and watch how each responds to the fever.
-
-```python
-daily_hr = monitor['heart_rate'].resample('D').mean()
-smooth = pd.DataFrame({
-    'daily_mean': daily_hr,
-    'rolling_7': daily_hr.rolling(7).mean(),
-    'early_7': daily_hr.rolling(7, min_periods=3).mean(),
-    'centered_7': daily_hr.rolling(7, center=True).mean(),
-    'ewm_7': daily_hr.ewm(span=7).mean(),
-})
-display(smooth.head(4).round(1))
-display(smooth.loc['2024-01-11':'2024-01-21'].round(1))
-```
-
-**Expect:** in the first rows, `rolling_7` is `NaN` until January 7, `early_7` starts on January 3 (`78.1`), `centered_7` starts on January 4, and `ewm_7` has a value from the first day. Around the fever:
-
-- `daily_mean` jumps from `78.5` on January 14 to `93.2` on January 15 and falls back to `76.9` on January 18.
-- `ewm_7` reacts faster than `rolling_7` on the way up (`86.9` against `84.7` on January 17) and on the way down (`80.7` against `84.4` on January 21, when the 7-day mean still carries all three fever days).
-- `centered_7` starts rising on January 12 (`80.2`), three days before the fever began, because each value averages three later days.
-
-
-## 8. Plot the counts and the smoothers
-
-The top panel shows the reading counts, so the gap is visible; the bottom panel shows the daily means with the 7-day rolling mean, the EWM, and a band of plus or minus one rolling standard deviation.
-
-```python
-band_low = smooth['rolling_7'] - daily_hr.rolling(7).std()
-band_high = smooth['rolling_7'] + daily_hr.rolling(7).std()
-
-fig, axes = plt.subplots(2, 1, figsize=(10, 7))
-axes[0].bar(daily.index, daily['count'], color='gray')
-axes[0].set(title='Monitor readings per day', ylabel='Readings', ylim=(0, 26))
-
-axes[1].plot(smooth.index, smooth['daily_mean'], 'o', color='gray', label='Daily mean')
-axes[1].plot(smooth.index, smooth['rolling_7'], color='blue', label='7-day rolling mean')
-axes[1].plot(smooth.index, smooth['ewm_7'], color='red', linestyle='--', label='EWM, span 7')
-axes[1].fill_between(smooth.index, band_low, band_high, color='blue', alpha=0.2, label='Rolling mean ± 1 SD')
-axes[1].set(title='Daily heart rate', xlabel='Date', ylabel='Heart rate (bpm)')
-axes[1].legend()
-axes[1].grid(alpha=0.3)
-plt.tight_layout()
-plt.show()
-```
-
-**Expect:** in the top panel, 27 bars of height 24 and one short bar (14) on January 5. In the bottom panel, the daily means form a three-day plateau near 93 bpm; the dashed EWM climbs and falls sooner than the solid rolling mean, and the shaded band widens while the fever days are inside the 7-day window.
-
-
-## 9. Independent practice: count window versus time window across the gap
-
-Use `monitor` from section 1. On the hourly readings, a count window and a time window differ exactly where the monitor was unplugged.
-
-```python
-hr = monitor['heart_rate']
-windows = pd.DataFrame({
-    'heart_rate': hr,
-    'last_3_readings': hr.rolling(3).mean(),
-    'last_3_hours': hr.rolling('3h').mean(),
-})
-display(windows.loc['2024-01-05 05:00':'2024-01-05 20:00'].round(1))
-```
-
-**Expect:** at `2024-01-05 18:00`, `last_3_readings` is `78.7`, averaging the 06:00 and 07:00 readings from 12 and 11 hours earlier, while `last_3_hours` is `78.0`, the 18:00 reading alone. They differ again at 19:00, while the count window still reaches back to 07:00, and agree from 20:00 on.
-
-
-## 10. Independent practice: home-weight reports
-
-Build a daily home-weight history for one heart-failure patient.
-
-```python
-rng = np.random.default_rng(42)
-days = pd.date_range('2024-01-01', '2024-03-31', freq='D')
-scale_noise = rng.normal(0, 0.15, len(days))  # mean 0, standard deviation 0.15 kg
-weights = pd.Series(82 + scale_noise, index=days)
-
-# Fluid builds up from March 9, then a diuretic brings it back down
-weights.loc['2024-03-09':'2024-03-15'] += [0.5, 1.9, 2.6, 2.6, 1.9, 1.1, 0.4]
-
-home_weights = pd.DataFrame({'weight_kg': weights.round(1)})
-print(home_weights.shape)
-```
-
-**Expect:** `(91, 1)`, one weight per day from January 1 through March 31, 2024.
-
-Partial dates select whole months, and a date slice keeps both ends. `resample()` then turns the daily rows into weekly and monthly summaries.
-
-```python
-print(home_weights.loc['2024-02'].shape)
-display(home_weights.loc['2024-03-08':'2024-03-16'].T)
-
-display(home_weights['weight_kg'].resample('W').mean().head(3).round(2))
-display(home_weights['weight_kg'].resample('ME').agg(['mean', 'max']).round(2))
-```
-
-**Expect:** `(29, 1)` for February, then a one-row table of nine March weights that rise from `81.9` kg on March 8 to `84.4` kg on March 11 and 12, then fall back to `82.1` kg on March 16. Weekly means are labeled with the Sunday that ends each week: `2024-01-07`, `2024-01-14`, `2024-01-21`. The monthly table has three rows; March's `max` is `84.4`, against `82.3` in January and `82.2` in February.
-
-
-## 11. Independent practice: ICU summaries and exact bin boundaries
-
-Build a one-week hourly ICU monitor.
-
-```python
-rng = np.random.default_rng(42)
-hours = pd.date_range('2024-03-04', periods=24 * 7, freq='h')
-icu = pd.DataFrame({
-    'heart_rate': rng.normal(84, 5, len(hours)).round().astype(int),
-    'spo2': rng.integers(93, 99, len(hours)),
-}, index=hours)
-icu.loc[icu.index.hour < 6, 'heart_rate'] -= 12
-print(icu.shape)
-display(icu.head(3))
-```
-
-**Expect:** `(168, 2)`, seven days of hourly heart rate and SpO2 readings.
-
-Resampling the hourly monitor to days gives one row per day. Select the numeric columns you want before resampling a DataFrame; a text column would raise `TypeError`.
-
-```python
-display(icu[['heart_rate', 'spo2']].resample('D').mean().round(1))
-display(icu['heart_rate'].resample('D').agg(['mean', 'min', 'max', 'count']).round(1).head(3))
-```
-
-**Expect:** seven rows labeled `2024-03-04` through `2024-03-10`, with daily mean heart rate between `79.8` and `81.9` and SpO2 near 95.5. Every `count` is `24`: the monitor never missed an hour.
-
-A nurse charts respiratory rate at irregular times. Two readings sit near the 08:00 bin boundary, one just before it and one exactly on it.
-
-```python
-resp_rate = pd.Series(
-    [18, 22, 26, 24, 20],
-    index=pd.to_datetime(['2024-03-05 06:00', '2024-03-05 07:59', '2024-03-05 08:00',
-                          '2024-03-05 09:30', '2024-03-05 10:00']),
-)
-display(resp_rate.resample('2h').agg(['mean', 'count']))
-display(resp_rate.resample('2h', closed='right', label='right').agg(['mean', 'count']))
-```
-
-**Expect:** with the default (left-closed, left-labeled) bins, the 08:00 reading opens the `08:00` bin: counts `2`, `2`, `1` for `06:00`, `08:00`, `10:00`. With `closed='right', label='right'`, each bin ends at its label, so 08:00 joins 07:59 in the bin labeled `08:00`: counts `1`, `2`, `2`. Same readings, different bins: state the rule whenever a report depends on it.
+Expect `trailing_6h` to be `NaN` for the stay's first rows, and from 14:00 on February 9 to the end: each 6-hour window there contains an empty hour, whose mean is `NaN`. `trailing_6h_min3` keeps a value through the first rows (`94.0` at 09:00 on February 7, the mean of 3 hours) and returns at 22:00 (`120.2`). `centered_6h_min3` already reads `120.2` at 20:00, two hours earlier, because it averages the later, faster heart rates.

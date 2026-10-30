@@ -1,68 +1,52 @@
 # Assignment 10 checks self-test
 
-Course-side QA for the checks, not a second grading mode. It answers the
-assignment with statsmodels, scikit-learn, and pandas from
-`10/assignment/data/`, the way the lecture does, builds submissions in ignored
-`scratch/`, and confirms that:
+Course-side QA for the checks, not a second grading mode. It builds
+submissions in ignored `scratch/a10_selftest/` and confirms that:
 
-- every expected value in `_value_checks.py` matches a fresh computation from
-  the data, for both refits of the frozen pipeline;
-- a correct submission scores 100, and so do one refitted on training plus
-  validation rows, one saved with every row index, and one written
-  differently: columns and rows in another order, CRLF, a byte-order mark,
-  UTF-16, quoted or padded cells, labels and headers in another letter case or
-  with spaces for underscores, rounded numbers, a leading row-number column,
-  timestamps written with `Z`, another UTC offset, or no zone, `1`/`0`
-  booleans, `keep`/`exclude` decisions, the array interface's `const`, Demo 1's
-  `valid` label, `mean_se` left out, every file separated by semicolons (with
-  decimal commas) or by tabs, every number rounded to one decimal, and
-  accuracy, precision, recall, and R² written as percents such as `85%`,
-  where a one-decimal value that rounds something else, a wrong percent, or a
-  percent in a column that is not a proportion still costs only its own
-  check;
-- an omitted value column costs its columns check and its own values check,
-  whose feedback names the first expected value and a wrong present sibling;
-  two columns saved under other names cost only the columns check when their
-  values are right (judged against the expected values or the student's own
-  earlier artifact), and their values checks too when wrong; renamed columns
-  holding a common slip, and the right values saved under two other names, are
-  still placed; a slip found beside a missing column is charged there, and one
-  charged earlier never excuses a missing column; the feedback names a missing
-  column when the key column is gone too and describes an unheaded column; a
-  prediction too large to square costs its own check instead of crashing; a
-  table of keys alone keeps its rows check but earns no value points;
-  header-only and unrecognizable partial tables earn no vacuous value credit;
-- an empty directory and the untouched handout score 0;
-- each of 45 single mistakes, one per check, costs exactly that check,
-  including a misnamed column; a coefficient table saved without its terms
-  costs only the columns check; approaches saved under other labels cost only
-  the rows check; a missing file costs only its own artifact's
-  checks; leaky features (in the metrics and in the test predictions; test
-  metrics that only land near a leaky score get the neutral hint), a split
-  on the visit time, ranges read from `visit_time`, a residual sign flipped on
-  every row or on a few, fitted and residual columns swapped, `< 0` for
-  `<= 0`, a baseline mean from the validation rows, RMSE saved without its
-  square root, `r2_score` with its arguments swapped, 90% new-patient
-  intervals, split ranges read from every visit, test metrics copied from
-  validation, and precision and recall with their arguments swapped land on
-  the checks that name them; RMSE without its root or swapped `r2_score`
-  arguments in both Tasks 3.1 and 3.2, 90% intervals, and ranges from every
-  visit cost points once; rows saved under each other's labels cost the
-  artifact's first values check once and say which labels hold which values; and the
-  feedback says what was expected, what was found, and the likely cause; and
-  for the readmission table saved over `validation_metrics.csv`, the feedback
-  names the file whose header it holds;
-- the checks read only `output/`: poisoned data and code in a submission
-  change nothing;
-- the handout README's checkpoint header lines, completion contract, and task
-  numbering match the checks, `POINTS`, and the notebook, and neither uses an
-  em dash;
+- every frozen value in `_value_checks.py`, the 20 common wrong answers
+  included, matches a fresh computation from `10/assignment/data/` by
+  `scripts/build_assignment10_data.py`;
+- a correct submission scores 100, through `grade_submission()` and both
+  copies of `check_assignment.py`, and so does the same submission written
+  differently: rows and columns reversed, headers in capitals, CRLF and a
+  byte-order mark, semicolons with decimal commas, tabs, a row-number column,
+  numbers rounded to two decimals, R² and the screening metrics as percents,
+  `1`/`0` booleans, `const` for the intercept, `pd.cut()`'s own band names
+  such as `(17, 39]`, and the partitions named `Training`, `fit_rows`,
+  `valid`, and `Testing`;
+- a submission folder with broken data and a Python file in it still scores
+  100: the checks read `output/` only and never run student code;
+- an empty folder and the untouched handout score 0;
+- each of the 47 checks loses its points, and only its points, to one
+  mistake: a value column renamed (the columns check), a row left out or a
+  one-row key changed (the rows check), one wrong cell (each values check),
+  or bytes that are not a PNG; each message says what was found and what was
+  expected;
+- each of the 20 common wrong answers costs exactly one check, the first it
+  reaches, whose message names its cause: a formula without `age` or `bmi`,
+  90% intervals, `"size"` counting the patients with no BMI, residuals with
+  the sign flipped, the availability rules `< 0`, `== 0`, and no audit (each
+  also carried into Tasks 3.1 and 3.2), a split on `visit_time`, ranges read
+  from `visit_time`, skipping the fit-row cut, a baseline fitted on the
+  validation rows, RMSE without its root and swapped `r2_score` arguments (in
+  Tasks 3.1 and 3.2), Task 3.1 scored on the test rows, a refit on the
+  validation rows, test metrics scored on the validation rows, mean errors
+  with the sign flipped, `>` for `>=` in the LACE rules, and precision and
+  recall with their arguments swapped;
+- a missing file costs only its own artifact's checks;
+- the README's checkpoint header lines, the notebook's, and the CHECKS.md
+  contract agree with the checks and `POINTS`; the README's row counts and
+  feature list match the frozen values; the README and the notebook number
+  their tasks the same way; neither prints a finished answer expression; and
+  no em or en dash appears in them or the checks;
 - every file the workflow lists in `CHECKS_FILES` is byte-identical in
-  `10/assignment/` and here, the handout has no other Python file and an empty
-  `output/`, and its notebook ships with outputs cleared; both
-  `check_assignment.py` copies and pytest report the same result.
+  `10/assignment/` and here (and in the handout's `.checks/` cache when
+  present), the handout has no other Python file, an empty `output/`, the
+  four Parquet files in `data/`, and a notebook with its outputs cleared, and
+  pytest collects and runs the checks.
 
 ```bash
-uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with statsmodels==0.14.6 \
-    --with scikit-learn==1.9.0 --with 'pytest>=8,<9' python 10/assignment_checks/_grader_selftest/run.py
+uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with pyarrow==25.0.0 \
+    --with statsmodels==0.14.6 --with scikit-learn==1.9.0 --with 'pytest>=8,<9' \
+    python 10/assignment_checks/_grader_selftest/run.py
 ```

@@ -22,11 +22,12 @@ curl -fsSL "$base_url/setup_demo.sh" -o setup_demo.sh
 curl -fsSL "$base_url/.python-version" -o .python-version
 curl -fsSL "$base_url/pyproject.toml" -o pyproject.toml
 curl -fsSL "$base_url/uv.lock" -o uv.lock
+curl -fsSL "$base_url/generate_data.py" -o generate_data.py
 curl -fsSL "$base_url/demo1_statistical_modeling.ipynb" -o demo1_statistical_modeling.ipynb
 curl -fsSL "$base_url/demo2_sklearn_prediction.ipynb" -o demo2_sklearn_prediction.ipynb
 curl -fsSL "$base_url/demo3_trees_boosting_networks.ipynb" -o demo3_trees_boosting_networks.ipynb
 
-echo "Made ~/10-demo with the Lecture 10 demo notebooks and their environment files."
+echo "Made ~/10-demo with the Lecture 10 demo notebooks, the data generator, and their environment files."
 
 # The piped script cannot change the student's shell directory, so it builds the environment here.
 command -v uv >/dev/null 2>&1 || { echo "uv is not installed. Install it from https://docs.astral.sh/uv/ and run this script again."; exit 1; }

@@ -11,15 +11,17 @@ from pathlib import Path
 from _value_checks import run_checks
 
 
-# One value per check in _value_checks.CHECKS, in the same order: the clinic
-# counts (Task 1.2), the clinic summary (Task 2.1), the visit context
-# (Task 2.2), the clinic and visit type summary (Task 2.3), then the pivot (Task 3.1).
+# One value per check in _value_checks.CHECKS, in the same order: the site summary
+# (Task 1.2), the site and modality summary (Task 2.1), the delayed STAT exams
+# (Task 2.2), the CT dose review (Task 2.3), the slowest STAT reports (Task 2.4),
+# then the pivot (Task 3.1).
 POINTS = (
-    6, 6, 4, 4, 4,
+    4, 4, 4, 4, 4, 4, 4,
     4, 4, 4, 4, 4,
     4, 4, 4, 4, 4,
-    4, 5, 4, 5,
-    4, 4, 6, 4,
+    2, 4, 2,
+    2, 4, 2,
+    4, 4, 4, 4,
 )
 
 

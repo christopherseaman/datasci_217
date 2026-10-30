@@ -9,12 +9,51 @@ notion:
 
 # DLC: Advanced Modeling Topics
 
+# A Shared Example Cohort
+
+Most snippets on this page model one synthetic cohort: 3,000 discharged patients from five clinics, with a 30-day readmission flag. The columns follow a causal chain, so the models have real structure to find:
+
+- **Age, BMI, and weekly activity minutes** set systolic blood pressure (SBP), with a curved age effect, an age-by-BMI interaction, and a clinic offset.
+- **Age and BMI** set hemoglobin A1c.
+- **SBP, A1c, and age** set readmission risk, with a jump above an A1c of 7%.
+
+Run this cell once; later snippets reuse `cohort`, `features`, and the train/test split.
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+rng = np.random.default_rng(217)
+n = 3000
+clinics = ['Mission', 'Sunset', 'Richmond', 'Bayview', 'Marina']
+clinic = rng.choice(clinics, n)
+age = rng.integers(25, 90, n)
+active_min = rng.gamma(2.0, 60, n).round()  # weekly minutes of exercise
+bmi = (rng.normal(29, 4, n) - 0.01 * active_min).round(1)
+clinic_offset = pd.Series([4, 0, -2, 6, -3], index=clinics)[clinic].to_numpy()
+sbp = (118 + 0.5 * (age - 50) + 0.008 * (age - 50) ** 2 + 0.8 * (bmi - 28)
+       + 0.03 * (age - 50) * (bmi - 28) - 0.03 * active_min
+       + clinic_offset + rng.normal(0, 10, n)).round()
+a1c = (5.2 + 0.015 * (age - 50) + 0.08 * (bmi - 28) + rng.gamma(1.5, 0.4, n)).round(1)
+risk = -2.0 + 0.03 * (sbp - 130) + 0.3 * (a1c - 6) + 1.0 * (a1c > 7) + 0.02 * (age - 60)
+readmit_30d = (rng.random(n) < 1 / (1 + np.exp(-risk))).astype(int)
+
+cohort = pd.DataFrame({'clinic': clinic, 'age': age, 'active_min': active_min,
+                       'bmi': bmi, 'sbp': sbp, 'a1c': a1c, 'readmit_30d': readmit_30d})
+features = ['age', 'active_min', 'bmi', 'sbp', 'a1c']
+X_train, X_test, y_train, y_test = train_test_split(
+    cohort[features], cohort['readmit_30d'], test_size=0.25,
+    stratify=cohort['readmit_30d'], random_state=42)
+print(round(cohort['readmit_30d'].mean(), 3))  # 0.133
+```
+
 # More scikit-learn Tools
 
 The lecture's main path uses linear models, random forests, and gradient boosting. Once that workflow feels routine, benchmark other candidates whose assumptions fit the task, always against the same baseline, split, and metric:
 
 - Classification: `SVC`, a support vector classifier that looks for the widest possible boundary between classes, beside the lecture's `LogisticRegression`.
-- Unsupervised work: `KMeans` for clustering and `PCA` for dimensionality reduction. Neither uses a target column.
+- Unsupervised work: `KMeans` for clustering patients into care-need groups and `PCA` for compressing dozens of correlated labs into a few components. Neither uses a target column.
 - Selection: `GridSearchCV` for hyperparameter tuning within the training data (examples under Hyperparameter Tuning Strategies below).
 - Independent rows: `cv=5` uses `StratifiedKFold` for classifiers with binary or multiclass targets, and `KFold` otherwise. Each fold takes a turn as the scored block; neither protects time order like `TimeSeriesSplit`.
 - Patient groups: `GroupKFold(n_splits=5)` and `GroupShuffleSplit` keep each patient's rows in one part; pass `groups=df['patient_id']` to `split(X, y, groups=...)` or `cross_val_score(..., groups=...)`. Use them to evaluate on entirely new patients.
@@ -29,12 +68,12 @@ Beyond `XGBoost`, two other gradient-boosting libraries are common. Neither is p
 ## `LightGBM`
 
 - Designed for efficient training and memory use
-- A candidate when scale or training speed is an important constraint
+- A candidate when scale or training speed is an important constraint, such as millions of claims lines
 
 ## `CatBoost`
 
 - Provides native mechanisms for categorical features
-- A candidate when the table contains important categorical variables
+- A candidate when the table contains important categorical variables, such as clinic, payer, or discharge disposition
 
 ## The Boosting Family Tree
 
@@ -55,83 +94,76 @@ _Benchmark them under the same split, measure, and budget. Blue steel, magnum, a
 
 ### Reference Card: Grid and Random Search Tools
 
-- `from sklearn.model_selection import GridSearchCV`: Exhaustive grid search
-- `from sklearn.model_selection import RandomizedSearchCV`: Random search
-- `from sklearn.model_selection import cross_val_score`: Cross-validation scoring
+- `GridSearchCV(model, param_grid, cv=5, scoring='roc_auc')`: Fit every combination in `param_grid`; read `best_params_` and `best_score_`.
+- `RandomizedSearchCV(model, param_distributions, n_iter=20, random_state=...)`: Fit `n_iter` sampled combinations; distributions such as `scipy.stats.randint(2, 12)` sample integers.
+- `cross_val_score(model, X, y, cv=5, scoring=...)`: Score one fixed setting across folds.
 
-### Code Snippet: Tuning a Random Forest with Grid Search
+### Code Snippet: Tuning a Readmission Forest
 
 ```python
+from scipy.stats import randint
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV, train_test_split
-import numpy as np
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 
-rng = np.random.default_rng(42)
-X = rng.normal(size=(200, 4))
-y = (X[:, 0] + X[:, 1] > 0).astype(int)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Define parameter grid
 param_grid = {
-    'n_estimators': [50, 100, 200],
-    'max_depth': [3, 5, 7, None],
-    'min_samples_split': [2, 5, 10]
+    'n_estimators': [100, 300],
+    'max_depth': [3, 5, None],
+    'min_samples_leaf': [1, 10, 50],
 }
+grid = GridSearchCV(RandomForestClassifier(random_state=42), param_grid,
+                    cv=5, scoring='roc_auc', n_jobs=-1)
+grid.fit(X_train, y_train)
+print(grid.best_params_)  # {'max_depth': 3, 'min_samples_leaf': 10, 'n_estimators': 100}
+print(round(grid.best_score_, 3))  # 0.74
 
-# Grid search
-model = RandomForestClassifier(random_state=42)
-grid_search = GridSearchCV(model, param_grid, cv=5, scoring='accuracy')
-grid_search.fit(X_train, y_train)
-
-# Best parameters
-print(f"Best parameters: {grid_search.best_params_}")
-print(f"Best score: {grid_search.best_score_}")
+search = RandomizedSearchCV(
+    RandomForestClassifier(random_state=42),
+    {'max_depth': randint(2, 12), 'min_samples_leaf': randint(1, 100)},
+    n_iter=20, cv=5, scoring='roc_auc', random_state=42, n_jobs=-1)
+search.fit(X_train, y_train)
+print(search.best_params_, round(search.best_score_, 3))  # {'max_depth': 3, 'min_samples_leaf': 4} 0.74
 ```
+
+The grid fit 18 settings and the random search 20; both land at a cross-validated AUC of 0.74. Shallow trees win because the cohort's risk is a smooth function of three columns.
 
 ## Bayesian Optimization
 
-**Bayesian optimization** uses scores from earlier trials to choose promising settings for the next trial. Here it minimizes negative cross-validation accuracy, so a smaller objective means a better score; the test rows stay unused.
+**Bayesian optimization** uses scores from earlier trials to choose promising settings for the next trial. Here it minimizes negative cross-validation AUC, so a smaller objective means a better score; the test rows stay unused.
 
 This optional example requires `scikit-optimize`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add scikit-optimize` (Lecture 03), or run `%pip install scikit-optimize` in Colab, before running the example.
 
 ### Reference Card: Bayesian Optimization Tools
 
-- `from skopt import gp_minimize`: Gaussian process optimization
-- `from skopt.space import Real, Integer, Categorical`: Parameter spaces
+- `gp_minimize(objective, space, n_calls=20, random_state=...)`: Minimize `objective` with a Gaussian process; `result.x` holds the best settings and `result.fun` the best objective.
+- `Integer(low, high, name=...)`, `Real(low, high, prior='log-uniform', name=...)`, `Categorical([...])`: Define the search space.
+- `@use_named_args(space)`: Pass each trial's settings to the objective as keyword arguments.
 
-### Code Snippet: Bayesian Optimization for XGBoost Hyperparameters
+### Code Snippet: Bayesian Search for XGBoost Settings
 
 ```python
 from skopt import gp_minimize
-from skopt.space import Real, Integer
+from skopt.space import Integer, Real
 from skopt.utils import use_named_args
-from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.model_selection import cross_val_score
 from xgboost import XGBClassifier
-import numpy as np
 
-rng = np.random.default_rng(42)
-X = rng.normal(size=(200, 4))
-y = (X[:, 0] + X[:, 1] > 0).astype(int)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Define search space
 space = [
     Integer(50, 300, name='n_estimators'),
-    Real(0.01, 0.3, name='learning_rate'),
-    Integer(3, 10, name='max_depth')
+    Real(0.01, 0.3, prior='log-uniform', name='learning_rate'),
+    Integer(2, 6, name='max_depth'),
 ]
 
-# Objective function
 @use_named_args(space)
 def objective(**params):
     model = XGBClassifier(**params, random_state=42)
-    scores = cross_val_score(model, X_train, y_train, cv=5)
-    return -scores.mean()  # Minimize negative score
+    return -cross_val_score(model, X_train, y_train, cv=5, scoring='roc_auc').mean()
 
-# Optimize
 result = gp_minimize(objective, space, n_calls=20, random_state=42)
-print(f"Best parameters: {result.x}")
+print(result.x[0], round(result.x[1], 3), result.x[2])  # 199 0.013 2
+print(round(-result.fun, 3))  # 0.74
 ```
+
+Twenty guided trials reach the same 0.74 as the forest grid. The ceiling comes from the signal in five columns, not from the search method.
 
 # Model Interpretability and Explainability
 
@@ -143,71 +175,62 @@ This optional example requires SHAP, which is not part of Lecture 10's recorded 
 
 ### Reference Card: SHAP Tools
 
-- `import shap`: SHAP library
-- `shap.TreeExplainer(model)`: Create an explainer for a tree-based model
-- `explainer(X)`: Return SHAP values with feature and observation metadata
-- `shap.plots.beeswarm(shap_values)`: Show feature effects across observations
-- `shap.plots.bar(shap_values)`: Summarize global feature importance
+- `shap.TreeExplainer(model)`: Create an explainer for a tree-based model.
+- `explainer(X)`: Return SHAP values with `.values`, `.base_values`, and feature names.
+- `shap.plots.beeswarm(shap_values)`: Show each feature's effect across patients, colored by the feature's value.
+- `shap.plots.bar(shap_values)`: Rank features by mean absolute SHAP value.
 
-### Code Snippet: Explaining an XGBoost Model with SHAP
+### Code Snippet: Explaining a Readmission Model
 
 ```python
 import shap
-import xgboost as xgb
-import numpy as np
-from sklearn.model_selection import train_test_split
+from xgboost import XGBClassifier
 
-rng = np.random.default_rng(42)
-X = rng.normal(size=(200, 4))
-y = (X[:, 0] + X[:, 1] > 0).astype(int)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Train model
-model = xgb.XGBClassifier()
+model = XGBClassifier(n_estimators=200, learning_rate=0.05, max_depth=3, random_state=42)
 model.fit(X_train, y_train)
 
-# Create explainer
 explainer = shap.TreeExplainer(model)
 shap_values = explainer(X_test)
 
-# Summary plot
 shap.plots.beeswarm(shap_values)
-
-# Feature importance plot
 shap.plots.bar(shap_values)
+print(pd.Series(np.abs(shap_values.values).mean(axis=0), index=features)
+      .sort_values(ascending=False).round(3))
 ```
+
+```text
+sbp           0.697
+a1c           0.166
+active_min    0.165
+age           0.148
+bmi           0.128
+dtype: float32
+```
+
+SBP ranks first because it carries both its own effect and much of age's (correlation 0.69). The generator gives activity no direct path to readmission: its 0.165 is borrowed through SBP and BMI, a reminder that SHAP explains the model, not the cause.
 
 ## Partial Dependence Plots
 
-**Partial dependence** varies one or two features while averaging predictions over the other columns. It shows the fitted response shape, not what changing a patient's feature would cause. Strongly correlated columns can create unrealistic combinations, such as a large radius with a tiny area.
+**Partial dependence** varies one or two features while averaging predictions over the other columns. It shows the fitted response shape, not what changing a patient's feature would cause. Strongly correlated columns can create unrealistic combinations, such as a BMI of 40 paired with a weight of 50 kg when both are inputs.
 
 ### Reference Card: Partial Dependence Tools
 
-- `from sklearn.inspection import PartialDependenceDisplay`: Partial dependence
-- `PartialDependenceDisplay.from_estimator(model, X, features)`: Create plots
+- `PartialDependenceDisplay.from_estimator(model, X, features, grid_resolution=20)`: Plot one curve per feature name and one heatmap per `(feature, feature)` pair.
+- Partial dependence needs float columns; scikit-learn 1.9 raises `ValueError` for integer columns such as `age`, so cast them with `.astype(float)` first.
 
-### Code Snippet: Plotting Partial Dependence
+### Code Snippet: Plotting Readmission Risk Against A1c and SBP
 
 ```python
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.inspection import PartialDependenceDisplay
-from sklearn.ensemble import RandomForestRegressor
-import numpy as np
 
-rng = np.random.default_rng(42)
-X_train = rng.normal(size=(200, 2))
-y_train = X_train[:, 0] ** 2 + X_train[:, 1] + rng.normal(scale=0.5, size=200)
-
-# Train model
-model = RandomForestRegressor(random_state=42)
+model = RandomForestClassifier(n_estimators=300, min_samples_leaf=20, random_state=42)
 model.fit(X_train, y_train)
-
-# Partial dependence plots
-features = [0, 1, (0, 1)]  # Individual and interaction
 PartialDependenceDisplay.from_estimator(
-    model, X_train, features, 
-    grid_resolution=20
-)
+    model, X_train, ['a1c', 'sbp', ('bmi', 'sbp')], grid_resolution=20)
 ```
+
+Expected output: two line plots and one heatmap. Average predicted risk stays near 0.12 for A1c up to 6.3% and climbs to 0.18 by 7%, where the generator adds its jump. The SBP curve rises from 0.08 to 0.27 between 100 and 145 mmHg. The default grid spans the 5th to 95th percentiles, so the A1c axis stops at 7%.
 
 # Advanced Statistical Modeling
 
@@ -217,10 +240,10 @@ Choose an inferential model when the question requires interpretable parameters,
 
 Linear regression suits a numeric outcome that scatters evenly around the fitted line. **Generalized linear models** keep the same formula interface but change how the outcome is modeled:
 
-- Logistic regression for binary outcomes
-- Poisson regression for count data
-- Other exponential family distributions
-- Use when: You need statistical inference for non-normal data
+- Logistic regression for binary outcomes, such as 30-day readmission
+- Poisson or negative binomial regression for counts, such as ED visits per patient-year, with an `offset` for follow-up time
+- Gamma regression for positive, right-skewed values, such as length of stay or claim cost
+- Use when: You need statistical inference for outcomes that are not normal
 
 ## Mixed Effects Models
 
@@ -228,142 +251,137 @@ Linear regression suits a numeric outcome that scatters evenly around the fitted
 
 ### Reference Card: Mixed Effects Model Tools
 
-- `from statsmodels.regression.mixed_linear_model import MixedLM`: Mixed linear models
-- `MixedLM.from_formula(formula, data, groups)`: Create model
+- `smf.mixedlm(formula, data, groups=data['clinic'])`: Build a linear mixed model with a random intercept per group.
+- `result.fe_params`: Fixed-effect slopes shared by every clinic.
+- `result.random_effects`: Each group's estimated offset from the overall intercept.
 
-### Code Snippet: Fitting a Mixed Effects Model
+### Code Snippet: Clinic Offsets in SBP
 
 ```python
-from statsmodels.regression.mixed_linear_model import MixedLM
 import statsmodels.formula.api as smf
-import numpy as np
-import pandas as pd
 
-# 10 groups (for example, clinics) with 8 rows each
-rng = np.random.default_rng(42)
-n_groups, n_per_group = 10, 8
-group = np.repeat(np.arange(n_groups), n_per_group)
-x1 = rng.normal(size=n_groups * n_per_group)
-x2 = rng.normal(size=n_groups * n_per_group)
-group_effect = rng.normal(scale=2.0, size=n_groups)[group]
-y = 5 + 1.5 * x1 - 0.5 * x2 + group_effect + rng.normal(scale=1.0, size=n_groups * n_per_group)
-df = pd.DataFrame({'y': y, 'x1': x1, 'x2': x2, 'group': group})
-
-# Mixed effects model
-model = MixedLM.from_formula('y ~ x1 + x2', data=df, groups=df['group'])
-result = model.fit()
-print(result.summary())
+result = smf.mixedlm('sbp ~ age + bmi + active_min', data=cohort,
+                     groups=cohort['clinic']).fit()
+print(result.fe_params.round(2))
+print(pd.Series({clinic: effect.iloc[0]
+                 for clinic, effect in result.random_effects.items()}).round(1))
 ```
+
+```text
+Intercept     62.71
+age            0.61
+bmi            1.02
+active_min    -0.03
+dtype: float64
+Bayview     5.1
+Marina     -4.2
+Mission     3.0
+Richmond   -2.9
+Sunset     -1.0
+dtype: float64
+```
+
+The generator's clinic offsets, centered, are 5, -4, 3, -3, and -1 mmHg; the model recovers each within 0.3.
 
 ## Generalized Additive Models (GAMs)
 
-A **generalized additive model** adds smooth curves for individual features instead of requiring every relationship to be a straight line. The default model below can learn a curved contribution from the first feature and a nearly linear one from the second; interactions require additional terms.
+A **generalized additive model** adds smooth curves for individual features instead of requiring every relationship to be a straight line. The example lets SBP bend with age and with activity; interactions require additional terms such as `te(0, 1)`.
 
 This optional example requires `pygam`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add pygam` (Lecture 03), or run `%pip install pygam` in Colab, before running the example.
 
 ### Reference Card: GAM Tools
 
-- `from pygam import LinearGAM`: Generalized additive models
-- `gam = LinearGAM().fit(X, y)`: Fit GAM
+- `LinearGAM(s(0) + s(1)).fit(X, y)`: Fit one smooth term per column of a numeric outcome; `LogisticGAM` fits a binary one.
+- `gam.generate_X_grid(term=i)`: Build a grid that varies feature `i`.
+- `gam.partial_dependence(term=i, X=XX, width=0.95)`: Return the term's curve and its 95% interval.
 
-### Code Snippet: Fitting and Plotting a GAM
+### Code Snippet: Smooth Age and Activity Effects on SBP
 
 ```python
-from pygam import LinearGAM
-import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
+from pygam import LinearGAM, s
 
-rng = np.random.default_rng(42)
-X = rng.normal(size=(200, 2))
-y = X[:, 0] ** 2 + X[:, 1] + rng.normal(scale=0.5, size=200)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+gam = LinearGAM(s(0) + s(1)).fit(cohort[['age', 'active_min']].to_numpy(), cohort['sbp'])
 
-# Create GAM
-gam = LinearGAM().fit(X_train, y_train)
-
-# Predictions
-predictions = gam.predict(X_test)
-
-# Plot partial dependence
-for i in range(X_train.shape[1]):
+fig, axes = plt.subplots(1, 2, figsize=(8, 3))
+for i, (ax, name) in enumerate(zip(axes, ['age', 'active_min'])):
     XX = gam.generate_X_grid(term=i)
-    pdep, confi = gam.partial_dependence(term=i, X=XX, width=0.95)
-    plt.plot(XX[:, i], pdep)
-    plt.fill_between(XX[:, i], confi[:, 0], confi[:, 1], alpha=0.3)
+    curve, interval = gam.partial_dependence(term=i, X=XX, width=0.95)
+    ax.plot(XX[:, i], curve)
+    ax.fill_between(XX[:, i], interval[:, 0], interval[:, 1], alpha=0.3)
+    ax.set_xlabel(name)
+axes[0].set_ylabel('SBP contribution (mmHg)')
+plt.show()
 ```
+
+Expected output: the age curve rises about 40 mmHg from age 25 to 89 and steepens after 50, matching the generator's squared age term. The activity curve falls about 20 mmHg from 0 to 450 minutes a week, and its interval widens where few patients exercise that much.
 
 # Advanced Deep Learning
 
 ## Transfer Learning
 
-**Transfer learning** reuses features learned on a large source dataset. Here VGG16 supplies frozen image features, and a small new classifier learns the task; ImageNet features are a starting point, not evidence of medical-image accuracy.
+**Transfer learning** reuses features learned on a large source dataset. Here VGG16 supplies frozen image features, and a small new classifier learns to separate normal chest X-rays from pneumonia; ImageNet features are a starting point, not evidence of medical-image accuracy.
 
 ### Reference Card: Transfer Learning Tools
 
-- `from tensorflow.keras.applications import VGG16`: Pre-trained models
-- `model = VGG16(weights='imagenet', include_top=False)`: Load pre-trained
-- `model.trainable = False`: Freeze layers
+- `VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))`: Load the pretrained convolutional layers without the ImageNet classifier.
+- `base_model.trainable = False`: Freeze the pretrained layers so only new layers learn.
+- `preprocess_input(images)`: Convert 0 to 255 RGB pixels to VGG16's expected channel order and centering.
 
-### Code Snippet: Training a Classifier on Frozen VGG16 Features
+### Code Snippet: A Pneumonia Classifier on Frozen VGG16 Features
 
-Only the added classifier learns; **fine-tuning** would also update pretrained weights. These random images demonstrate the API, not useful image classification. VGG16 expects RGB pixels on a 0 to 255 scale passed through its own `preprocess_input`, which changes channel order and subtracts the ImageNet channel means.
+Only the added classifier learns; **fine-tuning** would also update pretrained weights. The random arrays below stand in for X-ray batches, so the snippet demonstrates the API, not useful classification. VGG16 expects RGB pixels on a 0 to 255 scale passed through its own `preprocess_input`, which changes channel order and subtracts the ImageNet channel means; a grayscale X-ray is repeated across three channels.
 
 ```python
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras import layers, models
-import numpy as np
 
-# Small stand-in image batches (real projects load actual images)
 rng = np.random.default_rng(42)
-X_train = preprocess_input(rng.uniform(0, 255, size=(20, 224, 224, 3)).astype('float32'))
-y_train = np.eye(10)[rng.integers(0, 10, size=20)]
-X_val = preprocess_input(rng.uniform(0, 255, size=(5, 224, 224, 3)).astype('float32'))
-y_val = np.eye(10)[rng.integers(0, 10, size=5)]
+X_xray = preprocess_input(rng.uniform(0, 255, size=(20, 224, 224, 3)).astype('float32'))
+y_pneumonia = rng.integers(0, 2, size=20)
+X_val = preprocess_input(rng.uniform(0, 255, size=(6, 224, 224, 3)).astype('float32'))
+y_val = rng.integers(0, 2, size=6)
 
-# Load pre-trained model
 base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-base_model.trainable = False  # Freeze base model
+base_model.trainable = False
 
-# Add custom classifier
 model = models.Sequential([
     base_model,
     layers.GlobalAveragePooling2D(),
-    layers.Dense(128, activation='relu'),
+    layers.Dense(64, activation='relu'),
     layers.Dropout(0.5),
-    layers.Dense(10, activation='softmax')
+    layers.Dense(1, activation='sigmoid'),
 ])
-
-# Compile and train
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val))
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+model.fit(X_xray, y_pneumonia, epochs=10, validation_data=(X_val, y_val))
+print(sum(w.numpy().size for w in model.trainable_weights))  # 32897
 ```
 
-## Sequence attention with a documented Keras layer
+The model holds 14,747,585 weights; only the 32,897 in the new head learn.
 
-**Self-attention** lets each position in a sequence combine information from other positions. Several **heads** learn different combinations. The example averages the resulting positions into one classification; ordered tasks also need information about position, and forecasting needs a mask that blocks future positions.
+## Sequence Attention with a Documented Keras Layer
+
+**Self-attention** lets each position in a sequence combine information from other positions. Several **heads** learn different combinations. The example reads 24 hourly rows of 8 vitals and labs per ICU stay and averages the attended hours into one deterioration probability; ordered tasks also need information about position, and forecasting needs a mask that blocks future hours.
 
 ### Reference Card: Keras Attention Layer
 
-- `keras.layers.MultiHeadAttention`: Current built-in self/cross-attention layer
+- `keras.layers.MultiHeadAttention(num_heads, key_dim, dropout)`: Built-in self- or cross-attention; call it as `layer(query, value)`, and pass the same tensor twice for self-attention.
 
-### Code Snippet: Self-Attention with MultiHeadAttention
+### Code Snippet: Attention over 24 Hours of Vitals
 
 ```python
-import tensorflow as tf
 from tensorflow import keras
 
-# A batch of sequences: (batch, timesteps, embedding_dim)
-inputs = keras.Input(shape=(20, 64))
-attention = keras.layers.MultiHeadAttention(
-    num_heads=4, key_dim=16, dropout=0.1
-)(inputs, inputs)  # self-attention; output shape is (batch, 20, 64)
-x = keras.layers.LayerNormalization()(inputs + attention)
+inputs = keras.Input(shape=(24, 8))  # (stays, hours, vitals and labs)
+x = keras.layers.Dense(32)(inputs)
+attention = keras.layers.MultiHeadAttention(num_heads=4, key_dim=8, dropout=0.1)(x, x)
+x = keras.layers.LayerNormalization()(x + attention)
 x = keras.layers.GlobalAveragePooling1D()(x)
-outputs = keras.layers.Dense(10, activation="softmax")(x)
+outputs = keras.layers.Dense(1, activation='sigmoid')(x)
 model = keras.Model(inputs, outputs)
-model.compile(optimizer="adam", loss="sparse_categorical_crossentropy")
+model.compile(optimizer='adam', loss='binary_crossentropy')
+print(model.output_shape)  # (None, 1)
 ```
 
 # Other Deep-Learning Frameworks
@@ -400,22 +418,22 @@ torch = { index = "pytorch-cpu" }
 | `nn.BCELoss()` | Calculate binary cross-entropy for probability outputs. | Loss function |
 | `model.train()` / `model.eval()` | Switch behavior for training or evaluation (for example, Dropout). | Module state change |
 
-### Code Snippet: PyTorch Evaluation Mode
+### Code Snippet: Scoring New Patients in Evaluation Mode
 
 ```python
 import torch
 from torch import nn
 
 model = nn.Sequential(
-    nn.Linear(10, 32), nn.ReLU(),
-    nn.Linear(32, 1), nn.Sigmoid(),
+    nn.Linear(5, 16), nn.ReLU(), nn.Dropout(0.2),
+    nn.Linear(16, 1), nn.Sigmoid(),
 )
-X_test = torch.randn(5, 10)  # 5 rows, 10 features
+X_new = torch.tensor(X_test.head(4).to_numpy(), dtype=torch.float32)  # 4 patients, 5 features
 
-model.eval()                 # inference behavior for layers such as Dropout
+model.eval()                 # turn Dropout off for scoring
 with torch.no_grad():        # skip gradient tracking while predicting
-    predictions = model(X_test)
-print(predictions.shape)     # torch.Size([5, 1])
+    risk = model(X_new)
+print(risk.shape)            # torch.Size([4, 1])
 ```
 
 ## Other Modern Frameworks
@@ -437,88 +455,78 @@ Deep Learning Frameworks
 
 ### Reference Card: Stacking Tools
 
-- `from sklearn.ensemble import StackingClassifier`: Stacking ensemble
-- `StackingClassifier(estimators, final_estimator)`: Create stacker
+- `StackingClassifier(estimators=[(name, model), ...], final_estimator=..., cv=5)`: Fit base models, then fit the final model on their out-of-fold predictions.
+- `stacker.final_estimator_.coef_`: The weight a logistic final model gives each base model.
 
-### Code Snippet: Stacking a Random Forest and SVM
+### Code Snippet: Stacking a Forest and an SVM
 
 ```python
-from sklearn.ensemble import StackingClassifier, RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, StackingClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from sklearn.model_selection import train_test_split
-import numpy as np
 
-rng = np.random.default_rng(42)
-X = rng.normal(size=(200, 4))
-y = (X[:, 0] + X[:, 1] > 0).astype(int)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Base models
-base_models = [
-    ('rf', RandomForestClassifier(n_estimators=100, random_state=42)),
-    ('svm', SVC())
-]
-
-# Meta-learner
-meta_learner = LogisticRegression()
-
-# Stacking ensemble
 stacker = StackingClassifier(
-    estimators=base_models,
-    final_estimator=meta_learner,
-    cv=5
+    estimators=[
+        ('rf', RandomForestClassifier(min_samples_leaf=20, random_state=42)),
+        ('svm', make_pipeline(StandardScaler(), SVC())),
+    ],
+    final_estimator=LogisticRegression(),
+    cv=5,
 )
-
 stacker.fit(X_train, y_train)
-predictions = stacker.predict(X_test)
+print(stacker.final_estimator_.coef_.round(2))  # [[4.95 0.72]]
+print(round(roc_auc_score(y_test, stacker.predict_proba(X_test)[:, 1]), 3))  # 0.78
 ```
+
+The final model leans on the forest (4.95) and gives the SVM's scores little weight (0.72).
 
 ## Blending
 
-This example blends class probabilities with weights fixed in advance. The models' probability columns must represent the same classes in the same order. If choosing the weights from scores, use validation rows and reserve the test for the final combination.
+**Blending** averages class probabilities with weights fixed in advance. The models' probability columns must represent the same classes in the same order. If choosing the weights from scores, use validation rows and reserve the test for the final combination.
 
 ### Reference Card: Blending Approach
 
-- Manual blending by training models separately and combining predictions
+- Fit each model separately, take `predict_proba(X)[:, 1]` from each, and combine with weights that sum to 1.
 
-### Code Snippet: Blending Model Predictions
+### Code Snippet: Blending Three Readmission Models
 
 ```python
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
-import numpy as np
+from sklearn.metrics import roc_auc_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
-rng = np.random.default_rng(42)
-X = rng.normal(size=(200, 4))
-y = (X[:, 0] + X[:, 1] > 0).astype(int)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Train multiple models
 models = {
-    'rf': RandomForestClassifier(random_state=42).fit(X_train, y_train),
-    'gb': GradientBoostingClassifier(random_state=42).fit(X_train, y_train),
-    'lr': LogisticRegression().fit(X_train, y_train)
+    'rf': RandomForestClassifier(min_samples_leaf=20, random_state=42),
+    'gb': HistGradientBoostingClassifier(max_depth=3, random_state=42),
+    'lr': make_pipeline(StandardScaler(), LogisticRegression()),
 }
-
-# Get predictions
-predictions = {}
-for name, model in models.items():
-    predictions[name] = model.predict_proba(X_test)
-
-# Blend (weighted average)
 weights = {'rf': 0.4, 'gb': 0.4, 'lr': 0.2}
-blended = sum(weights[name] * predictions[name] for name in weights.keys())
-final_predictions = np.argmax(blended, axis=1)
+risk = {name: m.fit(X_train, y_train).predict_proba(X_test)[:, 1] for name, m in models.items()}
+risk['blend'] = sum(weights[name] * risk[name] for name in weights)
+print(pd.Series({name: roc_auc_score(y_test, p) for name, p in risk.items()}).round(3))
 ```
+
+```text
+rf       0.783
+gb       0.749
+lr       0.788
+blend    0.782
+dtype: float64
+```
+
+The blend (0.782) trails plain logistic regression (0.788), because the cohort's risk is close to logistic. An ensemble earns its extra parts only when it beats the best single model on held-out rows.
 
 # Time Series Modeling
 
 When each observation depends on the ones just before it, `statsmodels` offers dedicated time-series tools:
 
-- ARIMA models for time series forecasting
-- Seasonal decomposition
+- ARIMA models for forecasting, such as daily ED arrivals or weekly flu-like illness visits
+- Seasonal decomposition into trend, weekly cycle, and remainder
 - Use when: You have temporal dependencies in your data
 
 ## Weekly Persistence on an Hourly Grid
@@ -527,44 +535,44 @@ On a complete elapsed-hour grid, `shift(168)` gives the value 168 hours earlier;
 
 ## Prophet for Time Series
 
-**Prophet** combines a trend with seasonal and optional holiday effects. Its `ds` column holds times and `y` the observations; the generated random walk below demonstrates the interface, not evidence that seasonal forecasting will work. Judge any forecast against persistence on later, held-out dates.
+**Prophet** combines a trend with seasonal and optional holiday effects. Its `ds` column holds times and `y` the observations. Judge any forecast against persistence on later, held-out dates.
 
 This optional example requires `prophet`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add prophet` (Lecture 03), or run `%pip install prophet` in Colab, before running the example.
 
 ### Reference Card: Prophet Tools
 
-- `from prophet import Prophet`: Facebook Prophet
-- `model = Prophet()`: Create model
-- `model.fit(df)`: Fit model
-- `model.predict(future)`: Make predictions
+- `Prophet(daily_seasonality=False)`: Create a model; weekly and yearly seasonality turn on when the data spans enough time.
+- `model.fit(df)`: Fit on a table with `ds` and `y` columns.
+- `model.make_future_dataframe(periods=28)`: Extend `ds` by 28 days; `model.predict(future)` returns `yhat` with `yhat_lower` and `yhat_upper`.
+- `model.plot(forecast)`: Plot history, forecast, and interval.
 
-### Code Snippet: Forecasting with Prophet
+### Code Snippet: Forecasting Daily ED Arrivals
 
 ```python
 from prophet import Prophet
-import numpy as np
-import pandas as pd
 
 rng = np.random.default_rng(42)
-time_series_data = np.cumsum(rng.normal(0, 1, size=365)) + 50
+ds = pd.date_range('2023-01-01', '2024-12-31', freq='D')
+weekday_effect = np.array([22, 12, 6, 4, 2, -8, -10])[ds.dayofweek]  # Monday busiest
+winter_effect = 15 * np.cos(2 * np.pi * (ds.dayofyear - 15) / 365.25)
+arrivals = pd.DataFrame({'ds': ds, 'y': rng.poisson(
+    180 + 0.02 * np.arange(len(ds)) + weekday_effect + winter_effect)})
 
-# Prepare data (columns: ds, y)
-df = pd.DataFrame({
-    'ds': pd.date_range('2020-01-01', periods=365),
-    'y': time_series_data
-})
+train, test = arrivals.iloc[:-28], arrivals.iloc[-28:]
+model = Prophet(daily_seasonality=False).fit(train)
+forecast = model.predict(test[['ds']])
 
-# Create and fit model
-model = Prophet()
-model.fit(df)
-
-# Create future dataframe
-future = model.make_future_dataframe(periods=30)
-forecast = model.predict(future)
-
-# Plot
-model.plot(forecast)
+persistence = np.tile(train['y'].iloc[-7:].to_numpy(), 4)  # repeat the last observed week
+print(f"Prophet MAE: {np.mean(np.abs(forecast['yhat'].to_numpy() - test['y'].to_numpy())):.1f}")
+print(f"Persistence MAE: {np.mean(np.abs(persistence - test['y'].to_numpy())):.1f}")
 ```
+
+```text
+Prophet MAE: 12.3
+Persistence MAE: 13.8
+```
+
+Over the last 28 days, Prophet misses by 12.3 arrivals a day and repeating last week misses by 13.8. A 1.5-arrival gain may not justify a new dependency for a staffing forecast.
 
 # Production Deployment Considerations
 
@@ -574,43 +582,34 @@ model.plot(forecast)
 
 ### Reference Card: Model Serialization Tools
 
-- `import joblib`: Joblib for scikit-learn models
-- `joblib.dump(model, 'model.pkl')`: Save model
-- `model = joblib.load('model.pkl')`: Load model
-- `model.save('model.keras')`: Save a Keras model in the native `.keras` format
-- `model.export('saved_model')`: Export a TensorFlow SavedModel for serving (Keras 3)
+- `joblib.dump(obj, 'readmit_model.joblib')`: Save a fitted scikit-learn object, or a dict holding one with its metadata.
+- `joblib.load('readmit_model.joblib')`: Load it back.
+- `model.save('model.keras')`: Save a Keras model in the native `.keras` format.
+- `model.export('saved_model')`: Export a TensorFlow SavedModel for serving (Keras 3).
 
-### Code Snippet: Saving and Loading a Model with joblib
+### Code Snippet: Packaging a Readmission Pipeline
 
 ```python
 import joblib
-import numpy as np
+import sklearn
 from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-rng = np.random.default_rng(42)
-X_train = rng.normal(size=(100, 3))
-y_train = (X_train[:, 0] + X_train[:, 1] > 0).astype(int)
-feature_names = ['x1', 'x2', 'x3']
-scaler = StandardScaler().fit(X_train)
-model = LogisticRegression().fit(scaler.transform(X_train), y_train)
+pipeline = make_pipeline(StandardScaler(), LogisticRegression()).fit(X_train, y_train)
+joblib.dump({
+    'pipeline': pipeline,
+    'features': features,
+    'trained_through': '2025-06-30',
+    'sklearn_version': sklearn.__version__,
+}, 'readmit_model.joblib')
 
-# Save scikit-learn model
-joblib.dump(model, 'model.pkl')
-
-# Save with metadata
-model_package = {
-    'model': model,
-    'version': '1.0',
-    'features': feature_names,
-    'preprocessor': scaler
-}
-joblib.dump(model_package, 'model_package.pkl')
-
-# Load
-loaded = joblib.load('model_package.pkl')
-model = loaded['model']
+package = joblib.load('readmit_model.joblib')
+new_patient = pd.DataFrame([{'a1c': 7.8, 'sbp': 152, 'bmi': 31.0, 'active_min': 30, 'age': 71}])
+print(package['pipeline'].predict_proba(new_patient[package['features']])[:, 1].round(2))  # [0.53]
 ```
+
+The new patient's columns arrive in a different order; indexing with the saved `features` list restores the training order before scoring.
 
 Pickle/joblib files can execute arbitrary code while loading. Load them only from a trusted, integrity-checked source in a compatible environment; never treat an uploaded or untrusted pickle as data. For Keras, use `keras.models.load_model('model.keras')` for the native format; use the exported SavedModel with a serving/runtime tool rather than passing it to `load_model`.
 
@@ -620,257 +619,240 @@ Pickle/joblib files can execute arbitrary code while loading. Load them only fro
 
 This optional example requires `mlflow`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add mlflow` (Lecture 03), or run `%pip install mlflow` in Colab, before running the example.
 
-### Reference Card: Model Versioning Approach
+### Reference Card: MLflow Tracking
 
-- Use MLflow or similar tools for model versioning
-- Track model metadata, parameters, and performance
+- `mlflow.set_experiment('readmit_30d')`: Group runs under one named experiment.
+- `mlflow.start_run(run_name=...)`: Open a run; `log_params(dict)` and `log_metric(name, value)` record settings and scores.
+- `mlflow.sklearn.log_model(model, name='model', input_example=...)`: Store the fitted model with an example of its input columns.
+- `mlflow.search_runs()`: Return every run as a `DataFrame` for comparison.
 
-### Code Snippet: Logging a Model Run with MLflow
+### Code Snippet: Logging a Readmission Run with MLflow
 
 ```python
 import mlflow
 import mlflow.sklearn
-import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
 
-rng = np.random.default_rng(42)
-X = rng.normal(size=(200, 4))
-y = (X[:, 0] + X[:, 1] > 0).astype(int)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Start MLflow run
-with mlflow.start_run():
-    # Log parameters
-    mlflow.log_param("n_estimators", 100)
-    mlflow.log_param("max_depth", 5)
-    
-    # Train model
-    model = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42)
+params = {'n_estimators': 300, 'min_samples_leaf': 20}
+mlflow.set_experiment('readmit_30d')
+with mlflow.start_run(run_name='rf_leaf20'):
+    mlflow.log_params(params)
+    model = RandomForestClassifier(**params, random_state=42)
+    cv_auc = cross_val_score(model, X_train, y_train, cv=5, scoring='roc_auc').mean()
+    mlflow.log_metric('cv_auc', cv_auc)
     model.fit(X_train, y_train)
-    
-    # Log metrics
-    accuracy = model.score(X_test, y_test)
-    mlflow.log_metric("accuracy", accuracy)
-    
-    # Log model
-    mlflow.sklearn.log_model(model, name="model", skops_trusted_types=["sklearn.tree._tree.Tree"])
+    mlflow.sklearn.log_model(model, name='model', input_example=X_train.head(3),
+                             skops_trusted_types=['sklearn.tree._tree.Tree'])
+
+print(mlflow.search_runs()[['tags.mlflow.runName', 'params.min_samples_leaf', 'metrics.cv_auc']].round(3))
 ```
+
+```text
+  tags.mlflow.runName params.min_samples_leaf  metrics.cv_auc
+0           rf_leaf20                      20           0.729
+```
+
+The run logs a cross-validated AUC, so the test rows stay untouched for the final comparison.
 
 # Advanced Feature Engineering
 
 ## Automated Feature Engineering
 
-**Feature engineering** turns raw records into model inputs. Featuretools can aggregate related tables, such as transactions per customer, automatically. The example summarizes a completed historical dataset; prospective use must set a prediction cutoff so later transactions cannot enter a feature.
+**Feature engineering** turns raw records into model inputs. A patient-level model needs one row per patient, so encounter-level rows are aggregated: counts, means, maxima, and distinct types. Each aggregate must use only encounters before the **prediction cutoff**; a later encounter in a feature leaks the future.
 
-This optional example requires `featuretools`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add featuretools` (Lecture 03), or run `%pip install featuretools` in Colab, before running the example.
+### Code Snippet: Encounter Features Before a Cutoff in pandas
 
-### Reference Card: Featuretools Functions
+```python
+patients = pd.DataFrame({'patient_id': ['P01', 'P02', 'P03'], 'birth_year': [1948, 1971, 1990]})
+encounters = pd.DataFrame({
+    'encounter_id': range(7),
+    'patient_id': ['P01', 'P01', 'P01', 'P02', 'P02', 'P03', 'P03'],
+    'admit_time': pd.to_datetime(['2025-01-04', '2025-02-11', '2025-03-20', '2025-01-15',
+                                  '2025-03-02', '2025-02-08', '2025-04-01']),
+    'encounter_type': ['ED', 'inpatient', 'ED', 'clinic', 'ED', 'clinic', 'clinic'],
+    'los_days': [0.3, 4.0, 0.4, 0.1, 0.5, 0.1, 0.1],
+})
 
-- `EntitySet.add_dataframe`: Register related tables
-- `featuretools.dfs`: Generate features from an EntitySet
+history = encounters[encounters['admit_time'] < pd.Timestamp('2025-03-01')]
+print(history.groupby('patient_id').agg(
+    n_encounters=('encounter_id', 'count'),
+    mean_los=('los_days', 'mean'),
+    max_los=('los_days', 'max'),
+    n_types=('encounter_type', 'nunique'),
+))
+```
 
-### Code Snippet: Generating Features with Deep Feature Synthesis
+```text
+            n_encounters  mean_los  max_los  n_types
+patient_id                                          
+P01                    2      2.15      4.0        2
+P02                    1      0.10      0.1        1
+P03                    1      0.10      0.1        1
+```
+
+The three encounters after March 1 stay out of every feature.
+
+### Deep Feature Synthesis with Featuretools
+
+**Featuretools** builds these aggregates automatically from declared tables and relationships, a method called **Deep Feature Synthesis**, and applies a per-patient `cutoff_time`. Featuretools 1.31.0 fails under pandas 3.0.5 (Woodwork cannot initialize its table types), so the snippet below runs only in a separate environment with `pandas==2.3.3`, `featuretools==1.31.0`, and `setuptools<81`.
+
+#### Reference Card: Featuretools Functions
+
+- `EntitySet.add_dataframe(dataframe_name, dataframe, index, time_index=...)`: Register a table; `time_index` marks when each row became known.
+- `EntitySet.add_relationship(parent, parent_column, child, child_column)`: Link patients to their encounters.
+- `ft.dfs(entityset, target_dataframe_name, cutoff_time=..., agg_primitives=[...])`: Return a feature matrix with one row per target row.
+
+#### Code Snippet: The Same Features with `ft.dfs`
 
 ```python
 import featuretools as ft
-import numpy as np
-import pandas as pd
 
-rng = np.random.default_rng(42)
-customer_df = pd.DataFrame({
-    'customer_id': [1, 2, 3],
-    'signup_date': pd.date_range('2024-01-01', periods=3),
-})
-transaction_df = pd.DataFrame({
-    'transaction_id': range(6),
-    'customer_id': [1, 1, 2, 2, 3, 3],
-    'transaction_date': pd.date_range('2024-02-01', periods=6),
-    'amount': rng.normal(50, 10, size=6).round(2),
-})
+es = ft.EntitySet(id='ehr')
+es = es.add_dataframe(dataframe_name='patients', dataframe=patients, index='patient_id')
+es = es.add_dataframe(dataframe_name='encounters', dataframe=encounters,
+                      index='encounter_id', time_index='admit_time',
+                      logical_types={'encounter_type': 'Categorical'})
+es = es.add_relationship('patients', 'patient_id', 'encounters', 'patient_id')
 
-# Create entity set
-es = ft.EntitySet(id='data')
-
-# Add entities
-es = es.add_dataframe(
-    dataframe_name='customers',
-    dataframe=customer_df,
-    index='customer_id'
-)
-
-es = es.add_dataframe(
-    dataframe_name='transactions',
-    dataframe=transaction_df,
-    index='transaction_id',
-    time_index='transaction_date'
-)
-
-# Define relationships
-es = es.add_relationship(
-    parent_dataframe_name='customers',
-    parent_column_name='customer_id',
-    child_dataframe_name='transactions',
-    child_column_name='customer_id',
-)
-
-# Generate features
+cutoffs = pd.DataFrame({'patient_id': ['P01', 'P02', 'P03'],
+                        'time': pd.to_datetime(['2025-03-01'] * 3)})
 feature_matrix, feature_defs = ft.dfs(
-    entityset=es,
-    target_dataframe_name='customers',
-    max_depth=2
-)
+    entityset=es, target_dataframe_name='patients', cutoff_time=cutoffs,
+    agg_primitives=['count', 'mean', 'max', 'num_unique'], trans_primitives=[])
+print(feature_matrix.to_string())
 ```
+
+```text
+            birth_year  COUNT(encounters)  MAX(encounters.los_days)  MEAN(encounters.los_days)  NUM_UNIQUE(encounters.encounter_type)
+patient_id                                                                                                                           
+P01               1948                  2                       4.0                       2.15                                      2
+P02               1971                  1                       0.1                       0.10                                      1
+P03               1990                  1                       0.1                       0.10                                      1
+```
+
+The counts match the pandas version, because `cutoff_time` applies the same March 1 boundary.
 
 ## Polynomial and Interaction Features
 
-**Polynomial features** add powers such as `x1²`; **interaction features** add products such as `x1 * x2`, letting one feature's contribution depend on another. The first transformer below makes only products; the pipeline also includes squares. Validate this extra flexibility against the original linear model.
+**Polynomial features** add powers such as `age²`; **interaction features** add products such as `age * bmi`, letting BMI's contribution to SBP depend on age. Validate this extra flexibility against the plain linear model.
 
 ### Reference Card: Polynomial Feature Tools
 
-- `from sklearn.preprocessing import PolynomialFeatures`: Polynomial features
-- `poly = PolynomialFeatures(degree=2, interaction_only=True)`: Create transformer
+- `PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)`: Add pairwise products only.
+- `PolynomialFeatures(degree=2, include_bias=False)`: Add products and squares.
+- `poly.get_feature_names_out()`: Name the generated columns.
 
-### Code Snippet: Adding Polynomial Features to a Pipeline
+### Code Snippet: Does SBP Need an Age-by-BMI Term?
 
 ```python
-from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
-from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split
-import numpy as np
+from sklearn.model_selection import cross_val_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import PolynomialFeatures
 
-rng = np.random.default_rng(42)
-X = rng.normal(size=(100, 2))
-y = 3 + 2 * X[:, 0] * X[:, 1] + rng.normal(scale=0.5, size=100)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_vitals = cohort[['age', 'bmi']]
+poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False).fit(X_vitals)
+print(poly.get_feature_names_out())  # ['age' 'bmi' 'age bmi']
 
-# Create polynomial features
-poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)
-X_poly = poly.fit_transform(X)
-
-# Use in pipeline
-pipeline = Pipeline([
-    ('poly', PolynomialFeatures(degree=2)),
-    ('model', LinearRegression())
-])
-pipeline.fit(X_train, y_train)
+candidates = {
+    'linear': LinearRegression(),
+    'interaction': make_pipeline(PolynomialFeatures(degree=2, interaction_only=True, include_bias=False), LinearRegression()),
+    'degree 2': make_pipeline(PolynomialFeatures(degree=2, include_bias=False), LinearRegression()),
+}
+for name, model in candidates.items():
+    print(name, cross_val_score(model, X_vitals, cohort['sbp'], cv=5, scoring='r2').mean().round(3))
 ```
+
+```text
+linear 0.551
+interaction 0.571
+degree 2 0.59
+```
+
+Each added term raises cross-validated R² because the generator contains both the interaction and the squared age term.
 
 # Model Monitoring and Maintenance
 
 ## Drift Detection
 
-**Data drift** is a change in input distributions; **concept drift** is a change in the relationship between inputs and outcomes. The two-sample **Kolmogorov-Smirnov (KS) test** below checks one numeric input distribution at a time. It cannot establish concept drift or a loss of predictive performance; small repeated samples and testing many columns also produce false alarms.
+**Data drift** is a change in input distributions; **concept drift** is a change in the relationship between inputs and outcomes. A monthly feed monitor compares each new batch of model inputs against the training data, one column at a time, with the two-sample **Kolmogorov-Smirnov (KS) test**. It cannot establish concept drift or a loss of predictive performance; small repeated samples and testing many columns also produce false alarms, so the example uses a strict `alpha=0.01`.
 
 ### Reference Card: Drift Detection Approach
 
-- Monitor model performance over time
-- Detect data drift and concept drift
+- `scipy.stats.ks_2samp(reference, batch)`: Return the KS statistic (largest gap between the two cumulative distributions) and a p-value.
+- Monitor input distributions, label rates, and live performance together; a flag starts an investigation.
 
-### Code Snippet: Detecting Drift with a KS Test
+### Code Snippet: Catching a Lab Assay Change
 
 ```python
-import numpy as np
-import pandas as pd
 from scipy import stats
 
-def detect_drift(reference_data, new_data, threshold=0.05):
-    """Detect statistical drift between reference and new data"""
-    drift_detected = {}
-    
-    for col in reference_data.columns:
-        # Kolmogorov-Smirnov test
-        statistic, p_value = stats.ks_2samp(
-            reference_data[col], 
-            new_data[col]
-        )
-        
-        drift_detected[col] = {
-            'statistic': statistic,
-            'p_value': p_value,
-            'drift': p_value < threshold
-        }
-    
-    return drift_detected
+def ks_drift(reference, batch, columns, alpha=0.01):
+    rows = [(col, *stats.ks_2samp(reference[col], batch[col])) for col in columns]
+    report = pd.DataFrame(rows, columns=['column', 'ks_stat', 'p_value']).set_index('column')
+    report['flag'] = report['p_value'] < alpha
+    return report.round(3)
 
-# Reference window and two later batches (the second shifted, to simulate drift)
-rng = np.random.default_rng(42)
-reference_data = pd.DataFrame({
-    'age': rng.normal(50, 10, size=200),
-    'bmi': rng.normal(27, 4, size=200),
-})
-data_batches = [
-    pd.DataFrame({
-        'age': rng.normal(50, 10, size=200),
-        'bmi': rng.normal(27, 4, size=200),
-    }),
-    pd.DataFrame({
-        'age': rng.normal(58, 10, size=200),  # shifted: simulates drift
-        'bmi': rng.normal(27, 4, size=200),
-    }),
-]
+march = cohort.sample(400, random_state=1)
+april = cohort.sample(400, random_state=2).assign(a1c=lambda d: (d['a1c'] + 0.4).round(1))  # new assay reads 0.4 high
 
-# Monitor over time
-for batch in data_batches:
-    drift = detect_drift(reference_data, batch)
-    if any(d['drift'] for d in drift.values()):
-        print("Drift signal: investigate data quality, affected segments, and live performance.")
-        # Retraining requires explicit review, leakage checks, and validation
-        # against the current model before any deployment decision.
+for month, batch in {'March': march, 'April': april}.items():
+    print(month)
+    print(ks_drift(X_train, batch, ['age', 'bmi', 'sbp', 'a1c']))
 ```
+
+```text
+March
+        ks_stat  p_value   flag
+column                         
+age       0.023    0.991  False
+bmi       0.046    0.467  False
+sbp       0.024    0.984  False
+a1c       0.038    0.679  False
+April
+        ks_stat  p_value   flag
+column                         
+age       0.048    0.412  False
+bmi       0.045    0.490  False
+sbp       0.037    0.715  False
+a1c       0.283    0.000   True
+```
+
+April flags only A1c (KS 0.283). The next step is a call to the lab about the assay, not an automatic retrain: retraining requires explicit review, leakage checks, and validation against the current model.
 
 ## Paired Model Comparison
 
-**McNemar's test** compares two classifiers' mistakes on the same cases. It needs both predictions for each case; a randomized A/B deployment instead assigns different cases to each model.
+**McNemar's test** compares two classifiers' mistakes on the same cases. It uses only the discordant cells, where one model is right and the other wrong. It needs both predictions for each case; a randomized A/B deployment instead assigns different cases to each model.
 
 ### Reference Card: Model Comparison Approach
 
-- Compare model performance in production
-- Statistical significance testing
+- `pd.crosstab(a_correct, b_correct)`: Build the 2 by 2 table of agreement on the same cases.
+- `statsmodels.stats.contingency_tables.mcnemar(table, exact=False, correction=True)`: Test whether the discordant cells differ; `exact=True` suits small counts.
 
-### Code Snippet: Comparing Two Models with McNemar's Test
+### Code Snippet: Old Sepsis Alert Versus a New Model
 
 ```python
-import numpy as np
-from scipy import stats
-
-def compare_models(model_a_predictions, model_b_predictions, true_labels):
-    """Compare two models using statistical tests"""
-    
-    # Calculate accuracies
-    accuracy_a = (model_a_predictions == true_labels).mean()
-    accuracy_b = (model_b_predictions == true_labels).mean()
-    
-    # McNemar's test for paired comparisons
-    from statsmodels.stats.contingency_tables import mcnemar
-    
-    # Create contingency table
-    both_correct = ((model_a_predictions == true_labels) & 
-                   (model_b_predictions == true_labels)).sum()
-    a_correct_b_wrong = ((model_a_predictions == true_labels) & 
-                         (model_b_predictions != true_labels)).sum()
-    a_wrong_b_correct = ((model_a_predictions != true_labels) & 
-                         (model_b_predictions == true_labels)).sum()
-    both_wrong = ((model_a_predictions != true_labels) & 
-                 (model_b_predictions != true_labels)).sum()
-    
-    table = [[both_correct, a_correct_b_wrong],
-             [a_wrong_b_correct, both_wrong]]
-    
-    result = mcnemar(table, exact=False, correction=True)
-    
-    return {
-        'accuracy_a': accuracy_a,
-        'accuracy_b': accuracy_b,
-        'p_value': result.pvalue,
-        'significant': result.pvalue < 0.05
-    }
+from statsmodels.stats.contingency_tables import mcnemar
 
 rng = np.random.default_rng(42)
-true_labels = rng.integers(0, 2, size=100)
-model_a_predictions = np.where(rng.random(100) < 0.85, true_labels, 1 - true_labels)
-model_b_predictions = np.where(rng.random(100) < 0.70, true_labels, 1 - true_labels)
+sepsis = rng.random(1000) < 0.08
+old_alert = np.where(rng.random(1000) < 0.82, sepsis, ~sepsis)
+new_model = np.where(rng.random(1000) < 0.87, sepsis, ~sepsis)
 
-print(compare_models(model_a_predictions, model_b_predictions, true_labels))
+table = pd.crosstab(old_alert == sepsis, new_model == sepsis,
+                    rownames=['old correct'], colnames=['new correct'])
+print(table)
+result = mcnemar(table, exact=False, correction=True)
+print(f"Accuracy old {np.mean(old_alert == sepsis):.3f}, new {np.mean(new_model == sepsis):.3f}, p = {result.pvalue:.1e}")
 ```
+
+```text
+new correct  False  True 
+old correct              
+False           20    179
+True           109    692
+Accuracy old 0.801, new 0.871, p = 4.8e-05
+```
+
+The new model fixes 179 of the old alert's misses and adds 109 of its own. With 8% prevalence, also compare sensitivity on the 73 sepsis cases before switching, because accuracy mostly counts the negatives.

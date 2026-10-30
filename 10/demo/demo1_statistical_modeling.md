@@ -16,491 +16,370 @@ jupyter:
     version: 3.13
 ---
 
-# Demo 1: Statistical Modeling and Framing a Prediction Problem
+# Demo 1: BMI and Blood Pressure in a Health-System Extract
 
-A diabetes clinic recorded age, sex, BMI, average blood pressure, and six blood tests for 442 patients, then scored how far each patient's disease had progressed one year later.
+Two requests reach the analytics team of one health system:
 
-- **Parts 1 to 7:** fit linear regressions with `statsmodels`, read coefficients with their uncertainty, check residuals, compare models, and add a categorical predictor.
-- **Part 8:** switch to a home blood-pressure program and frame a prediction problem: the target and its time, a feature audit, clock-face hour features, and a chronological split.
-- **Data:** the diabetes records are real and de-identified; the blood-pressure readings are synthetic.
+- **Quality team (inference)**: among adults of the same age and sex, how much higher does systolic blood pressure (SBP) run per unit of BMI, and how sure are we? The data is a primary-care extract of about 520,000 visits by 160,000 patients.
+- **Remote monitoring team (prediction setup)**: every Monday at 08:00 the program prints a call list. It wants a forecast of each patient's average SBP for the coming week. The data is 590,000 home cuff readings from 5,000 enrolled patients. This demo frames the problem and splits the rows; Demo 2 fits the models.
+
+All patients and values are synthetic.
 
 Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5
+# Installs the course's pandas and pyarrow (for Parquet) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
 ```
 
-**Core route:** Parts 1, 2, 4, 5, and 8. Parts 3, 6, and 7 are independent practice for outside class; skip their cells on the core route. Running every cell from the top also works.
+## Core walkthrough
 
-## 1. Load the diabetes records
+### 1. Load the primary-care extract
 
-scikit-learn ships a few small real datasets. `load_diabetes(scaled=False, as_frame=True)` returns this one in its original units, with the table as a DataFrame in its `.frame` and the six blood tests named `s1` to `s6`; rename them so the formulas below read clearly.
-
-| Column | Meaning | Units |
-| --- | --- | --- |
-| `age` | Age at baseline | years |
-| `sex` | Sex, coded 1 or 2 (the source does not say which is which) | code |
-| `bmi` | Body mass index | kg/m² |
-| `bp` | Average blood pressure | mmHg |
-| `tc`, `ldl`, `hdl` | Total, LDL, and HDL cholesterol | mg/dL |
-| `tch` | Total cholesterol divided by HDL | ratio |
-| `ltg` | Possibly log serum triglycerides, according to the source | source does not specify |
-| `glu` | Blood glucose | mg/dL |
-| `progression` | Disease progression one year after baseline | score, 25 to 346 |
-
-The source lists the blood tests without units; their ranges match mg/dL.
+This supplied cell downloads `generate_data.py` when the folder lacks it (`urlretrieve(url, path)` saves the file at a web address to `path`), runs its `build()` when a table in `data/` is missing, and reads the visits table. `build()` writes four tables in under a minute with a fixed seed, so your values match the ones below.
 
 ```python
+from pathlib import Path
+from urllib.request import urlretrieve
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
-from sklearn.datasets import load_diabetes
 
-diabetes = load_diabetes(scaled=False, as_frame=True).frame
-diabetes = diabetes.rename(columns={'s1': 'tc', 's2': 'ldl', 's3': 'hdl', 's4': 'tch',
-                                    's5': 'ltg', 's6': 'glu', 'target': 'progression'})
-print(diabetes.shape)
-display(diabetes.head(5))
-display(diabetes[['age', 'bmi', 'bp', 'progression']].describe().round(1))
+REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/10/demo"
+TABLES = ["pcp_visits", "rpm_patients", "rpm_readings", "discharges"]
+if not Path("generate_data.py").exists():
+    urlretrieve(f"{REPO_RAW}/generate_data.py", "generate_data.py")
+if not all(Path(f"data/{name}.parquet").exists() for name in TABLES):
+    import generate_data
+    generate_data.build()
+
+visits = pd.read_parquet("data/pcp_visits.parquet")
+print(visits.shape, "visits from", visits["patient_id"].nunique(), "patients")
+display(visits.head())
+display(visits[["age", "bmi", "sbp", "dbp"]].describe().round(1))
 ```
 
-**Expect:** `(442, 11)`, the first five patients with all 11 columns, and these summary rows:
+Expect `(522338, 15) visits from 160000 patients`, then five visits from January 1, 2024. The summary already shows problems: `bmi` has 486,015 values, not 522,338 (missing), its maximum is 484.0 (a dropped decimal point: 48.4 typed as 484), the maximum SBP is 1790 mmHg, and the minimum is 40 (SBP and DBP typed into each other's fields).
 
-```text
-         age    bmi     bp  progression
-count  442.0  442.0  442.0        442.0
-mean    48.5   26.4   94.6        152.1
-std     13.1    4.4   13.8         77.1
-min     19.0   18.0   62.0         25.0
-max     79.0   42.2  133.0        346.0
-```
+### 2. One clean row per patient
 
-The table also has the 25%, 50%, and 75% rows between `min` and `max`.
+OLS standard errors assume independent rows. Repeat visits by the same patient are not independent, so the inference question uses one visit per patient: the first. Three cleaning steps come first:
 
-Look before you model: plot the outcome against each candidate predictor.
+- **Double-fed rows**: the interface sent some visits twice; the copies match on every column except `visit_id`.
+- **Implausible SBP**: below 70 or above 260 mmHg, or not above DBP (swapped fields).
+- **Implausible BMI**: above 70 kg/m². Missing BMI stays for now, to see what the model does with it.
 
 ```python
-fig, axes = plt.subplots(1, 3, figsize=(12, 3.5), sharey=True)
-for ax, column, label in zip(axes, ['age', 'bmi', 'bp'],
-                             ['Age (years)', 'BMI (kg/m²)', 'Average BP (mmHg)']):
-    ax.scatter(diabetes[column], diabetes['progression'], alpha=0.4)
-    ax.set_xlabel(label)
-axes[0].set_ylabel('Progression after one year')
+same_visit = [column for column in visits.columns if column != "visit_id"]
+deduped = visits.drop_duplicates(subset=same_visit)
+
+first = deduped.sort_values(["patient_id", "visit_date"]).drop_duplicates("patient_id")
+bad_sbp = ~first["sbp"].between(70, 260) | (first["sbp"] <= first["dbp"])
+bad_bmi = first["bmi"] > 70
+cohort = first[~bad_sbp & ~bad_bmi]
+
+display(pd.Series({
+    "visits in extract": len(visits),
+    "double-fed copies removed": len(visits) - len(deduped),
+    "patients (first visit each)": len(first),
+    "implausible SBP": bad_sbp.sum(),
+    "implausible BMI": bad_bmi.sum(),
+    "analysis cohort": len(cohort),
+    "cohort rows missing BMI": cohort["bmi"].isna().sum(),
+}, name="rows"))
+```
+
+Expect 2,599 double-fed copies, 160,000 first visits, 474 implausible SBP values and 167 implausible BMIs, a cohort of 159,360 patients, and 10,873 of them missing BMI.
+
+### 3. Fit the model and check `nobs`
+
+`C(sex)` makes sex categorical; `F` is the reference level, so the `C(sex)[T.M]` coefficient compares men with women of the same age and BMI.
+
+```python
+results = smf.ols("sbp ~ age + bmi + C(sex)", data=cohort).fit()
+print("rows used:", int(results.nobs), "of", len(cohort))
+print("R-squared:", round(results.rsquared, 3))
+
+missing = cohort["bmi"].isna()
+display(missing.groupby(cohort["clinic"]).mean().sort_values(ascending=False).round(3).rename("share_missing_bmi"))
+print("share missing BMI, age 80 and over:", round(missing[cohort["age"] >= 80].mean(), 3),
+      " under 80:", round(missing[cohort["age"] < 80].mean(), 3))
+```
+
+Expect `rows used: 148487 of 159360`: `statsmodels` silently dropped the 10,873 patients with no BMI. Expect R-squared 0.13: age, BMI, and sex explain a modest share of SBP, which also depends on medication, activity, and a patient's own baseline. The missing BMIs are not spread evenly: Marina is missing 19.7%, every other clinic 5.3% to 7.3%, and patients 80 and over 10.6% against 6.7% for younger ones. The estimates describe patients with a recorded BMI, so Marina's patients and the oldest patients count less than their share; report that beside the result.
+
+### 4. Read the coefficients with their uncertainty
+
+```python
+coefficients = pd.DataFrame({
+    "coef": results.params,
+    "ci_lower": results.conf_int()[0],
+    "ci_upper": results.conf_int()[1],
+    "p_value": results.pvalues,
+}).round(3)
+display(coefficients)
+```
+
+Expect:
+
+|  | coef | ci_lower | ci_upper | p_value |
+| --- | --- | --- | --- | --- |
+| Intercept | 82.793 | 82.292 | 83.293 | 0.0 |
+| C(sex)[T.M] | 4.077 | 3.920 | 4.235 | 0.0 |
+| age | 0.206 | 0.201 | 0.211 | 0.0 |
+| bmi | 0.864 | 0.849 | 0.880 | 0.0 |
+
+- **bmi, 0.86**: among patients of the same age and sex, each extra kg/m² goes with about 0.86 mmHg higher SBP (95% CI 0.85 to 0.88). Ten BMI units, say 25 against 35, is about 9 mmHg.
+- **age, 0.21**: about 2.1 mmHg per decade, holding BMI and sex fixed. Older patients are treated more often (practice 2's treated patients are about 13 years older), and treatment lowers their readings, so this slope is flatter than the rise in untreated pressure with age.
+- **p-values of 0.0**: with 148,487 rows, almost any nonzero association has a tiny p-value. The useful numbers are the size of the coefficient and the width of its interval.
+- **Association**: these are observational records. The coefficient does not say that losing weight lowers SBP by 0.86 mmHg per unit; that needs causal evidence.
+
+### 5. Two intervals for one new patient
+
+The quality team asks what the model says about a 55-year-old woman with a BMI of 30.
+
+```python
+new_patient = pd.DataFrame({"age": [55], "bmi": [30.0], "sex": ["F"]})
+display(results.get_prediction(new_patient).summary_frame(alpha=0.05).round(1))
+```
+
+Expect a fitted 120.0 mmHg, a mean-response interval of 119.9 to 120.1, and a prediction interval of 89.8 to 150.2. The 148,487 rows pin down the _average_ for patients like her to within a fraction of a mmHg, but _her_ SBP could sit anywhere in a 60 mmHg range. More rows shrink the first interval, not the second.
+
+### 6. Check the residuals
+
+A scatter of 148,000 points is a solid blob, so plot a random 5,000 of them, then check the pattern in numbers on every row: `pd.cut` (Lecture 05) groups the fitted values into bands.
+
+```python
+diagnostics = pd.DataFrame({"fitted": results.fittedvalues, "residual": results.resid})
+sample = diagnostics.sample(5000, random_state=1)
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.scatter(sample["fitted"], sample["residual"], alpha=0.25, s=8)
+ax.axhline(0, color="gray", linestyle="--")
+ax.set_xlabel("Fitted SBP (mmHg)")
+ax.set_ylabel("Residual (observed - fitted)")
+ax.set_title("Residuals against fitted SBP")
+fig.savefig("residuals_vs_fitted.png", dpi=150, bbox_inches="tight")
 plt.show()
 plt.close(fig)
+
+bands = pd.cut(diagnostics["fitted"], [0, 110, 120, 130, 140, 200])
+display(diagnostics.groupby(bands, observed=True)["residual"].agg(["mean", "std", "size"]).round(2))
 ```
 
-**Expect:** three scatter plots sharing one y-axis. Progression climbs with BMI and, more loosely, with blood pressure; against age the cloud is nearly flat.
+Expect a cloud centered on the dashed zero line, a little wider on the right, and a saved `residuals_vs_fitted.png`. Among 5,000 points a widening (a **funnel**) is hard to judge by eye, so the table puts numbers on it: the bands' mean residuals stay within 1 mmHg of 0, but the standard deviation grows from 13.1 mmHg in the lowest band to about 17 in the top two. The spread is not constant (older patients' readings vary more from visit to visit), so the default standard errors and intervals above are approximate. The prediction interval in step 5 is too wide for young patients and too narrow for old ones.
 
-## 2. The formula API
+### 7. Frame the forecast: one row per patient-week
 
-Fit progression on age, BMI, and blood pressure. Read the formula as "progression is modeled by age, BMI, and BP"; `statsmodels` adds the intercept for you.
+Switch to the remote monitoring program. Each patient's cuff takes readings at home and uploads them when the phone syncs, usually within minutes, sometimes days later. Each reading is marked `scheduled` (the daily routine) or `symptoms` (taken because the patient felt unwell); the program judges control on scheduled readings only.
+
+- **Prediction unit**: one patient-week. **Prediction time**: Monday 08:00 after the week ends, when the call list runs. A reading uploaded after that misses the run.
+- **Target**: `sbp_next_week`, the mean of the patient's scheduled readings in the following Monday-to-Sunday week. Its **target time** is that week.
+- **Label arrival**: the latest `upload_time` among those readings, when the label is complete in the database.
+
+The raw readings need cleaning first: re-synced copies of a reading (same patient and `reading_time`, later `upload_time`) and cuff error codes (SBP 0, 300, 310, 999). Subtracting `.dt.dayofweek` days (Monday is 0) from each reading's date gives the Monday that starts its week.
 
 ```python
-results_formula = smf.ols('progression ~ age + bmi + bp', data=diabetes).fit()
-display(results_formula.summary())
+readings = pd.read_parquet("data/rpm_readings.parquet")
+enrolled = pd.read_parquet("data/rpm_patients.parquet")
+print("raw readings:", len(readings))
+
+readings = readings.sort_values("upload_time").drop_duplicates(["patient_id", "reading_time"])
+readings = readings[readings["sbp"].between(60, 260)].copy()
+print("clean readings:", len(readings))
+display(readings.groupby("reason")["sbp"].agg(["size", "mean"]).round(1))
+
+readings["week"] = readings["reading_time"].dt.floor("D") - readings["reading_time"].dt.dayofweek * pd.Timedelta(days=1)
+readings["run_time"] = readings["week"] + pd.Timedelta(days=7, hours=8)
+scheduled = readings[readings["reason"] == "scheduled"]
+on_time = scheduled[scheduled["upload_time"] <= scheduled["run_time"]]
+
+seen_by_run = on_time.groupby(["patient_id", "week"]).agg(sbp_week=("sbp", "mean"), n_readings=("sbp", "size"))
+complete = scheduled.groupby(["patient_id", "week"]).agg(sbp_complete=("sbp", "mean"),
+                                                         last_upload=("upload_time", "max"))
+weekly = seen_by_run.join(complete, how="outer").reset_index()
+
+by_patient = weekly.groupby("patient_id")
+weekly["sbp_next_week"] = by_patient["sbp_complete"].shift(-1)
+weekly["target_week"] = by_patient["week"].shift(-1)
+weekly["label_arrival"] = by_patient["last_upload"].shift(-1)
+weekly["run_time"] = weekly["week"] + pd.Timedelta(days=7, hours=8)
+consecutive = weekly["target_week"] - weekly["week"] == pd.Timedelta(days=7)
+weekly = weekly[consecutive & weekly["sbp_week"].notna()].drop(columns=["sbp_complete", "last_upload"])
+print("patient-weeks with a target:", len(weekly))
+display(weekly.head(3))
 ```
 
-**Expect:** a summary whose header reports `No. Observations:` 442 and `R-squared:` 0.396 (it also shows the date and time you ran it), then this coefficient block:
+Expect 587,139 raw readings and 580,698 clean ones: 552,512 scheduled (mean 142.6 mmHg) and 28,186 symptom readings (mean 156.2, taken when the patient felt unwell, so they run high). The weekly table has 140,399 patient-weeks with a target. In the first rows, patient RP00001's `sbp_next_week` is the next row's `sbp_week` (147.2, then 151.7), and each label arrives when the target week's last reading uploads (April 6, 13, and 18).
 
-```text
-                 coef    std err          t      P>|t|      [0.025      0.975]
-------------------------------------------------------------------------------
-Intercept   -205.1120     22.554     -9.094      0.000    -249.440    -160.784
-age            0.0944      0.232      0.407      0.685      -0.362       0.551
-bmi            8.5016      0.707     12.031      0.000       7.113       9.890
-bp             1.3569      0.235      5.763      0.000       0.894       1.820
-```
+### 8. Audit the features and put reading times on a clock face
 
-The same numbers are available as attributes, which is how you use them in later code:
+Every feature must be known at Monday 08:00. The candidates include two that a dashboard offers but the forecast cannot have:
 
 ```python
-print(f"R-squared: {results_formula.rsquared:.4f}")
-print(f"Adjusted R-squared: {results_formula.rsquared_adj:.4f}")
-display(pd.DataFrame({'coef': results_formula.params.round(3),
-                    'p_value': results_formula.pvalues.round(4)}))
-```
-
-**Expect:**
-
-```text
-R-squared: 0.3962
-Adjusted R-squared: 0.3921
-              coef  p_value
-Intercept -205.112   0.0000
-age          0.094   0.6845
-bmi          8.502   0.0000
-bp           1.357   0.0000
-```
-
-Read each coefficient as an association, holding the other two predictors fixed:
-
-- **bmi:** each 1 kg/m² higher BMI goes with an 8.5-point higher fitted progression score, at the same age and blood pressure.
-- **bp:** each 1 mmHg higher average blood pressure goes with a 1.36-point higher fitted score.
-- **age:** 0.09 points per year, with p = 0.68. Among patients with the same BMI and blood pressure, these data show no clear association with age. That is not proof that age does not matter.
-- **Intercept:** the fitted score for age 0, BMI 0, and BP 0, a patient who cannot exist. It anchors the line and is not interpreted.
-
-These are observational records, so none of this says that lowering a patient's BMI _would_ slow progression; that needs additional causal evidence, such as a trial. R² of 0.396 means the three predictors explain about 40% of the variation in progression.
-
-## 3. Independent practice: the array API
-
-The array API asks you to build the table of predictors yourself, including the intercept column that `sm.add_constant()` adds. Both interfaces run the same least-squares fit.
-
-```python
-X = sm.add_constant(diabetes[['age', 'bmi', 'bp']])
-display(X.head(3))
-
-results_array = sm.OLS(diabetes['progression'], X).fit()
-
-side_by_side = pd.DataFrame({'formula': results_formula.params.values,
-                             'array': results_array.params.values},
-                            index=results_array.params.index)
-side_by_side['difference'] = side_by_side['formula'] - side_by_side['array']
-display(side_by_side)
-```
-
-**Expect:** the first rows of `X` with a `const` column of 1.0 in front of `age`, `bmi`, and `bp`, then:
-
-```text
-          formula       array  difference
-const -205.111971 -205.111971         0.0
-age      0.094411    0.094411         0.0
-bmi      8.501595    8.501595         0.0
-bp       1.356921    1.356921         0.0
-```
-
-The array API names the intercept `const` instead of `Intercept`; the numbers are identical.
-
-Use the formula API for quick work with DataFrame columns; use the array API when the predictors are already an array, or when you want to build the design table yourself.
-
-## 4. Uncertainty and residuals
-
-A coefficient is an estimate from one sample of 442 patients. Its standard error says how much it would vary from sample to sample, and the 95% confidence interval is roughly the estimate plus or minus two standard errors.
-
-```python
-print(f"Rows used: {results_formula.nobs:.0f}")
-print(f"Residual degrees of freedom: {results_formula.df_resid:.0f}")
-print(f"F-statistic: {results_formula.fvalue:.2f} (p = {results_formula.f_pvalue:.2e})")
-
-coef_summary = pd.DataFrame({
-    'coef': results_formula.params,
-    'std_err': results_formula.bse,
-    'ci_lower': results_formula.conf_int()[0],
-    'ci_upper': results_formula.conf_int()[1],
+audit = pd.DataFrame({
+    "feature": ["age", "bmi at enrollment", "this week's mean SBP", "mean reading time this week",
+                "this week's mean with late uploads", "pharmacist note from next week's review"],
+    "becomes_known": ["enrollment", "enrollment", "Monday 08:00", "Monday 08:00",
+                      "when the last phone syncs, up to 6 days later", "during the target week"],
+    "hours_after_prediction": [0, 0, 0, 0, 144, 96],
 })
-display(coef_summary.round(3))
+audit["decision"] = np.where(audit["hours_after_prediction"] <= 0, "keep", "exclude (leakage)")
+display(audit)
 ```
 
-**Expect:**
+Expect four `keep` rows and two `exclude (leakage)` rows. This week's mean _with_ late uploads looks like the same feature, but at 08:00 on Monday some of those readings are still on a phone.
 
-```text
-Rows used: 442
-Residual degrees of freedom: 438
-F-statistic: 95.81 (p = 1.09e-47)
-              coef  std_err  ci_lower  ci_upper
-Intercept -205.112   22.554  -249.440  -160.784
-age          0.094    0.232    -0.362     0.551
-bmi          8.502    0.707     7.113     9.890
-bp           1.357    0.235     0.894     1.820
-```
-
-The residual degrees of freedom are 442 rows minus 4 estimated coefficients. The F-test asks whether all three slopes are 0 together; p = 1.09e-47 is strong evidence against that joint hypothesis under the model assumptions. The `age` interval runs from -0.36 to 0.55 and contains 0, which is the same message as its p-value of 0.68. The `bmi` interval, 7.1 to 9.9, is far from 0.
-
-Coefficients only mean something if the straight-line form fits. Plot each patient's residual (observed minus fitted) against the fitted value: a shapeless cloud around zero is what we want, a curve says the form is wrong, and a funnel says the spread is not constant.
+Most patients measure in the morning, some in the evening, and night-shift workers around midnight, and morning readings run higher. A week's mean reading time is a useful feature, but a plain mean of hours fails at midnight: readings at 23:00 and 01:00 average to 12:00. Averaging the sine and cosine of each hour instead keeps the mean on the clock face: (0, 1) is midnight, (1, 0) 06:00, (0, -1) noon, and (-1, 0) 18:00.
 
 ```python
-display(results_formula.resid.describe().round(1).rename('residual'))
+scheduled = scheduled.assign(hour=scheduled["reading_time"].dt.hour + scheduled["reading_time"].dt.minute / 60)
+scheduled["hour_sin"] = np.sin(2 * np.pi * scheduled["hour"] / 24)
+scheduled["hour_cos"] = np.cos(2 * np.pi * scheduled["hour"] / 24)
 
-fig, ax = plt.subplots(figsize=(6, 4))
-ax.scatter(results_formula.fittedvalues, results_formula.resid, alpha=0.5)
-ax.axhline(0, color='gray', linestyle='--')
-ax.set_xlabel('Fitted progression score')
-ax.set_ylabel('Residual (observed - fitted)')
-plt.show()
-plt.close(fig)
+display(scheduled.groupby(scheduled["reading_time"].dt.hour)["sbp"].mean().loc[[0, 3, 7, 12, 19, 22]]
+        .round(1).rename("mean_sbp"))
+
+straddle = scheduled.groupby("patient_id")["hour"].agg(lambda hours: min((hours >= 23).mean(), (hours < 1).mean()))
+night_patient = straddle.idxmax()
+night = scheduled[scheduled["patient_id"] == night_patient]
+print(night_patient, "plain mean hour:", round(night["hour"].mean(), 1),
+      " mean hour_sin:", round(night["hour_sin"].mean(), 2), " mean hour_cos:", round(night["hour_cos"].mean(), 2))
 ```
 
-**Expect:** residuals with mean 0.0 (least squares guarantees it), standard deviation 59.9, and a range of -145.7 to 154.4. In the plot there is no curve, but two things stand out:
+Expect the daily rhythm in the means: 145.8 mmHg at 7:00, 136.2 at 19:00, and 138.4 at midnight. For RP04850, who measures around midnight, the plain mean hour is 12.3, a time the patient never measures; the mean sine and cosine are -0.05 and 0.95, just before midnight on the clock face.
 
-- The lower-left edge is a straight diagonal line. The smallest observed progression score in this dataset is 25, so the plotted residuals lie above `25 - fitted`; this sample minimum does not establish the score's clinical lower bound.
-- The cloud is narrower at low fitted scores than in the middle, a mild funnel: the spread is not quite constant.
+### 9. Split on target time, then keep only labels that had arrived
 
-Both show where the straight-line model is an approximation. The default intervals assume independent, normally distributed errors with constant spread, so the funnel also warns that their stated coverage may be inaccurate.
-
-## 5. Intervals for new patients
-
-Three new 50-year-olds with rising BMI and blood pressure. `get_prediction(...).summary_frame()` gives both intervals from the lecture: `mean_ci_*` for the average patient like this one, and `obs_ci_*` for one individual patient.
+Target weeks starting before June 1 train, June and July validate, and August and September test. A prospective evaluation also requires every training label to have arrived by the first validation run, the earliest `run_time` among the validation rows.
 
 ```python
-new_patients = pd.DataFrame({'age': [50, 50, 50],
-                             'bmi': [22.0, 28.0, 34.0],
-                             'bp': [85, 95, 105]})
-intervals = results_formula.get_prediction(new_patients).summary_frame(alpha=0.05)
-display(new_patients)
-display(intervals.drop(columns='mean_se').round(1))
+train = weekly[weekly["target_week"] < "2025-06-01"]
+valid = weekly[(weekly["target_week"] >= "2025-06-01") & (weekly["target_week"] < "2025-08-01")]
+test = weekly[weekly["target_week"] >= "2025-08-01"]
+
+first_valid_run = valid["run_time"].min()
+fit_rows = train[train["label_arrival"] <= first_valid_run]
+assert fit_rows["label_arrival"].max() <= first_valid_run
+
+display(pd.DataFrame({
+    "rows": [len(train), len(fit_rows), len(valid), len(test)],
+    "first_target_week": [part["target_week"].min().date() for part in [train, fit_rows, valid, test]],
+    "last_target_week": [part["target_week"].max().date() for part in [train, fit_rows, valid, test]],
+}, index=["train", "fit_rows (labels arrived)", "valid", "test"]))
+print("first validation run:", first_valid_run)
 ```
 
-**Expect:**
+Expect 68,634 training, 37,980 validation, and 33,785 test rows with non-overlapping target weeks. The first validation run is Monday, June 2, 2025, at 08:00, when the forecast for the week of June 2 is made. 68,324 training labels had arrived by then; the 310 left out are from the last training week (May 26), whose phones synced after the run. Demo 2 fits its models on `fit_rows`.
 
-```text
-   age   bmi   bp
-0   50  22.0   85
-1   50  28.0   95
-2   50  34.0  105
-    mean  mean_ci_lower  mean_ci_upper  obs_ci_lower  obs_ci_upper
-0  102.0           93.5          110.4         -16.5         220.4
-1  166.6          160.5          172.6          48.3         284.9
-2  231.1          219.8          242.4         112.5         349.8
-```
+## Independent practice
 
-Under the model assumptions, the mean-response interval for patients like the second one is about 160 to 173, while an individual's prediction interval is about 48 to 285: it adds person-to-person variation. The first prediction interval starts at -16.5, below every observed score in these data. The model allows values outside the observed range; judging whether they are clinically possible requires the outcome's definition, which this dataset does not supply.
+### 1. Count every visit and the intervals shrink for the wrong reason
 
-## 6. Independent practice: compare models
-
-Add predictors one step at a time and compare the fits. All four models use the same 442 rows, so their AIC and BIC are comparable (lower is better).
+Fit the same formula to every clean visit instead of one per patient, and compare the standard errors.
 
 ```python
-formulas = {
-    'Model 1: bmi': 'progression ~ bmi',
-    'Model 2: bmi + bp': 'progression ~ bmi + bp',
-    'Model 3: age + bmi + bp': 'progression ~ age + bmi + bp',
-    'Model 4: all ten': 'progression ~ age + sex + bmi + bp + tc + ldl + hdl + tch + ltg + glu',
-}
-
-rows = []
-for name, formula in formulas.items():
-    fitted = smf.ols(formula, data=diabetes).fit()
-    rows.append({'model': name, 'n_coef': len(fitted.params),
-                 'r2': fitted.rsquared, 'adj_r2': fitted.rsquared_adj,
-                 'aic': fitted.aic, 'bic': fitted.bic})
-comparison = pd.DataFrame(rows).set_index('model')
-display(comparison.round(4))
+all_visits = deduped[deduped["sbp"].between(70, 260) & (deduped["sbp"] > deduped["dbp"]) & ~(deduped["bmi"] > 70)]
+every_visit = smf.ols("sbp ~ age + bmi + C(sex)", data=all_visits).fit()
+display(pd.DataFrame({"one_per_patient": results.bse, "every_visit": every_visit.bse}).round(4))
+print("rows used:", int(every_visit.nobs))
 ```
 
-**Expect:**
+Expect 481,614 rows and standard errors about 45% smaller (BMI's falls from 0.0078 to 0.0043). The data did not get more informative: each patient's visits share that patient's usual blood pressure, and the model counts them as unrelated people.
 
-```text
-                         n_coef      r2  adj_r2        aic        bic
-model
-Model 1: bmi                  2  0.3439  0.3424  4912.0382  4920.2208
-Model 2: bmi + bp             3  0.3960  0.3932  4877.4878  4889.7618
-Model 3: age + bmi + bp       4  0.3962  0.3921  4879.3210  4895.6863
-Model 4: all ten             11  0.5177  0.5066  4793.9857  4838.9901
-```
+### 2. Does blood-pressure medication "raise" SBP?
 
-- **R² never falls when a predictor is added.** Adding age (Model 2 to Model 3) nudges it from 0.3960 to 0.3962.
-- **Adjusted R², AIC, and BIC charge for each coefficient.** For age, all three get worse: adjusted R² drops, AIC and BIC rise. Age costs a coefficient and explains almost nothing once BMI and BP are in.
-- **The blood tests earn their place.** Model 4 is best on all three criteria by a wide margin: adjusted R² 0.507 against 0.393, and AIC and BIC about 80 and 50 lower than Model 2.
-
-Whether six blood tests are worth drawing for every patient is a separate, clinical judgement; the criteria only say the extra columns explain more than they cost.
-
-## 7. Independent practice: a categorical predictor
-
-Clinics often report BMI in bands. `pd.cut()` makes the bands; `C()` in the formula treats them as categories, with the first band as the reference. The top edge, 60, sits above the largest BMI (42.2), so every patient lands in a band.
+Add `C(on_bp_med)` to the step 3 formula and read its coefficient beside the raw difference between treated and untreated patients.
 
 ```python
-diabetes['bmi_group'] = pd.cut(diabetes['bmi'], bins=[0, 25, 30, 60],
-                               labels=['25 or under', 'over 25 to 30', 'over 30'])
-display(diabetes['bmi_group'].value_counts())
-print(f"Patients without a band: {diabetes['bmi_group'].isna().sum()}")
-
-results_cat = smf.ols('progression ~ age + bp + C(bmi_group)', data=diabetes).fit()
-print(f"Rows used: {results_cat.nobs:.0f}")
-display(results_cat.params.round(2).rename('coef'))
+with_med = smf.ols("sbp ~ age + bmi + C(sex) + C(on_bp_med)", data=cohort).fit()
+display(with_med.params.round(2).rename("coef"))
+display(cohort.groupby("on_bp_med")[["sbp", "age", "bmi"]].mean().round(1))
 ```
 
-**Expect:**
+Expect `C(on_bp_med)[T.True]` near +1.1 mmHg: treated patients read _higher_ than untreated patients of the same age, BMI, and sex. The raw means show why: treated patients average 124.1 mmHg against 117.7, and they are 13 years older and 3 BMI units heavier. Medication does not raise blood pressure; clinicians prescribe it to the patients whose pressure was high (**confounding by indication**). An observational coefficient describes who gets treated as much as what treatment does.
 
-```text
-bmi_group
-25 or under      190
-over 25 to 30    157
-over 30           95
-Name: count, dtype: int64
-Patients without a band: 0
-Rows used: 442
-Intercept                       -42.03
-C(bmi_group)[T.over 25 to 30]    44.37
-C(bmi_group)[T.over 30]          85.01
-age                               0.23
-bp                                1.57
-Name: coef, dtype: float64
-```
+### 3. Clinics as a categorical predictor, and the array API
 
-`25 or under` is the reference band, so it has no row of its own. At the same age and blood pressure, patients in the `over 25 to 30` band average about 44 points higher progression than the reference band, and patients `over 30` about 85 points higher. All 442 patients were used: had the top edge been lower than the largest BMI, the patients above it would have been left without a band, and the formula would have dropped them without a warning. Printing the row count is how you would catch that.
-
-## 8. Framing a prediction problem
-
-Everything so far used all 442 patients at once, which is right when the question is _how_ progression relates to BMI. A prediction question, "what will this patient's next reading be?", is judged on rows the model has never seen, and these baseline records have no time order to split on.
-
-So this part switches to a home blood-pressure program: 30 patients each take one reading a week with a connected cuff, which uploads it with a timestamp. Most measure in the morning or evening; a few night-shift workers measure around midnight. The team wants to predict each patient's next weekly reading as soon as today's reading arrives. The target is the patient's **next** reading, so a grouped `shift(-1)` pulls it, and its timestamp, back onto the current row.
+`C(clinic)` gives every clinic but the reference (Bayview, first alphabetically) its own coefficient. Then reproduce step 3's fit with the array API, which needs the missing-BMI rows dropped and the dummy columns built by hand.
 
 ```python
-rng = np.random.default_rng(217)
-mondays = pd.date_range('2026-01-05', periods=8, freq='W-MON')
-routine_hours = [7, 8, 9, 19, 21, 23, 0]   # each patient's usual reading hour
+by_clinic = smf.ols("sbp ~ age + bmi + C(sex) + C(clinic)", data=cohort).fit()
+display(by_clinic.params.filter(like="clinic").round(2).rename("vs Bayview"))
+display(cohort.groupby("clinic")["adi_decile"].mean().round(1).rename("mean ADI decile"))
 
-records = []
-for patient_id in range(1, 31):
-    age = int(rng.integers(35, 80))
-    usual_hour = routine_hours[patient_id % len(routine_hours)]
-    level = rng.normal(132 + 0.2 * age, 8)
-    for monday in mondays:
-        hour = (usual_hour + int(rng.integers(-1, 2))) % 24   # an hour earlier or later some weeks
-        level = 0.7 * level + 0.3 * rng.normal(132 + 0.2 * age, 8)
-        time_of_day = 5 * np.cos(2 * np.pi * (hour - 10) / 24)  # higher mid-morning, lower at night
-        records.append({
-            'patient_id': f'P{patient_id:03d}',
-            'reading_time': monday + pd.Timedelta(hours=hour, minutes=int(rng.integers(0, 60))),
-            'age': age,
-            'sbp_today': round(level + time_of_day + rng.normal(0, 3), 1),
-            'repeat_sbp': round(level + rng.normal(0, 3), 1),  # nurse asks for a repeat the next day
-        })
-
-readings = pd.DataFrame(records).sort_values(['patient_id', 'reading_time'])
-readings['sbp_next'] = readings.groupby('patient_id')['sbp_today'].shift(-1)
-readings['target_time'] = readings.groupby('patient_id')['reading_time'].shift(-1)
-readings = readings.dropna(subset=['sbp_next']).reset_index(drop=True)
-
-print('Prediction unit: one reading. Target: sbp_next, measured at target_time.')
-print(f'Rows with a target: {len(readings)}')
-display(readings[['patient_id', 'reading_time', 'sbp_today', 'sbp_next', 'target_time']].head(3))
+complete = cohort.dropna(subset=["bmi"])
+X = sm.add_constant(pd.DataFrame({"age": complete["age"], "bmi": complete["bmi"],
+                                  "male": (complete["sex"] == "M").astype(int)}))
+array_fit = sm.OLS(complete["sbp"], X).fit()
+display(array_fit.params.round(3).rename("coef"))
 ```
 
-**Expect:** 210 rows: 30 patients times eight readings, minus each patient's last reading, which has no next one. The first rows show the shift at work: each row's `sbp_next` is the next row's `sbp_today`, and its `target_time` is the next row's `reading_time`.
+Expect all five clinic coefficients below 0, from -3.5 (Excelsior) to -10.2 (Marina): with age, BMI, and sex fixed, Bayview still reads highest. The ADI deciles point to one candidate reason: Bayview's patients come from the most deprived neighborhoods (mean decile 7.9, Marina 2.3). The coefficients say the clinics differ, not why; staff, cuffs, and neighborhoods all vary by clinic. The array fit gives the same numbers as step 4 (`const` 82.793, `age` 0.206, `bmi` 0.864, `male` 4.077).
 
-```text
-  patient_id        reading_time  sbp_today  sbp_next         target_time
-0       P001 2026-01-05 09:36:00      148.2     143.5 2026-01-12 08:42:00
-1       P001 2026-01-12 08:42:00      143.5     140.0 2026-01-19 09:07:00
-2       P001 2026-01-19 09:07:00      140.0     146.5 2026-01-26 09:43:00
-```
+### 4. A curve in age
 
-### Audit the candidate features
-
-The prediction is made when today's reading uploads, so anything known later is leakage. The reading's hour comes from its own timestamp, so it is known at once.
+Add `I(age ** 2)` and compare the fits.
 
 ```python
-candidates = pd.DataFrame({
-    'feature': ['age', 'sbp_today', 'reading_hour', 'repeat_sbp'],
-    'known': ['at enrollment', 'at upload', 'at upload', 'next day'],
-    'hours_after': [0, 0, 0, 24],
-})
-candidates['available'] = candidates['hours_after'] <= 0
-candidates['decision'] = np.where(candidates['available'], 'Keep', 'Exclude (leakage)')
-display(candidates)
+curved = smf.ols("sbp ~ age + I(age ** 2) + bmi + C(sex)", data=cohort).fit()
+print("R-squared:", round(results.rsquared, 4), "->", round(curved.rsquared, 4))
+print("AIC:", round(results.aic), "->", round(curved.aic))
+ages = pd.DataFrame({"age": [30, 50, 70, 85], "bmi": 28.0, "sex": "F"})
+display(pd.DataFrame({"age": ages["age"], "straight": results.predict(ages),
+                      "curved": curved.predict(ages)}).round(1))
 ```
 
-**Expect:**
+Expect R-squared to rise only slightly (0.1299 to 0.1349) and AIC to fall (1233455 to 1232603). The curved model predicts higher SBP than the straight line at 30 and 85 and lower at 50: the straight line understates an 85-year-old by about 3.4 mmHg.
 
-```text
-        feature          known  hours_after  available           decision
-0           age  at enrollment            0       True               Keep
-1     sbp_today      at upload            0       True               Keep
-2  reading_hour      at upload            0       True               Keep
-3    repeat_sbp       next day           24      False  Exclude (leakage)
-```
+### 5. Fit a first forecast on the arrived labels and check its intervals
 
-`repeat_sbp` would look useful, because it measures the same patient a day later, but it does not exist when the prediction is made. A model trained with it would score well on old data and could not be used on a new reading.
-
-### Put the hour on a clock face
-
-As a plain number, hour 23 and hour 0 look 23 apart. The sine and cosine of `2 * np.pi * hour / 24` place each hour on a circle instead.
+Fit an OLS forecast on `fit_rows` and ask how often the validation weeks land inside their nominal 95% prediction intervals.
 
 ```python
-readings['reading_hour'] = readings['reading_time'].dt.hour
-readings['hour_sin'] = np.sin(2 * np.pi * readings['reading_hour'] / 24)
-readings['hour_cos'] = np.cos(2 * np.pi * readings['reading_hour'] / 24)
+fit_rows = fit_rows.merge(enrolled[["patient_id", "age"]], on="patient_id", how="left", validate="many_to_one")
+valid = valid.merge(enrolled[["patient_id", "age"]], on="patient_id", how="left", validate="many_to_one")
+forecast = smf.ols("sbp_next_week ~ sbp_week + age", data=fit_rows).fit()
+display(forecast.params.round(3).rename("coef"))
 
-clock = readings[['reading_hour', 'hour_sin', 'hour_cos']].drop_duplicates().set_index('reading_hour')
-display(clock.loc[[0, 1, 9, 22, 23]].round(2))
+bounds = forecast.get_prediction(valid).summary_frame(alpha=0.05)
+inside = valid["sbp_next_week"].between(bounds["obs_ci_lower"], bounds["obs_ci_upper"])
+print("validation weeks inside their 95% interval:", round(inside.mean(), 3))
+print("average miss (mmHg):", round((valid["sbp_next_week"] - bounds["mean"]).abs().mean(), 2))
+print("average miss of this week's mean as the forecast:", round((valid["sbp_next_week"] - valid["sbp_week"]).abs().mean(), 2))
 ```
 
-**Expect:**
+Expect a `sbp_week` coefficient near 0.90: next week's mean moves most of the way toward this week's. About 93% of validation weeks fall inside their intervals, a little short of the nominal 95%, and the average miss is 4.15 mmHg, against 4.28 for simply repeating this week's mean. Demo 2 measures these misses properly and does better.
 
-```text
-              hour_sin  hour_cos
-reading_hour
-0                 0.00      1.00
-1                 0.26      0.97
-9                 0.71     -0.71
-22               -0.50      0.87
-23               -0.26      0.97
-```
+### 6. Retrospective against prospective
 
-Hour 23 sits at (-0.26, 0.97) and hour 0 at (0.00, 1.00): neighbors on the clock face, exactly as far apart as hours 0 and 1. The 9 o'clock readers sit on the other side of the circle. Both columns go to the model together, because either one alone gives two different hours the same value.
-
-### Split on the target time
-
-Split on when each **target** is measured, not when the features are, so no training outcome is measured during the validation weeks.
+How many training labels arrived after the first validation run, and why?
 
 ```python
-train = readings[readings['target_time'] < '2026-02-09']
-valid = readings[(readings['target_time'] >= '2026-02-09') & (readings['target_time'] < '2026-02-23')]
-test = readings[readings['target_time'] >= '2026-02-23']
-
-split_summary = pd.DataFrame({
-    'rows': [len(train), len(valid), len(test)],
-    'first_target': [train['target_time'].min(), valid['target_time'].min(), test['target_time'].min()],
-    'last_target': [train['target_time'].max(), valid['target_time'].max(), test['target_time'].max()],
-}, index=['train', 'valid', 'test'])
-display(split_summary)
+late = train[train["label_arrival"] > first_valid_run]
+print("late labels:", len(late))
+display(late["target_week"].value_counts().rename("late labels"))
+delay = late["label_arrival"] - first_valid_run
+print("median delay after the run:", delay.median().round("h"), " longest:", delay.max().round("h"))
 ```
 
-**Expect:**
+Expect 310 late labels, all from the week of May 26, with a median delay of 1 day 11 hours after the June 2 run and the longest about 5.4 days. A **retrospective** split would fit all 68,634 training rows, including labels that did not exist yet when the first validation forecast was made.
 
-```text
-       rows        first_target         last_target
-train   120 2026-01-12 00:07:00 2026-02-02 23:43:00
-valid    60 2026-02-09 00:01:00 2026-02-16 23:34:00
-test     30 2026-02-23 00:44:00 2026-02-23 23:53:00
-```
+## Optional extension: a random intercept per patient
 
-120, 60, and 30 rows: four target weeks for training, two for validation, one for test. The three target-time ranges do not overlap, and the midnight readers' targets (00:07, 00:01, 00:44) land in the right week.
+Prerequisite: BONUS.md, Mixed Effects Models.
 
-### Fit on training rows, read the validation rows
-
-The 120 training targets precede the validation target period, but some were measured after the first validation reading uploaded. Fit only the rows whose target was already measured by that earliest prediction cutoff; this assumes uploads have no extra reporting delay. Use the kept features only. Then give each validation row a nominal 95% prediction interval. These repeated readings share patients, so independent errors are not assured: the bounds demonstrate the API, not validated 95% coverage for this program. `conf_int(obs=True)` returns just the individual-prediction bounds, as an array with one row per patient reading.
-
-`get_prediction(valid)` uses the training-fitted coefficients for every validation row.
+Practice 1 fit every visit as if each were a different person. A mixed model gives each patient their own intercept, so repeat visits share it. On every clean visit at the Marina clinic:
 
 ```python
-# Target periods do not overlap, but later training labels must also be available.
-first_valid_cutoff = valid['reading_time'].min()
-fit_rows = train[train['target_time'] <= first_valid_cutoff]
-assert fit_rows['target_time'].max() <= first_valid_cutoff
-print('Rows with labels available at first validation cutoff:', len(fit_rows))
-honest_fit = smf.ols('sbp_next ~ age + sbp_today + hour_sin + hour_cos', data=fit_rows).fit()
-display(honest_fit.params.round(3).rename('coef'))
-
-valid_bounds = honest_fit.get_prediction(valid).conf_int(obs=True)
-check = valid[['reading_hour', 'sbp_today', 'sbp_next']].head(3).copy()
-check['predicted'] = honest_fit.predict(valid).head(3).round(1)
-check['pi_lower'] = valid_bounds[:3, 0].round(1)
-check['pi_upper'] = valid_bounds[:3, 1].round(1)
-display(check)
+marina = all_visits[all_visits["clinic"] == "Marina"].dropna(subset=["bmi"])
+mixed = smf.mixedlm("sbp ~ age + bmi + C(sex)", data=marina, groups=marina["patient_id"]).fit()
+naive = smf.ols("sbp ~ age + bmi + C(sex)", data=marina).fit()
+print("visits:", len(marina), "patients:", marina["patient_id"].nunique())
+display(pd.DataFrame({"ols_se": naive.bse, "mixed_se": mixed.bse}).dropna().round(4))
 ```
 
-**Expect:**
-
-```text
-Rows with labels available at first validation cutoff: 91
-Intercept    85.969
-age           0.051
-sbp_today     0.376
-hour_sin      0.868
-hour_cos     -1.962
-Name: coef, dtype: float64
-    reading_hour  sbp_today  sbp_next  predicted  pi_lower  pi_upper
-4              9      143.4     146.8      145.4     137.8     153.0
-5              7      146.8     149.3      146.1     138.4     153.7
-11            10      144.9     141.7      145.7     138.1     153.3
-```
-
-- **sbp_today, 0.38:** each 1 mmHg higher reading is associated with about 0.38 mmHg higher fitted next-week SBP, holding the other features fixed.
-- **hour_sin and hour_cos:** read them together. A 9:00 reading gets a prediction about 4.0 mmHg higher than a midnight reading with the same age and `sbp_today`; in this simulated program, mid-morning readers also tend to read higher the next week.
-- **The intervals** are about 15 mmHg wide, and all three validation readings fall inside theirs.
-
+Expect 24,877 visits from 9,388 patients, and the mixed model's standard errors about 27% larger than plain OLS on the same rows (BMI's 0.0241 against 0.0190): it treats a patient's repeat visits as one patient seen several times.

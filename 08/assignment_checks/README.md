@@ -1,8 +1,8 @@
 # Assignment 08 checks (course-owned)
 
-These are the checks that decide the Assignment 08 grade. They read the five
-CSV files a submission saves in `output/` and compare them with values
-computed from the supplied visit log, `data/clinic_visits.csv`.
+These are the checks that decide the Assignment 08 grade. They read the six
+CSV files a submission saves in `output/` and compare them with values frozen
+from the supplied exam log, `data/imaging_exams.parquet`.
 `08/assignment/.github/workflows/tests.yml` downloads them on every student
 push from `christopherseaman/datasci_217@main:08/assignment_checks/` (its
 `CHECKS_REPO`, `CHECKS_REF`, and `CHECKS_PATH`), checks that they run, and
@@ -37,18 +37,23 @@ current `_value_checks.py` and `grading.py` from main, falling back to the
 bundled copy offline or with `--local-checks` / `DS217_LOCAL_CHECKS=1`, so local
 and GitHub runs agree.
 
-`_value_checks.py` holds its own copy of the visit log (`VISITS`) and the
-reporting order (`CLINIC_ORDER`); change them together with
-`08/assignment/data/clinic_visits.csv` and the notebook. A change to the check
-list or to `POINTS` belongs in `_value_checks.py` and `grading.py` at once, in
-the same order: `grading.py` pairs the checks with `POINTS` and raises when
-their counts differ. Keep the README's checkpoints and completion contract in
-agreement with the checks; the self-test compares them.
+`scripts/build_assignment08_data.py` writes `08/assignment/data/imaging_exams.parquet`
+from a fixed seed and rewrites the GENERATED block of `_value_checks.py` with the
+values each artifact should hold, then copies `_value_checks.py` over its handout
+twin. Rerun it after any change to the generator, and commit the Parquet file and
+both copies together. The notebook downloads the Parquet file from `main` when a
+student's `data/` lacks it.
+
+A change to the check list or to `POINTS` belongs in `_value_checks.py` and
+`grading.py` at once, in the same order: `grading.py` pairs the checks with
+`POINTS` and raises when their counts differ. Keep the README's checkpoints and
+completion contract in agreement with the checks; the self-test compares them.
 
 ## Checking the checks
 
 ```bash
-uv run --python 3.13 --with pandas==3.0.5 --with 'pytest>=8,<9' python 08/assignment_checks/_grader_selftest/run.py
+uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with pyarrow==25.0.0 --with 'pytest>=8,<9' \
+    python 08/assignment_checks/_grader_selftest/run.py
 ```
 
 It grades every kind of submission and confirms the handout's copy matches this

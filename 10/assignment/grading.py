@@ -12,21 +12,21 @@ from _value_checks import run_checks
 
 
 # One value per check in _value_checks.CHECKS, in the same order: the coefficient
-# table (Task 1.1), the new-patient intervals (Task 1.2), the residuals and their
-# plot (Task 1.3), the availability audit (Task 2.1), the split summary (Task 2.2),
-# the validation metrics (Task 3.1), the test metrics and predictions (Task 3.2),
-# then the readmission metrics (Task 3.3).
+# table (Task 1.1), the new-patient intervals (Task 1.2), the residual bands and
+# their plot (Task 1.3), the availability audit (Task 2.1), the split summary
+# (Task 2.2), the validation metrics (Task 3.1), the test metrics and clinic errors
+# (Task 3.2), then the readmission metrics (Task 3.3).
 POINTS = (
     2, 2, 3, 2, 3,
     2, 1, 2, 2, 2,
-    2, 2, 1, 2, 2,
+    2, 2, 2, 3, 2,
     5,
-    2, 2, 1, 3, 3,
-    2, 2, 4, 3, 3,
-    2, 2, 3, 3, 3,
-    2, 1, 2, 2, 2,
-    2, 2, 2, 3,
-    2, 1, 2, 2, 2,
+    2, 2, 1, 3, 2,
+    2, 2, 4, 2, 2,
+    2, 2, 3, 2, 2,
+    1, 1, 2, 2, 2,
+    2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2,
 )
 
 

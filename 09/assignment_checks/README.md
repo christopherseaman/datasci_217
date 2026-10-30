@@ -1,12 +1,13 @@
 # Assignment 09 checks (course-owned)
 
 These are the checks that decide the Assignment 09 grade. They read the six
-CSV files a submission saves in `output/` and compare them with values
-computed from the supplied step-down unit data, `data/vitals.csv` and
-`data/labs.csv`. `09/assignment/.github/workflows/tests.yml` downloads them on
-every student push from `christopherseaman/datasci_217@main:09/assignment_checks/`
-(its `CHECKS_REPO`, `CHECKS_REF`, and `CHECKS_PATH`), checks that they run,
-and grades with them.
+CSV files a submission saves in `output/` and compare them with values frozen
+from the supplied hospital-at-home data, `data/episodes.parquet`,
+`data/vitals.parquet`, and `data/labs.parquet`.
+`09/assignment/.github/workflows/tests.yml` downloads them on every student
+push from `christopherseaman/datasci_217@main:09/assignment_checks/` (its
+`CHECKS_REPO`, `CHECKS_REF`, and `CHECKS_PATH`), checks that they run, and
+grades with them.
 
 The handout ships a byte-identical copy of every file the workflow lists in
 `CHECKS_FILES`, so `python3 check_assignment.py` in a student's repository
@@ -37,22 +38,28 @@ current `_value_checks.py` and `grading.py` from main, falling back to the
 bundled copy offline or with `--local-checks` / `DS217_LOCAL_CHECKS=1`, so local
 and GitHub runs agree.
 
-`_value_checks.py` holds its own copy of the two data files (`VITALS` and
-`LABS`) and the prediction time (`PREDICTION_TIME`); change them together with
-`09/assignment/data/`, the README, and the notebook. It converts the New York
-clock times with a fixed UTC-5 offset, which holds because every time falls in
-January; data outside standard time needs a real time zone there. A change to
-the check list or to `POINTS` belongs in `_value_checks.py` and `grading.py`
-at once, in the same order: `grading.py` pairs the checks with `POINTS` and
-raises when their lengths differ. It checks the lengths itself rather than
-using `zip(strict=True)`, because the checker must run on any Python 3 a
-student has, including macOS's system `python3` 3.9. Keep the README's checkpoints and completion contract in
-agreement with the checks; the self-test compares them.
+`scripts/build_assignment09_data.py` writes the three Parquet files in
+`09/assignment/data/` from a fixed seed and rewrites the GENERATED block of
+`_value_checks.py` with the values each artifact should hold, plus the values
+three upstream slips produce (hourly means, UTC days, lab clocks localized as
+UTC), which later checks accept so each slip is charged once. It then copies
+`_value_checks.py` over its handout twin. Rerun it after any change to the
+generator, and commit the Parquet files and both copies together. The notebook
+downloads the Parquet files from `main` when a student's `data/` lacks them.
+
+A change to the check list or to `POINTS` belongs in `_value_checks.py` and
+`grading.py` at once, in the same order: `grading.py` pairs the checks with
+`POINTS` and raises when their counts differ. It checks the counts itself
+rather than using `zip(strict=True)`, because the checker must run on any
+Python 3 a student has, including macOS's system `python3` 3.9. Keep the
+README's checkpoints and completion contract in agreement with the checks; the
+self-test compares them.
 
 ## Checking the checks
 
 ```bash
-uv run --python 3.13 --with pandas==3.0.5 --with 'pytest>=8,<9' python 09/assignment_checks/_grader_selftest/run.py
+uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with pyarrow==25.0.0 --with 'pytest>=8,<9' \
+    python 09/assignment_checks/_grader_selftest/run.py
 ```
 
 It grades every kind of submission and confirms the handout's copy matches this

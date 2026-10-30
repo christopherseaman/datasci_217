@@ -11,7 +11,7 @@ notion:
 
 See [BONUS.md](BONUS.md) for the optional extensions.
 
-**Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo1_datetime_fundamentals.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo2_indexing_resampling.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo3_visualization_automation.ipynb)
+**Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo1_ed_timestamps.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo2_telemetry_coverage.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo3_deterioration_cohort.ipynb)
 
 **Run locally:**
 
@@ -24,16 +24,16 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 <callout icon="🧭" color="blue_bg">
 	# This Lecture
 	## Covers
-	- **Time series data and date types**: timestamps, periods, panels, Python `datetime`, and a pandas DatetimeIndex.
-	- **Date ranges, selection, and time zones**: frequency grids, calendar slicing, UTC conversion, and clock-change nights.
+	- **Dated data**: timestamps, periods, panels, Python `datetime`, a pandas DatetimeIndex, frequency grids, and calendar slicing.
 	- **Resampling**: daily or hourly summaries, bin edges, upsampling, per-patient grids, and gap runs.
-	- **Rolling windows and past-only features**: count and time windows, EWM, grouped lags, and availability at prediction time.
+	- **Rolling windows**: count and time windows, centered windows, and EWM.
+	- **Clocks and honest history**: UTC conversion, clock-change nights, grouped lags, past-only windows, and availability at prediction time.
 	- **Time series visualization**: raw readings with a smoother, gaps, and time zones on the plot.
 	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 9.2, 11.1 to 11.4, 11.6, and 11.7.
 	## Enables
 	- Parse a text timestamp column from a monitor export into a DatetimeIndex and select one day or one week of readings.
-	- Convert two clinics' local visit times to UTC and flag repeated or skipped times on clock-change nights.
 	- Resample one patient's heart rate into daily means, maxima, and reading counts, then build an hourly grid per patient and count its gap runs.
+	- Convert two clinics' local visit times to UTC and flag repeated or skipped times on clock-change nights.
 	- Build previous-reading and past-only rolling-mean features per patient with `groupby()`, `shift()`, and `rolling(..., closed='left')`, keeping later rows out.
 	- Smooth daily readings with a 7-day rolling mean and plot it over the raw values in matplotlib.
 </callout>
@@ -258,119 +258,10 @@ display(study_day.loc['2024-01-30':'2024-02-02'])
 Freq: D, Name: value, dtype: int64
 ```
 
-# Time Zone Handling
-
-- **Time zone**: a region's rule for turning an instant into a wall-clock reading, including when daylight saving time moves the clocks.
-- A multi-site trial records each visit on its clinic's wall clock: 09:00 in New York and 09:00 in Chicago are different moments, so ordering the visits needs every timestamp tied to one instant.
-
-## Basic Time Zone Operations
-
-- A **naive** timestamp is a clock reading with no zone attached, like `2024-03-09 09:00`. pandas cannot tell which instant it means.
-- An **aware** timestamp carries a zone or UTC offset, like `2024-03-09 09:00-05:00`, so it pins down one instant.
-- **UTC** (Coordinated Universal Time) has no daylight saving time, which makes it the safe zone for storing and ordering data.
-
-| New York visit time | Attached offset | Same instant in UTC |
-| --- | --- | --- |
-| March 9, 2024 at 09:00 | UTC-5 | March 9 at 14:00 |
-| March 11, 2024 at 09:00 | UTC-4 | March 11 at 13:00 |
-
-![Four clinic visits on March 15, 2024: by local clock reading, Chicago's 08:30 (CH-01) comes first; in UTC, New York's 09:00 (NY-01, 13:00 UTC) is first and CH-01 (13:30 UTC) second.](media/two_clinics_utc.png)
-
-### Reference Card: Time Zones
-
-- `ts.tz_localize('America/New_York')`: Attach the recording zone to a naive DatetimeIndex; clock times are unchanged.
-- `ts.tz_convert('UTC')`: Show aware timestamps in another zone; instants are unchanged. Raises `TypeError` on naive data.
-- `df['t'].dt.tz_localize(...)` and `.dt.tz_convert(...)`: The same operations on a datetime column.
-- `ts.index.tz` / `s.dt.tz`: The attached zone; `None` means naive.
-- `pd.to_datetime(text, utc=True)`: Parse text with an offset, or known to be UTC, straight to aware UTC values.
-- `pd.Timestamp('2024-03-09 14:00', tz='UTC')`, `pd.Timestamp.now(tz='UTC')`, `pd.date_range(..., tz='UTC')`: Build aware timestamps and ranges directly; `.tz_convert(...)` works on all of them. Comparing or subtracting an aware column and a naive `Timestamp` raises `TypeError`, so give a cutoff the column's `tz`.
-- Zone names: full names from the IANA time-zone database (the standard list of world time zones), such as `'America/New_York'`; `'US/Eastern'` exists only for backward compatibility.
-
-### Code Snippet: Local Clinic Times to UTC
-
-`clinic` is a Series named `value` with readings of 120 and 118, indexed by naive New York times: March 9 and March 11, 2024, both at 09:00.
-
-```python
-local = clinic.tz_localize('America/New_York')
-display(local)
-display(local.tz_convert('UTC'))
-```
-
-```text
-2024-03-09 09:00:00-05:00    120
-2024-03-11 09:00:00-04:00    118
-Name: value, dtype: int64
-2024-03-09 14:00:00+00:00    120
-2024-03-11 13:00:00+00:00    118
-Name: value, dtype: int64
-```
-
-Daylight saving time began March 10, so the two 9 AM local visits are 14:00 and 13:00 UTC.
-
-<callout icon="⚠️" color="yellow_bg">
-	## Localize in the recording zone
-	Localizing these New York readings as `'UTC'` raises no error but shifts each instant by 4 or 5 hours. Localize with the recording zone and convert to UTC to store and order. Convert to the reporting zone before grouping by local calendar days or weeks, or displaying local times.
-</callout>
-
-![xkcd 1799: Bad Map Projection: Time Zones. Each country is redrawn where its clocks say it should be; a wall-clock reading alone does not pin down where, or when, something happened.](media/xkcd_1799.png)
-
-## Clock Changes: Repeated and Skipped Times
-
-Twice a year, some local clock readings do not name exactly one instant:
-
-- **Nonexistent**: on the spring-forward night (March 10, 2024 in New York), clocks jump from 02:00 to 03:00, so 02:30 never happens.
-- **Ambiguous**: on the fall-back night (November 3, 2024), clocks return from 02:00 to 01:00, so 01:30 happens twice, first in daylight time (EDT) and then standard time (EST).
-
-| UTC instant | New York clock | Offset |
-| --- | --- | --- |
-| 2024-11-03 05:00 | 01:00 EDT | UTC-4 |
-| 2024-11-03 06:00 | 01:00 EST | UTC-5 |
-| 2024-11-03 07:00 | 02:00 EST | UTC-5 |
-
-![New York clock against UTC: on March 10, 2024 the clock skips 02:00 to 03:00, so 02:30 meets no instant; on November 3 it repeats 01:00 to 02:00, so 01:30 meets two (05:30 and 06:30 UTC); both become NaT.](media/ny_clock_changes_2024.png)
-
-By default, `tz_localize()` raises `ValueError` at these times; the arguments below set them aside as `NaT` instead.
-
-### Reference Card: Daylight-Saving Arguments
-
-- `s.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')`: Repeated (fall-back) and skipped (spring-forward) clock times become `NaT`.
-- `aware.isna().sum()`: Count the readings set aside, and report that count before dropping them.
-- `pd.date_range(start, end, freq='h', tz='America/New_York', inclusive='left')`: Every elapsed hour from `start` up to, but not including, `end`; a spring-forward day has 23 and a fall-back day has 25.
-
-### Code Snippet: Flag Clock-Change Timestamps
-
-`local` is a Series of naive New York timestamps: March 10, 2024 at 01:00 and 02:30, and November 3 at 01:30 and 03:00.
-
-```python
-aware = local.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')
-display(aware.dt.tz_convert('UTC'))
-print("Set aside:", aware.isna().sum())
-
-spring_day = pd.date_range('2024-03-10', '2024-03-11', freq='h',
-                           tz='America/New_York', inclusive='left')
-print(len(spring_day))  # hours in that local day
-```
-
-```text
-0   2024-03-10 06:00:00+00:00
-1                         NaT
-2                         NaT
-3   2024-11-03 08:00:00+00:00
-dtype: datetime64[us, UTC]
-Set aside: 2
-23
-```
-
-_Time series analysis is 90% datetime wrangling, 5% actual analysis, and 5% swearing at time zone conversions._
-
-# LIVE DEMO!
-
-[Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo1_datetime_fundamentals.ipynb)
-
 # Resampling and Frequency Conversion
 
 - **Resampling**: changing a time series' frequency, such as turning minute-by-minute heart rates into one summary per hour for a ward report.
-- **Downsampling**: many readings combined into fewer, longer bins.
+- **Downsampling**: many readings combined into fewer, longer **bins** (consecutive time spans, such as each hour).
 - **Upsampling**: readings spread over more, shorter slots, most of which start empty.
 
 ![Downsampling: 91 daily home weights (gray) become 3 month-end means, 82.02, 82.00, and 82.34 kg, each labeled with its month's last day; March's mean barely shows the 84.4 kg peak.](media/resampling_example.png)
@@ -410,18 +301,10 @@ Freq: ME, Name: value, dtype: float64
 
 ## How Resampling Draws Bins
 
-`resample('2h')` chops the timeline into two-hour **bins** and aggregates the readings in each. Two arguments decide where a boundary reading goes:
+`resample('2h')` chops the timeline into two-hour bins and aggregates the readings in each. Two arguments decide where a boundary reading goes:
 
 - `closed`: which edge belongs to the bin. With `closed='left'`, a 10:00 reading goes in the 10:00-12:00 bin, not 08:00-10:00.
 - `label`: which edge names the bin in the output.
-
-| Reading time | Heart rate | Bin label with `resample('2h')` |
-| --- | --- | --- |
-| 08:00 | 70 | 08:00 |
-| 08:30 | 72 | 08:00 |
-| 09:45 | 75 | 08:00 |
-| 10:00 | 80 | 10:00 |
-| 11:15 | 78 | 10:00 |
 
 ![`resample('2h')` on March 1, 2024: each bin includes its left edge and excludes its right, so 10:00 opens the second bin; the means are 72.3 (3 readings, labeled 08:00) and 79.0 (2 readings, labeled 10:00).](media/resample_bins_2h.png)
 
@@ -432,7 +315,7 @@ Freq: ME, Name: value, dtype: float64
 
 ### Code Snippet: Bin Boundaries
 
-`readings` contains the five March 1, 2024 readings above, with a DatetimeIndex.
+`readings` contains the five March 1, 2024 readings in the figure above, with a DatetimeIndex.
 
 ```python
 display(readings.resample('2h').agg(['mean', 'count']))
@@ -444,6 +327,10 @@ display(readings.resample('2h').agg(['mean', 'count']))
 | 2024-03-01 10:00:00 | 79.000000 | 2 |
 
 ![xkcd 1985: Meteorologist. Five hourly 20% chances of rain do not say how likely rain is this afternoon; a longer bin needs an aggregation that answers the question being asked.](media/xkcd_1985.png)
+
+# LIVE DEMO!
+
+[Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo1_ed_timestamps.ipynb)
 
 # Resampling Summaries, Grids, and Groups
 
@@ -515,12 +402,7 @@ display(pd.DataFrame({
 
 ## Resampling Each Patient Separately
 
-Resample inside each patient's group (Lecture 08's split-apply-combine); the whole table mixes patients in each bin. For the snippet's five readings:
-
-| Two-hour bin | Whole table (mixes patients) | P1 only | P2 only |
-| --- | --- | --- | --- |
-| 08:00 | 79.0 | 73.5 | 90.0 |
-| 10:00 | 87.0 | 80.0 | 94.0 |
+Resample inside each patient's group (Lecture 08's split-apply-combine); the whole table mixes patients in each bin.
 
 ![Two-hour bins on March 1, 2024: P1's means are 73.5 and 80.0 bpm and P2's 90.0 and 94.0; the whole-table means, 79.0 and 87.0, fall between the patients and describe neither.](media/per_patient_bins.png)
 
@@ -554,7 +436,7 @@ display(per_patient)
 
 ### Code Snippet: Hourly Grid per Patient
 
-P1 and P2 have two charted readings each; P1's last has no heart rate. In `vitals`, `recorded_at` is datetime.
+`vitals` has datetime `recorded_at`: P1 has 72 bpm at 08:00 and a charted row with no heart rate at 11:00 on March 1, 2024; P2 has 90 and 94 at 09:00 and 10:00.
 
 ```python
 print(vitals['recorded_at'].eq(vitals['recorded_at'].dt.floor('h')).all())
@@ -583,11 +465,13 @@ True
 
 P1's three `NaN` rows look alike; only the flags show that the grid created 09:00 and 10:00, while 11:00 is a real reading with no heart rate. This grid requires one row per patient and timestamp; duplicate keys must be resolved before `asfreq()` can assign one value to each slot.
 
-### Reference Card: Gap Runs
+### Gap Runs
 
 A **gap run** is a stretch of consecutive grid hours with no reading, such as a monitor unplugged for three hours. With `source_observed` `True` for real readings (the opposite of `grid_created`), a running count of readings stays flat through each run, so its hours share a number:
 
 ![`cumsum()` of `source_observed` stays flat through each gap: P1 has runs of 2 and 3 hours (run_id 1 and 2), and P2 has one 1-hour run (run_id 2).](media/gap_run_tiles.png)
+
+### Reference Card: Gap Runs
 
 - `df['source_observed'] = ~df['grid_created']`: `True` for real readings, including a charted row with a missing value.
 - `df['run_id'] = df.groupby('patient_id')['source_observed'].cumsum()`: Running count of each patient's real readings (`cumsum()` counts `True` as 1), flat through a gap.
@@ -670,7 +554,110 @@ At 11:00, the count window averages in the 08:00 reading from three hours earlie
 
 # LIVE DEMO!
 
-[Open Demo 2 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo2_indexing_resampling.ipynb)
+[Open Demo 2 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo2_telemetry_coverage.ipynb)
+
+# Time Zone Handling
+
+- **Time zone**: a region's rule for turning an instant into a wall-clock reading, including when daylight saving time moves the clocks.
+- A multi-site trial records each visit on its clinic's wall clock: 09:00 in New York and 09:00 in Chicago are different moments, so ordering the visits needs every timestamp tied to one instant.
+
+## Basic Time Zone Operations
+
+- A **naive** timestamp is a clock reading with no zone attached, like `2024-03-09 09:00`. pandas cannot tell which instant it means.
+- An **aware** timestamp carries a zone or UTC offset, like `2024-03-09 09:00-05:00`, so it pins down one instant.
+- **UTC** (Coordinated Universal Time) has no daylight saving time, which makes it the safe zone for storing and ordering data.
+
+| New York visit time | Attached offset | Same instant in UTC |
+| --- | --- | --- |
+| March 9, 2024 at 09:00 | UTC-5 | March 9 at 14:00 |
+| March 11, 2024 at 09:00 (daylight saving time began March 10) | UTC-4 | March 11 at 13:00 |
+
+![Four clinic visits on March 15, 2024: by local clock reading, Chicago's 08:30 (CH-01) comes first; in UTC, New York's 09:00 (NY-01, 13:00 UTC) is first and CH-01 (13:30 UTC) second.](media/two_clinics_utc.png)
+
+### Reference Card: Time Zones
+
+- `ts.tz_localize('America/New_York')`: Attach the recording zone to a naive DatetimeIndex; clock times are unchanged.
+- `ts.tz_convert('UTC')`: Show aware timestamps in another zone; instants are unchanged. Raises `TypeError` on naive data.
+- `df['t'].dt.tz_localize(...)` and `.dt.tz_convert(...)`: The same operations on a datetime column.
+- `ts.index.tz` / `s.dt.tz`: The attached zone; `None` means naive.
+- `pd.to_datetime(text, utc=True)`: Parse text with an offset, or known to be UTC, straight to aware UTC values.
+- `pd.Timestamp('2024-03-09 14:00', tz='UTC')`, `pd.Timestamp.now(tz='UTC')`, `pd.date_range(..., tz='UTC')`: Build aware timestamps and ranges directly; `.tz_convert(...)` works on all of them. Comparing or subtracting an aware column and a naive `Timestamp` raises `TypeError`, so give a cutoff the column's `tz`.
+- Zone names: full names from the IANA time-zone database (the standard list of world time zones), such as `'America/New_York'`; `'US/Eastern'` exists only for backward compatibility.
+
+### Code Snippet: Local Clinic Times to UTC
+
+`clinic` is a Series named `value` with readings of 120 and 118, indexed by naive New York times: March 9 and March 11, 2024, both at 09:00.
+
+```python
+local = clinic.tz_localize('America/New_York')
+display(local)
+display(local.tz_convert('UTC'))
+```
+
+```text
+2024-03-09 09:00:00-05:00    120
+2024-03-11 09:00:00-04:00    118
+Name: value, dtype: int64
+2024-03-09 14:00:00+00:00    120
+2024-03-11 13:00:00+00:00    118
+Name: value, dtype: int64
+```
+
+<callout icon="⚠️" color="yellow_bg">
+	## Localize in the recording zone
+	Localizing these New York readings as `'UTC'` raises no error but shifts each instant by 4 or 5 hours. Localize with the recording zone and convert to UTC to store and order. Convert to the reporting zone before `resample('D')` or any grouping by local calendar day: a daily census binned in UTC starts each New York day at 19:00 or 20:00 the evening before.
+</callout>
+
+![xkcd 1799: Bad Map Projection: Time Zones. Each country is redrawn where its clocks say it should be; a wall-clock reading alone does not pin down where, or when, something happened.](media/xkcd_1799.png)
+
+## Clock Changes: Repeated and Skipped Times
+
+Twice a year, some local clock readings do not name exactly one instant:
+
+- **Nonexistent**: on the spring-forward night (March 10, 2024 in New York), clocks jump from 02:00 to 03:00, so 02:30 never happens.
+- **Ambiguous**: on the fall-back night (November 3, 2024), clocks return from 02:00 to 01:00, so 01:30 happens twice, first in daylight time (EDT) and then standard time (EST).
+
+| UTC instant | New York clock | Offset |
+| --- | --- | --- |
+| 2024-11-03 05:00 | 01:00 EDT | UTC-4 |
+| 2024-11-03 06:00 | 01:00 EST | UTC-5 |
+| 2024-11-03 07:00 | 02:00 EST | UTC-5 |
+
+![New York clock against UTC: on March 10, 2024 the clock skips 02:00 to 03:00, so 02:30 meets no instant; on November 3 it repeats 01:00 to 02:00, so 01:30 meets two (05:30 and 06:30 UTC); both become NaT.](media/ny_clock_changes_2024.png)
+
+By default, `tz_localize()` raises `ValueError` at these times; the arguments below set them aside as `NaT` instead.
+
+### Reference Card: Daylight-Saving Arguments
+
+- `s.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')`: Repeated (fall-back) and skipped (spring-forward) clock times become `NaT`.
+- `aware.isna().sum()`: Count the readings set aside, and report that count before dropping them.
+- `pd.date_range(start, end, freq='h', tz='America/New_York', inclusive='left')`: Every elapsed hour from `start` up to, but not including, `end`; a spring-forward day has 23 and a fall-back day has 25.
+
+### Code Snippet: Flag Clock-Change Timestamps
+
+`local` is a Series of naive New York timestamps: March 10, 2024 at 01:00 and 02:30, and November 3 at 01:30 and 03:00.
+
+```python
+aware = local.dt.tz_localize('America/New_York', ambiguous='NaT', nonexistent='NaT')
+display(aware.dt.tz_convert('UTC'))
+print("Set aside:", aware.isna().sum())
+
+spring_day = pd.date_range('2024-03-10', '2024-03-11', freq='h',
+                           tz='America/New_York', inclusive='left')
+print(len(spring_day))  # hours in that local day
+```
+
+```text
+0   2024-03-10 06:00:00+00:00
+1                         NaT
+2                         NaT
+3   2024-11-03 08:00:00+00:00
+dtype: datetime64[us, UTC]
+Set aside: 2
+23
+```
+
+_Time series analysis is 90% datetime wrangling, 5% actual analysis, and 5% swearing at time zone conversions._
 
 # Entity-Aware Features and Past-Only Windows
 
@@ -852,8 +839,8 @@ A chronological split permits earlier history from the same patient on both side
 
 - `ts.plot()`: Line plot with the DatetimeIndex on the x-axis; returns the `Axes` (`ax = ts.plot()`) for further customization
 - `ts.plot(figsize=(12, 6), title='Title', marker='o')`: Figure size, title, and a marker at each reading
-- `ts.asfreq('D').plot()`: Inserts `NaN` for missing days, so the line breaks at gaps instead of bridging them; `ts.asfreq('D')` starts the grid at the first reading's clock time, while `ts.resample('D').asfreq()` starts at midnight and turns off-midnight readings into `NaN`; the two match for date-only readings
-- `ts.groupby(ts.index.month).mean().plot(kind='bar', ax=ax)`: Calendar-month means as bars, to show a seasonal pattern; `groupby()` also accepts an array of keys as long as the series, such as `ts.index.month`. Draw them on a new `fig, ax = plt.subplots()`: bars on the dated line's Axes raise `AttributeError`. Bars start at zero (Lecture 07), which suits counts; for a reading such as temperature, plot the difference from a baseline such as 98.6 °F
+- `ts.asfreq('D').plot()`: Inserts `NaN` for missing days, so the line breaks at gaps instead of bridging them. `ts.asfreq('D')` starts the grid at the first reading's clock time. `ts.resample('D').asfreq()` starts at midnight and turns off-midnight readings into `NaN`. The two match for date-only readings.
+- `ts.groupby(ts.index.month).mean().plot(kind='bar', ax=ax)`: Calendar-month means as bars, to show a seasonal pattern. `groupby()` accepts an array of keys as long as the series, such as `ts.index.month`. Draw the bars on a new `fig, ax = plt.subplots()`; bars on the dated line's Axes raise `AttributeError`.
 - `ax.axhline(98.6, linestyle='--', label='Normal')`: Horizontal reference line for a clinical threshold
 - `ax.set(xlabel='Time (UTC)')`: Name the zone of an aware time axis
 
@@ -878,4 +865,4 @@ plt.show()
 
 # LIVE DEMO!
 
-[Open Demo 3 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo3_visualization_automation.ipynb)
+[Open Demo 3 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo3_deterioration_cohort.ipynb)
