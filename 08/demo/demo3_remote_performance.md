@@ -69,8 +69,8 @@ A lab's critical-value review starts with the most extreme results at each site.
 
 ```python
 glucose = labs[labs["test_name"] == "Glucose"]
-top2 = glucose.groupby("clinic").apply(lambda g: g.nlargest(2, "result"), include_groups=False)
-display(top2[["patient_id", "collected_at", "result"]])
+top2_raw = glucose.groupby("clinic").apply(lambda g: g.nlargest(2, "result"), include_groups=False)
+display(top2_raw[["patient_id", "collected_at", "result"]])
 ```
 
 Expect 16 rows, two per clinic, indexed by clinic and then each result's original row number. The other clinics' highest results are 385 to 654 mg/dL, emergencies worth a call, but Excelsior's two are `9999.0`: no blood holds that much glucose. Parkside's two belong to one patient, P113888, 9 days apart. 9999 is the code one Excelsior analyzer writes for a failed run, so it is not a result.
@@ -90,6 +90,22 @@ print("Same rows both ways?", sorted(top2.index.get_level_values(1)) == sorted(t
 
 Expect `Error codes: 23`, then 16 rows with a flat index; Excelsior's highest is now a real result, 564.0 mg/dL. Then `True`: both ways keep the same rows.
 
+Plot the two reviews side by side, one dot per result.
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+fig, axes = plt.subplots(1, 2, figsize=(11, 3.5), sharey=True)
+sns.scatterplot(data=top2_raw.reset_index(), x="result", y="clinic", s=60, ax=axes[0])
+axes[0].set(title="Before: two highest glucose per clinic", xlabel="Glucose (mg/dL)", ylabel="")
+sns.scatterplot(data=top2.reset_index(), x="result", y="clinic", s=60, ax=axes[1])
+axes[1].set(title="After marking 9999 as missing", xlabel="Glucose (mg/dL)")
+plt.show()
+```
+
+Expect the left panel's dots bunched under 700 at the left edge, except Excelsior's dot alone at 9999 (its two results are identical, so they overlap). On the right the x-axis runs from about 380 to 660, and every clinic's two dots sit between 385 and 654 mg/dL.
+
 ### 3. Each patient's latest A1c
 
 The model needs the most recent A1c, not the average of old ones. Sort by collection time, then keep each patient's last row.
@@ -103,6 +119,18 @@ print(f"Latest A1c of 9% or more: {(latest['result'] >= 9).mean():.1%}")
 ```
 
 Expect five latest rows (patients whose only A1c was drawn on January 2), then 118,032 A1c results from 90,281 patients and exactly one latest row per patient. 1.9% of patients have a latest A1c of 9% or more, poorly controlled diabetes; most of the others had one yearly screening test.
+
+The red lines mark the diabetes cutoff (6.5%) and poor control (9%); `ax.axvline(x)` draws a vertical line at `x`.
+
+```python
+ax = latest["result"].plot.hist(bins=60, figsize=(8, 3.5))
+for cutoff in [6.5, 9]:
+    ax.axvline(cutoff, color="red", linestyle="--")
+ax.set(title="Latest A1c per patient, 2025", xlabel="A1c (%)", ylabel="Patients")
+plt.show()
+```
+
+Expect a tall peak near 5.3%, below the diabetes cutoff at 6.5%, and a second, lower hump near 7.5% from patients with diabetes. The thin tail past the 9% line is the 1.9%.
 
 ### 4. One split, several summaries, timed
 
@@ -156,14 +184,17 @@ compact = labs.copy()
 for column in ["clinic", "test_name", "unit"]:
     compact[column] = compact[column].astype("category")
 after = compact.memory_usage(deep=True)
-display(pd.DataFrame({"text_MB": before / 1e6, "category_MB": after / 1e6}).round(1))
+memory = pd.DataFrame({"text": before / 1e6, "category": after / 1e6}).drop(index="Index")
+ax = memory.plot.barh(figsize=(7, 3.5))
+ax.set(title="Memory per column, 2,000,000 lab results", xlabel="MB")
+plt.show()
 print(f"Total: {before.sum() / 1e6:.0f} MB as text, {after.sum() / 1e6:.0f} MB with category keys")
 
 same = compact.groupby("test_name", observed=True)["result"].mean().equals(labs.groupby("test_name")["result"].mean())
 print("Same test means?", same)
 ```
 
-Expect `clinic`, `test_name`, and `unit` to shrink from 25 to 32 MB each to 2.0 MB each (one small code per row plus a few labels), while `patient_id` and the number columns stay the same. The total falls from 150 MB to 68 MB, and the test means are unchanged (`True`). `patient_id` stays text: with 189,607 distinct values, it is not a repeated key.
+Expect the `clinic`, `test_name`, and `unit` bars to shrink from 25 to 32 MB each to 2.0 MB each (one small code per row plus a few labels), while `patient_id` and the number columns stay the same. The total falls from 150 MB to 68 MB, and the test means are unchanged (`True`). `patient_id` stays text: with 189,607 distinct values, it is not a repeated key.
 
 ### 7. A practice key pair (terminal)
 

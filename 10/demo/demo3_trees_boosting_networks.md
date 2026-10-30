@@ -68,10 +68,17 @@ extract_end = pd.Timestamp("2025-06-30")
 cohort = discharges[(discharges["disposition"] != "expired") & (discharges["label_time"] <= extract_end)]
 cohort = cohort.sort_values("discharge_date").reset_index(drop=True)
 print("eligible discharges:", len(cohort), " readmission rate:", round(cohort["readmit_30d"].mean(), 3))
-display(cohort.groupby("dx_group")["readmit_30d"].agg(["mean", "size"]).sort_values("mean").round(3))
+
+rates = cohort.groupby("dx_group")["readmit_30d"].mean().sort_values()
+ax = rates.plot.barh(figsize=(7, 3.5))
+ax.bar_label(ax.containers[0], fmt="%.3f", padding=3)
+ax.axvline(cohort["readmit_30d"].mean(), color="gray", linestyle="--")
+ax.set(xlabel="30-day readmission rate (dashed: all discharges)", ylabel="", xlim=(0, 0.4))
+plt.show()
+plt.close(ax.figure)
 ```
 
-Expect `(235391, 24) discharges from 100799 patients`, then 224,256 eligible discharges with a readmission rate of 0.158. Rates differ by diagnosis: 0.056 after orthopedic stays (mostly planned surgery), 0.322 after heart failure.
+Expect `(235391, 24) discharges from 100799 patients`, then 224,256 eligible discharges with a readmission rate of 0.158. The bars show rates differ by diagnosis: 0.056 after orthopedic stays (mostly planned surgery), 0.322 after heart failure, with only heart failure, COPD, GI bleed, and sepsis right of the dashed overall rate.
 
 ### 2. Features known at discharge, and a split on label time
 
@@ -95,10 +102,23 @@ assert fit_rows["label_time"].max() <= valid["discharge_date"].min()
 X_fit, y_fit = fit_rows[features], fit_rows["readmit_30d"]
 X_valid, y_valid = valid[features], valid["readmit_30d"]
 print("train:", len(train), " fit rows:", len(fit_rows), " valid:", len(valid), " test:", len(test))
-display(X_fit[numeric].isna().mean().round(3).rename("share_missing"))
+display(X_fit[numeric].isna().mean().round(3).rename("share_missing").loc[lambda share: share > 0])
+
+roles = pd.concat([fit_rows.assign(role="fit (label known)"),
+                   train[train["label_time"] > valid["discharge_date"].min()].assign(role="train, label late"),
+                   valid.assign(role="validation"), test.assign(role="test")])
+counts = roles.groupby([roles["discharge_date"].dt.strftime("%Y-%m"), "role"]).size().unstack(fill_value=0)
+counts = counts[["fit (label known)", "train, label late", "validation", "test"]]
+ax = counts.plot.bar(stacked=True, width=1.0, figsize=(10, 3.5), color=["C0", "C3", "C1", "C2"])
+ax.set_xticks(range(0, len(counts), 3), counts.index[::3], rotation=0)
+ax.set(xlabel="Discharge month", ylabel="Discharges", ylim=(0, 11000),
+       title="Split on discharge date; June 2024 labels arrive too late")
+ax.legend(ncols=4, loc="upper center")
+plt.show()
+plt.close(ax.figure)
 ```
 
-Expect 139,465 training discharges, of which 131,927 have their label by July 1 (the 7,538 left out were discharged in June 2024), 47,219 validation and 37,572 test discharges. Three lab columns have gaps of 5% to 10%: labs not drawn, more often before planned surgery and for short stays.
+Expect 139,465 training discharges, of which 131,927 have their label by July 1 (the 7,538 left out were discharged in June 2024), 47,219 validation and 37,572 test discharges. Three lab columns have gaps of 5% to 10%: labs not drawn, more often before planned surgery and for short stays. The chart shows about 6,500 to 8,100 discharges a month from January 2023 to June 2025, blue through May 2024, one red month (June 2024, labels due after July 1), six orange validation months, and five green test months.
 
 ### 3. One preparation step and one comparison rule
 
@@ -170,11 +190,14 @@ compare("random forest", forest.predict_proba(X_valid)[:, 1])
 
 names = forest.named_steps["preprocess"].get_feature_names_out()
 impurity = pd.Series(forest.named_steps["model"].feature_importances_, index=names)
-display(impurity.sort_values(ascending=False).head(6).round(3).rename("importance"))
+ax = impurity.sort_values().tail(6).plot.barh(figsize=(7, 3.5))
+ax.set(xlabel="Impurity importance (training fit)", title="What the forest's splits used most")
+plt.show()
+plt.close(ax.figure)
 show()
 ```
 
-Expect a recall of 0.303, a little above logistic regression (2,319 readmitted patients called against 2,224). Comorbidity count leads the impurity importances (0.158), then medication count, hemoglobin, heart failure, age, and creatinine. (`get_feature_names_out()` names the prepared columns; one-hot columns appear as `categorical__dx_group_heart_failure` and so on.) Impurity importance is measured on the training fit and favors columns with many distinct values; practice 1 compares it with permutation importance.
+Expect a recall of 0.303, a little above logistic regression (2,319 readmitted patients called against 2,224). In the chart, comorbidity count leads the impurity importances (about 0.16), then medication count, hemoglobin, heart failure, age, and creatinine. (`get_feature_names_out()` names the prepared columns; one-hot columns appear as `categorical__dx_group_heart_failure` and so on.) Impurity importance is measured on the training fit and favors columns with many distinct values; practice 1 compares it with permutation importance.
 
 ### 6. XGBoost with early stopping
 
@@ -194,9 +217,19 @@ booster.fit(X_fit_ready, y_fit, eval_set=[(X_valid_ready, y_valid)], verbose=Fal
 print("best round:", booster.best_iteration, " validation log loss:", round(booster.best_score, 4))
 compare("XGBoost", booster.predict_proba(X_valid_ready)[:, 1])
 show()
+
+curve = booster.evals_result()["validation_0"]["logloss"]
+fig, ax = plt.subplots(figsize=(7, 3.5))
+ax.plot(curve)
+ax.axvline(booster.best_iteration, color="red", linestyle="--", label=f"best round {booster.best_iteration}")
+ax.set(xlabel="Boosting round", ylabel="Validation log loss", ylim=(0.375, 0.42),
+       title="Early stopping ends 30 rounds after the best")
+ax.legend()
+plt.show()
+plt.close(fig)
 ```
 
-Expect best round 284 of a 1,000-round budget (validation log loss 0.3793), with training stopped 30 rounds later, and a recall of 0.308, the best so far: 2,362 readmitted patients called, 138 more than logistic regression. Validation picked the number of rounds, so it is no longer an untouched estimate; the test set stays sealed for that.
+Expect best round 284 of a 1,000-round budget (validation log loss 0.3793), with training stopped 30 rounds later. The curve drops steeply over the first 50 rounds, flattens near 0.380 after about 150, and ends at round 314 just past the red line. Recall is 0.308, the best so far: 2,362 readmitted patients called, 138 more than logistic regression. Validation picked the number of rounds, so it is no longer an untouched estimate; the test set stays sealed for that.
 
 ### 7. A small neural network
 
@@ -237,9 +270,15 @@ Expect a training loss that falls quickly over the first two epochs and keeps cr
 
 ```python
 show()
+called = pd.DataFrame(comparison).T["readmitted_called"].sort_values()
+ax = called.plot.barh(figsize=(7, 3.5))
+ax.bar_label(ax.containers[0], padding=3)
+ax.set(xlabel=f"Readmitted patients called, of {y_valid.sum():,} (10% call budget)", xlim=(0, 3000))
+plt.show()
+plt.close(ax.figure)
 ```
 
-Expect, at the 10% budget, recall from 0.290 (logistic regression) to 0.308 (XGBoost), with the network (0.300) and the forest (0.303) between. Every model's accuracy at 0.5 sits between 0.842 and 0.845. XGBoost calls 138 more readmitted patients in six months than logistic regression (2,362 against 2,224). Trees find combinations of columns and thresholds within a column by splitting; logistic regression gives each column one straight-line slope unless someone writes the combination as a column. Practice 6 tests whether the gap comes from combinations.
+Expect, at the 10% budget, recall from 0.290 (logistic regression) to 0.308 (XGBoost), with the network (0.300) and the forest (0.303) between. Every model's accuracy at 0.5 sits between 0.842 and 0.845. The bar chart puts the four families within 140 calls of each other (2,224 to 2,362) and all of them near three times the random list's 780: the model family matters far less than having a model. XGBoost calls 138 more readmitted patients in six months than logistic regression. Trees find combinations of columns and thresholds within a column by splitting; logistic regression gives each column one straight-line slope unless someone writes the combination as a column. Practice 6 tests whether the gap comes from combinations.
 
 The frozen choice is XGBoost with its validation-chosen 285 rounds: the most readmitted patients called among the four families, and seconds to train. Refit it on every training and validation discharge whose label had arrived by the first test discharge, then score the test rows once at the 10% budget.
 

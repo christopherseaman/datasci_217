@@ -4,9 +4,10 @@ Each figure uses a lecture snippet's data or the demo data it rebuilds below,
 and the drawn numbers are asserted against the values the lecture and demos print.
 
 Run from the repository root:
-    uv run --project 09/demo python 09/scripts/generate_lecture_figures.py
+    uv run --project 09/demo python 09/scripts/generate_lecture_figures.py [FIGURE_FUNCTION ...]
 """
 
+import sys
 from pathlib import Path
 
 import matplotlib
@@ -661,6 +662,65 @@ def daily_hr_rolling_ewm():
     save(fig, "daily_hr_rolling_ewm.png")
 
 
+def count_vs_time_window():
+    """Count Window vs Time Window: which glucose readings rolling(2) and rolling('2h') average at 11:00."""
+    glucose = pd.Series([110, 145, 130, 180], index=pd.to_datetime([
+        "2024-03-01 07:00", "2024-03-01 08:00", "2024-03-01 11:00", "2024-03-01 11:30"]))
+    by_count, by_time = glucose.rolling(2).mean(), glucose.rolling("2h").mean()
+    at = pd.Timestamp("2024-03-01 11:00")
+    assert by_count[at] == 137.5 and by_time[at] == 130.0
+
+    xs = hours_of(glucose.index)
+    fig, axes = plt.subplots(2, 1, figsize=(9, 3.9), sharex=True, gridspec_kw={"hspace": 0.55})
+    rows = [
+        (axes[0], "rolling(2): the current reading and the 1 before it, however far back", BLUE,
+         (8, 11), "08:00 and 11:00, 3 hours apart:\nmean 137.5", [1, 2]),
+        (axes[1], "rolling('2h'): the readings after 09:00, up to and including 11:00", ORANGE,
+         (9, 11), "only 11:00:\nmean 130.0", [2]),
+    ]
+    for ax, title, color, (lo, hi), note, used in rows:
+        ax.axvspan(lo, hi, color=color, alpha=0.12, lw=0)
+        ax.plot([lo, hi], [0, 0], color=color, lw=3)
+        ax.plot(hi, 0, "o", color=color, ms=6)  # 11:00 is inside the window
+        if color == ORANGE:
+            ax.plot(lo, 0, "o", mfc="white", mec=color, mew=2, ms=6)  # 09:00 itself is outside: (09:00, 11:00]
+        for i, (x, y) in enumerate(zip(xs, glucose)):
+            inside = i in used
+            ax.plot(x, 0.55, "o", ms=11, color=color if inside else "white", mec=color if inside else GREY, mew=2)
+            ax.text(x, 1.0, str(y), ha="center", va="bottom", fontsize=9, color=INK if inside else GREY)
+        ax.text(11.85, 0.3, note, color=color, fontweight="bold", va="center", fontsize=9)
+        ax.set_title(title, fontsize=10)
+        ax.set(ylim=(-0.4, 1.6))
+        hide_y(ax)
+    axes[1].set(xlim=(6.7, 13.4), xlabel="Time, March 1, 2024 (glucose in mg/dL; filled = averaged at 11:00)")
+    clock_axis(axes[1], major=1)
+    save(fig, "count_vs_time_window.png")
+
+
+def window_weights():
+    """Another Smoother: the weight each earlier day gets in rolling(7).mean() and ewm(span=7).mean()."""
+    days_back = np.arange(14)
+    alpha = 2 / (7 + 1)
+    ewm_w = alpha * (1 - alpha) ** days_back
+    roll_w = np.where(days_back < 7, 1 / 7, 0.0)
+    # check against pandas: weights are what each past reading contributes to today's value
+    probe = pd.Series(np.zeros(200))
+    probe.iloc[-1 - 3] = 1.0  # a single 1 three days back
+    assert abs(probe.ewm(span=7).mean().iloc[-1] - ewm_w[3]) < 1e-9
+    assert abs(probe.rolling(7).mean().iloc[-1] - roll_w[3]) < 1e-12
+
+    fig, ax = plt.subplots(figsize=(9, 3.4))
+    ax.bar(days_back - 0.2, roll_w, width=0.4, color=BLUE, label="rolling(7).mean(): 1/7 each for 7 days, then 0")
+    ax.bar(days_back + 0.2, ewm_w, width=0.4, color=ORANGE, label="ewm(span=7).mean(): 25% today, each day 3/4 of the next")
+    ax.text(0.2, ewm_w[0] + 0.006, "0.25", ha="center", va="bottom", fontsize=9, color=ORANGE)
+    ax.text(-0.2, roll_w[0] + 0.006, "0.14", ha="center", va="bottom", fontsize=9, color=BLUE)
+    ax.set_xticks(days_back, ["today"] + [str(d) for d in days_back[1:]])
+    ax.set(xlabel="Days before the current reading", ylabel="Weight in today's value", ylim=(0, 0.3),
+           xlim=(-0.7, 13.7))
+    ax.legend(frameon=False, loc="upper right")
+    save(fig, "window_weights.png")
+
+
 def shifting_lagging():
     """Shifting and Lagging: Demo 3's home weights, March 6 to 14, with lag, lead, and diff()."""
     daily = pd.DataFrame({"weight_kg": home_weights()})
@@ -846,6 +906,7 @@ if __name__ == "__main__":
     for make in [forms_of_time, regular_irregular, icu_panel_hr_utc, text_vs_datetime_axis, date_range_aliases,
                  two_clinics_utc, clock_changes, time_series_indexing, resampling_example, resample_bins_2h,
                  daily_reading_counts, charted_temp_upsampling, per_patient_bins, gap_run_tiles,
-                 daily_hr_rolling_ewm, shifting_lagging, grouped_shift_leak, lab_availability_timeline,
-                 ili_outage_gap]:
-        make()
+                 daily_hr_rolling_ewm, count_vs_time_window, window_weights, shifting_lagging,
+                 grouped_shift_leak, lab_availability_timeline, ili_outage_gap]:
+        if len(sys.argv) == 1 or make.__name__ in sys.argv[1:]:  # optional: name figures to redraw only those
+            make()

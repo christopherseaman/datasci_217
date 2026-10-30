@@ -27,15 +27,15 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 	- **Dated data**: timestamps, periods, panels, Python `datetime`, a pandas DatetimeIndex, frequency grids, and calendar slicing.
 	- **Resampling**: daily or hourly summaries, bin edges, upsampling, per-patient grids, and gap runs.
 	- **Rolling windows**: count and time windows, centered windows, and EWM.
+	- **Time series visualization**: raw readings with a smoother, gaps that break the line, and seasonal bars.
 	- **Clocks and honest history**: UTC conversion, clock-change nights, grouped lags, past-only windows, and availability at prediction time.
-	- **Time series visualization**: raw readings with a smoother, gaps, and time zones on the plot.
 	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 9.2, 11.1 to 11.4, 11.6, and 11.7.
 	## Enables
 	- Parse a text timestamp column from a monitor export into a DatetimeIndex and select one day or one week of readings.
 	- Resample one patient's heart rate into daily means, maxima, and reading counts, then build an hourly grid per patient and count its gap runs.
+	- Smooth daily readings with a 7-day rolling mean and plot it over the raw values in matplotlib.
 	- Convert two clinics' local visit times to UTC and flag repeated or skipped times on clock-change nights.
 	- Build previous-reading and past-only rolling-mean features per patient with `groupby()`, `shift()`, and `rolling(..., closed='left')`, keeping later rows out.
-	- Smooth daily readings with a 7-day rolling mean and plot it over the raw values in matplotlib.
 </callout>
 
 # Understanding Time Series Data
@@ -400,6 +400,8 @@ display(pd.DataFrame({
 | 2024-03-01 10:00:00 | NaN | 70.0 | 74.0 |
 | 2024-03-01 11:00:00 | 76.0 | 76.0 | 76.0 |
 
+![xkcd 2316: Hair Growth Rate. The same monthly total fits steady growth or one five-foot hair on the hour; an upsampled grid fills slots nobody observed, so its filled values are guesses.](media/xkcd_2316.png)
+
 ## Resampling Each Patient Separately
 
 Resample inside each patient's group (Lecture 08's split-apply-combine); the whole table mixes patients in each bin.
@@ -414,6 +416,7 @@ Resample inside each patient's group (Lecture 08's split-apply-combine); the who
 - `df['source_row'] = 1` before `asfreq()`: Grid-created rows get `NaN` in `source_row`, so `grid['source_row'].isna()` tells them apart from real readings with a missing value.
 - `df.set_index('recorded_at').groupby('patient_id').resample('2h').agg(mean_hr=('heart_rate', 'mean'), n_rows=('source_row', 'count'))`: Named summaries in Lecture 08's `(column, function)` form; `count()` skips missing values, so count `source_row` to include readings with a missing heart rate.
 - `.reset_index()`: Turn the MultiIndex back into ordinary `patient_id` and `recorded_at` columns.
+- `df.duplicated(['patient_id', 'recorded_at']).sum()`: Count repeated patient and timestamp keys; `0` means `asfreq()` can place one row in each slot. `df.groupby(['patient_id', 'recorded_at'], as_index=False)['heart_rate'].mean()` keeps one row per key.
 
 ### Code Snippet: Two-Hour Summaries per Patient
 
@@ -529,6 +532,8 @@ A centered window reads future rows: its smooth curve suits describing a complet
 
 `glucose` contains the four readings below, in mg/dL, with a sorted DatetimeIndex.
 
+![At 11:00, `rolling(2)` averages 08:00's 145 with 130 to get 137.5, three hours apart; `rolling('2h')` covers the readings after 09:00 up to 11:00 and finds only 130.](media/count_vs_time_window.png)
+
 ```python
 compare = pd.DataFrame({
     'glucose': glucose,
@@ -545,12 +550,57 @@ display(compare)
 | 2024-03-01 11:00:00 | 130 | 137.5 | 130.0 |
 | 2024-03-01 11:30:00 | 180 | 155.0 | 155.0 |
 
-At 11:00, the count window averages in the 08:00 reading from three hours earlier; the two-hour window sees only 11:00.
-
 ## Another Smoother: Exponentially Weighted Means
 
-- **Exponentially weighted moving average (EWM)**: an optional alternative to rolling means that weights recent readings more heavily than older ones.
-- `ts.ewm(span=7).mean()` returns one smoothed value per row; a larger `span` means slower decay.
+- **Exponentially weighted moving average (EWM)**: a smoother that gives every earlier reading some weight, shrinking by the same factor at each step back.
+- `ts.ewm(span=7).mean()` returns one smoothed value per row. `span=7` gives the current reading 2/(7+1) = 25% of the weight; a larger `span` decays more slowly.
+- Reach for it when a trend must react quickly, as in the fever figure above, where EWM peaks higher than the 7-day mean. Unlike `rolling(7)`, it has a value from the first row.
+
+![Weight each day gets in today's smoothed value: `rolling(7).mean()` gives the last 7 days 1/7 each and older days 0; `ewm(span=7).mean()` gives today 0.25 and each earlier day 3/4 of the day after it.](media/window_weights.png)
+
+# Time Series Visualization
+
+- **Time-series plot**: readings drawn against time on the x-axis, in order, showing trends, seasonal cycles, and gaps that a summary table hides.
+- Draw the raw readings faintly with a smoother such as a rolling mean over them, let the line break where data is missing, and label each axis with its unit.
+
+![Tufte, _The Visual Display of Quantitative Information_, p. 30: New York City's weather for 1980 shows 1,888 numbers, daily highs and lows against the normal range plus monthly precipitation and daily humidity.](media/tufte_vdqi_p30_nyc_weather.jpg)
+
+## Basic Time Series Plots
+
+![Daily influenza-like illness visits (gray) with the 30-day rolling mean (blue), which follows the winter peak without the daily noise](media/viz_ili_rolling.png)
+
+![Bar chart of mean daily visits for each calendar month, highest in January and lowest in July](media/viz_ili_monthly.png)
+
+![Daily flu-like illness visits, December 2022 to March 2023: as reported, the line bridges the February 1 to 14 outage; after `asfreq('D')`, the 14 missing days become NaN and the line breaks.](media/ili_outage_gap.png)
+
+### Reference Card: Time Series Plotting
+
+- `ts.plot()`: Line plot with the DatetimeIndex on the x-axis; returns the `Axes` (`ax = ts.plot()`) for further customization
+- `ts.plot(figsize=(12, 6), title='Title', marker='o')`: Figure size, title, and a marker at each reading
+- `ts.asfreq('D').plot()`: Inserts `NaN` for missing days, so the line breaks at gaps instead of bridging them. `ts.asfreq('D')` starts the grid at the first reading's clock time. `ts.resample('D').asfreq()` starts at midnight and turns off-midnight readings into `NaN`. The two match for date-only readings.
+- `ts.groupby(ts.index.month).mean().plot(kind='bar', ax=ax)`: Calendar-month means as bars, to show a seasonal pattern. `groupby()` accepts an array of keys as long as the series, such as `ts.index.month`. Draw the bars on a new `fig, ax = plt.subplots()`; bars on the dated line's Axes raise `AttributeError`.
+- `ax.axhline(98.6, linestyle='--', label='Normal')`: Horizontal reference line for a clinical threshold
+
+### Code Snippet: Time-Series Plotting
+
+`ts` is a year of daily influenza-like illness visits at a clinic, with a DatetimeIndex.
+
+```python
+ax = ts.plot(alpha=0.5, label='Daily', color='gray')
+ts.rolling(window=30).mean().plot(ax=ax, linewidth=2, label='30-Day Rolling Mean', color='blue')
+ax.set(title='Influenza-like Illness Visits with Rolling Mean', xlabel='Date', ylabel='Visits per day')
+ax.legend()
+ax.grid(True, alpha=0.3)
+plt.show()
+
+fig, ax = plt.subplots(figsize=(8, 4))
+monthly_mean = ts.groupby(ts.index.month).mean()
+monthly_mean.plot(kind='bar', ax=ax, rot=0, title='Mean Daily Visits by Calendar Month',
+                  xlabel='Month', ylabel='Visits per day')
+plt.show()
+```
+
+![xkcd 2023: Y-Axis. Readers now check where the axis starts, so the graph bends the gridlines instead; label the axes and let the readings, not the drawing, carry the trend.](media/xkcd_2023.png)
 
 # LIVE DEMO!
 
@@ -580,6 +630,7 @@ At 11:00, the count window averages in the 08:00 reading from three hours earlie
 - `ts.tz_convert('UTC')`: Show aware timestamps in another zone; instants are unchanged. Raises `TypeError` on naive data.
 - `df['t'].dt.tz_localize(...)` and `.dt.tz_convert(...)`: The same operations on a datetime column.
 - `ts.index.tz` / `s.dt.tz`: The attached zone; `None` means naive.
+- `ax.set(xlabel='Time (UTC)')`: Name the zone on a plot's time axis.
 - `pd.to_datetime(text, utc=True)`: Parse text with an offset, or known to be UTC, straight to aware UTC values.
 - `pd.Timestamp('2024-03-09 14:00', tz='UTC')`, `pd.Timestamp.now(tz='UTC')`, `pd.date_range(..., tz='UTC')`: Build aware timestamps and ranges directly; `.tz_convert(...)` works on all of them. Comparing or subtracting an aware column and a naive `Timestamp` raises `TypeError`, so give a cutoff the column's `tz`.
 - Zone names: full names from the IANA time-zone database (the standard list of world time zones), such as `'America/New_York'`; `'US/Eastern'` exists only for backward compatibility.
@@ -680,6 +731,7 @@ Shifting counts rows, not time: with irregular clinic visits, the "previous" rea
 - `ts.shift(1)`: Lag: each row gets the previous row's value; the first row becomes `NaN`
 - `ts.shift(-1)`: Lead: each row gets the next row's value; the last row becomes `NaN`
 - `ts.diff()`: Current value minus the previous row's value
+- `ts.shift(1, freq='D')`: Moves the timestamps one day later and leaves the values in order, with no `NaN`; use it to line up "yesterday's value" by date rather than by row
 
 ### Code Snippet: Lagged Features
 
@@ -819,49 +871,6 @@ display(vitals[['patient_id', 'recorded_at', 'block']])
 P2's 11:00 reading falls in the holdout, because `<` keeps the cutoff itself out of `earlier`.
 
 A chronological split permits earlier history from the same patient on both sides; it tests later readings, not performance on entirely unseen patients.
-
-# Time Series Visualization
-
-- **Time-series plot**: readings drawn against time on the x-axis, in order, showing trends, seasonal cycles, and gaps that a summary table hides.
-- Draw the raw readings faintly with a smoother such as a rolling mean over them, let the line break where data is missing, and name the time zone when it matters.
-
-![Tufte, _The Visual Display of Quantitative Information_, p. 30: New York City's weather for 1980 shows 1,888 numbers, daily highs and lows against the normal range plus monthly precipitation and daily humidity.](media/tufte_vdqi_p30_nyc_weather.jpg)
-
-## Basic Time Series Plots
-
-![Daily influenza-like illness visits (gray) with the 30-day rolling mean (blue), which follows the winter peak without the daily noise](media/viz_ili_rolling.png)
-
-![Bar chart of mean daily visits for each calendar month, highest in January and lowest in July](media/viz_ili_monthly.png)
-
-![Daily flu-like illness visits, December 2022 to March 2023: as reported, the line bridges the February 1 to 14 outage; after `asfreq('D')`, the 14 missing days become NaN and the line breaks.](media/ili_outage_gap.png)
-
-### Reference Card: Time Series Plotting
-
-- `ts.plot()`: Line plot with the DatetimeIndex on the x-axis; returns the `Axes` (`ax = ts.plot()`) for further customization
-- `ts.plot(figsize=(12, 6), title='Title', marker='o')`: Figure size, title, and a marker at each reading
-- `ts.asfreq('D').plot()`: Inserts `NaN` for missing days, so the line breaks at gaps instead of bridging them. `ts.asfreq('D')` starts the grid at the first reading's clock time. `ts.resample('D').asfreq()` starts at midnight and turns off-midnight readings into `NaN`. The two match for date-only readings.
-- `ts.groupby(ts.index.month).mean().plot(kind='bar', ax=ax)`: Calendar-month means as bars, to show a seasonal pattern. `groupby()` accepts an array of keys as long as the series, such as `ts.index.month`. Draw the bars on a new `fig, ax = plt.subplots()`; bars on the dated line's Axes raise `AttributeError`.
-- `ax.axhline(98.6, linestyle='--', label='Normal')`: Horizontal reference line for a clinical threshold
-- `ax.set(xlabel='Time (UTC)')`: Name the zone of an aware time axis
-
-### Code Snippet: Time-Series Plotting
-
-`ts` is a year of daily influenza-like illness visits at a clinic, with a DatetimeIndex.
-
-```python
-ax = ts.plot(alpha=0.5, label='Daily', color='gray')
-ts.rolling(window=30).mean().plot(ax=ax, linewidth=2, label='30-Day Rolling Mean', color='blue')
-ax.set(title='Influenza-like Illness Visits with Rolling Mean', xlabel='Date', ylabel='Visits per day')
-ax.legend()
-ax.grid(True, alpha=0.3)
-plt.show()
-
-fig, ax = plt.subplots(figsize=(8, 4))
-monthly_mean = ts.groupby(ts.index.month).mean()
-monthly_mean.plot(kind='bar', ax=ax, rot=0, title='Mean Daily Visits by Calendar Month',
-                  xlabel='Month', ylabel='Visits per day')
-plt.show()
-```
 
 # LIVE DEMO!
 

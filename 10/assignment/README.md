@@ -160,7 +160,7 @@ Split on when each target is measured, `followup_time`, as Lecture 10's "Code Sn
 A model has to beat the rules a program could use with no model. Lecture 10's "Code Snippet: A Baseline and a Linear Pipeline" and "Code Snippet: Comparing on Validation Rows", and Demo 2 steps 2 and 3, show each piece. In the Task 3.1 cell, fit every approach on the fit rows' `FEATURES` and `TARGET`:
 
 1. `baseline`: a `DummyRegressor` that predicts the fit rows' mean.
-2. Persistence needs no fitting: it predicts that the next reading equals `sbp_today` (Lecture 10's "Reference Card: Baselines and Pipelines").
+2. Persistence needs no fitting: it predicts that the next reading equals `sbp_today`, the way Demo 2 step 2 scores `sbp_week` as its own forecast.
 3. `pipeline`: a `Pipeline` with three named steps: `"impute"`, a `SimpleImputer` that fills with the median (`bmi` and `prior_sbp` have blanks that `LinearRegression` cannot take); `"scale"`, a `StandardScaler`; and `"model"`, a `LinearRegression`.
 4. In the loop, record each approach's validation `mae`, `rmse` (the square root of the mean squared error), and `r2`, with the actual values as the first argument.
 5. Save `validation_metrics` to `VALIDATION_PATH` without the index.
@@ -192,7 +192,7 @@ Lecture 10's "Freeze, Then Test Once" section and Demo 2 step 8 show this step. 
 
 The care-transitions team calls discharged patients flagged by the **LACE index** (length of stay, acuity, comorbidity, and ED visits, 0 to 19). It is weighing a cutoff of 13 against 10. Lecture 10's "Code Snippet: Accuracy Hides Missed Readmissions" computes these numbers. In the Task 3.3 cell:
 
-1. Build each rule's flag as 0/1: `flag_no_one` flags nobody; `lace_13_plus` flags a `lace_score` of 13 or more; `lace_10_plus`, 10 or more. A comparison gives `True`/`False`; converting to `int` gives 1/0.
+1. Build each rule's flag as 0/1: `flag_no_one` flags nobody, an array of zeros (Lecture 03's `np.zeros()`, as Demo 2 step 6's "always no" rule does); `lace_13_plus` flags a `lace_score` of 13 or more; `lace_10_plus`, 10 or more. A comparison gives `True`/`False`; converting to `int` gives 1/0.
 2. In the loop, record each rule's `flagged` (how many it flags), `accuracy`, `precision` (0 when it flags no one, with `zero_division=0`), and `recall`, with `discharges["readmitted_30d"]` as the first argument.
 3. Save `readmission_metrics` to `READMISSION_PATH` without the index.
     - Expect: flagging nobody is right for 86.8% of discharges, more than either LACE rule, and catches none of the 27,808 readmissions. A cutoff of 13 flags 20,414 patients and catches about a quarter of the readmissions; 10 flags three times as many and catches about half, with more calls to patients who stay home.

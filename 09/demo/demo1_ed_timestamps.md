@@ -101,6 +101,22 @@ display(valid.groupby('disposition').agg(visits=('los_hours', 'size'),
 
 Expect `75` departures before arrival, from `-18.9` to `-22.1` hours in the first three: each departure was typed with the previous day's date. Admitted patients have the longest median stay (`6.88` hours, `0.89` of them over 4 hours), because they wait in the ED for an inpatient bed. Discharged patients have a median of `2.83` hours, with `0.26` over 4 hours.
 
+Draw each disposition's stays against the 4-hour mark. Stays over 24 hours are drawn at 24.
+
+```python
+dispositions = sorted(valid['disposition'].unique())
+fig, axes = plt.subplots(len(dispositions), 1, figsize=(9, 2 * len(dispositions)), sharex=True)
+for ax, disposition in zip(axes, dispositions):
+    ax.hist(valid.loc[valid['disposition'] == disposition, 'los_hours'].clip(upper=24), bins=48, color='steelblue')
+    ax.axvline(4, color='#D55E00', linestyle='--')
+    ax.set(title=disposition, ylabel='Visits')
+axes[-1].set(xlabel='Length of stay (hours)')
+plt.tight_layout()
+plt.show()
+```
+
+Expect four panels sharing one hours axis. Most of the admitted bars sit right of the dashed 4-hour line, peaking near 5 to 6 hours, with a spike at 24 for patients who waited over a day for a bed. Discharged stays peak near 2 to 3 hours, left of the line, and `0.96` of patients who left without being seen are gone before the line.
+
 ### 5. When do patients arrive?
 
 Every visit with a parsed arrival counts here, including the ones with no departure. `.dt.hour` reads the clock hour from each arrival, and `.dt.floor('D')` rounds each arrival down to its date. Dividing the visits per hour by the number of days gives the average arrivals in that hour of a day.
@@ -174,9 +190,15 @@ for site in ['Central', 'Northside', 'Eastside', 'Harbor']:
     site_daily = by_time.loc[by_time['site'] == site, 'visit_id'].resample('D').count()
     empty = site_daily[site_daily == 0]
     print(site, len(site_daily), 'days,', len(empty), 'with no visits', list(empty.index.strftime('%Y-%m-%d')))
+
+east_daily = by_time.loc[by_time['site'] == 'Eastside', 'visit_id'].resample('D').count()
+fig, ax = plt.subplots(figsize=(10, 3.5))
+east_daily.loc['2024-06':'2024-10'].plot(ax=ax, color='steelblue')
+ax.set(title='Eastside ED visits per day, June to October 2024', xlabel='Date', ylabel='Visits per day')
+plt.show()
 ```
 
-Expect `731 days in the extract`, and `731` daily rows for every site. Central, Northside, and Harbor have `0` days with no visits. Eastside has `9`, August 12 to 20, 2024, in a row: an ED that sees about 170 patients a day did not go quiet for nine days, so its feed failed. A monthly count for Eastside in August 2024 would be low because of the feed, not the patients.
+Expect `731 days in the extract`, and `731` daily rows for every site. Central, Northside, and Harbor have `0` days with no visits. Eastside has `9`, August 12 to 20, 2024, in a row: an ED that sees about 170 patients a day did not go quiet for nine days, so its feed failed. The chart draws Eastside's daily counts: about 130 to 220 visits a day, then a flat line at `0` for nine days in mid-August. A monthly count for Eastside in August 2024 would be low because of the feed, not the patients.
 
 ### 8. The monthly 4-hour report
 
@@ -208,6 +230,29 @@ display(by_disposition.loc['2023-11':'2024-02', ['admitted', 'discharged']].roun
 
 Expect admitted patients to rise from `0.888` over 4 hours in November 2023 to `0.961` in January 2024, and discharged patients from `0.260` to `0.301`. Every patient waits longer when the ED is crowded, and admitted patients also wait for an inpatient bed, which fills in flu season.
 
+### 9. Bin edges for a triage block report
+
+The charge nurse counts arrivals in 4-hour blocks and reports each block when it ends. An arrival at exactly 08:00 belongs to the block that just ended, `04:00 to 08:00`. That is `closed='right', label='right'`. Compare it with the default on one day at Central.
+
+```python
+central_day = by_time.loc['2024-03-07']
+central_day = central_day[central_day['site'] == 'Central']['visit_id']
+print('Arrivals at exactly 08:00:', (central_day.index == '2024-03-07 08:00').sum())
+blocks = pd.DataFrame({
+    'default (left)': central_day.resample('4h').count(),
+    "closed='right', label='right'": central_day.resample('4h', closed='right', label='right').count(),
+})
+display(blocks)
+
+fig, ax = plt.subplots(figsize=(9, 3.5))
+blocks.set_axis(blocks.index.strftime('%b %d %H:%M')).plot(kind='bar', ax=ax, rot=0)
+ax.set(title='Central arrivals in 4-hour blocks, March 7, 2024', xlabel='Block label', ylabel='Arrivals', ylim=(0, 120))
+ax.legend(loc='upper left')
+plt.show()
+```
+
+Expect `Arrivals at exactly 08:00: 1`, then one table with 7 labels: each rule leaves one label empty (`NaN`), and the shared labels hold different counts. By default, bins include their start and carry it as the label: `08:00` means 08:00 to 11:59 and holds `84.0`. With `closed='right', label='right'`, `08:00` means after 04:00 up to and including 08:00 and holds `26.0`: the 25 arrivals from 04:01 to 07:59 plus the one at 08:00. The last right-closed bin is labeled `2024-03-08 00:00`, the end of March 7. In the chart, the blue bar at each label counts the 4 hours after it and the orange bar the 4 hours before it. State the rule whenever a report depends on it.
+
 ## Independent practice
 
 Continue on your own after class. These cells reuse `arrived`, `valid`, `by_time`, and `valid_by_time` from the core; if the runtime closed, run the cells above again first.
@@ -238,21 +283,7 @@ print('Mean visits per day:', round(weekly.sum() / 731), ' Weekend share of visi
 
 Expect the first two labels, `Sun 2023-01-01` and `Sun 2023-01-08`: the first bin holds only January 1, a Sunday. The three busiest weeks end `2024-01-07` (`7454` visits), `2023-12-31` (`7367`), and `2024-01-14` (`7187`), all at the flu peak. `Mean visits per day: 858`, and weekends hold `0.272` of visits, a little less than their 2 days in 7 (`0.286`).
 
-### 3. Bin edges for a triage block report
-
-The charge nurse counts arrivals in 4-hour blocks and reports each block when it ends. An arrival at exactly 08:00 belongs to the block that just ended, `04:00 to 08:00`. That is `closed='right', label='right'`. Compare it with the default on one day at Central.
-
-```python
-central_day = by_time.loc['2024-03-07']
-central_day = central_day[central_day['site'] == 'Central']['visit_id']
-print('Arrivals at exactly 08:00:', (central_day.index == '2024-03-07 08:00').sum())
-display(central_day.resample('4h').count())
-display(central_day.resample('4h', closed='right', label='right').count())
-```
-
-Expect `Arrivals at exactly 08:00: 1`, then two tables with different counts under the same labels. By default, bins include their start and carry it as the label: `08:00` means 08:00 to 11:59 and holds `84`. With `closed='right', label='right'`, `08:00` means after 04:00 up to and including 08:00 and holds `26`: the 25 arrivals from 04:01 to 07:59 plus the one at 08:00. The last right-closed bin is labeled `2024-03-08 00:00`, the end of March 7. State the rule whenever a report depends on it.
-
-### 4. Series and DataFrame shortcuts
+### 3. Series and DataFrame shortcuts
 
 `weekly` is a Series with a DatetimeIndex, so `weekly['2024-03']` selects the weeks ending in March 2024 directly. On a DataFrame, square brackets look for a column; this intentional error shows the `KeyError`.
 
@@ -267,7 +298,7 @@ print(by_time.loc['2024-03'].shape)
 
 Expect `(5,)`: the five weeks ending on a Sunday in March 2024. Then `KeyError: '2024-03'`, then the fix with `.loc`: `(25665, 11)`, every March 2024 visit.
 
-### 5. Follow-up schedules for frequent visitors
+### 4. Follow-up schedules for frequent visitors
 
 Patients with 4 or more visits in 2024 are enrolled in a care-management program: phone calls every Monday for four weeks from January 6, 2025, a nurse visit on the first of each month for a quarter, and a report at each month's end.
 
@@ -293,7 +324,7 @@ except ValueError as error:
 
 Expect `ValueError: Invalid frequency: M. Failed to parse with error message: ValueError("'M' is no longer supported for offsets. Please use 'ME' instead.")`.
 
-### 6. Monthly means of several columns
+### 5. Monthly means of several columns
 
 `df.resample('ME').mean()` summarizes every column. A text column such as `site` raises `TypeError`, so select the numeric columns first. This intentional error shows the message.
 

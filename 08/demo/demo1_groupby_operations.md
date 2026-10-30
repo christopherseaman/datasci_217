@@ -82,6 +82,20 @@ display(scorecard.sort_values("visits", ascending=False).round(2))
 
 Expect eight rows, busiest first. Mission is the busiest clinic (260,579 visits from 62,546 patients) and the slowest (mean wait 24.05 minutes, median 20.0). Ridgecrest, the rural clinic, is the smallest (36,367 visits) and the fastest (median 11.0). Every clinic's mean is above its median, because a few very long waits pull the mean up. Parkside has the fewest visits per patient (2.65) because it opened in July. Survey rates run from 0.32 at Bayview and 0.33 at Excelsior, in the most deprived neighborhoods, to 0.41 at Marina, in the least: the surveys underrepresent the patients those two clinics serve.
 
+Draw the two wait columns side by side.
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+waits = scorecard.set_index("clinic")[["mean_wait", "median_wait"]].sort_values("mean_wait")
+ax = waits.plot.barh(figsize=(7, 4))
+ax.set(title="Wait per clinic, 2025", xlabel="Minutes", ylabel="")
+plt.show()
+```
+
+Expect Mission's bars longest and Ridgecrest's shortest, and every clinic's mean bar longer than its median bar.
+
 Before handing this over, check that the scorecard accounts for every visit.
 
 ```python
@@ -96,23 +110,33 @@ Expect a gap of 2,862: exactly the visits with no clinic recorded, which `groupb
 
 ### 3. Where are waits worst? Department by clinic
 
-One group per observed (department, clinic) pair; `.unstack()` moves the clinics into columns.
+One group per observed (department, clinic) pair; `.unstack()` moves the clinics into columns. A heatmap colors each cell of the grid by its value.
 
 ```python
-wait_grid = visits.groupby(["department", "clinic"])["wait_min"].median().unstack()
-display(wait_grid)
+by_cell = visits.groupby(["department", "clinic"])
+wait_grid = by_cell["wait_min"].median().unstack()
+
+fig, ax = plt.subplots(figsize=(10, 4.5))
+sns.heatmap(wait_grid, annot=True, fmt=".0f", cmap="YlOrRd", ax=ax)
+ax.set(title="Median wait (minutes) by department and clinic, 2025", xlabel="Clinic", ylabel="")
+plt.show()
 ```
 
-Expect a 7 by 8 grid of median waits. Orthopedics is the slowest department at every clinic that runs it (21 to 37 minutes), and Bayview's Orthopedics median, 37.0, is the highest cell in the table. Mission has the longest median in every other department, 2 to 6 minutes above Sunset. The `NaN` cells are departments a clinic does not run, such as Orthopedics at Marina: no visits, so no median.
+Expect a 7 by 8 grid of median waits. Orthopedics, the darkest row, is the slowest department at every clinic that runs it (21 to 37 minutes), and Bayview's Orthopedics cell, 37, is the darkest of all. Mission's column is a shade darker than its neighbors: it has the longest median in every other department, 2 to 6 minutes above Sunset. The blank cells are departments a clinic does not run, such as Orthopedics at Marina: no visits, so the median is `NaN`.
 
-Bayview stands out, so look at its Orthopedics waits month by month.
+Bayview stands out, so pull out that one group with `get_group` and plot its median wait month by month.
 
 ```python
-bayview_ortho = visits[(visits["clinic"] == "Bayview") & (visits["department"] == "Orthopedics")]
-display(bayview_ortho.groupby("visit_month")["wait_min"].agg(["size", "median"]))
+bayview_ortho = by_cell.get_group(("Orthopedics", "Bayview"))
+monthly = bayview_ortho.groupby("visit_month")["wait_min"].agg(["size", "median"])
+print(f"Bayview Orthopedics: {len(bayview_ortho):,} visits, {monthly['size'].min():,} to {monthly['size'].max():,} a month")
+
+ax = monthly["median"].plot(marker="o", figsize=(8, 3.5))
+ax.set(title="Bayview Orthopedics: median wait by month, 2025", xlabel="", ylabel="Minutes", ylim=(0, None))
+plt.show()
 ```
 
-Expect 1,722 to 2,197 visits a month throughout, with a median of 30 to 34 minutes from January to August, then 56 to 59 from September on. Volume stayed level while the wait nearly doubled (Bayview lost an orthopedic surgeon in September). The yearly cell of 37.0 hid that jump.
+Expect 23,425 visits, 1,722 to 2,197 a month, then a flat line at 30 to 34 minutes from January to August that jumps to 56 to 59 from September on. Volume stayed level while the wait nearly doubled (Bayview lost an orthopedic surgeon in September). The yearly cell of 37 hid that jump.
 
 ### 4. The same grid as a pivot table, and visit counts with totals
 
@@ -135,7 +159,7 @@ display(volume)
 print(f"Corner cell: {volume.loc['Total', 'Total']:,}")
 ```
 
-Expect seven department rows plus `Total`, eight clinic columns plus `Total`, and `0` where a clinic does not run a department (Dermatology and Endocrinology at Parkside, four specialties at Ridgecrest). Ridgecrest's Cardiology count is 180, from its monthly outreach clinic. The corner cell is 1,197,138, the scorecard's total.
+Expect seven department rows plus `Total`, eight clinic columns plus `Total`, and `0` where a clinic does not run a department (Dermatology and Endocrinology at Parkside; Dermatology, Endocrinology, and Orthopedics at Ridgecrest). Ridgecrest's Cardiology count is 180, from its monthly outreach clinic. The corner cell is 1,197,138, the scorecard's total.
 
 ### 5. Volume by month with `crosstab`
 
@@ -146,7 +170,17 @@ by_month = pd.crosstab(visits["visit_month"], visits["clinic"], margins=True, ma
 display(by_month)
 ```
 
-Expect 12 month rows plus `Total`. Parkside shows `0` through June, then 5,575 in July: it opened on July 7. In the same month Sunset falls from 21,075 to 16,386 visits, because Parkside's patients used to go to Sunset. December (114,171) and January (111,492) are the busiest months, the winter respiratory season. A crosstab cell with no rows is a real count of 0.
+Expect 12 month rows plus `Total`. Parkside shows `0` through June, then 5,575 in July: it opened on July 7. December (114,171) and January (111,492) are the busiest months, the winter respiratory season. A crosstab cell with no rows is a real count of 0.
+
+Plot two of the clinic columns, leaving out the `Total` row.
+
+```python
+ax = by_month.loc[by_month.index != "Total", ["Sunset", "Parkside"]].plot(marker="o", figsize=(8, 3.5))
+ax.set(title="Visits per month, 2025", xlabel="", ylabel="Visits", ylim=(0, None))
+plt.show()
+```
+
+Expect Parkside flat at 0 through June, then 5,575 in July, rising to 7,836 in December. In the same month Sunset drops from 21,075 to 16,386: Parkside's patients used to go to Sunset.
 
 ## Independent practice
 
@@ -190,21 +224,7 @@ print("Rows after stack():", len(long_again))
 
 Expect eight clinic rows. New patients wait about 3 minutes longer at every clinic (2.5 to 4.0). `stack()` turns the two columns back into an index level: 16 rows, one per clinic and visit type.
 
-### 9. Draw the median-wait grid as a heatmap
-
-```python
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-fig, ax = plt.subplots(figsize=(10, 4.5))
-sns.heatmap(median_wait, annot=True, fmt=".0f", cmap="YlOrRd", ax=ax)
-ax.set(title="Median wait (minutes) by department and clinic, 2025", xlabel="Clinic", ylabel="")
-plt.show()
-```
-
-Expect the Orthopedics row darkest, Bayview's Orthopedics cell the darkest of all, the Mission column a shade darker than its neighbors, and blank cells where a clinic does not run a department.
-
-### 10. Patients, not visits, per department
+### 9. Patients, not visits, per department
 
 ```python
 patients = pd.pivot_table(visits, values="patient_id", index="department", columns="clinic",

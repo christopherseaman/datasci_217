@@ -2,14 +2,17 @@
 
 split_apply_combine.png and result_shapes.png are computed from the lecture's
 six-visit table with pandas, and the drawn numbers are asserted against the
-values the lecture prints. ssh_laptop_server.png is a plain diagram.
+values the lecture prints, as are transform_vs_clinic.png and filter_vs_mask.png.
+ssh_laptop_server.png is a plain diagram.
 pivot_heatmap.png runs Demo 1's own code cells up to its heatmap cell, so the
-figure shows the demo's 100,000 synthetic visits.
+figure shows the demo's 1.2 million synthetic visits.
 
 Run from the repository root:
     uv run --project 08/demo python 08/scripts/generate_lecture_figures.py
 """
 
+import contextlib
+import sys
 from pathlib import Path
 
 import jupytext
@@ -202,6 +205,83 @@ def result_shapes():
     save(fig, "result_shapes.png")
 
 
+def transform_vs_clinic():
+    """Each visit's wait beside its clinic mean: the mean transform copies to every row."""
+    trans = visits.groupby("clinic")["wait_min"].transform("mean")
+    diff = visits["wait_min"] - trans
+    assert trans.tolist() == [11.0, 11.0, 11.0, 25.0, 25.0, 9.0]
+    assert diff.tolist() == [1.0, 4.0, -5.0, -5.0, 5.0, 0.0]
+
+    fig, ax = plt.subplots(figsize=(9, 5.2))
+    fig.patch.set_facecolor("white")
+    order = ["North", "South", "East"]
+    for x, clinic in enumerate(order):
+        rows = visits.index[visits["clinic"] == clinic]
+        color = CLINIC_COLORS[clinic]
+        mean = trans[rows[0]]
+        ax.plot([x - 0.38, x + 0.38], [mean, mean], color=color, linewidth=2.5)
+        ax.text(x + 0.42, mean, f"clinic mean\n{mean:.0f} min", fontsize=10, color=color, va="center")
+        offsets = [-0.2, 0.0, 0.2][:len(rows)] if len(rows) > 1 else [0.0]
+        offsets = [-0.15, 0.15] if len(rows) == 2 else offsets
+        for dx, i in zip(offsets, rows):
+            wait, d = visits.loc[i, "wait_min"], diff[i]
+            ax.plot([x + dx, x + dx], [mean, wait], color=GREY, linewidth=1.2, linestyle=":")
+            ax.scatter([x + dx], [wait], s=70, color=color, zorder=3)
+            label = f"row {i}: {wait}  ({d:+.0f})"
+            if d == 0:  # sits on its mean line, so label it above
+                ax.text(x + dx, wait + 1.2, label, fontsize=9.5, family="monospace", ha="center",
+                        color=INK, va="bottom")
+            else:
+                ax.text(x + dx + (-0.06 if dx < 0 else 0.06), wait, label, fontsize=9.5,
+                        family="monospace", ha="right" if dx < 0 else "left", color=INK, va="center")
+    ax.set_xticks(range(len(order)), order, fontsize=12)
+    ax.set_xlim(-0.95, 2.9)
+    ax.set_ylim(0, 35)
+    ax.set_ylabel("wait_min (minutes)", fontsize=11)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.set_title("transform('mean') gives every visit its own clinic's mean; wait_min minus it is the gap",
+                 fontsize=11.5, loc="left", color=INK)
+    fig.tight_layout()
+    save(fig, "transform_vs_clinic.png")
+
+
+def filter_vs_mask():
+    """A row mask tests each visit; groupby().filter tests each clinic and keeps or drops all its rows."""
+    mask = visits["wait_min"] > 10
+    kept = visits.groupby("clinic").filter(lambda g: g["wait_min"].mean() > 10)
+    assert visits.index[mask].tolist() == [0, 1, 3, 4]
+    assert kept.index.tolist() == [0, 1, 2, 3, 4]
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 4.6))
+    fig.patch.set_facecolor("white")
+    rows = [[str(i), c, str(w)] for i, c, w in zip(visits.index, visits["clinic"], visits["wait_min"])]
+    colors = [CLINIC_COLORS[c] for c in visits["clinic"]]
+    means = visits.groupby("clinic")["wait_min"].mean()
+    panels = [
+        (axes[0], "visits[visits['wait_min'] > 10]", "tests each row: 4 kept",
+         [i for i in visits.index if not mask[i]],
+         [f"{w} > 10? {'yes' if m else 'no'}" for w, m in zip(visits["wait_min"], mask)]),
+        (axes[1], ".filter(lambda g: g['wait_min'].mean() > 10)", "tests each clinic: 5 kept",
+         [i for i in visits.index if i not in kept.index],
+         [f"{c} mean {means[c]:.0f} > 10? {'yes' if means[c] > 10 else 'no'}" for c in visits["clinic"]]),
+    ]
+    for ax, code, note, faded, tests in panels:
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 5.2)
+        ax.axis("off")
+        ax.text(0, 5.05, code, fontsize=12, family="monospace", fontweight="bold", color=INK, va="center")
+        ax.text(0, 4.6, note, fontsize=11.5, color="#444444", va="center")
+        centers = draw_table(ax, 0, 4.15, [0.6, 1.9, 1.9], ["", "clinic", "wait_min"], rows, colors,
+                             ["right", "left", "right"], faded=faded)
+        for r, (cy, text) in enumerate(zip(centers, tests)):
+            ax.text(4.65, cy, text, fontsize=10.5, va="center", family="monospace",
+                    color=GREY if r in faded else INK)
+    fig.text(0.01, -0.02, "Row 2 (North, 6 min) fails the row test but stays with its clinic, whose mean is 11.",
+             fontsize=10.5, color="#555555")
+    fig.tight_layout(w_pad=2.0)
+    save(fig, "filter_vs_mask.png")
+
+
 def ssh_laptop_server():
     """Where ssh and scp move work: commands and files cross, patient records stay on the server."""
     fig, ax = blank_canvas(21, 8.0)
@@ -255,26 +335,35 @@ def ssh_laptop_server():
 def pivot_heatmap():
     """Execute Demo 1's code cells in order and save the figure its heatmap cell draws."""
     env = {"display": lambda *a, **k: None, "__name__": "__demo__"}
+    # The demo reads data/ and imports generate_data.py from its own folder
+    sys.path.insert(0, str(DEMO1.parent))
+    with contextlib.chdir(DEMO1.parent):
+        run_demo_until_heatmap(env)
+    print(env["wait_grid"].round(1))
+    plt.gcf().savefig(MEDIA_DIR / "pivot_heatmap.png", dpi=150, facecolor="white", bbox_inches="tight")
+    plt.close("all")
+    print("Generated: pivot_heatmap.png")
+
+
+def run_demo_until_heatmap(env):
     for cell in jupytext.read(DEMO1).cells:
         if cell.cell_type != "code":
             continue
         # Drop notebook magics such as the %pip install line
         src = "\n".join(line for line in cell.source.splitlines() if not line.lstrip().startswith("%"))
-        is_heatmap = "sns.heatmap(wait_pivot" in src
+        is_heatmap = "sns.heatmap(wait_grid" in src
         exec(compile(src.replace("plt.show()", ""), str(DEMO1), "exec"), env)
         if is_heatmap:
             break
     else:
-        raise SystemExit(f"No sns.heatmap(wait_pivot cell in {DEMO1}")
-    print(env["wait_pivot"].round(1))
-    plt.gcf().savefig(MEDIA_DIR / "pivot_heatmap.png", dpi=150, facecolor="white")
-    plt.close("all")
-    print("Generated: pivot_heatmap.png")
+        raise SystemExit(f"No sns.heatmap(wait_grid cell in {DEMO1}")
 
 
 if __name__ == "__main__":
     MEDIA_DIR.mkdir(exist_ok=True)
     split_apply_combine()
     result_shapes()
+    transform_vs_clinic()
+    filter_vs_mask()
     ssh_laptop_server()
     pivot_heatmap()

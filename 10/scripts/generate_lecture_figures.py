@@ -26,13 +26,14 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 import statsmodels.formula.api as smf  # noqa: E402
 from cycler import cycler  # noqa: E402
-from matplotlib.patches import Rectangle  # noqa: E402
+from matplotlib.patches import FancyBboxPatch, Rectangle  # noqa: E402
 from sklearn.datasets import load_breast_cancer, load_diabetes  # noqa: E402
 from sklearn.dummy import DummyRegressor  # noqa: E402
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestClassifier  # noqa: E402
 from sklearn.inspection import permutation_importance  # noqa: E402
 from sklearn.linear_model import Lasso, LinearRegression, LogisticRegression, Ridge  # noqa: E402
-from sklearn.metrics import accuracy_score, confusion_matrix, mean_absolute_error  # noqa: E402
+from sklearn.metrics import (accuracy_score, confusion_matrix, mean_absolute_error,  # noqa: E402
+                             precision_score, recall_score)
 from sklearn.model_selection import train_test_split  # noqa: E402
 from sklearn.pipeline import Pipeline  # noqa: E402
 from sklearn.preprocessing import StandardScaler  # noqa: E402
@@ -642,6 +643,105 @@ def freeze_test_once():
     save(fig, "freeze_test_once.png")
 
 
+def _box(ax, x, y, w, h, title, lines, color):
+    ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.02", facecolor=color, alpha=0.12,
+                                edgecolor=color, linewidth=1.5))
+    ax.text(x + w / 2, y + h - 0.07, title, ha="center", va="top", fontsize=11, fontweight="bold", color=color)
+    ax.text(x + w / 2, y + h - 0.2, "\n".join(lines), ha="center", va="top", fontsize=9.5,
+            family="DejaVu Sans Mono", color=INK, linespacing=1.5)
+
+
+def estimator_pattern():
+    """fit() on the snippet's 45 training patients, then predict() on the first 3 validation rows."""
+    clinic, _ = clinic_fit()
+    train, valid = clinic.iloc[:45], clinic.iloc[45:]
+    model = LinearRegression().fit(train[["age", "bmi"]], train["sbp"])
+    predicted = model.predict(valid[["age", "bmi"]].head(3))
+    assert predicted.round(1).tolist() == [153.3, 136.1, 149.2]
+    b0, (b1, b2) = model.intercept_, model.coef_
+    fig, ax = plt.subplots(figsize=(11, 2.6))
+    ax.set(xlim=(0, 3.3), ylim=(0.15, 0.95))
+    ax.axis("off")
+    train_lines = ["age   bmi    sbp"] + [f"{a:>3}  {b:>4}  {c:>5}" for a, b, c in
+                                         train[["age", "bmi", "sbp"]].head(3).itertuples(index=False)]
+    _box(ax, 0.02, 0.2, 0.9, 0.7, "Training rows (45 patients)", train_lines + ["...  X and y known"], BLUE)
+    _box(ax, 1.2, 0.25, 0.9, 0.6, "Fitted model",
+         [f"sbp = {b0:.1f}", f"+ {b1:.2f} * age", f"+ {b2:.2f} * bmi"], GREEN)
+    new_lines = ["age   bmi    sbp"] + [f"{a:>3}  {b:>4}  {p:>5.1f}" for (a, b), p in
+                                       zip(valid[["age", "bmi"]].head(3).itertuples(index=False), predicted)]
+    _box(ax, 2.38, 0.2, 0.9, 0.7, "New rows: predictions", new_lines + ["...  only X needed"], ORANGE)
+    for x0, x1, label in [(0.94, 1.18, "fit(X, y)"), (2.12, 2.36, "predict(X_new)")]:
+        ax.annotate("", xy=(x1, 0.55), xytext=(x0, 0.55),
+                    arrowprops=dict(arrowstyle="-|>", color=INK, linewidth=1.5))
+        ax.text((x0 + x1) / 2, 0.62, label, ha="center", fontsize=10, family="DejaVu Sans Mono")
+    save(fig, "estimator_pattern.png")
+
+
+def threshold_tradeoff():
+    """Logistic regression flags progression above 200; lowering the threshold trades precision for recall."""
+    d = diabetes_split()
+    classifier = Pipeline([("scale", StandardScaler()), ("model", LogisticRegression(max_iter=1000))])
+    classifier.fit(d["X_train"], d["y_train"] > 200)
+    probability = classifier.predict_proba(d["X_valid"])[:, 1]
+    actual = (d["y_valid"] > 200).astype(int).to_numpy()
+    thresholds = np.linspace(0.05, 0.9, 86)
+    recall = [recall_score(actual, probability >= t) for t in thresholds]
+    precision = [precision_score(actual, probability >= t, zero_division=0) for t in thresholds]
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(thresholds, recall, color=BLUE, linewidth=2, label="recall: share of the 29 high patients flagged")
+    ax.plot(thresholds, precision, color=ORANGE, linewidth=2, label="precision: share of flags that are high")
+    notes = {0.5: (0.56, 0.9), 0.2: (0.26, 0.2)}
+    for t, (tx, ty) in notes.items():
+        flagged = probability >= t
+        caught = int((flagged & (actual == 1)).sum())
+        ax.axvline(t, color=GREY, linestyle="--", linewidth=1)
+        ax.text(tx, ty, f"threshold {t}:\n{flagged.sum()} flagged,\n{caught} of 29 caught", fontsize=9.5)
+    assert int((probability >= 0.5).sum()) == 22 and int((probability >= 0.2).sum()) == 42
+    ax.set(xlabel="Probability threshold (flag when probability >= threshold)", ylabel="Score",
+           ylim=(0, 1.05), title="Progression above 200, 89 validation patients")
+    ax.legend(loc="lower left", fontsize=9, frameon=False)
+    save(fig, "threshold_tradeoff.png")
+
+
+def neural_network():
+    """The 30-64-32-1 biopsy network as layers of units, with the two activation functions it uses."""
+    fig = plt.figure(figsize=(11, 4.2))
+    grid = fig.add_gridspec(2, 3, width_ratios=[2.6, 1, 0.05], hspace=0.6)
+    ax = fig.add_subplot(grid[:, 0])
+    layers = [("Input\n30 measurements", 30, 5, GREY), ("Hidden 1\n64 units, ReLU", 64, 7, BLUE),
+              ("Hidden 2\n32 units, ReLU", 32, 6, BLUE), ("Output\n1 unit, sigmoid", 1, 1, ORANGE)]
+    positions = []
+    for i, (label, n, shown, color) in enumerate(layers):
+        ys = np.linspace(0.85, 0.15, shown) if shown > 1 else np.array([0.5])
+        positions.append(ys)
+        for j, y in enumerate(ys):
+            gap = shown > 1 and j == shown - 2
+            ax.plot(i, y, "o", markersize=13, color="white" if gap else color,
+                    markeredgecolor=color if not gap else "white", zorder=3)
+            if gap:
+                ax.text(i, y, "...", ha="center", va="center", fontsize=12, color=INK, zorder=4)
+        ax.text(i, 0.0, label, ha="center", va="top", fontsize=10)
+    for i in range(len(layers) - 1):
+        for y0 in positions[i]:
+            for y1 in positions[i + 1]:
+                ax.plot([i, i + 1], [y0, y1], color=GREY, linewidth=0.4, alpha=0.6, zorder=1)
+    ax.text(3, 0.62, "P(malignant)", ha="center", fontsize=9.5, color=ORANGE)
+    ax.set(xlim=(-0.5, 3.5), ylim=(-0.2, 0.95))
+    ax.axis("off")
+    z = np.linspace(-4, 4, 200)
+    relu_ax = fig.add_subplot(grid[0, 1])
+    relu_ax.plot(z, np.maximum(z, 0), color=BLUE, linewidth=2)
+    relu_ax.set_title("ReLU: negatives become 0", fontsize=10)
+    sigmoid_ax = fig.add_subplot(grid[1, 1])
+    sigmoid_ax.plot(z, 1 / (1 + np.exp(-z)), color=ORANGE, linewidth=2)
+    sigmoid_ax.set_title("Sigmoid: any number to 0 to 1", fontsize=10)
+    for small in (relu_ax, sigmoid_ax):
+        small.axvline(0, color=GREY, linewidth=0.8)
+        small.set_xlabel("weighted sum + intercept", fontsize=9)
+        small.tick_params(labelsize=8)
+    save(fig, "neural_network.png")
+
+
 # ------------------------------------------------------- trees and boosting
 
 def decision_tree():
@@ -765,7 +865,7 @@ def model_comparison():
 FIGURES = [residuals_vs_fitted, ols_summary, intervals, anscombe, leakage_timeline, cyclic_hours,
            overfit_polynomial, target_time_split, ridge_lasso_paths, logistic_threshold,
            validation_diagnostics, confusion_matrix_figure, permutation_importance_chart, freeze_test_once,
-           decision_tree, boosting_stages, xgboost_early_stopping, keras_loss_curves, keras_dropout_curves,
+           estimator_pattern, threshold_tradeoff, neural_network, decision_tree, boosting_stages, xgboost_early_stopping, keras_loss_curves, keras_dropout_curves,
            model_comparison]
 
 if __name__ == "__main__":

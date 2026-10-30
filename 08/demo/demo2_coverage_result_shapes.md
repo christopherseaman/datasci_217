@@ -92,6 +92,22 @@ print(f"Visits counted: {volume['visits'].sum():,} of {len(q4):,}")
 
 Expect ten rows: the nine clinics in the template's order, Oceanview with 0 visits, 0 patients, and a `NaN` median (no waits to take a median of), then a `NaN` row with the 744 unrecorded visits. Now all 316,158 visits are counted, and someone can go find the missing clinic names.
 
+Draw the board's chart. A chart axis needs text labels, so the `NaN` key gets the label `No clinic` (`astype(object)` turns the categorical labels into plain values that `fillna` can replace), and `ax.invert_yaxis()` puts the first clinic at the top.
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+labels = volume.index.astype(object).fillna("No clinic")
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.barh(labels, volume["visits"])
+ax.invert_yaxis()
+ax.set(title="Q4 2025 visits by clinic, board order", xlabel="Visits")
+plt.show()
+```
+
+Expect ten bars from Mission at the top to `No clinic` at the bottom, with an empty slot for Oceanview (0 visits) and a sliver for the 744 unrecorded visits. The default summary would have drawn eight bars and said nothing about the other two.
+
 ### 3. Flag waits that are long for their own clinic and department
 
 A 45-minute wait is routine in Orthopedics and alarming in Behavioral Health, so the audit compares each visit with its own clinic and department.
@@ -126,7 +142,20 @@ display(q4[["clinic", "department", "wait_min", "cell_mean", "wait_z"]].head().r
 
 Expect five visits, each with its own cell's mean wait and a z-score, the number of standard deviations above that mean. The first has no recorded wait, so its z-score is `NaN`, as it is for visits with no clinic. The second, a 9-minute Pediatrics wait at Bayview, has a z-score of -0.86, below its cell's mean of 14.58. The index keeps the visits' row numbers from the full extract (883842 onward).
 
-Compare the z-score rule with a flat 60-minute rule, department by department.
+Compare the z-score rule with a flat 60-minute rule, department by department: raw waits against the 60-minute line, and z-scores against the line at 3. `ax.axvline(x)` draws a vertical reference line at `x`.
+
+```python
+fig, axes = plt.subplots(1, 2, figsize=(12, 4), sharey=True)
+sns.boxplot(data=q4, x="wait_min", y="department", fliersize=1, ax=axes[0])
+axes[0].axvline(60, color="red", linestyle="--")
+axes[0].set(title="Raw wait: flat rule at 60 minutes", xlabel="Wait (minutes)", ylabel="")
+sns.boxplot(data=q4, x="wait_z", y="department", fliersize=1, ax=axes[1])
+axes[1].axvline(3, color="red", linestyle="--")
+axes[1].set(title="Wait z-score within clinic and department: rule at 3", xlabel="z-score")
+plt.show()
+```
+
+Expect the left boxes at very different positions: Orthopedics far right, Behavioral Health far left with no dot past the red line. Most dots past 60 belong to Orthopedics and Family Medicine. On the right every box is centered near 0 with a similar width, and every department, Behavioral Health included, has a tail of dots past 3.
 
 ```python
 flags = q4.groupby("department").agg(
@@ -179,7 +208,18 @@ public = pd.pivot_table(patients_rule, values="satisfaction", index="department"
 display(public.round(2))
 ```
 
-Expect 113,820 respondents. The row rule keeps 113,580, every respondent with a clinic (the 240 with no clinic have no group), and the patient rule keeps 21 fewer, 113,559. In the public table, Ridgecrest's Cardiology cell is `NaN` (suppressed), beside the cells for departments Ridgecrest does not run. Scores follow waits: Behavioral Health, the shortest wait, scores highest at every clinic (4.20 to 4.61), and Bayview's Orthopedics, the longest, is the lowest cell (2.95).
+Expect 113,820 respondents. The row rule keeps 113,580, every respondent with a clinic (the 240 with no clinic have no group), and the patient rule keeps 21 fewer, 113,559. In the public table, Ridgecrest's Cardiology cell is `NaN` (suppressed), beside the cells for departments Ridgecrest does not run.
+
+```python
+fig, ax = plt.subplots(figsize=(10, 4.5))
+sns.heatmap(public, annot=True, fmt=".2f", cmap="RdYlGn", ax=ax)
+ax.text(list(public.columns).index("Ridgecrest") + 0.5, list(public.index).index("Cardiology") + 0.5,
+        "suppressed", ha="center", va="center", fontsize=8)
+ax.set(title="Mean satisfaction (1 to 5), Q4 2025, groups of 11+ patients", xlabel="Clinic", ylabel="")
+plt.show()
+```
+
+Expect Ridgecrest's Cardiology cell labeled `suppressed` and its three other blank cells, the departments it does not run, left empty. Scores follow waits: the Behavioral Health row, the shortest wait, is the greenest at every clinic (4.20 to 4.61), and Bayview's Orthopedics, the longest wait, is the reddest cell (2.95).
 
 ## Independent practice
 
@@ -223,6 +263,16 @@ display(heavy.groupby(["clinic", "department"], observed=True)["wait_min"].agg([
 ```
 
 Expect one cell by mean, Bayview Orthopedics with 6,136 visits. By total minutes, Bayview Orthopedics (376,887 minutes) appears again, beside Family Medicine at Mission (578,743) and Sunset (372,992), with mean waits of about 24 and 20: not slow, but where most patient time goes.
+
+A row mask with the same threshold answers a different question: it keeps single long waits from every cell.
+
+```python
+long_rows = q4[q4["wait_min"] > 40]
+print(f"Row mask: {len(long_rows):,} visits from {len(long_rows.groupby(['clinic', 'department'], observed=True).size())} cells")
+print(f"filter:   {len(slow):,} visits from 1 cell")
+```
+
+Expect the row mask to keep 24,842 visits from 39 cells, and `filter` all 6,136 visits, short waits included, from Bayview Orthopedics.
 
 ### 8. The same z-score with a lambda
 

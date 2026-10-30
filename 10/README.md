@@ -396,11 +396,9 @@ display(valid[['visit_date', 'target_date']])
 
 ## The Estimator Pattern
 
-```text
-Create estimator and choose settings
-    → fit(X_train, y_train): learn from training rows
-    → predict(X_new): predict for unseen rows
-```
+Create the estimator and choose its settings, `fit()` it on training rows where `X` and `y` are both known, then `predict()` rows where only `X` is known.
+
+![`LinearRegression().fit()` on the 45 training patients learns sbp = 80.9 + 0.59 * age + 1.09 * bmi; `predict()` then gives 3 new patients 153.3, 136.1, and 149.2 mmHg from age and BMI alone.](media/estimator_pattern.png)
 
 ### Reference Card: The Estimator Workflow
 
@@ -438,7 +436,7 @@ Discharge measurements → logistic regression → 0.72 probability → flag 1 a
 | `LinearRegression()` | Fit an unregularized linear prediction model (`from sklearn.linear_model import LinearRegression, Ridge, Lasso, LogisticRegression`). | Estimator |
 | `Ridge(alpha=...)` | Fit a linear model with an L2 coefficient penalty; larger `alpha` shrinks more. | Estimator |
 | `Lasso(alpha=...)` | Fit a linear model with an L1 penalty that may set coefficients to zero. | Estimator |
-| `LogisticRegression(max_iter=1000)` | Linear model for yes/no targets; `predict` gives 0/1 and `predict_proba` gives probabilities. | Estimator |
+| `LogisticRegression(max_iter=1000)` | Linear model for yes/no targets; `predict` gives 0/1. `predict_proba(X)` returns one column per class, and `predict_proba(X)[:, 1]` is P(class 1), the probability used for flags and thresholds. | Estimator / 2-D array |
 | `model.coef_` / `model.intercept_` | Read fitted slopes and intercept after `.fit(...)`. | Array / float (`LogisticRegression`: 2-D `coef_`, 1-element `intercept_`) |
 
 ## Baselines and Pipelines
@@ -461,6 +459,7 @@ X_valid --predict--> [same fitted steps]  --> predictions
 - `pipeline.fit(X_train, y_train)` / `pipeline.predict(X_valid)`: Fit every step on training rows only, then reuse that scaling; returns an array.
 - `pipeline.named_steps['model'].coef_`: Reach one named step inside a fitted pipeline to read its coefficients, or its settings with `.get_params()`.
 - `ColumnTransformer([(name, steps, columns), ...])`: Sends different columns to different preprocessing steps (`from sklearn.compose import ColumnTransformer`).
+- `pipeline.named_steps['preprocess'].get_feature_names_out()`: Names of the prepared columns, such as `categorical__clinic_Marina`; use them to label coefficients.
 - `SimpleImputer(strategy='median')`: Fills missing numbers with the training median; `strategy='most_frequent'` fills categories (`from sklearn.impute import SimpleImputer`).
 - `OneHotEncoder(handle_unknown='ignore', sparse_output=False)`: One 0/1 column per training category; an unseen category becomes all zeros instead of an error (`from sklearn.preprocessing import OneHotEncoder`).
 
@@ -514,6 +513,7 @@ print(model.predict(clinic_valid).round(1))  # [141.6 147.7]
     - False negatives (FN): readmitted but not flagged.
     - True negatives (TN): neither.
 - Lowering a probability threshold flags more patients: it can catch more true cases while also creating more false alarms. Choose that tradeoff on validation data, then freeze the threshold with the model.
+- A fixed workload sets the threshold for you: with 100 nurse calls a week, flag the 100 highest probabilities (`probability.rank(ascending=False) <= 100` on a Series) and compare models by recall at that budget.
 
 ![A Lasso's predictions for 89 validation diabetes patients: left, predicted against actual, flatter than the dashed perfect line; right, residuals centered 14.2 points above 0.](media/validation_diagnostics.png)
 
@@ -533,6 +533,8 @@ Import each by name: `from sklearn.metrics import mean_absolute_error, r2_score`
 | Per-class summary | Precision, recall, F1 (one score that balances the two), and support (number of true rows) for each class; `output_dict=True` returns a dict that `pd.DataFrame(...).T` turns into a table | `classification_report(y_true, y_pred)` | Printed table |
 
 ![The same Lasso predictions as a flag for progression above 200: TN 55, FP 5, FN 17, TP 12, so recall is 12 / 29 = 0.414 and precision is 12 / 17 = 0.706.](media/confusion_matrix.png)
+
+![A logistic regression flagging progression above 200 on the same 89 patients: at threshold 0.5 it flags 22 and catches 15 of 29; at 0.2 it flags 42 and catches 23, with precision falling from 0.68 to 0.55.](media/threshold_tradeoff.png)
 
 ### Code Snippet: Comparing on Validation Rows
 
@@ -723,6 +725,8 @@ display(importance.sort_values(ascending=False).head(5).round(3))
 
 The forest leans on the size and shape of the most irregular nuclei. `worst area` and `worst perimeter` are near copies of each other, so they split the credit one of them would get alone.
 
+![xkcd 1885: Ensemble Model. Many slightly different runs give a spread of outcomes, like a forest's trees fit on resampled rows, though some members are stranger than others.](media/xkcd_1885.png)
+
 # The Secret Weapon: Gradient Boosting
 
 - **Gradient boosting**: builds trees in sequence instead of in parallel, each small tree aimed at what the ensemble so far still gets wrong (the bottom row of the trees figure).
@@ -762,6 +766,7 @@ _Gradient boosting is the Magnum of machine learning: a signature look, built on
 | `model.fit(X_train, y_train, eval_set=[(X_valid, y_valid)], verbose=False)` | Fit trees and monitor validation data after each round. | Fitted estimator |
 | `model.predict(X)` / `model.predict_proba(X)` | Return predictions or class probabilities. | Array |
 | `early_stopping_rounds=10` (in the constructor) | Stop after validation performance fails to improve for 10 rounds. | Fewer trees |
+| `model.evals_result()['validation_0']['logloss']` | Validation loss after each round, for plotting the early-stopping curve. | List of floats |
 | `model.best_iteration` / `model.best_score` | After early stopping: the round with the best validation score (counting from 0), and that score. | Integer / float |
 | `model.feature_importances_` | Summarize fitted tree usage; do not interpret as causation. | Array |
 
@@ -802,17 +807,9 @@ predicted = model.predict(X_valid)  # one 0/1 label per validation row
 
 - **ReLU**: keeps positive values and turns negatives into 0.
 - **Sigmoid**: squashes any number into the range 0 to 1, readable as a probability.
-- **Hidden layers**: the layers between the input and the output:
+- **Hidden layers**: the layers between the input and the output; every unit feeds every unit in the next layer.
 
-```text
-Input Layer (10 features)
-    ↓
-Hidden Layer 1 (64 neurons, ReLU)
-    ↓
-Hidden Layer 2 (32 neurons, ReLU)
-    ↓
-Output Layer (1 neuron, Sigmoid)
-```
+![The biopsy network: 30 measurements feed 64 ReLU units, then 32 ReLU units, then one sigmoid unit that outputs P(malignant); right, the two activation functions.](media/neural_network.png)
 
 - Training repeats one loop: predict, measure the loss (`binary_crossentropy` for yes/no targets), and let the **optimizer** (such as Adam) nudge every weight to reduce it.
 - **Epoch**: one pass through the training rows, processed in **batches** of, say, 32.

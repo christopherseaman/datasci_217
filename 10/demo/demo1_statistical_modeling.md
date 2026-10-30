@@ -148,6 +148,28 @@ display(results.get_prediction(new_patient).summary_frame(alpha=0.05).round(1))
 
 Expect a fitted 120.0 mmHg, a mean-response interval of 119.9 to 120.1, and a prediction interval of 89.8 to 150.2. The 148,487 rows pin down the _average_ for patients like her to within a fraction of a mmHg, but _her_ SBP could sit anywhere in a 60 mmHg range. More rows shrink the first interval, not the second.
 
+Draw both intervals for every BMI from 18 to 45 at age 55, over a sample of real women aged 50 to 60.
+
+```python
+grid = pd.DataFrame({"age": 55, "bmi": np.linspace(18, 45, 50), "sex": "F"})
+bands = results.get_prediction(grid).summary_frame(alpha=0.05)
+women = cohort[(cohort["sex"] == "F") & cohort["age"].between(50, 60)].dropna(subset=["bmi"])
+women = women.sample(2000, random_state=1)
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.scatter(women["bmi"], women["sbp"], s=6, alpha=0.25, color="gray", label="women aged 50 to 60")
+ax.fill_between(grid["bmi"], bands["obs_ci_lower"], bands["obs_ci_upper"], alpha=0.2, label="95% prediction interval")
+ax.fill_between(grid["bmi"], bands["mean_ci_lower"], bands["mean_ci_upper"], color="red", alpha=0.6,
+                label="95% mean-response interval")
+ax.plot(grid["bmi"], bands["mean"], color="red")
+ax.set(xlabel="BMI (kg/m²)", ylabel="SBP (mmHg)", title="Fitted SBP for a 55-year-old woman")
+ax.legend(loc="upper left")
+plt.show()
+plt.close(fig)
+```
+
+Expect a red line rising from about 110 mmHg at BMI 18 to 133 at BMI 45. The red mean-response band is so thin it hides under the line. The blue prediction band is about 60 mmHg tall and covers most of the gray dots: the model knows the average well and each woman poorly.
+
 ### 6. Check the residuals
 
 A scatter of 148,000 points is a solid blob, so plot a random 5,000 of them, then check the pattern in numbers on every row: `pd.cut` (Lecture 05) groups the fitted values into bands.
@@ -215,6 +237,28 @@ display(weekly.head(3))
 
 Expect 587,139 raw readings and 580,698 clean ones: 552,512 scheduled (mean 142.6 mmHg) and 28,186 symptom readings (mean 156.2, taken when the patient felt unwell, so they run high). The weekly table has 140,399 patient-weeks with a target. In the first rows, patient RP00001's `sbp_next_week` is the next row's `sbp_week` (147.2, then 151.7), and each label arrives when the target week's last reading uploads (April 6, 13, and 18).
 
+Plot one patient's first six weeks: every scheduled reading as a dot, each week's mean as a black line across that week, and the target the row carries as a red dashed line across the following week. `ax.hlines(y, xmin, xmax)` draws one horizontal segment per value.
+
+```python
+patient = scheduled[scheduled["patient_id"] == "RP00001"]
+patient = patient[patient["week"] < patient["week"].min() + pd.Timedelta(weeks=6)]
+patient_weeks = weekly[weekly["patient_id"] == "RP00001"].head(5)
+
+fig, ax = plt.subplots(figsize=(8, 3.5))
+ax.scatter(patient["reading_time"], patient["sbp"], s=18, alpha=0.6, label="scheduled reading")
+ax.hlines(patient_weeks["sbp_week"], patient_weeks["week"], patient_weeks["week"] + pd.Timedelta(days=7),
+          color="black", linewidth=2, label="sbp_week (feature)")
+ax.hlines(patient_weeks["sbp_next_week"], patient_weeks["target_week"],
+          patient_weeks["target_week"] + pd.Timedelta(days=7), color="red", linestyle="--",
+          label="sbp_next_week (target)")
+ax.set(ylabel="SBP (mmHg)", title="RP00001: each week's mean is the previous row's target")
+ax.legend(fontsize=8, loc="upper right")
+plt.show()
+plt.close(fig)
+```
+
+Expect dots scattered up to about 10 mmHg either side of each black line. Each red dashed target sits exactly on the next week's black line: the row for one week carries the following week's mean as its label.
+
 ### 8. Audit the features and put reading times on a clock face
 
 Every feature must be known at Monday 08:00. The candidates include two that a dashboard offers but the forecast cannot have:
@@ -252,6 +296,32 @@ print(night_patient, "plain mean hour:", round(night["hour"].mean(), 1),
 
 Expect the daily rhythm in the means: 145.8 mmHg at 7:00, 136.2 at 19:00, and 138.4 at midnight. For RP04850, who measures around midnight, the plain mean hour is 12.3, a time the patient never measures; the mean sine and cosine are -0.05 and 0.95, just before midnight on the clock face.
 
+Put RP04850's readings on the clock face beside the daily rhythm.
+
+```python
+fig, (left, right) = plt.subplots(1, 2, figsize=(10, 4))
+scheduled.groupby(scheduled["reading_time"].dt.hour)["sbp"].mean().plot(ax=left, marker="o")
+left.set(xlabel="Hour of reading", ylabel="Mean SBP (mmHg)", title="Morning readings run highest")
+
+angle = np.linspace(0, 2 * np.pi, 100)
+right.plot(np.sin(angle), np.cos(angle), color="lightgray")
+right.scatter(night["hour_sin"], night["hour_cos"], s=12, alpha=0.4, label="RP04850's readings")
+right.scatter(night["hour_sin"].mean(), night["hour_cos"].mean(), s=120, marker="*", color="red",
+              label="mean of sin and cos")
+plain = night["hour"].mean()
+right.scatter(np.sin(2 * np.pi * plain / 24), np.cos(2 * np.pi * plain / 24), s=120, marker="X", color="black",
+              label=f"plain mean hour ({plain:.1f})")
+for label, hour in [("00:00", 0), ("06:00", 6), ("12:00", 12), ("18:00", 18)]:
+    right.annotate(label, (1.15 * np.sin(2 * np.pi * hour / 24), 1.15 * np.cos(2 * np.pi * hour / 24)), ha="center")
+right.set(xlim=(-1.4, 1.4), ylim=(-1.4, 1.4), aspect="equal", xlabel="hour_sin", ylabel="hour_cos",
+          title="One night-shift patient on the clock face")
+right.legend(fontsize=8, loc="center")
+plt.show()
+plt.close(fig)
+```
+
+Expect the left curve to peak near 146 mmHg at 07:00 and bottom out near 136 at 20:00. On the right, RP04850's dots cluster at the top of the circle around 00:00. The red star (mean sine and cosine) sits with them; the black X (plain mean hour, 12.3) sits at the bottom near 12:00, where the patient never measures.
+
 ### 9. Split on target time, then keep only labels that had arrived
 
 Target weeks starting before June 1 train, June and July validate, and August and September test. A prospective evaluation also requires every training label to have arrived by the first validation run, the earliest `run_time` among the validation rows.
@@ -272,6 +342,26 @@ display(pd.DataFrame({
 }, index=["train", "fit_rows (labels arrived)", "valid", "test"]))
 print("first validation run:", first_valid_run)
 ```
+
+Count rows per target week and color each by its role.
+
+```python
+roles = pd.concat([fit_rows.assign(role="fit (label arrived)"),
+                   train[train["label_arrival"] > first_valid_run].assign(role="train, label late"),
+                   valid.assign(role="validation"), test.assign(role="test")])
+counts = roles.groupby(["target_week", "role"]).size().unstack(fill_value=0)
+counts = counts[["fit (label arrived)", "train, label late", "validation", "test"]]
+counts.index = counts.index.strftime("%b %d")
+
+ax = counts.plot.bar(stacked=True, width=1.0, figsize=(10, 3.5), color=["C0", "C3", "C1", "C2"])
+ax.set_xticks(range(0, len(counts), 4), counts.index[::4], rotation=0)
+ax.set(xlabel="Target week", ylabel="Patient-weeks", title="Roles split on target week", ylim=(0, 6000))
+ax.legend(ncols=4, loc="upper center")
+plt.show()
+plt.close(ax.figure)
+```
+
+Expect blue training bars growing from January as patients enroll, a thin red cap on the week of May 26 (the 310 late labels), then orange validation weeks in June and July and green test weeks from August. No target week has two colors except May 26.
 
 Expect 68,634 training, 37,980 validation, and 33,785 test rows with non-overlapping target weeks. The first validation run is Monday, June 2, 2025, at 08:00, when the forecast for the week of June 2 is made. 68,324 training labels had arrived by then; the 310 left out are from the last training week (May 26), whose phones synced after the run. Demo 2 fits its models on `fit_rows`.
 
@@ -320,9 +410,9 @@ display(array_fit.params.round(3).rename("coef"))
 
 Expect all five clinic coefficients below 0, from -3.5 (Excelsior) to -10.2 (Marina): with age, BMI, and sex fixed, Bayview still reads highest. The ADI deciles point to one candidate reason: Bayview's patients come from the most deprived neighborhoods (mean decile 7.9, Marina 2.3). The coefficients say the clinics differ, not why; staff, cuffs, and neighborhoods all vary by clinic. The array fit gives the same numbers as step 4 (`const` 82.793, `age` 0.206, `bmi` 0.864, `male` 4.077).
 
-### 4. A curve in age
+### 4. A curve in age, and an interaction
 
-Add `I(age ** 2)` and compare the fits.
+Add `I(age ** 2)` and compare the fits. Then let BMI's slope depend on sex with `bmi * C(sex)`.
 
 ```python
 curved = smf.ols("sbp ~ age + I(age ** 2) + bmi + C(sex)", data=cohort).fit()
@@ -331,9 +421,12 @@ print("AIC:", round(results.aic), "->", round(curved.aic))
 ages = pd.DataFrame({"age": [30, 50, 70, 85], "bmi": 28.0, "sex": "F"})
 display(pd.DataFrame({"age": ages["age"], "straight": results.predict(ages),
                       "curved": curved.predict(ages)}).round(1))
+
+interaction = smf.ols("sbp ~ age + bmi * C(sex)", data=cohort).fit()
+display(interaction.params.round(3).rename("coef"))
 ```
 
-Expect R-squared to rise only slightly (0.1299 to 0.1349) and AIC to fall (1233455 to 1232603). The curved model predicts higher SBP than the straight line at 30 and 85 and lower at 50: the straight line understates an 85-year-old by about 3.4 mmHg.
+Expect R-squared to rise only slightly (0.1299 to 0.1349) and AIC to fall (1233455 to 1232603). The curved model predicts higher SBP than the straight line at 30 and 85 and lower at 50: the straight line understates an 85-year-old by about 3.4 mmHg. In the interaction model, `bmi:C(sex)[T.M]` is -0.041: women's SBP rises 0.883 mmHg per BMI unit and men's 0.883 - 0.041 = 0.842, nearly the same slope.
 
 ### 5. Fit a first forecast on the arrived labels and check its intervals
 

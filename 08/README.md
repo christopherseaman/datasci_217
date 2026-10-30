@@ -82,6 +82,7 @@ The snippets in this lecture use `visits`, six clinic visits:
 | Task | Call | Purpose and key arguments | Output |
 | --- | --- | --- | --- |
 | Split | `df.groupby('key')` | Group rows by one key; pass a list for several keys | `DataFrameGroupBy`; nothing computed yet |
+| Inspect | `for name, group in grouped:` / `grouped.get_group('North')` | See each group's key and rows; useful for checking a split before summarizing it | One small DataFrame per group |
 | Select | `grouped['col']` / `grouped[['a', 'b']]` | Choose the columns to summarize; `.mean()` on text columns raises `TypeError`, and `.sum()` glues text together (`P01P02P01`) | `SeriesGroupBy` / `DataFrameGroupBy` |
 | Summarize | `.mean()`, `.median()`, `.sum()`, `.min()`, `.max()` | One summary per group of the selected numeric column | One row per group |
 | Count | `.size()` | Rows per group, including rows with missing values | One count per group |
@@ -112,6 +113,21 @@ display(grouped['wait_min'].mean())
 | South | 25.0 |
 
 The GroupBy object shows no numbers; `.mean()` on the selected column runs the apply and combine steps, with the clinics in alphabetical order.
+
+### Code Snippet: Look Inside the Groups
+
+```python
+for clinic, group in visits.groupby('clinic'):
+    print(clinic, group['wait_min'].tolist())
+```
+
+```text
+East [9]
+North [12, 15, 6]
+South [20, 30]
+```
+
+Each pass of the loop hands over one clinic's name and its rows, the split step from the diagram above.
 
 ### Code Snippet: Count and Summarize Each Clinic
 
@@ -174,7 +190,7 @@ East had no new-patient visits, so the East `New` cell is `NaN`: there was nothi
 - **Pivot table**: summarizes one column by two keys at once, one down the rows and one across the columns, such as mean wait by clinic and visit type. It is the two-key `groupby(...).mean().unstack()` in a single call, and the shape of most handed-off reports: departments down the side, clinics or months across.
 - **Cross-tabulation** (crosstab): the special case that counts the rows in each combination.
 
-![A pivot table as a heatmap: mean wait (minutes) for 100,000 synthetic visits, 6 departments by 5 clinics; Orthopedics waits about 38 minutes and Pediatrics about 15 at every clinic](media/pivot_heatmap.png)
+![A pivot table as a heatmap: median wait (minutes) for 1.2 million synthetic 2025 visits, 7 departments by 8 clinics; Orthopedics is slowest everywhere, Bayview's Orthopedics cell is darkest at 37, and blank cells are departments a clinic does not run](media/pivot_heatmap.png)
 
 ```text
 LONG: one row per visit                    PIVOT TABLE: mean wait_min, one row per clinic
@@ -233,6 +249,13 @@ True
 ## Totals and Absent Cells
 
 - **Margins**: a total row and column computed from the underlying rows, not from the cells. In a table of means, a clinic's `Total` is the mean of all its visits, not the average of its cell means: North's `Total` is 11.0, the mean of its three waits, while averaging its cell means (10.5 and 12.0) gives 11.25.
+
+```text
+pivot_table(..., aggfunc='mean', margins=True, margins_name='Total')
+visit_type  Follow-up   New   Total
+North            10.5  12.0    11.0   ← mean of 12, 15, 6; not (10.5 + 12.0) / 2 = 11.25
+Total            10.0  20.7    15.3   ← mean of all six visits (East and South rows not shown)
+```
 
 ### Reference Card: Pivot Table Totals and Fills
 
@@ -355,6 +378,8 @@ That visit was East's only one, so the default report drops East entirely: six v
 - **Where it comes up**: comparing each lab value with the patient's own average, flagging waits far above their clinic's usual, and filling a missing value from its own clinic.
 - **z-score**: `(value - group_mean) / group_std`, a row's distance from its group's mean in standard deviations; 0 is the mean, 1 is one standard deviation above it.
 
+![Each visit's wait beside its clinic's mean: transform gives rows 0 to 2 North's 11, rows 3 and 4 South's 25, and row 5 East's 9, and each dotted gap is wait_min minus that mean](media/transform_vs_clinic.png)
+
 ### Reference Card: Transform Operations
 
 | Call | Purpose and key arguments | Output |
@@ -436,6 +461,8 @@ If a clinic has no recorded scores, its median is missing too; the fill leaves t
 - **filter**: runs a test on each whole group and keeps every original row of the groups that pass. Rows are kept or dropped, never changed.
 - A boolean mask such as `visits[visits['wait_min'] > 10]` (Lecture 04) tests each row; `filter` tests each group.
 - **Where it comes up**: public reports of patient data often hide any group with 10 or fewer patients (the CMS cell-size rule), and `filter(lambda g: g['patient_id'].nunique() >= 11)` drops those groups before the report is built.
+
+![A row mask with wait_min > 10 keeps 4 visits and drops North's 6-minute visit; filter with a clinic mean above 10 keeps all 5 North and South visits and drops East, whose mean is 9](media/filter_vs_mask.png)
 
 ### Reference Card: Filter Operations
 
@@ -524,6 +551,23 @@ display(top2[['patient_id', 'wait_min']])
 - North's rows come back in wait order, and East keeps its single visit because `nlargest(2)` returns as many rows as the group has.
 - In pandas 3, `include_groups=False` is the default and the only allowed value, so your function never receives the clinic column; writing it out keeps the code working on pandas 2.2, where the default was still `True`.
 
+### Code Snippet: The Same Top Two Without apply
+
+```python
+top2_flat = visits.sort_values('wait_min', ascending=False).groupby('clinic').head(2)
+display(top2_flat[['clinic', 'patient_id', 'wait_min']])
+```
+
+|  | clinic | patient_id | wait_min |
+| --- | --- | --- | --- |
+| 4 | South | P04 | 30 |
+| 3 | South | P03 | 20 |
+| 1 | North | P02 | 15 |
+| 0 | North | P01 | 12 |
+| 5 | East | P05 | 9 |
+
+The same five visits, in overall wait order with the original flat index. `head` keeps each group's first rows in the current order, so sorting by date first and taking `.tail(1)` gives each patient's latest result.
+
 ![xkcd 1172: Workflow. Every change breaks someone's workflow, including pandas 3's change to what apply hands your function](media/xkcd_1172.png)
 
 # Performance Optimization
@@ -533,7 +577,7 @@ display(top2[['patient_id', 'wait_min']])
 - Built-in aggregations named by string (`'mean'`, `'std'`, `transform('mean')`) run as fast compiled code; a Python `lambda` or `apply` runs once per group. On 118,032 A1c results from 90,281 patients, a lambda was about 1,500 times slower for a standard deviation and 5,000 times slower for a transform.
 - A repeated text key stored as `category` (Lecture 05) uses far less memory.
 
-![Measured on 2,000,000 synthetic lab results: one agg beats four groupby calls 3.5 to 1, the built-in std beats a lambda about 1,500 to 1, and category keys halve the table's memory](media/perf_combined.png)
+![Measured on 118,032 A1c results and the 2,000,000-row lab table: one agg beats four groupby calls 3.5 to 1, the built-in std beats a lambda about 1,500 to 1, and category keys halve the table's memory](media/perf_combined.png)
 
 ## Measuring Speed and Memory
 

@@ -41,7 +41,7 @@ import numpy as np
 import pandas as pd
 
 REPO_RAW = 'https://raw.githubusercontent.com/christopherseaman/datasci_217/main/09/demo'
-TABLES = ['encounters', 'ward_vitals', 'labs', 'ed_visits']
+TABLES = ['encounters', 'ward_vitals', 'labs']
 if not Path('generate_data.py').exists():
     urlretrieve(f'{REPO_RAW}/generate_data.py', 'generate_data.py')
 if not all(Path(f'data/{name}.parquet').exists() for name in TABLES):
@@ -106,6 +106,34 @@ display(night.sort_values('recorded_local')[['recorded_local', 'recorded_at', 'h
 
 Expect six rows. `00:51` becomes `05:51:00+00:00` and `03:56` becomes `09:56:00+00:00`: on the wall clock they look about 3 hours apart, but 4 hours passed. The `01:24` and `01:55` rows show `NaT`.
 
+Plot the wall clock against UTC. The dotted lines show daylight time (UTC minus 5 hours) and standard time (UTC minus 6 hours). Each set-aside reading could sit on either line, so it gets an x-mark on both.
+
+```python
+import matplotlib.dates as mdates
+
+night = night.assign(wall_clock=pd.to_datetime(night['recorded_local'])).sort_values('wall_clock')
+kept = night.dropna(subset=['recorded_at'])
+unsure = night[night['recorded_at'].isna()]
+hours_utc = pd.date_range('2024-11-03 05:00', '2024-11-03 10:00', freq='h', tz='UTC')
+fig, ax = plt.subplots(figsize=(8, 4))
+for offset, style in [(5, ':'), (6, '--')]:
+    ax.plot(hours_utc, hours_utc.tz_localize(None) - pd.Timedelta(hours=offset), style, color='gray',
+            label=f'Wall clock = UTC minus {offset} hours')
+ax.plot(kept['recorded_at'], kept['wall_clock'], 'o', color='#0072B2', markersize=8, label='Localized reading')
+for offset in (5, 6):
+    ax.plot((unsure['wall_clock'] + pd.Timedelta(hours=offset)).dt.tz_localize('UTC'), unsure['wall_clock'],
+            'x', color='#D55E00', markersize=10, label='Set aside: two possible instants' if offset == 5 else None)
+ax.axhspan(pd.Timestamp('2024-11-03 01:00'), pd.Timestamp('2024-11-03 02:00'), color='#D55E00', alpha=0.1)
+ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+ax.yaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+ax.set(title='Encounter E08290: the night Chicago fell back', xlabel='Time (UTC)', ylabel='Wall clock (Chicago)')
+ax.legend(loc='upper left')
+ax.grid(alpha=0.3)
+plt.show()
+```
+
+Expect the three readings before `01:00` on the dotted daylight line and the `03:56` reading on the dashed standard line. The shaded band, `01:00` to `02:00` on the wall clock, crosses both lines, so those clock times map to two instants an hour apart: `01:24` could be `06:24` or `07:24` UTC.
+
 ### 3. Past-only features within each encounter
 
 The rows stack 10,000 encounters. A plain `shift(1)` runs straight down the column and hands each encounter's first row the previous encounter's last heart rate.
@@ -138,6 +166,23 @@ display(vitals.loc[vitals['encounter_id'] == 'E00002',
 
 Expect `(270290, 11)`: the merge matched one feature row to each reading. In `E00002`'s first five readings, `previous_hr` and `hr_change` start as `NaN`. At `02:00` on January 2, `mean_prev_3` is `61.333333` (the 52, 62, and 70 readings, back to 14:02 the day before) but `mean_prev_8h` is `70.0`: only the 19:12 reading falls in the 8 hours before. The grouped rolling step takes a few seconds on 270,290 rows.
 
+Plot the first 12 readings. At each reading's time, the gray step and the colored markers come only from the black dots to their left.
+
+```python
+first_12 = vitals[vitals['encounter_id'] == 'E00002'].head(12).set_index('recorded_at')
+fig, ax = plt.subplots(figsize=(10, 4))
+ax.plot(first_12.index, first_12['heart_rate'], 'o', color='black', markersize=8, label='Charted heart rate')
+ax.step(first_12.index, first_12['previous_hr'], where='pre', color='gray', label='previous_hr')
+ax.plot(first_12.index, first_12['mean_prev_3'], 's', color='#0072B2', label='mean_prev_3')
+ax.plot(first_12.index, first_12['mean_prev_8h'], '^', color='#D55E00', label='mean_prev_8h')
+ax.set(title='Encounter E00002: past-only features', xlabel='Time (UTC)', ylabel='Heart rate (bpm)')
+ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+ax.grid(alpha=0.3)
+plt.show()
+```
+
+Expect the gray step to carry each black dot forward to the next reading time. At `02:00` on January 2 the blue square sits at `61.3`, the mean of the three dots before it, and the orange triangle sits at `70`, the only dot in the 8 hours before. No marker uses the dot directly above it.
+
 ### 4. What was known at the prediction time?
 
 The score runs 24 hours after admission. Encounters that ended before then (discharged or already transferred) never get a score, so they leave the cohort.
@@ -162,10 +207,17 @@ display(labs.groupby('test')['turnaround_h'].median().round(2))
 cohort_labs = labs.merge(cohort[['encounter_id', 'prediction_time']], on='encounter_id', validate='many_to_one')
 cohort_labs['collected_by_then'] = cohort_labs['collected_at'] <= cohort_labs['prediction_time']
 cohort_labs['available'] = cohort_labs['resulted_at'] <= cohort_labs['prediction_time']
-display(pd.crosstab(cohort_labs['test'], [cohort_labs['collected_by_then'], cohort_labs['available']]))
+drawn = cohort_labs[cohort_labs['collected_by_then']]
+known = pd.crosstab(drawn['test'], drawn['available'].map({True: 'reported by then', False: 'not yet reported'}))
+display(known)
+
+fig, ax = plt.subplots(figsize=(8, 3))
+known[['reported by then', 'not yet reported']].plot(kind='barh', stacked=True, ax=ax, color=['#0072B2', '#D55E00'])
+ax.set(title='Labs drawn before the prediction time', xlabel='Lab orders', ylabel='')
+plt.show()
 ```
 
-Expect median turnarounds of `0.67` hours for lactate, `1.15` for troponin, `1.80` for creatinine, and `45.23` for a blood culture. In the crosstab, the `True, False` column counts labs drawn before the prediction time but not yet reported: `2136` blood cultures, `1949` creatinines, `49` lactates, and `56` troponins. A filter on `collected_at` would let all 4,190 of them into the score.
+Expect median turnarounds of `0.67` hours for lactate, `1.15` for troponin, `1.80` for creatinine, and `45.23` for a blood culture. Among labs drawn by the prediction time, `not yet reported` counts `2136` blood cultures, `1949` creatinines, `49` lactates, and `56` troponins. In the chart, almost the whole blood-culture bar is orange (a culture takes about two days), and about a sixth of the creatinine bar. A filter on `collected_at` would let all 4,190 unreported labs into the score.
 
 ### 5. One row per encounter at the prediction time
 
@@ -257,6 +309,7 @@ utc_days = ny.loc['2024-11-01':'2024-11-05'].resample('D').count()
 local_days = ny.tz_convert('America/New_York').loc['2024-11-01':'2024-11-05'].resample('D').count()
 display(pd.DataFrame({'utc_day': utc_days.to_numpy(), 'new_york_day': local_days.to_numpy()},
                      index=['Nov 1', 'Nov 2', 'Nov 3', 'Nov 4', 'Nov 5']))
+display(pd.DataFrame({'today': local_days, 'yesterday': local_days.shift(1, freq='D')}))
 
 for day in ['2024-03-10', '2024-11-03', '2024-11-04']:
     hours = pd.date_range(day, pd.Timestamp(day) + pd.Timedelta(days=1), freq='h',
@@ -264,43 +317,9 @@ for day in ['2024-03-10', '2024-11-03', '2024-11-04']:
     print(day, len(hours), 'hours')
 ```
 
-Expect the columns to disagree every day, because a New York day starts 4 or 5 hours after a UTC day: `406` and `412` on November 1, `372` and `347` on November 2. November 3 differs most, `337` readings on the New York day against `298` on the UTC day: the shifted start accounts for most of the gap, and that local day also held one extra hour. The `date_range` lines print `23`, `25`, and `24` hours: a local daily count on March 10 covers one hour less.
+Expect the columns to disagree every day, because a New York day starts 4 or 5 hours after a UTC day: `406` and `412` on November 1, `372` and `347` on November 2. November 3 differs most, `337` readings on the New York day against `298` on the UTC day: the shifted start accounts for most of the gap, and that local day also held one extra hour. The second table lines up each New York day with the day before by date: `shift(1, freq='D')` moves the labels a day later, so November 1 has no `yesterday` and a November 6 row holds November 5's `341`. The `date_range` lines print `23`, `25`, and `24` hours: a local daily count on March 10 covers one hour less.
 
-### 2. Plot the ED feed outage honestly
-
-Demo 1 found that Eastside's ED sent no visits from August 12 to 20, 2024. Count its visits per date, then compare two ways of filling the calendar.
-
-```python
-ed = pd.read_parquet('data/ed_visits.parquet')
-ed['arrival'] = pd.to_datetime(ed['arrival_time'], format='%Y-%m-%d %H:%M', errors='coerce')
-east = ed[ed['site'] == 'Eastside'].dropna(subset=['arrival'])
-east_daily = east.groupby(east['arrival'].dt.floor('D')).size()
-print(len(east_daily), 'dates with visits')
-print('resample fills the outage with:', east_daily.resample('D').sum().loc['2024-08-15'])
-print('asfreq fills it with:', east_daily.asfreq('D').loc['2024-08-15'])
-```
-
-Expect `722 dates with visits`. `resample('D').sum()` fills the outage with `0`, as if nobody came, while `asfreq('D')` fills it with `nan`, which a line plot leaves as a break.
-
-```python
-summer = east_daily.asfreq('D').loc['2024-06-01':'2024-10-31']
-fig, ax = plt.subplots(figsize=(10, 3.5))
-summer.plot(ax=ax, color='gray', alpha=0.6, label='Daily visits')
-summer.rolling('28D').mean().plot(ax=ax, color='#0072B2', linewidth=2, label='28-day mean')
-ax.set(title='Eastside ED visits, June to October 2024', xlabel='Date', ylabel='Visits per day', ylim=(0, 250))
-ax.legend(loc='lower left')
-plt.show()
-
-fig, ax = plt.subplots(figsize=(8, 3.5))
-monthly = east_daily.groupby(east_daily.index.month).mean()
-monthly.plot(kind='bar', ax=ax, rot=0, color='steelblue',
-             title='Eastside mean daily visits by calendar month, 2023 to 2024', xlabel='Month', ylabel='Visits per day')
-plt.show()
-```
-
-Expect a daily line between about 130 and 220 visits with a nine-day break in mid-August, and a 28-day mean near 170 that keeps going through the break (a time window averages whatever days were reported). The bars are highest in January and December, the flu season, at about 190 a day, and near 170 the rest of the year. The monthly means use only reported days, so the outage does not pull August down.
-
-### 3. Audit two leaking candidates
+### 2. Audit two leaking candidates
 
 Two tempting features read the row after the current one: the next heart rate (a lead, `shift(-1)`) and a centered 3-reading mean. At each encounter's feature row from step 5, find when that next reading was charted.
 
@@ -316,7 +335,7 @@ print('Median hours after the prediction time:', round(hours_late.median(), 1))
 
 Expect `Feature rows: 9549  next reading after the prediction time: 9428` and a median of `1.9` hours. The other 121 encounters had no later reading. Every feature row is the last reading before the score runs, so a lead or a centered window there reads a value nobody had yet. Use `shift(-1)` only to build a target, never a feature.
 
-### 4. Offsets through the year
+### 3. Offsets through the year
 
 The same zone name gives different UTC offsets in winter and summer, except in Phoenix.
 

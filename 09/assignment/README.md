@@ -108,8 +108,8 @@ The clinical lead wants to know which rule should page a nurse when the heart ra
 1. Build `hourly`: each episode's hourly median heart rate from a grouped `resample("h").median()`, with `reset_index()`. An hour with no reading is `NaN`.
 2. Add `rolling_3h`: within each episode, the mean of the current hour's median and the two before it, from `rolling(3)` inside a grouped `transform()` (Lecture 09's "Past-Only Panel Features" card shows the pattern). With the default `min_periods`, a window with an empty hour is `NaN`, so the rule needs three straight hours.
     - Expect: `hourly: (108293, 4)`.
-3. Build `peaks`, one row per episode and one column per rule, each the episode's highest value: `any_reading` (the raw `heart_rate`), `hourly_median`, and `rolling_3h`. The cell compares it with `ALERT_BPM` (`>=`) to make `flags`, and marks the escalated episodes with `isin()`.
-4. Build `alert_rules`, one row per rule, with the columns `rule`, `episodes_flagged` (the flagged episodes), and `escalations_flagged` (the flagged episodes that escalated), as Lecture 04's `sum()` of a Boolean column counts `True` values.
+3. Build `peaks`, one row per episode and one column per rule, each the episode's highest value: `any_reading` (the raw `heart_rate`), `hourly_median`, and `rolling_3h`. A grouped `max()` gives each one, and `pd.DataFrame()` of a dict of Series lines them up by episode, as Lecture 09's "Upsampling Choices" snippet does. The cell compares it with `ALERT_BPM` (`>=`) to make `flags`, and marks the escalated episodes with `isin()`.
+4. Build `alert_rules`, one row per rule, with the columns `rule`, `episodes_flagged` (the flagged episodes), and `escalations_flagged` (the flagged episodes that escalated), as Lecture 04's `sum()` of a Boolean column counts `True` values. On `flags`, `sum()` counts each column at once, and `flags[escalated]` keeps the escalated episodes' rows.
     - Expect: `escalated: 179`, and `any_reading` flags 1,211 episodes, 138 of them escalations: almost every patient trips it, so a nurse paged by it learns to ignore it.
 5. Save `alert_rules` to `ALERT_RULES_PATH` with `index=False`.
 
@@ -154,7 +154,7 @@ Each feature must use only hours that had ended by the prediction time. `hourly`
     - `mean_prev_6h`: the mean of the six hours before, `shift(1)` then `rolling(6, min_periods=1)` inside a grouped `transform()`. `min_periods=1` keeps the mean when some of those hours are empty.
 3. Merge `scored` onto `features` by `episode_id` (`validate="many_to_one"`), and keep the rows whose `recorded_at` equals their `prediction_time` as `score_features`. An episode that ended, or whose patch went silent for good, before its prediction time has no row then and gets no score.
     - Expect: `scored: 1359`.
-4. Find each episode's latest lactate known by then: merge the `Lactate` rows of `labs` with `scored`'s `prediction_time`, keep the results with `resulted_at <=` the prediction time, sort by `resulted_at`, and take each episode's last `value` (Lecture 08's `groupby().last()`), named `last_lactate`. A result set aside as `NaT` fails the comparison, so it counts as not known.
+4. Find each episode's latest lactate known by then: merge the `Lactate` rows of `labs` with `scored`'s `prediction_time`, keep the results with `resulted_at <=` the prediction time, sort by `resulted_at`, and keep each episode's last row with `groupby().tail(1)` (Lecture 08, Demo 3's step 5), its `value` renamed `last_lactate`. A result set aside as `NaT` fails the comparison, so it counts as not known.
     - Expect: `lactates: 1253  known: 708 from 618 episodes`.
 5. Left-merge `last_lactate` onto `score_features` (`validate="one_to_one"`): a blank means no lactate had been reported, not a normal result.
 6. Save the columns `episode_id`, `prev_hour_hr`, `mean_prev_6h`, and `last_lactate` to `FEATURES_PATH` with `index=False`.

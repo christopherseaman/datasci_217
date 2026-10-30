@@ -183,9 +183,17 @@ for name, estimator in candidates.items():
     fitted[name] = Pipeline([("preprocess", make_preprocess()), ("model", estimator)]).fit(X_fit, y_fit)
     score(name, fitted[name].predict(X_valid))
 display(pd.DataFrame(results).T.round(3))
+
+mae = pd.DataFrame(results).T["MAE"].drop("training mean").sort_values(ascending=False)
+ax = mae.plot.barh(figsize=(7, 3.5), xlim=(0, 5))
+ax.bar_label(ax.containers[0], fmt="%.2f", padding=3)
+ax.axvline(results["persistence (this week)"]["MAE"], color="gray", linestyle="--")
+ax.set(xlabel="Validation MAE (mmHg), lower is better", title="Bars left of the dashed persistence line beat the rule")
+plt.show()
+plt.close(ax.figure)
 ```
 
-Expect a linear model on the two level columns alone at 3.91 mmHg: weighting this week and the last four together beats either rule by 0.4. All three linear models on every feature reach 3.72, another 0.19 better and 13% below persistence. Two lessons:
+Expect a linear model on the two level columns alone at 3.91 mmHg: weighting this week and the last four together beats either rule by 0.4. All three linear models on every feature reach 3.72, another 0.19 better and 13% below persistence. The chart leaves out the training mean (10.23) so the small gaps show: four model bars end left of the dashed persistence line at 4.28. Two lessons:
 
 - **The engineered features did real work.** The medication and refill columns tell the model what the level columns cannot: a patient who stopped refilling three drugs is about to rise, and one whose new drug is still taking effect is about to fall.
 - **Regularization changes little here.** With 68,324 rows and 36 prepared columns, Ridge and Lasso land within 0.003 mmHg of plain linear regression. Step 4 shows when the penalty matters.
@@ -209,15 +217,23 @@ for name, estimator in [("linear regression", LinearRegression()), ("ridge (alph
         model.fit(marina_fit[columns + categorical], marina_fit["sbp_next_week"])
         small[(name, label)] = mean_absolute_error(marina_valid["sbp_next_week"],
                                                    model.predict(marina_valid[columns + categorical]))
-display(pd.Series(small).unstack().round(2))
-print("persistence on the same rows:", round(mean_absolute_error(marina_valid["sbp_next_week"], marina_valid["sbp_week"]), 2))
+persistence = mean_absolute_error(marina_valid["sbp_next_week"], marina_valid["sbp_week"])
+ax = pd.Series(small).unstack().plot.bar(rot=0, figsize=(8, 3.5), ylim=(0, 7))
+for bars in ax.containers:
+    ax.bar_label(bars, fmt="%.2f", padding=2, fontsize=8)
+ax.axhline(persistence, color="gray", linestyle="--", label="persistence")
+ax.set(ylabel="Validation MAE (mmHg)", title="Marina: 229 rows, with and without 30 questionnaire columns")
+ax.legend(fontsize=8, ncols=3, loc="upper left")
+plt.show()
+plt.close(ax.figure)
+print("persistence on the same rows:", round(persistence, 2))
 
 kept = pd.Series(model.named_steps["model"].coef_, index=model.named_steps["preprocess"].get_feature_names_out())
 print("Lasso kept", (kept != 0).sum(), "of", len(kept), "prepared columns")
 display(kept[kept != 0].round(2).rename("kept by Lasso"))
 ```
 
-Expect 229 fit rows from 103 patients, persistence at 4.19 mmHg on the same rows, and this table:
+Expect 229 fit rows from 103 patients, persistence at 4.19 mmHg on the same rows (the dashed line), and bars with these values:
 
 |  | 19 core columns | 49 with questionnaire |
 | --- | --- | --- |
@@ -250,13 +266,19 @@ folds["ridge_MAE"] = (-scores).round(2)
 folds["persistence_MAE"] = [mean_absolute_error(dev["sbp_next_week"].iloc[score_idx], dev["sbp_week"].iloc[score_idx])
                             for _, score_idx in cv.split(dev)]
 display(folds.round(2))
+
+ax = folds.set_index(folds["scored_from"].astype(str))[["persistence_MAE", "ridge_MAE"]].plot(marker="o", figsize=(7, 3.5))
+ax.set(xlabel="Fold (first target week scored)", ylabel="MAE (mmHg)", ylim=(0, 5),
+       title="Ridge beats persistence in every fold")
+plt.show()
+plt.close(ax.figure)
 ```
 
-Expect four folds scored from mid-March to the end of July, with Ridge between 3.51 and 3.78 mmHg and persistence between 4.05 and 4.35. The model's lead holds in every period. These folds ignore label arrival inside `dev`, so they compare periods retrospectively; the prospective check is still step 3's validation score.
+Expect four folds scored from mid-March to the end of July, with Ridge between 3.51 and 3.78 mmHg and persistence between 4.05 and 4.35. In the chart the two lines run parallel, Ridge about 0.55 mmHg lower in every fold: the model's lead holds in every period. These folds ignore label arrival inside `dev`, so they compare periods retrospectively; the prospective check is still step 3's validation score.
 
 ### 6. The call list: who is about to lose control?
 
-The nurses' list covers patients under 150 this week. The target becomes `alert = sbp_next_week >= 150`, and the same preparation feeds a logistic regression fit on those rows.
+The nurses' list covers patients under 150 this week. The target becomes `alert = sbp_next_week >= 150`, and the same preparation feeds a logistic regression fit on those rows. `predict_proba` returns one column per class; `[:, 1]` keeps the probability of crossing 150.
 
 ```python
 from sklearn.linear_model import LogisticRegression
@@ -281,9 +303,21 @@ print("model at 0.5: accuracy", round(accuracy_score(alert_valid, flag), 3),
       " precision", round(precision_score(alert_valid, flag), 3),
       " recall", round(recall_score(alert_valid, flag), 3))
 print(confusion_matrix(alert_valid, flag))
+
+# density=True scales each histogram to area 1, so 1,443 crossings and 30,604 others share one axis
+fig, ax = plt.subplots(figsize=(7, 3.5))
+bins = np.linspace(0, 1, 41)
+ax.hist(alert_probability[alert_valid == 0], bins=bins, density=True, alpha=0.5, label="stayed under 150")
+ax.hist(alert_probability[alert_valid == 1], bins=bins, density=True, alpha=0.5, label="crossed 150")
+ax.axvline(0.5, color="black", linestyle="--", label="threshold 0.5")
+ax.set(xlabel="Predicted probability of crossing 150", ylabel="Density (each group sums to 1)",
+       title="Most patients who cross score below 0.5")
+ax.legend()
+plt.show()
+plt.close(fig)
 ```
 
-Expect about 3,561 patients under 150 each week, of whom about 160 average 150 or more the next week. The alert rate falls from 0.077 in the fit rows to 0.045 in validation: the program lowers blood pressure over time, and summer readings run lower. "Always no" scores 0.955 accuracy while calling nobody. At the default 0.5 threshold the model's accuracy is 0.956, its precision 0.535, and its recall only 0.194: the matrix `[[TN, FP], [FN, TP]]` shows 1,163 crossings missed and 280 caught over nine weeks.
+Expect about 3,561 patients under 150 each week, of whom about 160 average 150 or more the next week. The alert rate falls from 0.077 in the fit rows to 0.045 in validation: the program lowers blood pressure over time, and summer readings run lower. "Always no" scores 0.955 accuracy while calling nobody. At the default 0.5 threshold the model's accuracy is 0.956, its precision 0.535, and its recall only 0.194: the matrix `[[TN, FP], [FN, TP]]` shows 1,163 crossings missed and 280 caught over nine weeks. The histogram shows why: patients who stay under 150 pile up below 0.05, while those who cross spread from 0 to 1, and most of their orange area lies left of the 0.5 line.
 
 ### 7. Fill the 100 calls a week, and compare with the rule
 
@@ -298,13 +332,19 @@ def call_list(name, scores, budget):
             "caught_per_week": (called & alert_valid).sum() / weeks}
 
 tradeoff = pd.DataFrame([call_list(name, scores, budget)
-                         for budget in [50, 100, 150]
+                         for budget in [25, 50, 100, 150, 200]
                          for name, scores in [("model", alert_probability),
                                               ("rule: highest this week", watch_valid["sbp_week"])]])
-display(tradeoff.round(3))
+display(tradeoff[tradeoff["calls_per_week"] == 100].round(3))
+
+ax = tradeoff.pivot(index="calls_per_week", columns="call_list", values="caught_per_week").plot(marker="o", figsize=(7, 3.5))
+ax.axvline(100, color="gray", linestyle="--")
+ax.set(xlabel="Calls per week", ylabel="Patients reached who cross 150", title="The model reaches more patients at every budget")
+plt.show()
+plt.close(ax.figure)
 ```
 
-Expect the model ahead at every budget. At 100 calls a week it reaches 47 of the patients who will cross 150 (recall 0.295, precision 0.473); the rule reaches 28 (recall 0.177, precision 0.288). That is about 19 more patients a week reached before they lose control, for the same calls. Even at 150 calls a week the rule catches fewer (41) than the model at 100.
+Expect the model's line above the rule's at all five budgets, from 25 to 200 calls a week. At 100 calls a week (the dashed line) it reaches 47 of the patients who will cross 150 (recall 0.295, precision 0.473); the rule reaches 28 (recall 0.177, precision 0.288). That is about 19 more patients a week reached before they lose control, for the same calls. Even at 150 calls a week the rule catches fewer (41) than the model at 100.
 
 ### 8. Freeze, then test once
 
@@ -348,11 +388,18 @@ from sklearn.inspection import permutation_importance
 sample = valid.sample(10000, random_state=42)
 importance = permutation_importance(fitted["ridge (alpha=10)"], sample[features], sample["sbp_next_week"],
                                     scoring="neg_mean_absolute_error", n_repeats=5, random_state=42)
-display(pd.DataFrame({"feature": features, "mae_increase": importance.importances_mean.round(3)})
-        .sort_values("mae_increase", ascending=False).head(8))
+ranked = pd.DataFrame({"feature": features, "mae_increase": importance.importances_mean,
+                       "spread": importance.importances_std}).sort_values("mae_increase", ascending=False).head(8)
+display(ranked.round(3))
+
+ax = ranked.iloc[::-1].plot.barh(x="feature", y="mae_increase", xerr=ranked["spread"].iloc[::-1],
+                                  legend=False, figsize=(7, 3.5))
+ax.set(xlabel="Validation MAE increase when shuffled (mmHg)", ylabel="", title="What the Ridge forecast relies on")
+plt.show()
+plt.close(ax.figure)
 ```
 
-Expect `sbp_4wk` (shuffling it adds 3.1 mmHg to MAE) and `sbp_week` (2.3) far ahead, then `overdue_x_meds` at about 0.29; every other column adds 0.04 or less. The categorical columns (cuff size, device) matter little because their effect on a patient's readings is already inside that patient's averages.
+Expect `sbp_4wk` (shuffling it adds 3.1 mmHg to MAE) and `sbp_week` (2.3) far ahead, as the two longest bars, then `overdue_x_meds` at about 0.29; every other column adds 0.04 or less. The categorical columns (cuff size, device) matter little because their effect on a patient's readings is already inside that patient's averages.
 
 ### 2. What the call list relies on
 

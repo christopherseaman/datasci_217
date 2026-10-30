@@ -139,7 +139,7 @@ For the monthly quality meeting, each site reviews its three STAT exams whose si
 
 1. Build `slowest`: group `stat` from Task 2.2 by site and `.apply()` a `lambda` that keeps each site's three largest `report_hr`. Leave the grouping column out of what the `lambda` receives, as the snippet does.
     - Expect: `rows: 24` and `index levels: 2`: the site, then each exam's original row number.
-2. Move `site` from the index back into a column (Lecture 06's `reset_index()`, for that one level), and keep the four columns of the checkpoint header. Demo 3's step 2 also shows the flat route without `apply`, which keeps the same 24 exams.
+2. Move both index levels back into columns with Lecture 06's `reset_index()`, then keep the four columns of the checkpoint header. The row numbers land in a column named `level_1`, which those four leave out. Demo 3's step 2 also shows the flat route without `apply`, which keeps the same 24 exams.
 3. Save it to `SLOWEST_PATH` without the index.
 
 > **Checkpoint: `output/slowest_stat_reports.csv`**

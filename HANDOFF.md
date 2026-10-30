@@ -33,7 +33,7 @@ Each ordinary class has 90 minutes: about 60 of lecture and 30 of core demo walk
 ## October 29: Lectures 08 to 10 rework
 
 - Lectures, demos, BONUS, and Assignments 08 to 10 were rebuilt (commit 6d4da93) and Notion pages 08 to 10 plus their BONUS pages republished the same day. Demos and assignments use seeded causal-DAG generators; assignment Parquet lives in `NN/assignment/data/` and the build scripts in `scripts/build_assignmentNN_data.py`.
-- Handout repos ds217-26f-08 to -10 still hold the old small-data versions; republish them before students start (no forks existed on October 29).
+- Handout repos ds217-26f-08 to -10 were republished from main on October 29 (no forks existed).
 - `notion_push.py` now uploads `<video>` and `<pdf>` tags and recreates `<bookmark url>` tags, so Notion-only media must be added to the repo before a republish. Lecture 08's instructor video and PDFs live in `08/media/`.
 - Awaiting instructor review: Assignment 10's `_cause` now prefers a cause an earlier check already charged; Demo 10 call list targets patients under 150 who cross 150 next week.
 - Unverified: real Colab runs of the new demos and scaffolds, and the tmux steps by hand.
