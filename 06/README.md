@@ -21,8 +21,9 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 
 # Notes from the Trenches
 
-- [Bar Raiser Interviews: Companies Are Full of It](https://tej.as/blog/companies-are-full-of-it)
-- [Chaos ensues when AI interviewer meets AI interviewee](https://www.theregister.com/offbeat/2026/10/14/chaos-ensues-when-ai-interviewer-meets-ai-interviewee/5303144)
+<bookmark url="https://tej.as/blog/companies-are-full-of-it"></bookmark>
+
+<bookmark url="https://www.theregister.com/offbeat/2026/10/14/chaos-ensues-when-ai-interviewer-meets-ai-interviewee/5303144"></bookmark>
 
 <callout icon="🧭" color="blue_bg">
 	# This Lecture

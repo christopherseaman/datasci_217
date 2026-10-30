@@ -2,6 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import notion_media
 import notion_publish
 from notion_publish import prepare, _replace_links, table
 
@@ -38,6 +39,46 @@ class PrepareTest(unittest.TestCase):
                 _replace_links("![Other](media/not_uploaded.png)", source)
         finally:
             notion_publish.MEDIA.clear()
+
+    def test_video_and_pdf_tags_use_notion_uploads(self):
+        source = Path("08/README.md")
+        video = '<video src="media/swedish-delight.mp4"></video>'
+        self.assertEqual(
+            _replace_links(video, source),
+            '<video src="https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/media/swedish-delight.mp4"></video>',
+        )
+        notion_publish.MEDIA.update({"08/media/swedish-delight.mp4": "file-upload://vid1",
+                                     "08/media/RedSoloCupTracking.pdf": "file-upload://pdf1"})
+        try:
+            self.assertEqual(_replace_links(video, source), '<video src="file-upload://vid1"></video>')
+            self.assertEqual(_replace_links('<pdf src="media/RedSoloCupTracking.pdf">Cups</pdf>', source),
+                             '<pdf src="file-upload://pdf1">Cups</pdf>')
+            self.assertEqual(_replace_links('`<pdf src="media/x.pdf"></pdf>`', source),
+                             '`<pdf src="media/x.pdf"></pdf>`')
+            with self.assertRaises(ValueError):
+                _replace_links('<pdf src="media/missing.pdf"></pdf>', source)
+        finally:
+            notion_publish.MEDIA.clear()
+        self.assertEqual(
+            [p.name for p in notion_media.media_targets(source)][:3],
+            ["swedish-delight.mp4", "RedSoloCupTracking.pdf", "Regression-Abuse-SIM-44-0.pdf"],
+        )
+
+    def test_bookmark_becomes_a_url_paragraph_outside_fences(self):
+        with tempfile.TemporaryDirectory(dir="scratch") as tmp:
+            root = Path(tmp)
+            source = root / "README.md"
+            url = "https://qz.com/a-story"
+            source.write_text(f'# A\n\n<bookmark url="{url}"></bookmark>\n\n```html\n<bookmark url="{url}"></bookmark>\n```\n',
+                              encoding="utf-8")
+            current = root / "current.md"
+            current.write_text("", encoding="utf-8")
+            output = prepare(source, current)
+            self.assertIn(f"\n[{url}]({url})\n", output)
+            self.assertEqual(output.count(f'<bookmark url="{url}"></bookmark>'), 1)
+            self.assertEqual(notion_media.bookmark_urls(source), [url])
+        self.assertEqual(notion_media.bookmark_urls(Path("08/README.md")),
+                         ["https://qz.com/anthropic-mithril-medicine-acquisition-drug-programs-102826"])
 
     def test_inline_code_and_tables(self):
         source = Path("01/README.md")

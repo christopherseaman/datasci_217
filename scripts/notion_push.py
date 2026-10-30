@@ -9,16 +9,21 @@ expensive, so this does all of them and refuses to continue when a check fails:
   1. Page every child block to the END and collect the child-page tags. A `<page>`
      tag missing from the payload is not ignored: `ntn pages edit` hangs on it
      until it is killed, which reads as a stall rather than a mistake.
-  2. Upload the page's local images, which expire about an hour after upload.
+  2. Upload the page's local images, videos, and PDFs, which expire about an hour after upload.
   3. Build the payload, then REFUSE to publish unless every child page found in
      step 1 is present in it.
   4. Write the page.
-  5. Attach real images, because `ntn pages edit` stores every `file-upload://`
-     source as an external block with an empty URL, which renders broken.
+  5. Attach the real files, because `ntn pages edit` stores every `file-upload://`
+     source as an external block with an empty URL, which renders broken, and
+     replace each bookmark's placeholder paragraph with a bookmark block.
 
-Then it re-reads the page and confirms the children survived and no image is
-broken. An image is broken when its source URL is empty; checking only that the
-source key exists passes a broken block.
+Then it re-reads the page and confirms the children survived, no image, video,
+or PDF is broken, and every bookmark in the source exists with its URL. A block is
+broken when its source URL is empty; checking only that the source key exists
+passes a broken block.
+
+--dry-run uploads nothing: the payload carries `file-upload://dry-run` sources and
+the bookmark and media placeholder lines are printed.
 """
 
 from __future__ import annotations
@@ -26,6 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from collections import Counter
 import subprocess
 import sys
 import tempfile
@@ -33,7 +39,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
-from notion_media import run_ntn  # noqa: E402
+from notion_attach_media import MEDIA_TYPES, placeholder as broken  # noqa: E402
+from notion_media import bookmark_urls, media_targets, run_ntn  # noqa: E402
 EDIT_TIMEOUT = 180
 
 
@@ -79,11 +86,6 @@ def page_id_of(source: Path) -> str:
     return match.group(1).replace("-", "")
 
 
-def broken(block: dict) -> bool:
-    image = block.get("image", {})
-    return not (image.get(image.get("type")) or {}).get("url")
-
-
 def run(script: str, *arguments: str) -> None:
     result = subprocess.run([sys.executable, str(ROOT / "scripts" / script), *arguments],
                             capture_output=True, text=True)
@@ -113,8 +115,13 @@ def main() -> int:
     current.write_text("\n".join(tags) + ("\n" if tags else ""), encoding="utf-8")
 
     manifest = work / "media.json"
-    print("  uploading media")
-    run("notion_media.py", str(manifest), str(source))
+    if args.dry_run:
+        manifest.write_text(json.dumps({
+            local.relative_to(ROOT).as_posix(): {"markdown_source": "file-upload://dry-run"}
+            for local in media_targets(source)}), encoding="utf-8")
+    else:
+        print("  uploading media")
+        run("notion_media.py", str(manifest), str(source))
 
     payload = work / "payload"
     built = subprocess.run([sys.executable, str(ROOT / "scripts" / "notion_publish.py"),
@@ -132,7 +139,10 @@ def main() -> int:
     print(f"  payload {len(built.stdout)} bytes, all {len(children)} child page(s) preserved")
 
     if args.dry_run:
-        print("  dry run: nothing published")
+        for line in built.stdout.splitlines():
+            if "file-upload://" in line or re.fullmatch(r"\[(\S+)\]\(\1\)", line.strip()):
+                print(f"    {line.strip()[:150]}")
+        print("  dry run: nothing uploaded or published")
         return 0
 
     result = run_ntn(["ntn", "pages", "edit", page, "--content", built.stdout, "--json"],
@@ -141,18 +151,23 @@ def main() -> int:
         fail(f"publish failed: {(result.stderr or result.stdout).strip()[:300]}")
     print("  published")
 
-    print("  attaching images")
+    print("  attaching media")
     run("notion_attach_media.py", page, str(source))
 
     after = descendants(page)
     kept = len([b for b in after if b["type"] in ("child_page", "child_database")])
-    images = [b for b in after if b["type"] == "image"]
-    bad = [b for b in images if broken(b)]
+    media = [b for b in after if b["type"] in MEDIA_TYPES]
+    bad = [b for b in media if broken(b)]
     if kept != len(children):
         fail(f"child pages went from {len(children)} to {kept}")
     if bad:
-        fail(f"{len(bad)} image block(s) still have no source")
-    print(f"  verified: {kept} child page(s), {len(images)} image(s), 0 broken")
+        fail(f"{len(bad)} media block(s) still have no source: {sorted({b['type'] for b in bad})}")
+    wanted = bookmark_urls(source)
+    absent = Counter(wanted) - Counter(b["bookmark"].get("url") for b in after if b["type"] == "bookmark")
+    if absent:
+        fail(f"bookmark(s) missing from the page: {sorted(absent)}")
+    print(f"  verified: {kept} child page(s), {len(media)} media block(s), 0 broken, "
+          f"{len(wanted)} bookmark(s)")
     return 0
 
 

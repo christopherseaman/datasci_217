@@ -4,7 +4,12 @@
 Images are uploaded to Notion rather than linked to GitHub: run scripts/notion_media.py
 first and pass its manifest with --media-manifest, and every local image becomes a
 `file-upload://` source. Without a manifest the image falls back to its raw GitHub URL,
-which keeps the payload usable but leaves the media hosted outside Notion.
+which keeps the payload usable but leaves the media hosted outside Notion. Videos and
+PDFs are Notion-native tags in the page (`<video src="media/x.mp4"></video>`,
+`<pdf src="media/x.pdf"></pdf>`), and their sources resolve the same way.
+`ntn pages edit` cannot create bookmarks, so a `<bookmark url="..."></bookmark>` line
+becomes a paragraph holding only that URL as a link; scripts/notion_attach_media.py
+then swaps that paragraph for a real bookmark block.
 """
 
 from __future__ import annotations
@@ -13,6 +18,8 @@ import argparse
 import json
 import re
 from pathlib import Path
+
+from notion_media import BOOKMARK, MEDIA_TAG
 
 REPO = "https://github.com/christopherseaman/datasci_217"
 RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main"
@@ -80,8 +87,12 @@ def _link_url(path: Path, target: str, image: bool) -> str:
 
 def _replace_links(line: str, path: Path) -> str:
     # Match the whole link first, even when its label contains inline code.
-    tokens = re.compile(r"(`+)(?!`)(.*?)\1(?!`)|!?\[[^]]*\]\([^)]+\)")
+    tokens = re.compile(r"(`+)(?!`)(.*?)\1(?!`)|!?\[[^]]*\]\([^)]+\)|" + MEDIA_TAG.pattern)
     def replace(match):
+        tag = MEDIA_TAG.fullmatch(match[0])
+        if tag:
+            source = _link_url(path, tag["src"], True)
+            return match[0].replace(f'src="{tag["src"]}"', f'src="{source}"', 1)
         link = LINK.fullmatch(match[0])
         if link is None:
             return match[0]
@@ -155,6 +166,9 @@ def prepare(source: Path, current: Path) -> str:
                 continue
         if fence is None and line.strip() == local_title:
             local_title = None
+            continue
+        if fence is None and (mark := BOOKMARK.fullmatch(line.strip())):
+            lines.append(f"[{mark['url']}]({mark['url']})\n")
             continue
         if fence is None:
             line = _replace_links(line, source)

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Check every Notion-mapped page for broken images and missing child pages.
+"""Check every Notion-mapped page for broken images, videos, and PDFs.
 
     python3 scripts/notion_check_pages.py
 
 Reads each mapped Markdown file's front matter for its page id, then compares the
-live page with the local source. An image block counts as broken when its source
+live page with the local source. A media block counts as broken when its source
 URL is empty: `ntn pages edit` stores an unresolved `file-upload://` that way, and
 testing only that the source key exists passes a broken block.
 
@@ -20,6 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
+from notion_attach_media import MEDIA_TYPES, placeholder  # noqa: E402
 from notion_media import run_ntn  # noqa: E402
 
 
@@ -55,7 +56,7 @@ def mapped_pages() -> list[tuple[Path, str, int]]:
         page = re.search(r'page_id:\s*"?([0-9a-fA-F-]{32,36})', head.group(1))
         if not page:
             continue
-        images = len([l for l in text.splitlines() if l.strip().startswith("![")])
+        images = len([l for l in text.splitlines() if l.strip().startswith(("![", "<video ", "<pdf "))])
         pages.append((source.relative_to(ROOT), page.group(1).replace("-", ""), images))
     return pages
 
@@ -69,9 +70,8 @@ def main() -> int:
             print(f"{str(source):<34}{local_images:>6}   FETCH FAILED")
             problems += 1
             continue
-        images = [b for b in found if b["type"] == "image"]
-        bad = [b for b in images
-               if not (b["image"].get(b["image"].get("type")) or {}).get("url")]
+        images = [b for b in found if b["type"] in MEDIA_TYPES]
+        bad = [b for b in images if placeholder(b)]
         problems += len(bad)
         flag = "   <-- broken" if bad else ""
         print(f"{str(source):<34}{local_images:>6}{len(images):>8}{len(bad):>8}{flag}")

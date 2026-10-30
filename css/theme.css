@@ -112,6 +112,18 @@ code, pre {
   margin: 16px 0;
 }
 
+.content video {
+  width: 100%;
+  border-radius: 4px;
+}
+
+.content iframe.pdf {
+  width: 100%;
+  height: 80vh;
+  border: 0;
+  border-radius: 4px;
+}
+
 .content figcaption {
   margin-top: 6px;
   font-size: 0.9em;
@@ -249,6 +261,13 @@ code, pre {
   display: flex;
   gap: 1rem;
   align-items: flex-start;
+}
+.content .bookmark a {
+  display: block;
+  padding: 0.6rem 1rem;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
 }
 .content .columns .column {
   min-width: 0;

@@ -57,7 +57,18 @@ module.exports = function (eleventyConfig) {
         const columns = [...inner.matchAll(/<column(?:\s+ratio="([\d.]+)")?[^>]*>\n([\s\S]*?)\n\t*<\/column>/g)]
           .map(([, ratio, body]) => `<div class="column" style="flex: ${ratio || 1}">\n\n${dedent(body)}\n\n</div>`);
         return `<div class="columns">\n\n${columns.join("\n\n")}\n\n</div>`;
-      });
+      })
+      // Notion's video and PDF blocks; the tag's text is the caption, and a PDF
+      // keeps a link to the file for browsers that do not show it inline.
+      .replace(/^<video\s+src="([^"]+)"[^>]*>(.*?)<\/video>$/gm, (_, src, caption) =>
+        `<figure><video controls preload="metadata" src="${src}"></video>${caption.trim() ? `<figcaption>${caption.trim()}</figcaption>` : ""}</figure>`)
+      .replace(/^<pdf\s+src="([^"]+)"[^>]*>(.*?)<\/pdf>$/gm, (_, src, caption) => {
+        const label = caption.trim() || path.basename(src);
+        return `<figure><iframe class="pdf" src="${src}" title="${label}"></iframe><figcaption><a href="${src}">${label}</a></figcaption></figure>`;
+      })
+      // Notion's bookmark block, shown as a one-line link card.
+      .replace(/^<bookmark\s+url="([^"]+)"[^>]*><\/bookmark>$/gm, (_, url) =>
+        `<p class="bookmark"><a href="${url}">${url}</a></p>`);
   });
 
   // Passthrough copy — media folders and CSS

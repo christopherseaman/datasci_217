@@ -21,10 +21,25 @@ from pathlib import Path
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
 LINK = re.compile(r"!\[([^]]*)\]\(([^)]+)\)")
+# Notion-native video and PDF embeds, written in the page as `<video src="media/x.mp4"></video>`.
+MEDIA_TAG = re.compile(r'<(?P<kind>video|pdf)\s+src="(?P<src>[^"]+)"[^>]*>(?P<caption>.*?)</(?P=kind)>')
+# A Notion bookmark, written on its own line as `<bookmark url="https://..."></bookmark>`.
+BOOKMARK = re.compile(r'<bookmark\s+url="(?P<url>[^"]+)"[^>]*></bookmark>')
+
+
+def bookmark_urls(source: Path) -> list[str]:
+    """URLs of the bookmarks `source` places on their own lines outside code fences, in order."""
+    found, fenced = [], False
+    for line in source.read_text(encoding="utf-8").splitlines():
+        if line.lstrip().startswith("```"):
+            fenced = not fenced
+        elif not fenced and (match := BOOKMARK.fullmatch(line.strip())):
+            found.append(match["url"])
+    return found
 
 
 def media_targets(source: Path) -> list[Path]:
-    """Local image files an image link in `source` points at, in document order."""
+    """Local images, videos, and PDFs that `source` embeds, in document order."""
     found: list[Path] = []
     fenced = False
     for line in source.read_text(encoding="utf-8").splitlines():
@@ -33,11 +48,13 @@ def media_targets(source: Path) -> list[Path]:
             continue
         if fenced:
             continue
-        for _, target in LINK.findall(line):
+        images = [target for _, target in LINK.findall(line)
+                  if Path(target.split("#", 1)[0]).suffix.lower() in IMAGE_SUFFIXES]
+        for target in images + [target for _, target, _ in MEDIA_TAG.findall(line)]:
             if target.startswith(("http://", "https://", "data:", "file-upload://")):
                 continue
             local = (source.parent / target.split("#", 1)[0]).resolve()
-            if local.suffix.lower() in IMAGE_SUFFIXES and local.is_file() and local not in found:
+            if local.is_file() and local not in found:
                 found.append(local)
     return found
 
