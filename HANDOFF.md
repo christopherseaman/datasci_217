@@ -1,6 +1,6 @@
 # Handoff
 
-Updated 2026-10-21. Read [AGENTS.md](AGENTS.md) for the authoring and verification rules. This brief holds the current state, standing decisions, and open items; Git history and `work/reviews/` hold completed work.
+Updated 2026-11-03. Read [AGENTS.md](AGENTS.md) for the authoring and verification rules. This brief holds the current state, standing decisions, and open items; Git history and `work/reviews/` hold completed work.
 
 ## Overall goal
 
@@ -10,9 +10,9 @@ Each ordinary class has 90 minutes: about 60 of lecture and 30 of core demo walk
 
 ## Repo and release state
 
-- As of October 21, `main` holds all work, and all mapped lecture and BONUS pages for 01 to 11 match it in Notion. Notion 06 carries two bookmark cards under "Notes from the Trenches" that the repo writes as links; after republishing 06, restore them; the October 21 republishes did so with `scratch/recon/trench_bookmarks.py` (ignored scratch, so it may be gone). Check `git status` and `git log` on arrival.
-- Handout repositories `UCSF-DataSci/ds217-26f-04` through `-11` match their course folders as of their last publish: 05, 08, and 10 on October 19; 06 and 11 on October 21; the rest October 2 or 14. Pushing the course updates the checks that homework forks download from `main`, never the handouts themselves.
-- Assignment 05 is live with 8 forks. On October 19 its handout renamed the row-count artifact to `output/row_counts.csv` with the index `step`; earlier forks save `output/decision_log.csv` with the index `decision`. The checks accept both until the November cleanup in [TODO.md](TODO.md).
+- On November 3, `main` and `origin/main` both contained the latest course-content commit `3472138`. The October 29–30 changes supersede the earlier review state; check `git status` and `git log` on arrival. Notion release verification is recorded below separately from Git state.
+- Recorded handout releases for `UCSF-DataSci/ds217-26f-04` through `-11`: 05 on October 19; 06 and 11 on October 21; 08–10 on October 29; 04 and 07 on October 2 or 14. These are historical release dates, not a fresh parity check. Pushing the course updates the checks that homework forks download from `main`, never the handouts themselves.
+- Assignment 05 had 8 forks at the October 19 check. That day its handout renamed the row-count artifact to `output/row_counts.csv` with the index `step`; earlier forks save `output/decision_log.csv` with the index `decision`. The checks accept both until the November cleanup in [TODO.md](TODO.md).
 - Assignments 06 (the midterm), 08, 10, and 11 had no forks on October 20 and 21.
 
 ## Recent work, October 19 to 21
@@ -36,16 +36,27 @@ Each ordinary class has 90 minutes: about 60 of lecture and 30 of core demo walk
 - Handout repos ds217-26f-08 to -10 were republished from main on October 29 (no forks existed).
 - `notion_push.py` now uploads `<video>` and `<pdf>` tags and recreates `<bookmark url>` tags, so Notion-only media must be added to the repo before a republish. Lecture 08's instructor video and PDFs live in `08/media/`.
 - Awaiting instructor review: Assignment 10's `_cause` now prefers a cause an earlier check already charged; Demo 10 call list targets patients under 150 who cross 150 next week.
-- Unverified: real Colab runs of the new demos and scaffolds, and the tmux steps by hand.
+- The instructor explicitly excluded Colab validation. Verify notebooks locally; do not treat hosted Colab certification as a pending task. Real remote-server workflows remain unverified.
+
+## October 29–30 follow-through and November 3 release
+
+- `0e2e91a` added mechanism visuals, comics, and visible demo outputs across 08–10: transform and filter-versus-mask diagrams, count/time-window and weighting diagrams, and estimator, network, and threshold-tradeoff figures. Assignment pointers were updated to identify the relevant teaching examples.
+- `3472138` frames each lecture's three demos as one stakeholder project: a concrete request, data problems, methods, and decisions. The project framing retains independently runnable notebooks. Assignment 09's demo pointer was corrected after renumbering.
+- November 3 live reconciliation confirmed that all six 08–10 lecture and BONUS pages already match the current sources; no replacement was necessary. All 211 code blocks matched, all 96 live media files matched local SHA-256 hashes, all three BONUS child-page IDs survived, and the bookmark matched. No synced blocks or unknown edits were found; the scoped media audit reported zero problems. Evidence: `scratch/nov03-release/notion-report.md` and its adjacent `notion/` directory (ignored workspace evidence).
+- Local verification: all nine 08–10 notebook sources match their generated notebooks, and the three lecture pages pass lint. Four notebooks with edits after their saved executions were regenerated from current Markdown and rerun in fresh scratch folders: 08 Demo 3, 09 Demos 1–2, and 10 Demo 3. All passed with inspected outputs on Python 3.13.14/pandas 3.0.5; install cells were skipped after dependency verification. The other five notebooks' current code matches successful saved executions. Evidence: `scratch/handoff-validation-20261103/` and `scratch/pd/{08,09,10}-review/`. This is local notebook evidence, not a new classroom or pedagogical review.
+- The unchanged `08/demo/build_features.py` entry point also ran against freshly generated data, including all 12 progress steps. Its `output/pilot_list.csv` has 659 distinct patients, the seven documented columns, Bayview/Excelsior clinics only, and latest A1c at least 9.0. Evidence is under `scratch/handoff-validation-20261103/helper/`; this does not verify the tmux UI or a remote server.
+- Assignment repositories are not included in this documentation release; their last publication dates above do not establish parity with later local handout edits. HANDOFF.md is repository-only, not a mapped Notion or site page.
+- Untracked `RESUME` and `refs/` were present at the start of the release. They are not part of this release and must not be added or removed incidentally.
 
 ## Coming up
 
-- The midterm opens with Lecture 06 and its demos reviewed five times and the exam audited on October 21. Untested: the 25 human-review points and a live Colab runtime.
+- Lecture 06 and its demos were reviewed five times and the exam audited on October 21. Human exam judgments remain outside automated verification.
 - November: remove the Assignment 05 legacy file name (TODO.md).
 - Republish each handout only after a fresh reconcile, and only when the instructor asks.
 
 ## Working agreements
 
+- Review priorities: lecture content, topic inclusion and ordering, pedagogical visuals, and humor first; then runnable demos that practice preceding content and show meaningful visual output; then assignments completable with lecture/demo methods. Passing execution checks alone does not establish teaching quality. Do not cut humor or add Colab validation work.
 - Quick, well-specified edits go to a light model with exact instructions, followed by one check (lint or the single relevant test). Add review or completion passes only when the instructor asks.
 - Commit, push, and publish changed lecture pages together; never leave Notion behind `main`.
 - Subagent prompts must quote the instructor's request: agents see only their prompt, and they refused once when they lacked it.
@@ -76,7 +87,7 @@ Each ordinary class has 90 minutes: about 60 of lecture and 30 of core demo walk
 
 ## Still unverified
 
-Classroom timing, hosted Colab runtime and UI, native macOS and Windows workflows, the real course server (SSH, scp, tunnels), student-fork Actions runs, live TA fork collection, and human exam judgments.
+Classroom timing, native macOS and Windows workflows, the real course server (SSH, scp, tunnels), student-fork Actions runs, live TA fork collection, and human exam judgments. Hosted Colab validation is intentionally out of scope, not an outstanding task.
 
 ## Publishing
 
