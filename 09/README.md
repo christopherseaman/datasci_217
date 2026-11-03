@@ -27,7 +27,7 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 	- **Dated data**: timestamps, periods, panels, Python `datetime`, a pandas DatetimeIndex, frequency grids, and calendar slicing.
 	- **Resampling**: daily or hourly summaries, bin edges, upsampling, per-patient grids, and gap runs.
 	- **Rolling windows**: count and time windows, centered windows, and EWM.
-	- **Time series visualization**: raw readings with a smoother, gaps that break the line, and seasonal bars.
+	- **Time series visualization**: EDA steps for a series (spacing, profiles, autocorrelation), then raw readings with a smoother, gaps that break the line, and seasonal bars.
 	- **Clocks and honest history**: UTC conversion, clock-change nights, grouped lags, past-only windows, and availability at prediction time.
 	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 9.2, 11.1 to 11.4, 11.6, and 11.7.
 	## Enables
@@ -565,6 +565,52 @@ display(compare)
 
 ![Tufte, _The Visual Display of Quantitative Information_, p. 30: New York City's weather for 1980 shows 1,888 numbers, daily highs and lows against the normal range plus monthly precipitation and daily humidity.](media/tufte_vdqi_p30_nyc_weather.jpg)
 
+## Exploring a Time Series (EDA)
+
+Before smoothing or modeling a new series, check four things:
+
+- **Spacing and gaps**: whether readings arrive at one interval, and where the interval jumps.
+- **Level and trend**: the typical value, and whether it drifts over weeks.
+- **Hour and weekday profiles**: repeating cycles, such as ED arrivals peaking at midday and on Mondays.
+- **Autocorrelation**: the correlation between a series and itself a fixed number of rows earlier (the **lag**). Near 1, a value predicts the one a lag later; near 0, it does not; negative, high values tend to follow low ones.
+
+![Four weeks of hourly ED arrivals: hourly spacing with one 6-hour gap and a flat daily level; arrivals peak at midday and on Mondays; a lag plot of each hour against the same hour the next day shows autocorrelation 0.58.](media/time_series_eda.png)
+
+### Reference Card: Time Series EDA
+
+- `s.index.diff().value_counts()`: Count of each spacing between readings; one value means a regular series, and any larger value is a gap.
+- `s.asfreq('h')`: Regular hourly grid with `NaN` in missing hours; do this before `autocorr()`, whose lag counts rows, not hours.
+- `s.resample('D').mean().plot()`: Daily level, to spot a trend or a step.
+- `s.groupby(s.index.hour).mean()`: Hour-of-day profile; `s.index.dayofweek` (Monday `0`) gives the weekday profile.
+- `s.autocorr(lag=24)`: Correlation of each value with the value 24 rows earlier, skipping `NaN` pairs; returns a float from -1 to 1.
+- `pd.plotting.lag_plot(s, lag=24, ax=ax)`: Scatter of each value against the value 24 rows later; a diagonal cloud means strong autocorrelation.
+
+### Code Snippet: Spacing and Autocorrelation
+
+`arrivals` holds hourly ED arrival counts for four weeks of March 2024, with a DatetimeIndex and no rows for a 6-hour feed outage.
+
+```python
+display(arrivals.index.diff().value_counts())
+grid = arrivals.asfreq('h')
+print('Missing hours:', grid.isna().sum())
+for lag in [1, 12, 24]:
+    print(f'lag {lag}:', round(grid.autocorr(lag=lag), 2))
+```
+
+| | count |
+| --- | --- |
+| 0 days 01:00:00 | 664 |
+| 0 days 07:00:00 | 1 |
+
+```text
+Missing hours: 6
+lag 1: 0.59
+lag 12: -0.51
+lag 24: 0.58
+```
+
+The 7-hour step is the outage. Lag 24 is as strong as lag 1, a daily rhythm; at lag 12, a busy noon faces a quiet midnight, so the correlation is negative.
+
 ## Basic Time Series Plots
 
 ![Daily influenza-like illness visits (gray) with the 30-day rolling mean (blue), which follows the winter peak without the daily noise](media/viz_ili_rolling.png)
@@ -578,7 +624,7 @@ display(compare)
 - `ts.plot()`: Line plot with the DatetimeIndex on the x-axis; returns the `Axes` (`ax = ts.plot()`) for further customization
 - `ts.plot(figsize=(12, 6), title='Title', marker='o')`: Figure size, title, and a marker at each reading
 - `ts.asfreq('D').plot()`: Inserts `NaN` for missing days, so the line breaks at gaps instead of bridging them. `ts.asfreq('D')` starts the grid at the first reading's clock time. `ts.resample('D').asfreq()` starts at midnight and turns off-midnight readings into `NaN`. The two match for date-only readings.
-- `ts.groupby(ts.index.month).mean().plot(kind='bar', ax=ax)`: Calendar-month means as bars, to show a seasonal pattern. `groupby()` accepts an array of keys as long as the series, such as `ts.index.month`. Draw the bars on a new `fig, ax = plt.subplots()`; bars on the dated line's Axes raise `AttributeError`.
+- `ts.groupby(ts.index.month).mean().plot(kind='bar', ax=ax)`: Seasonal bars, drawn on a new `fig, ax = plt.subplots()`; bars on the dated line's Axes raise `AttributeError`.
 - `ax.axhline(98.6, linestyle='--', label='Normal')`: Horizontal reference line for a clinical threshold
 
 ### Code Snippet: Time-Series Plotting

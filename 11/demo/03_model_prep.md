@@ -24,7 +24,7 @@ Run the cells from top to bottom; an **Expect** line after each step says what y
 
 ```python
 # Installs the course's pandas in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5
+%pip install -q --no-warn-conflicts pandas==3.0.5 seaborn==0.13.2
 ```
 
 This notebook reads the release manifest and the zone-hour panel. This supplied cell keeps any file already in `data/` and downloads the rest.
@@ -153,7 +153,66 @@ print("Pattern-analysis rows used:", f"{len(train):,} train, 0 validation, 0 tes
 
 The daily cycle is why hour of day is a feature; the gap between zones is why each zone gets its own category rather than being treated as a number.
 
-## 4. Check feature availability and leakage
+## 4. An EDA pass on the training rows
+
+The steps of EDA, in order, on `train` only. The grain (one zone at one UTC hour) and the absence of missing counts are already confirmed, so this pass starts at distributions.
+
+### 4a. Distribution and the IQR rule
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+q1, q3 = train["pickup_count"].quantile([0.25, 0.75])
+upper_fence = q3 + 1.5 * (q3 - q1)
+high = train["pickup_count"] > upper_fence
+print(f"Q1 {q1:.0f}, Q3 {q3:.0f}, upper fence {upper_fence:.1f}")
+print(f"Rows above the fence: {high.sum()} ({high.mean():.1%})")
+display(train.loc[high, "pickup_zone_id"].value_counts().head(3))
+
+ax = train["pickup_count"].hist(bins=50)
+ax.axvline(upper_fence, color="black", linestyle="--")
+ax.set(title="Pickups per zone-hour, training rows", xlabel="pickup_count", ylabel="rows")
+plt.show()
+```
+
+**Expect:**
+
+- `Q1 45, Q3 238, upper fence 527.5`, then `Rows above the fence: 123 (0.4%)`.
+- A count table led by zone 161 (Midtown Center) with 96 rows, then 132 with 11.
+- A histogram with a tall bar near 0 (overnight hours), a second hump near 200, and a long right tail past the dashed fence.
+
+The high rows are real busy hours, 96 of them in zone 161, not entry errors, so they stay; the IQR rule flags rows to look at, not rows to drop.
+
+### 4b. Target against its lags
+
+```python
+cols = ["pickup_count", "lag_1", "lag_24", "lag_168"]
+sample = train[cols].sample(2000, random_state=217)
+display(sample.corr().round(2))
+sns.pairplot(sample, corner=True, plot_kws={"s": 8, "alpha": 0.4})
+plt.show()
+```
+
+**Expect:** a 4-by-4 correlation table where `pickup_count` correlates 0.91 with `lag_1`, 0.88 with `lag_24`, and 0.94 with `lag_168`, then a corner pairplot whose scatter plots are straight diagonal bands. Last week's count tracks the target most closely, which is why `lag_168` is the baseline.
+
+### 4c. Weekday-by-hour cycle
+
+```python
+weekly_cycle = train.pivot_table(
+    index="day_of_week", columns="hour_of_day", values="pickup_count", aggfunc="mean"
+)
+weekly_cycle.index = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+ax = sns.heatmap(weekly_cycle, cmap="viridis", cbar_kws={"label": "mean pickups"})
+ax.set(title="Mean pickups per zone-hour, training rows", xlabel="local hour", ylabel="")
+plt.show()
+day, hour = weekly_cycle.stack().idxmax()
+print(f"Busiest cell: {day} {hour:02d}:00, {weekly_cycle.max().max():.1f} mean pickups")
+```
+
+**Expect:** a 7-by-24 heatmap, dark before 06:00 every day and brightest on weekday evenings; Saturday and Sunday are brighter than weekdays from 00:00 to 03:00 and darker from 07:00 to 09:00. Then `Busiest cell: Thu 18:00, 344.1 mean pickups`. The weekend shift is why `day_of_week` and `is_weekend` are features beside `hour_of_day`.
+
+## 5. Check feature availability and leakage
 
 At the start of target hour _t_:
 
@@ -186,7 +245,7 @@ assert model_table[FEATURES].notna().all().all()
 
 **Expect:** a 10-row table with `True` in every `available_before_target_hour` cell, and no error: the target and raw timestamps are not features, and no feature is missing.
 
-## 5. Save a compact split manifest
+## 6. Save a compact split manifest
 
 A **split manifest** records the policy (grain, target, metrics, boundaries, features) and the row counts, instead of three copies of the rows. `json.dump()` writes it as readable JSON.
 

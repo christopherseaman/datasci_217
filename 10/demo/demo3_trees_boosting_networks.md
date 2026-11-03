@@ -124,13 +124,14 @@ Every model gets the same prepared columns: median-filled and scaled numbers, on
 
 - Flag the 10% of validation discharges with the highest predicted probability (the 90th percentile of each model's probabilities is its threshold).
 - Compare **recall** (share of readmitted patients who got a call), **precision** (share of calls that reached one), and the count of readmitted patients called.
+- Report **AUC** beside them: how well the whole ranking puts readmitted patients above the rest, at every cutoff, not only the 10% the nurses can call.
 
 Accuracy is in the table too, at the default 0.5 threshold, to show why it cannot choose. The first row is a random call list: every probability below 0.5, so it predicts "no readmission" for everyone, in random order.
 
 ```python
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
@@ -143,6 +144,7 @@ def make_preprocess(categorical_columns=categorical):
 def compare(name, probability, truth=y_valid):
     flag = (probability >= pd.Series(probability).quantile(0.9)).astype(int)
     comparison[name] = {"accuracy_at_0.5": accuracy_score(truth, probability >= 0.5),
+                        "auc": roc_auc_score(truth, probability),
                         "recall_at_10pct": recall_score(truth, flag),
                         "precision_at_10pct": precision_score(truth, flag),
                         "readmitted_called": int((flag & truth).sum())}
@@ -158,16 +160,17 @@ print("validation readmissions:", y_valid.sum())
 show()
 ```
 
-Expect 7,659 validation readmissions, accuracy 0.838 with nobody flagged, and a random call list's recall of 0.102: random calls reach about 10% of readmitted patients (780). 10% of 47,219 validation discharges is about 4,720 calls.
+Expect 7,659 validation readmissions, accuracy 0.838 with nobody flagged, and a random call list's AUC of 0.499 and recall of 0.102: random calls reach about 10% of readmitted patients (780). 10% of 47,219 validation discharges is about 4,720 calls.
 
-Today's rule ranks discharges by admissions in the past year, then by comorbidity count. Many patients tie, so `rank(method="first")` breaks the remaining ties by row order and the list stays at exactly 10%. A rule gives no probability, so its accuracy cell stays empty (`NaN`).
+Today's rule ranks discharges by admissions in the past year, then by comorbidity count. Many patients tie, so `rank(method="first")` breaks the remaining ties by row order and the list stays at exactly 10%. A rule gives no probability, so its accuracy cell stays empty (`NaN`); its score still ranks every discharge, so it gets an AUC.
 
 ```python
 def todays_rule(name, rows):
     score = rows["n_prior_admits_12m"] * 100 + rows["n_comorbidities"]
     flag = (score.rank(ascending=False, method="first") <= 0.1 * len(rows)).astype(int)
     truth = rows["readmit_30d"]
-    comparison[name] = {"accuracy_at_0.5": np.nan, "recall_at_10pct": recall_score(truth, flag),
+    comparison[name] = {"accuracy_at_0.5": np.nan, "auc": roc_auc_score(truth, score),
+                        "recall_at_10pct": recall_score(truth, flag),
                         "precision_at_10pct": precision_score(truth, flag),
                         "readmitted_called": int((flag & truth).sum())}
 
@@ -175,7 +178,7 @@ todays_rule("today's rule: most prior admissions", valid)
 show()
 ```
 
-Expect today's rule at a recall of 0.201 and precision of 0.327: 1,542 readmitted patients called, about twice the random list. Every model below has to beat 1,542.
+Expect today's rule at an AUC of 0.650, a recall of 0.201, and precision of 0.327: 1,542 readmitted patients called, about twice the random list. Every model below has to beat 1,542.
 
 ### 4. A list the committee can read line by line
 
@@ -303,7 +306,7 @@ plt.show()
 plt.close(ax.figure)
 ```
 
-Expect, at the 10% budget, recall from 0.290 (logistic regression) to 0.308 (XGBoost), with the network (0.300) and the forest (0.303) between, and today's rule at 0.201. Every model's accuracy at 0.5 sits between 0.842 and 0.845. The bar chart puts the four families within 140 calls of each other (2,224 to 2,362), all of them 682 to 820 above today's rule's 1,542 and near three times the random list's 780: having a model matters far more than which family. XGBoost calls 138 more readmitted patients in six months than logistic regression. Trees find combinations of columns and thresholds within a column by splitting; logistic regression gives each column one straight-line slope unless someone writes the combination as a column. Practice 6 tests whether the gap comes from combinations.
+Expect, at the 10% budget, recall from 0.290 (logistic regression) to 0.308 (XGBoost), with the network (0.300) and the forest (0.303) between, and today's rule at 0.201. AUC tells the same story over the whole ranking: 0.749 to 0.760 for the four families against 0.650 for the rule. Every model's accuracy at 0.5 sits between 0.842 and 0.845. The bar chart puts the four families within 140 calls of each other (2,224 to 2,362), all of them 682 to 820 above today's rule's 1,542 and near three times the random list's 780: having a model matters far more than which family. XGBoost calls 138 more readmitted patients in six months than logistic regression. Trees find combinations of columns and thresholds within a column by splitting; logistic regression gives each column one straight-line slope unless someone writes the combination as a column. Practice 6 tests whether the gap comes from combinations.
 
 The frozen choice is XGBoost with its validation-chosen 285 rounds: the most readmitted patients called among the four families, and seconds to train. Refit it on every training and validation discharge whose label had arrived by the first test discharge, then score the test rows once at the 10% budget, beside today's rule on the same rows.
 
@@ -322,7 +325,7 @@ print("final fit rows:", len(final_rows), " test readmissions:", test["readmit_3
 show(["XGBoost", "XGBoost on test (frozen)", "today's rule on test"])
 ```
 
-Expect 179,288 final fit rows, 5,789 test readmissions, and a test recall of 0.311 with precision 0.479, close to validation's 0.308 and 0.500. Today's rule on the test discharges reaches a recall of 0.205 and precision of 0.316: 1,186 of the 5,789 readmitted patients, against XGBoost's 1,801.
+Expect 179,288 final fit rows, 5,789 test readmissions, and a test AUC of 0.760 (the same as validation) with recall 0.311 and precision 0.479, close to validation's 0.308 and 0.500. Today's rule on the test discharges reaches an AUC of 0.654, a recall of 0.205, and precision of 0.316: 1,186 of the 5,789 readmitted patients, against XGBoost's 1,801.
 
 **What we tell Dr. Kim**: on January to May 2025, discharges no choice was tuned on, the XGBoost list reaches 615 more readmitted patients than today's rule for the same 10% of calls. The four model families differ far less than any of them differs from the rule, so logistic regression stays a fallback if the committee wants coefficients it can read.
 

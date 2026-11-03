@@ -32,8 +32,9 @@ from sklearn.dummy import DummyRegressor  # noqa: E402
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestClassifier  # noqa: E402
 from sklearn.inspection import permutation_importance  # noqa: E402
 from sklearn.linear_model import Lasso, LinearRegression, LogisticRegression, Ridge  # noqa: E402
-from sklearn.metrics import (accuracy_score, confusion_matrix, mean_absolute_error,  # noqa: E402
-                             precision_score, recall_score)
+from sklearn.metrics import (accuracy_score, average_precision_score, confusion_matrix,  # noqa: E402
+                             mean_absolute_error, precision_recall_curve, precision_score, recall_score,
+                             roc_auc_score, roc_curve)
 from sklearn.model_selection import train_test_split  # noqa: E402
 from sklearn.pipeline import Pipeline  # noqa: E402
 from sklearn.preprocessing import StandardScaler  # noqa: E402
@@ -703,6 +704,42 @@ def threshold_tradeoff():
     save(fig, "threshold_tradeoff.png")
 
 
+def roc_pr_curves():
+    """The threshold figure's logistic regression as an ROC curve (AUC) and a precision-recall curve (AP)."""
+    d = diabetes_split()
+    classifier = Pipeline([("scale", StandardScaler()), ("model", LogisticRegression(max_iter=1000))])
+    classifier.fit(d["X_train"], d["y_train"] > 200)
+    probability = classifier.predict_proba(d["X_valid"])[:, 1]
+    actual = (d["y_valid"] > 200).astype(int).to_numpy()
+    auc, ap = roc_auc_score(actual, probability), average_precision_score(actual, probability)
+    assert round(auc, 3) == 0.850 and round(ap, 3) == 0.753 and actual.sum() == 29
+    fpr, tpr, _ = roc_curve(actual, probability)
+    precision, recall, _ = precision_recall_curve(actual, probability)
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.4))
+    ax = axes[0]
+    ax.plot(fpr, tpr, color=BLUE, linewidth=2, drawstyle="steps-post", label=f"logistic regression, AUC {auc:.3f}")
+    ax.plot([0, 1], [0, 1], color=GREY, linestyle="--", linewidth=1, label="random ranking, AUC 0.5")
+    for t, (dx, dy) in {0.5: (0.08, -0.12), 0.2: (0.08, -0.12)}.items():
+        flagged = probability >= t
+        x = (flagged & (actual == 0)).sum() / (actual == 0).sum()
+        y = (flagged & (actual == 1)).sum() / actual.sum()
+        ax.plot(x, y, "o", color=VERMILLION, markersize=7)
+        ax.annotate(f"threshold {t}", xy=(x, y), xytext=(x + dx, y + dy), fontsize=9.5, color=VERMILLION)
+    ax.set(xlabel="False-positive rate (share of the 60 others flagged)", ylabel="Recall (share of the 29 flagged)",
+           title="ROC curve: every threshold at once")
+    ax.legend(loc="lower right", fontsize=9, frameon=False)
+    ax = axes[1]
+    ax.plot(recall, precision, color=ORANGE, linewidth=2, label=f"logistic regression, AP {ap:.3f}")
+    ax.axhline(actual.mean(), color=GREY, linestyle="--", linewidth=1,
+               label=f"random ranking, AP about {actual.mean():.3f} (29 of 89)")
+    ax.set(xlabel="Recall", ylabel="Precision (share of flags that are high)", ylim=(0, 1.05),
+           title="Precision-recall curve")
+    ax.legend(loc="lower left", fontsize=9, frameon=False)
+    fig.suptitle("Progression above 200, 89 validation patients", fontsize=11)
+    fig.tight_layout()
+    save(fig, "roc_pr_curves.png")
+
+
 def neural_network():
     """The 30-64-32-1 biopsy network as layers of units, with the two activation functions it uses."""
     fig = plt.figure(figsize=(11, 4.2))
@@ -865,7 +902,7 @@ def model_comparison():
 FIGURES = [residuals_vs_fitted, ols_summary, intervals, anscombe, leakage_timeline, cyclic_hours,
            overfit_polynomial, target_time_split, ridge_lasso_paths, logistic_threshold,
            validation_diagnostics, confusion_matrix_figure, permutation_importance_chart, freeze_test_once,
-           estimator_pattern, threshold_tradeoff, neural_network, decision_tree, boosting_stages, xgboost_early_stopping, keras_loss_curves, keras_dropout_curves,
+           estimator_pattern, threshold_tradeoff, roc_pr_curves, neural_network, decision_tree, boosting_stages, xgboost_early_stopping, keras_loss_curves, keras_dropout_curves,
            model_comparison]
 
 if __name__ == "__main__":

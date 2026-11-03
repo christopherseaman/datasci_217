@@ -370,3 +370,32 @@ display(s0297.loc['2024-02-09'].resample('4h').agg(['mean', 'std', 'min', 'max',
 ```
 
 Expect six blocks. The `16:00` block has `count` `0` and `NaN` everywhere else: the patient was off the monitor. The `12:00` block holds only `15` readings (the gap began at 13:15), and the `20:00` block jumps to a mean of `121.0`, with a `max` of `132.0`, against means of `85` to `96` earlier in the day.
+
+### 7. The alert team asks whether 120 bpm means the same at 3 a.m. and 3 p.m.
+
+Before changing a threshold, run the time series EDA steps on the series it watches. Start with spacing: `S0297`'s readings are 5 minutes apart except where the monitor went quiet. Then build one unit-wide heart rate per clock hour (the mean of every stay's hourly mean, a unit-level summary like practice 1) and check its level, its hour and weekday profiles, and its autocorrelation.
+
+```python
+display(s0297.index.diff().value_counts())
+
+unit_hr = hourly.groupby('recorded_at')['mean_hr'].mean().asfreq('h')
+print('Unit hours:', len(unit_hr), ' missing:', unit_hr.isna().sum())
+display(unit_hr.resample('ME').mean().round(1))
+by_hour = unit_hr.groupby(unit_hr.index.hour).mean()
+by_weekday = unit_hr.groupby(unit_hr.index.dayofweek).mean()
+print('Lowest hour:', by_hour.idxmin(), round(by_hour.min(), 1), ' highest hour:', by_hour.idxmax(), round(by_hour.max(), 1))
+print('Weekday means from', round(by_weekday.min(), 1), 'to', round(by_weekday.max(), 1))
+for lag in [1, 12, 24]:
+    print(f'lag {lag}:', round(unit_hr.autocorr(lag=lag), 2))
+
+fig, axes = plt.subplots(1, 2, figsize=(11, 3.8))
+by_hour.plot(ax=axes[0], marker='o', color='steelblue', xticks=range(0, 24, 3),
+             title='4 West mean heart rate by clock hour', xlabel='Hour of day', ylabel='Heart rate (bpm)')
+pd.plotting.lag_plot(unit_hr, lag=24, ax=axes[1], s=6, alpha=0.4)
+axes[1].set(title='Unit heart rate against the same hour the next day', xlabel='Hour t (bpm)', ylabel='Hour t + 24 (bpm)')
+plt.show()
+```
+
+Expect `S0297`'s spacing to be `0 days 00:05:00` for `642` gaps between readings, `8` of 10 minutes, one of 50 minutes, one of `0 days 01:40:00`, and one of `0 days 06:55:00`, the afternoon off the monitor in step 6. The unit series has `2184` hours and `0` missing: some patient is always on the monitor. Monthly means are `79.8`, `82.0`, and `81.2` bpm, so there is no trend. The lowest hour is `3` at `75.0` bpm and the highest is `16` at `86.9` (15:00 ties it), a 12 bpm daily swing, while the weekday means differ by under 1 bpm (`80.7` to `81.5`). The line climbs from 03:00 to a mid-afternoon peak. Autocorrelation is `0.95` at lag 1, `-0.57` at lag 12 (afternoon against early morning), and `0.89` at lag 24, the tight diagonal in the lag plot.
+
+**What we tell the alert team:** the unit's heart rate follows the clock, not the weekday, and swings about 12 bpm each day. A fixed 120 bpm line sits 45 bpm above the 03:00 mean and 33 above the 16:00 mean, so a night-time rise has further to climb before it alerts; the team can weigh an hour-aware threshold.

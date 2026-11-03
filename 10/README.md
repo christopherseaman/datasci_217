@@ -24,9 +24,9 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 <callout icon="🧭" color="blue_bg">
 	# This Lecture
 	## Covers
-	- **Statistical modeling with `statsmodels`**: OLS formulas, coefficients, confidence intervals, p-values, residual plots, and new-patient intervals.
+	- **Statistical modeling with `statsmodels`**: OLS formulas, coefficients, confidence intervals, p-values, power and multiple comparisons, residual plots, and new-patient intervals.
 	- **Prediction setup**: features, targets, leakage, cyclic time features, and training, validation, and test rows split on target time.
-	- **scikit-learn**: the estimator pattern, linear regression with Ridge and Lasso, logistic regression for classification, baselines, pipelines, metrics, time-ordered cross-validation, permutation importance, and the one final test.
+	- **scikit-learn**: the estimator pattern, linear regression with Ridge and Lasso, logistic regression for classification, baselines, pipelines, metrics including ROC AUC, choosing a cross-validation splitter, permutation importance, and the one final test.
 	- **Trees, boosting, and neural networks**: random forests, XGBoost with early stopping, and a small Keras classifier.
 	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 12.1 to 12.4.
 	## Enables
@@ -59,12 +59,22 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 
 ### Reference Card: Which Library for Which Question
 
-| Library | Start here when | Key features | Typical use |
+| Library | Start here when | Key features |
+| --- | --- | --- |
+| **statsmodels** | You need to quantify a relationship and its uncertainty | Statistical inference, model diagnostics |
+| **scikit-learn** | Tabular data and you need predictions | One fit/predict pattern, preprocessing, many models |
+| **XGBoost** | Candidate for tabular prediction | Gradient-boosted trees, feature-importance summaries |
+| **TensorFlow/Keras** | Candidate for images, text, audio, or learned representations | Neural-network layers and training loops |
+
+### Reference Card: Which Model for Which Outcome
+
+| Outcome and rows | Example | Start with | When to use it |
 | --- | --- | --- | --- |
-| **statsmodels** | You need to quantify a relationship and its uncertainty | Statistical inference, model diagnostics | Understanding relationships, research |
-| **scikit-learn** | Tabular data and you need predictions | One fit/predict pattern, preprocessing, many models | General prediction tasks |
-| **XGBoost** | Candidate for tabular prediction | Gradient-boosted trees, feature-importance summaries | Benchmarking alongside simpler tabular models |
-| **TensorFlow/Keras** | Candidate for images, text, audio, or learned representations | Neural-network layers and training loops | Deep-learning workflows |
+| Number, one row per patient | SBP | Linear regression (OLS; Ridge or Lasso for many columns) | Spread is similar around the fitted line |
+| Yes/no | 30-day readmission | Logistic regression; forests or boosting as prediction candidates | Each row has a 0/1 outcome |
+| Count over follow-up time | ED visits | **Poisson regression** with `log(years followed)` as an **offset**, a term with its coefficient fixed at 1 | Patients are followed for different lengths of time, so the model compares rates per year |
+| Repeated measures | Weekly SBP, 20 readings per patient | **Mixed effects** (a random intercept per patient) or **GEE** (average slopes with standard errors that allow for each patient's correlated rows) | OLS would treat 20 readings as 20 independent people, so its intervals come out too narrow |
+| Time to event | Days from discharge to readmission | **Kaplan-Meier** curves to describe, **Cox regression** for hazard ratios (`lifelines`) | Some patients are **censored**: follow-up ends before the event, so they count as event-free only up to their last known day |
 
 _Pro tip: Start simple. "But why male models?" Because sometimes the simplest model is the right model!_
 
@@ -161,6 +171,8 @@ A coefficient is an estimate from one sample, so it comes with uncertainty:
 - The **standard error** measures how much the estimate would vary from sample to sample.
 - A **95% confidence interval** is roughly the estimate ± 2 standard errors: repeat the study many times and about 95% of these intervals would contain the true coefficient.
 - A **p-value** asks: if the true coefficient were 0 and the model assumptions held, how surprising would an estimate at least this far from 0, relative to its standard error, be? It is not the probability that a hypothesis is true.
+- **Statistical power**: the chance a study detects a real effect of a given size; it grows with sample and effect size. A large p-value from a small study can mean too few patients to tell.
+- **Multiple comparisons**: test 20 true-zero effects at 0.05 and at least one reaches p < 0.05 64% of the time. **Bonferroni** compares each p-value with 0.05 / (number of tests); **Holm**, a stepwise version, rejects at least as many.
 - An **association** means two variables move together; **causation** means changing one would change the other. A coefficient from observational records describes an association, so "losing weight would lower SBP by b2" needs additional causal evidence, such as a randomized trial.
 
 A new patient gets two intervals:
@@ -177,6 +189,8 @@ A new patient gets two intervals:
 | `results.bse` | Standard error of each coefficient. | Series indexed by term |
 | `results.conf_int(alpha=0.05)` | Lower and upper 95% bounds. | DataFrame with columns `0` and `1` |
 | `results.pvalues` | p-value for each coefficient, testing "the true coefficient is 0". | Series |
+| `multipletests(pvalues, method='holm')` | Adjust several p-values together; `'bonferroni'` also works (`from statsmodels.stats.multitest import multipletests`). | Tuple: reject flags, adjusted p-values, ... |
+| `TTestIndPower().solve_power(effect_size=0.5, alpha=0.05, power=0.8)` | Patients needed per group to detect a half-SD difference 80% of the time (`from statsmodels.stats.power import TTestIndPower`). | `63.8` |
 | `results.get_prediction(new_rows).summary_frame(alpha=0.05)` | Intervals for new rows: `mean`, `mean_ci_lower`, `mean_ci_upper` (mean response) and `obs_ci_lower`, `obs_ci_upper` (individual prediction); `.conf_int(obs=True)` returns only the prediction bounds. | DataFrame |
 
 ### Code Snippet: Uncertainty and a New-Patient Interval
@@ -259,7 +273,6 @@ The plot is the left panel of the residuals figure above: no curve, no funnel.
 # Prediction: Features, Targets, and Honest Splits
 
 - **Prediction**: estimating an unknown outcome, such as _this_ patient's SBP at the next visit. Predicting known patients' future readings and predicting entirely new patients are different tasks; to evaluate the second, keep each held-out patient's rows out of training.
-- A model can always describe the rows it was fitted on, so its error there says nothing about the next patient; a prediction model is judged only on rows kept out of its fitting.
 
 ## Feature Availability
 
@@ -320,12 +333,13 @@ To estimate performance honestly, give rows three roles:
 - **Validation set**: compares candidate models and settings.
 - **Test set**: opened once, after the choice is frozen, to report final performance.
 
-**Cross-validation** rotates the validation role through several blocks of the training rows and averages the scores, which helps when rows are scarce. With time-ordered rows, a model fit only on earlier rows scores each block (`TimeSeriesSplit`, in the next topic). The test set stays sealed.
+**Cross-validation** rotates the validation role through several blocks of the training rows and averages the scores, which helps when rows are scarce. The test set stays sealed.
 
 Comparing the errors on these sets shows two failure modes:
 
-- Overfitting: a model memorizing its training rows instead of learning patterns that carry over, like memorizing the practice exam's answers and then failing the real exam. A much lower training error than validation error can warn of it, but a changed patient mix or time period can also create a gap.
-- **Underfitting**: a model too simple to capture the pattern, so both errors stay high.
+- Overfitting, or high **variance**: the fit memorizes its training rows, so it changes with whichever rows it saw, like memorizing the practice exam's answers and then failing the real exam. A much lower training error than validation error can warn of it, but a changed patient mix or time period can also create a gap.
+- **Underfitting**, or high **bias**: a model too rigid to capture the pattern, so both errors stay high.
+- More flexibility lowers bias and raises variance; validation error is lowest in between (degree 1 below).
 
 ![Curves fit to 30 diabetes patients' progression against BMI and scored on 402 others in the same BMI range: degree 0 underfits (train MAE 64, validation 68), degree 1 fits (52, 53), and degree 10 overfits (45, 82).](media/overfit_polynomial.png)
 
@@ -408,7 +422,7 @@ Create the estimator and choose its settings, `fit()` it on training rows where 
 | `model.fit(X, y)` | Learn parameters from features and targets. | The fitted estimator (`model`) |
 | `model.predict(X)` | Generate predictions for new rows. | NumPy array |
 | `model.score(X, y)` | Return the estimator's default score (R² for regressors; for classifiers, accuracy, the fraction predicted correctly; both defined below). | Float |
-| `cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=3), scoring=...)` | Cross-validate rows sorted by time (the splitter uses row position, not dates; `df.sort_values('target_date')` first): each fold fits a fresh copy on earlier rows and scores the next block (`from sklearn.model_selection import cross_val_score, TimeSeriesSplit`). | One score per fold (array) |
+| `cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=3), scoring=...)` | Fit a fresh copy on each fold and score it (`from sklearn.model_selection import cross_val_score, TimeSeriesSplit`). `TimeSeriesSplit` uses row position, not dates, so `df.sort_values('target_date')` first. | One score per fold (array) |
 
 ## Linear Models for Prediction
 
@@ -417,6 +431,7 @@ Create the estimator and choose its settings, `fit()` it on training rows where 
 - **Regularization**: a penalty that shrinks coefficients and can reduce overfitting when features are many or correlated. It treats every coefficient alike, so scale features first (`StandardScaler`, below).
 - **Ridge** (L2) penalizes the sum of squared coefficients.
 - **Lasso** (L1) penalizes the sum of absolute values, which can set some fitted contributions to exactly zero. The pipeline still expects every original input column.
+- `alpha` sets the penalty's strength, trading variance for bias: near 0 it is plain least squares; very large, predictions approach the training mean. Choose it on validation rows.
 
 ![Coefficients for 10 diabetes features on 264 scaled training patients as alpha grows: Ridge shrinks their overall size without setting any to exactly 0 (tc from -51 to about -12 at alpha 10, while correlated ldl flips from 27 to -3), and Lasso sets some to exactly 0, keeping 7 of 10 at alpha 2.](media/ridge_lasso_paths.png)
 
@@ -514,12 +529,14 @@ print(model.predict(clinic_valid).round(1))  # [141.6 147.7]
     - True negatives (TN): neither.
 - Lowering a probability threshold flags more patients: it can catch more true cases while also creating more false alarms. Choose that tradeoff on validation data, then freeze the threshold with the model.
 - A fixed workload sets the threshold for you: with 100 nurse calls a week, flag the 100 highest probabilities (`probability.rank(ascending=False) <= 100` on a Series) and compare models by recall at that budget.
+- An **ROC curve** plots recall against the **false-positive rate** (share of non-readmitted patients flagged) at every threshold. **AUC**, the area under it, is the chance a random readmitted patient outranks a random other patient: 0.5 is random, 1 perfect.
+- AUC measures ranking only, not the threshold or calibration; a rare outcome can score a high AUC while most top flags are false alarms. **Average precision** summarizes the precision-recall curve, where a random ranking scores the outcome's rate (0.05 for a 5% outcome).
 
 ![A Lasso's predictions for 89 validation diabetes patients: left, predicted against actual, flatter than the dashed perfect line; right, residuals centered 14.2 points above 0.](media/validation_diagnostics.png)
 
 ### Reference Card: `sklearn.metrics`
 
-Import each by name: `from sklearn.metrics import mean_absolute_error, r2_score`.
+Import each by name: `from sklearn.metrics import mean_absolute_error, r2_score, roc_auc_score, average_precision_score`.
 
 | Metric | Question it answers | Function | Typical output |
 | --- | --- | --- | --- |
@@ -529,12 +546,16 @@ Import each by name: `from sklearn.metrics import mean_absolute_error, r2_score`
 | **Accuracy** | What fraction of predictions were right? (TP + TN) / all | `accuracy_score(y_true, y_pred)` | 0 to 1 |
 | **Precision** | Of the patients we flagged, how many were readmitted? TP / (TP + FP) | `precision_score(y_true, y_pred, zero_division=0)` | 0 to 1; `zero_division=0` returns 0 without a warning when nothing is flagged |
 | **Recall** | Of the readmitted patients, how many did we flag? TP / (TP + FN) | `recall_score(y_true, y_pred)` | 0 to 1 |
+| **ROC AUC** | How well do the probabilities rank positives above negatives? | `roc_auc_score(y_true, probability)` | 0.5 random, 1 perfect; needs probabilities, not 0/1 flags |
+| **Average precision** | How precise is the list, averaged over recall levels? | `average_precision_score(y_true, probability)` | 0 to 1; random scores the positive rate |
 | Confusion matrix | How many of each outcome? | `confusion_matrix(y_true, y_pred)` | 2x2 array `[[TN, FP], [FN, TP]]` |
 | Per-class summary | Precision, recall, F1 (one score that balances the two), and support (number of true rows) for each class; `output_dict=True` returns a dict that `pd.DataFrame(...).T` turns into a table | `classification_report(y_true, y_pred)` | Printed table |
 
 ![The same Lasso predictions as a flag for progression above 200: TN 55, FP 5, FN 17, TP 12, so recall is 12 / 29 = 0.414 and precision is 12 / 17 = 0.706.](media/confusion_matrix.png)
 
 ![A logistic regression flagging progression above 200 on the same 89 patients: at threshold 0.5 it flags 22 and catches 15 of 29; at 0.2 it flags 42 and catches 23, with precision falling from 0.68 to 0.55.](media/threshold_tradeoff.png)
+
+![The same logistic regression at every threshold: the ROC curve passes through threshold 0.5 (recall 0.52) and 0.2 (recall 0.79) for an AUC of 0.850, and the precision-recall curve gives an average precision of 0.753 against 0.326 for a random ranking.](media/roc_pr_curves.png)
 
 ### Code Snippet: Comparing on Validation Rows
 
@@ -554,9 +575,18 @@ linear_pipeline: MAE=7.20 RMSE=9.65 R2=0.510
 
 The baseline's R² is negative because it predicts the _training_ mean (140.0), which misses the validation rows' own mean (143.2).
 
+### Reference Card: Choosing a Splitter
+
+Pass one as `cv=` (`from sklearn.model_selection import KFold, StratifiedKFold, GroupKFold`):
+
+- `KFold(n_splits=5, shuffle=True, random_state=42)`: Independent rows, one per patient; `cv=5` uses an unshuffled `KFold` for regressors.
+- `StratifiedKFold(...)`: Same arguments, for a yes/no target; each fold keeps the overall readmission rate. `cv=5` uses it for classifiers.
+- `GroupKFold(n_splits=5)`, with `groups=df['patient_id']` in `cross_val_score`: Several rows per patient; each patient stays in one fold, so the score describes new patients.
+- `TimeSeriesSplit(n_splits=3)`: Forecasts; each fold fits on earlier rows only.
+
 ### Code Snippet: Cross-Validation Over Time
 
-Cross-validate only the training and validation rows (`target_date` before 2026-03-01); the test rows stay out. Each fold fits on earlier rows and scores the next one. Scorers are "higher is better", so MAE comes back negated.
+Cross-validate only the training and validation rows (`target_date` before 2026-03-01); the test rows stay out. Scorers are "higher is better", so MAE comes back negated.
 
 ```python
 dev = visits[visits['target_date'] < '2026-03-01']
@@ -577,12 +607,13 @@ print((-scores).round(1))
 
 ### Code Snippet: Accuracy Hides Missed Readmissions
 
-A model that always says "no" matches this flag's 0.625 accuracy while catching nobody, and the rarer readmissions are, the higher that accuracy climbs. Screening therefore cares about recall.
+A model that always says "no" matches this flag's 0.625 accuracy while catching nobody, and the rarer readmissions are, the higher that accuracy climbs. Screening therefore cares about recall. `flagged` is `probability >= 0.5`.
 
 ```python
-actual    = [1, 0, 0, 1, 0, 0, 0, 1]
-flagged   = [1, 0, 0, 0, 0, 1, 0, 0]
-always_no = [0, 0, 0, 0, 0, 0, 0, 0]
+actual      = [1, 0, 0, 1, 0, 0, 0, 1]
+probability = [0.81, 0.12, 0.30, 0.45, 0.08, 0.62, 0.25, 0.38]
+flagged     = [1, 0, 0, 0, 0, 1, 0, 0]
+always_no   = [0, 0, 0, 0, 0, 0, 0, 0]
 
 for name, predicted in [('flagged', flagged), ('always_no', always_no)]:
     accuracy = accuracy_score(actual, predicted)
@@ -591,6 +622,7 @@ for name, predicted in [('flagged', flagged), ('always_no', always_no)]:
     print(f'{name}: accuracy={accuracy:.3f} precision={precision:.3f} recall={recall:.3f}')
 
 print(confusion_matrix(actual, flagged))
+print(f'AUC={roc_auc_score(actual, probability):.3f} AP={average_precision_score(actual, probability):.3f}')
 ```
 
 ```text
@@ -598,9 +630,11 @@ flagged: accuracy=0.625 precision=0.500 recall=0.333
 always_no: accuracy=0.625 precision=0.000 recall=0.000
 [[4 1]
  [2 1]]
+AUC=0.867 AP=0.806
 ```
 
-The matrix reads `[[TN, FP], [FN, TP]]`: one readmission caught, two missed, one false alarm.
+- The matrix reads `[[TN, FP], [FN, TP]]`: one readmission caught, two missed, one false alarm.
+- AUC 0.867: the readmitted patient ranks higher in 13 of 15 readmitted-versus-other pairs; the 0.5 threshold, not the ranking, misses two.
 
 ![xkcd 534: Genetic Algorithms. A score can improve while an unmeasured consequence gets much worse; include the costs that matter.](media/xkcd_534.png)
 
@@ -685,15 +719,12 @@ _"Did you ever think that maybe there's more to life than being really, really, 
 
 ![Decision tree: one model, one prediction. Random forest: trees trained in parallel, predictions averaged. XGBoost: trees trained in sequence, each fit to the previous error.](media/trees.webp)
 
-The figure simplifies one detail: with `max_features` below the column count, a forest draws a fresh random subset of columns at every split, not one fixed subset per tree.
-
 ### Reference Card: Random Forests
 
 | Class / method | Purpose & arguments | Typical output |
 | :--- | :--- | :--- |
 | `train_test_split(..., stratify=y)` | Split a class label so each part keeps the same share of each class; without it a small split can land lopsided. | Same four parts as before |
-| `RandomForestClassifier(n_estimators=..., random_state=...)` | Build a classification forest from randomized trees (`from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor`). | Estimator |
-| `RandomForestRegressor(n_estimators=..., random_state=...)` | Build a regression forest from randomized trees. | Estimator |
+| `RandomForestClassifier(n_estimators=..., random_state=...)` / `RandomForestRegressor(...)` | Build a classification or regression forest from randomized trees (`from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor`). | Estimator |
 | `max_features=...` | How many features each question may choose from. Defaults to the square root of the count for `RandomForestClassifier` but to all of them for `RandomForestRegressor`; fewer features make the trees less alike. | Setting |
 | `max_depth=...`, `min_samples_split=...` | Limit how deep each tree grows and how many rows a question needs before it splits; smaller trees memorize less. | Settings |
 | `n_jobs=-1` | Build trees on all CPU cores at once. | Setting |
@@ -780,8 +811,6 @@ _Gradient boosting is the Magnum of machine learning: a signature look, built on
 | `subsample` | Fraction of training rows each tree sees | Try 0.8 to 1.0; sampling can reduce overfitting, but too few rows lose signal |
 | `colsample_bytree` | Fraction of features each tree sees | Try 0.8 to 1.0; sampling makes trees less alike, but can omit useful features |
 
-These are toy starting points; choose settings on validation rows for the data and budget.
-
 ### Code Snippet: XGBoost with Early Stopping
 
 The same biopsy split as the forest: 341 training and 114 validation rows, test rows sealed.
@@ -837,8 +866,7 @@ predicted = model.predict(X_valid)  # one 0/1 label per validation row
 | `Dense(..., kernel_regularizer=keras.regularizers.l2(0.01))` | Add an L2 penalty on that layer's weights (the Ridge idea from the linear-estimator card). The loss Keras reports then includes the penalty, so compare such a network with others on accuracy, not loss. | Layer |
 | `model.summary()` / `model.count_params()` | Print each layer's output shape and parameter count / return the total number of weights. | Printed table / integer |
 | `model.compile(optimizer, loss, metrics)` | Configure optimization, loss, and reported metrics. | Configured model |
-| `model.fit(X_train, y_train, epochs=..., batch_size=..., validation_split=...)` | Train for epochs and optionally hold out the last part of the training rows for validation. | `History` object |
-| `model.fit(..., validation_data=(X_valid, y_valid))` | Report validation loss and metrics on an explicit validation set after every epoch. | `History` object |
+| `model.fit(X_train, y_train, epochs=..., batch_size=..., validation_data=(X_valid, y_valid))` | Train for epochs, reporting validation loss and metrics after each; `validation_split=0.2` instead holds out the last 20% of the training rows. | `History` object |
 | `history.history` | Per-epoch values such as `loss`, `val_loss`, `accuracy`, `val_accuracy`. | dict of lists |
 | `model.predict(X)` | Generate predictions; with a sigmoid output these are probabilities, so `(model.predict(X) > 0.5).astype(int).flatten()` gives 0/1 labels. | NumPy array |
 | `model.evaluate(X_test, y_test)` | Calculate loss and configured metrics on held-out data. | Scalar or list |

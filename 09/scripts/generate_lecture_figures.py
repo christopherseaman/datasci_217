@@ -136,6 +136,19 @@ def demo3_ili():
     return ili
 
 
+def ed_arrivals():
+    """A First Look at a Series: four weeks of hourly ED arrivals with a 6-hour feed gap on March 13."""
+    rng = np.random.default_rng(7)
+    hours = pd.date_range("2024-03-04", periods=24 * 28, freq="h")
+    by_hour = np.array([0.55, 0.45, 0.38, 0.33, 0.30, 0.32, 0.45, 0.70, 0.98, 1.22, 1.38, 1.45,
+                        1.45, 1.42, 1.38, 1.35, 1.32, 1.30, 1.25, 1.18, 1.08, 0.95, 0.80, 0.66])
+    by_weekday = np.array([1.15, 1.05, 1.0, 0.98, 1.0, 0.92, 0.90])
+    arrivals = pd.Series(rng.poisson(9 * by_hour[hours.hour] * by_weekday[hours.dayofweek]), index=hours)
+    arrivals = arrivals[~arrivals.index.isin(pd.date_range("2024-03-13 02:00", periods=6, freq="h"))]
+    assert len(arrivals) == 666
+    return arrivals
+
+
 # ---------------------------------------------------------------- block 1
 
 
@@ -901,12 +914,55 @@ def ili_outage_gap():
     save(fig, "ili_outage_gap.png")
 
 
+def time_series_eda():
+    """A First Look at a Series: spacing, level, hour and weekday profiles, and a lag-24 plot."""
+    arrivals = ed_arrivals()
+    grid = arrivals.asfreq("h")
+    spacing = arrivals.index.diff().value_counts()
+    assert spacing[pd.Timedelta("1h")] == 664 and spacing[pd.Timedelta("7h")] == 1
+    assert grid.isna().sum() == 6
+    r1, r12, r24 = (round(grid.autocorr(lag=k), 2) for k in (1, 12, 24))
+    assert (r1, r12, r24) == (0.59, -0.51, 0.58)
+    by_hour = arrivals.groupby(arrivals.index.hour).mean()
+    by_weekday = arrivals.groupby(arrivals.index.dayofweek).mean()
+    assert round(by_hour[4], 1) == 2.4 and round(by_hour[12], 1) == 13.3
+    assert round(by_weekday[0], 1) == 9.8 and round(by_weekday[6], 1) == 7.7
+
+    fig = plt.figure(figsize=(11, 6.6))
+    spec = fig.add_gridspec(2, 3, height_ratios=[1, 1.1], hspace=0.5, wspace=0.32)
+    top = fig.add_subplot(spec[0, :])
+    gap = grid.index[grid.isna()]
+    top.axvspan(mdates.date2num(gap[0]) - 1 / 48, mdates.date2num(gap[-1]) + 1 / 48, color=VERMILLION, alpha=0.15, lw=0)
+    top.plot(mdates.date2num(grid.index), grid.to_numpy(dtype=float), color=GREY, lw=0.7, label="Hourly arrivals")
+    daily = grid.resample("D").mean()
+    top.plot(mdates.date2num(daily.index + pd.Timedelta("12h")), daily.to_numpy(), color=BLUE, lw=2,
+             marker="o", ms=3, label="Daily mean")
+    top.text(mdates.date2num(gap[0]), 24.5, "6-hour feed gap", color=VERMILLION, fontsize=9, fontweight="bold")
+    top.set(title="1. Spacing and level: hourly readings, one 6-hour gap, a flat daily level", ylabel="Arrivals per hour",
+            ylim=(0, 26))
+    top.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=mdates.MO))
+    top.xaxis.set_major_formatter(mdates.DateFormatter("Mon %b %d"))
+    top.legend(loc="upper right", frameon=False, ncol=2)
+
+    ax_h = fig.add_subplot(spec[1, 0])
+    ax_h.bar(by_hour.index, by_hour.to_numpy(), color=BLUE, width=0.8)
+    ax_h.set(title="2. Hour-of-day profile", xlabel="Hour of day", ylabel="Mean arrivals", xticks=[0, 6, 12, 18, 23])
+    ax_w = fig.add_subplot(spec[1, 1])
+    ax_w.bar(by_weekday.index, by_weekday.to_numpy(), color=ORANGE, width=0.7)
+    ax_w.set(title="3. Weekday profile", xlabel="Day of week", ylabel="Mean arrivals",
+             xticks=range(7), xticklabels=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
+    ax_l = fig.add_subplot(spec[1, 2])
+    pd.plotting.lag_plot(grid, lag=24, ax=ax_l, c=GREEN, s=9, alpha=0.5)
+    ax_l.set(title=f"4. Lag plot, 24 hours: autocorr {r24}", xlabel="Arrivals at hour t", ylabel="Arrivals at t + 24 h")
+    save(fig, "time_series_eda.png")
+
+
 if __name__ == "__main__":
     MEDIA_DIR.mkdir(exist_ok=True)
     for make in [forms_of_time, regular_irregular, icu_panel_hr_utc, text_vs_datetime_axis, date_range_aliases,
                  two_clinics_utc, clock_changes, time_series_indexing, resampling_example, resample_bins_2h,
                  daily_reading_counts, charted_temp_upsampling, per_patient_bins, gap_run_tiles,
                  daily_hr_rolling_ewm, count_vs_time_window, window_weights, shifting_lagging,
-                 grouped_shift_leak, lab_availability_timeline, ili_outage_gap]:
+                 grouped_shift_leak, lab_availability_timeline, ili_outage_gap, time_series_eda]:
         if len(sys.argv) == 1 or make.__name__ in sys.argv[1:]:  # optional: name figures to redraw only those
             make()

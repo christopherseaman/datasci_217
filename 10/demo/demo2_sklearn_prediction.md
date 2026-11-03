@@ -260,6 +260,31 @@ Expect 229 fit rows from 103 patients, persistence at 4.19 mmHg on the same rows
 - **The penalty limits the damage.** With about two patients per column, plain linear regression fits noise in the answers and misses by 5.58 mmHg, 1.39 worse than persistence. Ridge shrinks every coefficient and recovers part of the loss (5.10). Lasso sets most coefficients to exactly 0: it keeps 12 of the 62 prepared columns (the two level columns, reading time, BMI, prior-year adherence, and six questionnaire answers it took from noise) and misses by 4.26.
 - **No model earns its place here.** On the 19 core columns the three models land between 4.15 and 4.27, within 0.08 of persistence.
 
+How strong should Ridge's penalty be? The cell refits Ridge on the 49 columns at seven strengths and scores each on the January rows it was fit on and on the June and July rows. A small `alpha` leaves the fit free to chase noise (high variance); a huge one shrinks every coefficient toward 0 until the forecast is nearly the training mean (high bias).
+
+```python
+alphas = [0.01, 0.1, 1, 10, 100, 1000, 10000]
+sweep = {}
+for alpha in alphas:
+    model = Pipeline([("preprocess", make_preprocess(wide)), ("model", Ridge(alpha=alpha))])
+    model.fit(marina_fit[wide + categorical], marina_fit["sbp_next_week"])
+    sweep[alpha] = {"fit rows": mean_absolute_error(marina_fit["sbp_next_week"],
+                                                    model.predict(marina_fit[wide + categorical])),
+                    "validation": mean_absolute_error(marina_valid["sbp_next_week"],
+                                                      model.predict(marina_valid[wide + categorical]))}
+sweep = pd.DataFrame(sweep).T
+display(sweep.round(2))
+
+ax = sweep.plot(marker="o", logx=True, figsize=(7, 3.5))
+ax.axhline(persistence, color="gray", linestyle="--", label="persistence")
+ax.set(xlabel="Ridge alpha (log scale)", ylabel="MAE (mmHg)", title="Marina, 49 columns: too little penalty overfits, too much underfits")
+ax.legend()
+plt.show()
+plt.close(ax.figure)
+```
+
+Expect fit-row MAE near 3.49 mmHg from alpha 0.01 to 10 while validation sits at 5.57 down to 5.10: a gap of 1.6 to 2.1 mmHg between rows the model saw and rows it did not, the mark of variance. Validation is lowest at alpha 10 (5.10), the setting step 4 used. Past it both curves rise together, to 6.59 and 8.43 at alpha 1,000 and 9.18 and 10.79 at 10,000: the penalty has flattened the forecast toward the January mean, the mark of bias. Every setting stays above persistence (4.19, dashed), so the best alpha still does not earn Marina its own model.
+
 **What we tell Marina's manager**: one clinic's first month is too few rows for its own model, and the questionnaire makes every model worse. Marina's patients use the program-wide forecast.
 
 ### 5. Were June and July a lucky two months?

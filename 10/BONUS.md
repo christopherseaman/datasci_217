@@ -55,8 +55,7 @@ The lecture's main path uses linear models, random forests, and gradient boostin
 - Classification: `SVC`, a support vector classifier that looks for the widest possible boundary between classes, beside the lecture's `LogisticRegression`.
 - Unsupervised work: `KMeans` for clustering patients into care-need groups and `PCA` for compressing dozens of correlated labs into a few components. Neither uses a target column.
 - Selection: `GridSearchCV` for hyperparameter tuning within the training data (examples under Hyperparameter Tuning Strategies below).
-- Independent rows: `cv=5` uses `StratifiedKFold` for classifiers with binary or multiclass targets, and `KFold` otherwise. Each fold takes a turn as the scored block; neither protects time order like `TimeSeriesSplit`.
-- Patient groups: `GroupKFold(n_splits=5)` and `GroupShuffleSplit` keep each patient's rows in one part; pass `groups=df['patient_id']` to `split(X, y, groups=...)` or `cross_val_score(..., groups=...)`. Use them to evaluate on entirely new patients.
+- Patient groups in one split: `GroupShuffleSplit(n_splits=1, test_size=0.2)` does for a single train/validation split what `GroupKFold` does for folds; pass `groups=df['patient_id']` to `split(X, y, groups=...)`.
 - Delayed targets: `TimeSeriesSplit(gap=n)` leaves `n` rows out between each training block and the block it scores. Choose a gap large enough that every retained label was available at that fold's first prediction cutoff; a row count is not a fixed time delay with irregular visits.
 
 _Let validation evidence decide, not a favorite algorithm. Blue steel is a style, not a model-selection rule._
@@ -241,7 +240,7 @@ Choose an inferential model when the question requires interpretable parameters,
 Linear regression suits a numeric outcome that scatters evenly around the fitted line. **Generalized linear models** keep the same formula interface but change how the outcome is modeled:
 
 - Logistic regression for binary outcomes, such as 30-day readmission
-- Poisson or negative binomial regression for counts, such as ED visits per patient-year, with an `offset` for follow-up time
+- Negative binomial regression for counts that vary more than Poisson allows (`family=sm.families.NegativeBinomial()`), with `offset=np.log(df['years'])` for follow-up time
 - Gamma regression for positive, right-skewed values, such as length of stay or claim cost
 - Use when: You need statistical inference for outcomes that are not normal
 
@@ -282,6 +281,56 @@ dtype: float64
 ```
 
 The generator's clinic offsets, centered, are 5, -4, 3, -3, and -1 mmHg; the model recovers each within 0.3.
+
+## Survival Analysis
+
+A time-to-event outcome, such as days to the first ED visit, is **censored** when a patient's record ends before the event. Dropping those patients or counting them as event-free biases the answer; **Kaplan-Meier** estimates the share still event-free at each day using every patient's known time, and **Cox regression** estimates **hazard ratios**, how much each feature multiplies the event rate.
+
+This optional example requires `lifelines`, which is not part of Lecture 10's recorded core environment. Add it with `uv add lifelines` (Lecture 03), or run `%pip install lifelines` in Colab.
+
+### Reference Card: Survival Tools
+
+- `KaplanMeierFitter().fit(durations, event_observed=events)`: Event-free curve; `events` is 1 for an observed event, 0 for censored (`from lifelines import CoxPHFitter, KaplanMeierFitter`).
+- `km.survival_function_at_times([90, 180])`, `km.plot_survival_function()`: Event-free share at given days; the curve with its confidence band.
+- `CoxPHFitter().fit(df, duration_col=..., event_col=...)`: Proportional-hazards regression on every other column of `df`.
+- `cox.hazard_ratios_`, `cox.summary`: Hazard ratio per feature; coefficients with confidence intervals and p-values.
+
+### Code Snippet: Days to the First ED Visit
+
+The cell adds a simulated time to the first ED visit, faster with higher A1c, and a record end between 30 and 365 days.
+
+```python
+from lifelines import CoxPHFitter, KaplanMeierFitter
+
+rng_ed = np.random.default_rng(10)
+days_to_visit = rng_ed.exponential(400 / np.exp(0.5 * (cohort['a1c'] - 6)))
+followup = rng_ed.uniform(30, 365, n)  # days until the patient's record ends
+cohort['ed_days'] = np.minimum(days_to_visit, followup).round(1)
+cohort['ed_visit'] = (days_to_visit <= followup).astype(int)
+print(round(1 - cohort['ed_visit'].mean(), 3))  # 0.64 had no observed visit
+
+km = KaplanMeierFitter().fit(cohort['ed_days'], event_observed=cohort['ed_visit'])
+print(km.survival_function_at_times([90, 180, 365]).round(3))
+
+cox = CoxPHFitter().fit(cohort[['ed_days', 'ed_visit', 'a1c', 'age']],
+                        duration_col='ed_days', event_col='ed_visit')
+print(cox.hazard_ratios_.round(2))
+```
+
+```text
+0.64
+90     0.805
+180    0.644
+365    0.422
+Name: KM_estimate, dtype: float64
+covariate
+a1c    1.63
+age    1.00
+Name: exp(coef), dtype: float64
+```
+
+- 64% had no observed visit, but most of them left follow-up early. Kaplan-Meier estimates that only 42% stay visit-free for a full year.
+- Each extra point of A1c multiplies the visit rate by 1.63; the simulation used exp(0.5) = 1.65. Age has no effect in the simulation, and its ratio is 1.00.
 
 ## Generalized Additive Models (GAMs)
 

@@ -24,18 +24,18 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 <callout icon="🧭" color="blue_bg">
 	# This Lecture
 	## Covers
-	- **Capstone checklist**: the stages from one question to a checkable result, and the evidence to keep at each.
-	- **Question and candidate claim**: how unit, outcome, and time frame make a question answerable.
+	- **Capstone checklist and question**: the stages from one question to a checkable result, and how unit, outcome, and time frame make a question answerable.
 	- **Grain, keys, and complete panels**: row meaning, UTC time keys, and true zeros versus missing readings.
+	- **A step-by-step EDA pass**: the steps of EDA in order, pairwise plots, and selection and measurement bias.
 	- **Prediction time, baselines, and one honest test**: leakage, a simple baseline, and a chronological train, validation, and test split.
 	- **The worked example and transfer**: NYC taxi pickups carried through four notebooks, and how each decision changes for sensor data.
-	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) Chapter 13.
+	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 9.2 (pair plots) and Chapter 13.
 	## Enables
 	- Turn a vague goal such as "analyze ED visits" into a question with a unit, an outcome, a time frame, and a claim the data could contradict.
 	- Verify a data release against its JSON manifest with SHA-256 hashes and row counts before using it.
 	- Build a complete hourly panel with a cross merge and a validated left merge, filling true zeros and flagging missing readings with `source_observed`.
-	- Create past-only features with `groupby().shift()` and split rows chronologically on a local-midnight boundary compared in UTC.
-	- Compare a model pipeline with a same-hour-last-week baseline on validation, then report MAE and RMSE from one frozen test run.
+	- Explore training rows step by step, from `info()` and missing shares by group to `sns.pairplot()` and a weekday-by-hour heatmap.
+	- Create past-only features with `groupby().shift()`, split rows on a local-midnight boundary, and compare a pipeline with a same-hour-last-week baseline in one frozen test run.
 </callout>
 
 # A flexible capstone checklist
@@ -76,7 +76,7 @@ flowchart LR
 - **Answerable question**: names the unit, the outcome, and the time frame, including, for a forecast, when the answer must be known.
 - **Candidate claim**: a statement the evidence could support or contradict.
 - Together they decide which rows, columns, and plots matter; a goal such as "analyze ED visits" never does.
-- The worked example uses public data with the same shape: January–June 2023 NYC Yellow Taxi trips for the 12 zones with the most January pickups. Read "taxi zone" as "ED" and "pickups" as "arrivals".
+- The worked example uses public data with the same shape: January to June 2023 NYC Yellow Taxi trips for the 12 zones with the most January pickups. Read "taxi zone" as "ED" and "pickups" as "arrivals".
 
 > Using information available before a target hour, how well can we predict the pickup count for each selected taxi zone in the next hour, and where are the largest errors?
 
@@ -119,7 +119,7 @@ An hourly key built from local clock times breaks when the clocks change: the re
 	Convert to local time only to read patterns such as hour of day. A UTC hour is always one elapsed hour, so `shift(1)` reaches the previous hour even when the clocks change.
 </callout>
 
-The taxi panel: January–June 2023 has 181 local days but 4,343 elapsed hours, not 4,344, because 12 March had 23.
+The taxi panel: January to June 2023 has 181 local days but 4,343 elapsed hours, not 4,344, because 12 March had 23.
 
 ## Absent row: true zero or missing?
 
@@ -165,6 +165,65 @@ display(panel.drop(columns="_merge"))
 
 ![xkcd 974: The General Problem. Build the table the question needs before building a system for every question someone might ask.](media/pass_the_salt.png)
 
+# A Step-by-Step EDA Pass
+
+- **Exploratory data analysis (EDA)**: looking at a table before modeling it, to learn what its rows mean, what is missing, and which patterns a model could use.
+- The steps run in order because each depends on the one before: a missing share means little until you know what one row is.
+- For a forecast, explore only the earliest period, the **training rows**: patterns spotted in later rows would shape choices those rows are meant to test.
+
+## The steps, in order
+
+### Reference Card: The Steps of EDA
+
+| Step | Ask | Method |
+| --- | --- | --- |
+| 1. Question and grain | What does one row represent? | `df.duplicated(subset=key).any()` on the key |
+| 2. Structure | Which columns, types, counts, and ranges? | `df.info()`, `df.describe()` |
+| 3. Missing values | How much is missing, overall and by group? | `df.isna().mean()`, `df["x"].isna().groupby(df["g"]).mean()` |
+| 4. Distributions and outliers | What shape, and which values are extreme? | `df["x"].hist(bins=50)`, `df.boxplot(column="x", by="g")`; the **IQR rule** flags values beyond 1.5 × (Q3 − Q1) outside the quartiles from `df["x"].quantile([0.25, 0.75])` |
+| 5. Relationships | Which columns move together, and how? | `df[cols].corr()`, `sns.pairplot(df.sample(2000), corner=True)` |
+| 6. Time structure | Are hours missing, and is there a daily or weekly cycle? | `s.asfreq("h")` turns absent hours into `NaN` rows; `df.groupby(df["t"].dt.hour)["x"].mean()` gives the hour profile |
+
+## Pairwise plots
+
+A **pairplot** draws a scatter plot for every pair of numeric columns, with each column's histogram on the diagonal. `corner=True` drops the mirrored upper half; sampling 2,000 rows keeps it fast and the points readable.
+
+![Taxi training rows: pickups track last hour and last week in straight bands, but against hour of day they form a daily cycle that one correlation cannot describe.](media/taxi_pairplot.png)
+
+### Code Snippet: A Correlation Beside Its Picture
+
+`train` holds the taxi demo's 32,532 rows before May 2023.
+
+```python
+cols = ["pickup_count", "lag_1", "lag_168", "hour_of_day"]
+sample = train[cols].sample(2000, random_state=217)
+display(sample.corr().round(2))
+sns.pairplot(sample, corner=True, plot_kws={"s": 8, "alpha": 0.4})
+```
+
+|  | pickup_count | lag_1 | lag_168 | hour_of_day |
+| --- | --- | --- | --- | --- |
+| pickup_count | 1.00 | 0.91 | 0.94 | 0.62 |
+| lag_1 | 0.91 | 1.00 | 0.89 | 0.66 |
+| lag_168 | 0.94 | 0.89 | 1.00 | 0.62 |
+| hour_of_day | 0.62 | 0.66 | 0.62 | 1.00 |
+
+The 0.62 for `hour_of_day` reads as a moderate straight-line trend. The pairplot shows a cycle: near zero from 02:00 to 05:00, highest from 17:00 to 19:00.
+
+## Selection and measurement bias
+
+Plots describe the rows you have; two biases decide whether those rows describe the question.
+
+- **Selection bias**: which rows reach the table depends on something tied to the outcome.
+- **Measurement bias**: the recorded value is consistently off from the true one, in one direction.
+
+| Bias | Taxi example | Health analog |
+| --- | --- | --- |
+| Selection | The 12 zones were chosen as January's busiest, so their errors say little about quiet zones. | A readmission study that counts only returns to its own hospital misses patients readmitted elsewhere. |
+| Measurement | Yellow-taxi records exclude app rides, so pickup counts undercount demand for a ride. | A blood-pressure cuff too small for the arm reads high for every patient measured with it. |
+
+![xkcd 1999: Selection Effect. A sample that chose itself mostly describes the kind of people who choose themselves.](media/xkcd_1999.png)
+
 # Prediction time, baselines, and one honest test
 
 - **Prediction time** (the **cutoff**): when a forecast is made.
@@ -181,8 +240,6 @@ display(panel.drop(columns="_merge"))
 | train | 2023-01-08 to 2023-04-30 (the first week has no week-old lag) | 32,532 | fitting and exploring patterns |
 | validation | May 2023 | 8,928 | choosing between candidates |
 | test | June 2023 | 8,640 | one final evaluation |
-
-Explore on training rows only: choosing features from validation or test rows leaks those periods into the decision.
 
 | Split | Candidate | MAE | RMSE |
 | --- | --- | --- | --- |
@@ -237,7 +294,7 @@ display(frame)
 
 1. **`01_setup.ipynb`: Trust the release before using it.** Set up Colab or a local folder, check the release files against the manifest's hashes, inspect event-grain records, and make exclusions auditable.
 2. **`02_wrangling.ipynb`: Build a past-only model table.** Rebuild the expected zone-hour grid and confirm the release's panel fills it, then construct calendar and history features.
-3. **`03_model_prep.ipynb`: Analyze training patterns and freeze the split.** Use training data for exploratory summaries and keep later periods separate.
+3. **`03_model_prep.ipynb`: Analyze training patterns and freeze the split.** Run an EDA pass on training rows and keep later periods separate.
 4. **`04_modeling.ipynb`: Compare, freeze, and report.** Compare a weekly baseline with one pipeline on validation, evaluate both once on test, and examine error slices.
 
 **`05_geo_bonus.ipynb`**: an optional geographic view of zone-level results.
