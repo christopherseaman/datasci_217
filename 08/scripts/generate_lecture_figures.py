@@ -3,6 +3,7 @@
 split_apply_combine.png and result_shapes.png are computed from the lecture's
 six-visit table with pandas, and the drawn numbers are asserted against the
 values the lecture prints, as are transform_vs_clinic.png and filter_vs_mask.png.
+simpsons_paradox.png is computed from the lecture's four-row trial table.
 ssh_laptop_server.png is a plain diagram.
 pivot_heatmap.png runs Demo 1's own code cells up to its heatmap cell, so the
 figure shows the demo's 1.2 million synthetic visits.
@@ -31,6 +32,14 @@ DEMO1 = Path(__file__).resolve().parents[1] / "demo" / "demo1_groupby_operations
 CLINIC_COLORS = {"North": "#0072B2", "South": "#E69F00", "East": "#009E73"}
 GREY = "#9A9A9A"
 INK = "#222222"
+
+# The lecture's `trial` table (08/README.md, "Simpson's Paradox")
+trial = pd.DataFrame({
+    "severity": ["Mild", "Mild", "Severe", "Severe"],
+    "treatment": ["Standard", "New", "Standard", "New"],
+    "patients": [80, 20, 20, 80],
+    "recovered": [64, 18, 6, 32],
+})
 
 # The lecture's `visits` table (08/README.md, "Aggregating Each Group")
 visits = pd.DataFrame({
@@ -282,6 +291,42 @@ def filter_vs_mask():
     save(fig, "filter_vs_mask.png")
 
 
+def simpsons_paradox():
+    """Recovery by treatment overall and within each severity: the comparison reverses."""
+    one_key = trial.groupby("treatment")[["patients", "recovered"]].sum()
+    two_keys = trial.groupby(["severity", "treatment"])[["patients", "recovered"]].sum()
+    assert (one_key["recovered"] / one_key["patients"]).to_dict() == {"New": 0.5, "Standard": 0.7}
+    assert (two_keys["recovered"] / two_keys["patients"]).round(2).tolist() == [0.9, 0.8, 0.4, 0.3]
+
+    groups = [("All patients", one_key)] + [
+        (severity, two_keys.xs(severity, level="severity")) for severity in ["Mild", "Severe"]]
+    colors = {"New": "#0072B2", "Standard": "#E69F00"}
+    fig, ax = plt.subplots(figsize=(9, 4.8))
+    fig.patch.set_facecolor("white")
+    width = 0.36
+    for g, (label, table) in enumerate(groups):
+        x0 = g + (0.25 if g else 0)  # a gap after the overall pair
+        for k, treatment in enumerate(["New", "Standard"]):
+            n, r = table.loc[treatment, "patients"], table.loc[treatment, "recovered"]
+            x = x0 + (k - 0.5) * width
+            ax.bar(x, r / n, width * 0.92, color=colors[treatment], label=treatment if g == 0 else None)
+            ax.text(x, r / n + 0.02, f"{r / n:.0%}\n{r}/{n}", ha="center", va="bottom", fontsize=10.5,
+                    color=INK)
+    ax.set_xticks([0, 1.25, 2.25], ["All patients\n(severity ignored)", "Mild", "Severe"], fontsize=11.5)
+    ax.axvline(0.625, color=GREY, linewidth=1, linestyle=":")
+    ax.set_ylim(0, 1.12)
+    ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0], ["0%", "25%", "50%", "75%", "100%"])
+    ax.set_ylabel("Recovered", fontsize=11)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.legend(title="treatment", frameon=False, loc="upper right", ncols=2)
+    ax.set_title("New beats Standard in each severity group but loses overall", fontsize=12.5, loc="left",
+                 color=INK, fontweight="bold")
+    fig.text(0.01, -0.02, "80 of New's 100 patients were severe, against 20 of Standard's: severity is the "
+             "confounder.", fontsize=10.5, color="#555555")
+    fig.tight_layout()
+    save(fig, "simpsons_paradox.png")
+
+
 def ssh_laptop_server():
     """Where ssh and scp move work: commands and files cross, patient records stay on the server."""
     fig, ax = blank_canvas(21, 8.0)
@@ -365,5 +410,6 @@ if __name__ == "__main__":
     result_shapes()
     transform_vs_clinic()
     filter_vs_mask()
+    simpsons_paradox()
     ssh_laptop_server()
     pivot_heatmap()

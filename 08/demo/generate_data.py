@@ -20,9 +20,10 @@ Columns are generated in this causal order (an arrow means "is an input to"):
     diabetes, A1c control, engagement -> A1c test spacing (about 3 to 6 months)
 
 Operational events planted on top: Parkside opens in July and takes Sunset's patients,
-Bayview loses an orthopedic surgeon in September, Excelsior's check-in kiosk fails in
-October, an Excelsior analyzer writes 9999 for 23 failed glucose runs, and Ridgecrest
-runs a monthly cardiology outreach clinic for 10 regulars.
+whose first visits there are new-patient visits; Bayview loses an orthopedic surgeon in
+September; Excelsior's check-in kiosk fails in October; an Excelsior analyzer writes 9999
+for 23 failed glucose runs; and Ridgecrest runs a monthly cardiology outreach clinic for
+10 regulars.
 
 The seed is fixed, so every run writes the same values.
 """
@@ -46,8 +47,9 @@ CLINICS = pd.DataFrame({
 HOME_SHARE = [0.22, 0.17, 0.14, 0.15, 0.12, 0.10, 0.07, 0.03]
 # Mean area deprivation decile of each clinic's neighborhood (1 least, 10 most deprived).
 CLINIC_DEPRIVATION = [5.5, 4.0, 4.0, 7.5, 7.0, 2.5, 4.5, 6.5]
-# Log-scale wait shift per clinic: Mission is short-staffed, Ridgecrest is small and quiet.
-CLINIC_WAIT_LOG = [0.20, 0.04, 0.00, 0.06, 0.08, -0.05, -0.08, -0.30]
+# Log-scale wait shift per clinic: Mission is short-staffed, Ridgecrest is small and quiet,
+# and Parkside is new and well staffed, a little faster than Marina at each visit type.
+CLINIC_WAIT_LOG = [0.20, 0.04, 0.00, 0.06, 0.08, -0.05, -0.10, -0.30]
 PARKSIDE_OPENS = pd.Timestamp('2025-07-07')
 BAYVIEW_LOSS = pd.Timestamp('2025-09-01')
 
@@ -188,7 +190,10 @@ def build_visits(rng, p):
     who, date, clinic, dept, age = who[order], date[order], clinic[order], dept[order], age[order]
     # A patient's first visit of the year is often new to the clinic; later ones are mostly follow-ups.
     first = ~pd.Series(who).duplicated().to_numpy()
-    visit_type = np.where(rng.random(n) < np.where(first, 0.45, 0.12), 'New', 'Follow-up')
+    # Parkside opened in July, so a patient's first visit there is almost always a new-patient visit.
+    first_at_parkside = (clinic == 'Parkside') & ~pd.DataFrame({'who': who, 'clinic': clinic}).duplicated().to_numpy()
+    p_new = np.where(first_at_parkside, 0.90, np.where(first, 0.45, 0.12))
+    visit_type = np.where(rng.random(n) < p_new, 'New', 'Follow-up')
 
     # Each provider has a typical pace; about one provider per 2,500 visits in each clinic and department.
     cell = pd.Series(clinic).fillna('') + '|' + pd.Series(dept)

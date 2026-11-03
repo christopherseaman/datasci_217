@@ -338,6 +338,55 @@ def intervals():
     save(fig, "ols_intervals.png")
 
 
+def bootstrap_interval():
+    """1,000 bootstrap BMI slopes, their percentile interval, and the statsmodels interval below them."""
+    clinic, results = clinic_fit()
+    rng = np.random.default_rng(0)
+    boot = [smf.ols("sbp ~ age + bmi", data=clinic.sample(frac=1, replace=True, random_state=rng)).fit().params["bmi"]
+            for _ in range(1000)]
+    low, high = np.percentile(boot, [2.5, 97.5])
+    ci_low, ci_high = results.conf_int().loc["bmi"]
+    assert [round(low, 2), round(high, 2)] == [0.50, 1.75], (low, high)
+    assert [round(ci_low, 2), round(ci_high, 2)] == [0.52, 1.86]
+
+    fig, ax = plt.subplots(figsize=(7.5, 4.2))
+    counts, _, _ = ax.hist(boot, bins=40, color="#A6CEE4", edgecolor="white")
+    top = counts.max()
+    for x in (low, high):
+        ax.axvline(x, color=BLUE, linestyle="--")
+    ax.annotate(f"Bootstrap 95%: {low:.2f} to {high:.2f}", xy=(high, top * 0.95), xytext=(high + 0.05, top * 0.9),
+                color=BLUE, fontsize=10)
+    ax.errorbar([results.params["bmi"]], [-top * 0.08], xerr=[[results.params["bmi"] - ci_low], [ci_high - results.params["bmi"]]],
+                fmt="o", color=VERMILLION, capsize=5, linewidth=2)
+    ax.annotate(f"conf_int(): {ci_low:.2f} to {ci_high:.2f}", xy=(ci_high, -top * 0.08), xytext=(ci_high + 0.05, -top * 0.11),
+                color=VERMILLION, fontsize=10)
+    ax.set_ylim(-top * 0.18, top * 1.08)
+    ax.set_xlim(min(boot) - 0.05, max(boot) + 0.75)
+    ax.set(xlabel="BMI coefficient refit on a resample (mmHg per kg/m²)", ylabel="Resamples",
+           title="1,000 resampled clinics: the middle 95% of BMI slopes")
+    save(fig, "bootstrap_interval.png")
+
+
+def qq_plot():
+    """Q-Q plots: the clinic fit's residuals follow the line; right-skewed residuals curve away at the top."""
+    import statsmodels.api as sm
+    _, results = clinic_fit()
+    rng = np.random.default_rng(3)
+    skewed = pd.DataFrame({"x": rng.uniform(0, 10, size=60)})
+    skewed["y"] = 5 + 2 * skewed["x"] + rng.exponential(8, size=60)
+    skewed_fit = smf.ols("y ~ x", data=skewed).fit()
+    assert abs(results.resid.skew()) < 0.5 and skewed_fit.resid.skew() > 1, (results.resid.skew(), skewed_fit.resid.skew())
+
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+    for ax, fit, title in [(axes[0], results, "Clinic fit: points on the line"),
+                           (axes[1], skewed_fit, "Right-skewed residuals: top tail bends up")]:
+        sm.qqplot(fit.resid, line="s", ax=ax, markerfacecolor=BLUE, markeredgecolor=BLUE, markersize=4)
+        ax.get_lines()[1].set_color(GREY)
+        ax.set(title=title, xlabel="Normal quantiles", ylabel="Residual quantiles")
+    fig.tight_layout()
+    save(fig, "ols_qq.png")
+
+
 def anscombe():
     """Anscombe's quartet: one fitted line and one R², four very different datasets."""
     x = [10, 8, 13, 9, 11, 14, 6, 4, 12, 7, 5]
@@ -899,7 +948,7 @@ def model_comparison():
     save(fig, "model_comparison.png")
 
 
-FIGURES = [residuals_vs_fitted, ols_summary, intervals, anscombe, leakage_timeline, cyclic_hours,
+FIGURES = [residuals_vs_fitted, ols_summary, intervals, bootstrap_interval, qq_plot, anscombe, leakage_timeline, cyclic_hours,
            overfit_polynomial, target_time_split, ridge_lasso_paths, logistic_threshold,
            validation_diagnostics, confusion_matrix_figure, permutation_importance_chart, freeze_test_once,
            estimator_pattern, threshold_tradeoff, roc_pr_curves, neural_network, decision_tree, boosting_stages, xgboost_early_stopping, keras_loss_curves, keras_dropout_curves,

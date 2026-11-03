@@ -24,8 +24,8 @@ _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is wha
 <callout icon="🧭" color="blue_bg">
 	# This Lecture
 	## Covers
-	- **Split-apply-combine and GroupBy**: `groupby()` aggregation by one or two keys, including named aggregation.
-	- **Pivot tables and cross-tabulations**: `pivot_table()` and `pd.crosstab()`, with totals and fills for absent cells.
+	- **Split-apply-combine and GroupBy**: `groupby()` aggregation by one or two keys, including named aggregation, and Simpson's paradox when a second key reverses a comparison.
+	- **Pivot tables and cross-tabulations**: `pivot_table()` and `pd.crosstab()`, with totals, row shares, and fills for absent cells.
 	- **Group coverage and result shapes**: missing keys, unused categories, and `transform`, `filter`, and `apply`.
 	- **Performance optimization**: one `.agg()` per split, built-in aggregations over lambdas, and `category` keys, checked with `%timeit` and `memory_usage()`.
 	- **Remote computing with SSH**: `ssh`, `scp`, key pairs, and `tmux` sessions for long jobs.
@@ -185,6 +185,50 @@ display(by_type.unstack())
 
 East had no new-patient visits, so the East `New` cell is `NaN`: there was nothing to average, which is not a zero-minute wait (those exist only in clinic brochures).
 
+### Simpson's Paradox: A Second Key Can Reverse the Answer
+
+- **Simpson's paradox**: a comparison that holds inside every group reverses when the groups are combined.
+- **Confounder**: a variable that affects both which group a row lands in and the outcome. Here, sicker patients were more likely to get the new treatment, and sicker patients recover less often.
+- **Why it happens**: the overall rate is a weighted average of the group rates, and the two treatments have different weights. New's patients were mostly severe, Standard's mostly mild.
+- **What to do**: when a group comparison drives a decision, also group by the likely confounder (severity, age, department, visit type) and compare within each level.
+
+This `trial` table holds one row per severity and treatment, with patient and recovery counts:
+
+|  | severity | treatment | patients | recovered |
+| --- | --- | --- | --- | --- |
+| 0 | Mild | Standard | 80 | 64 |
+| 1 | Mild | New | 20 | 18 |
+| 2 | Severe | Standard | 20 | 6 |
+| 3 | Severe | New | 80 | 32 |
+
+![Recovery by treatment: New recovers 50% against Standard's 70% overall, but 90% against 80% among mild patients and 40% against 30% among severe patients](media/simpsons_paradox.png)
+
+### Code Snippet: Recovery by Treatment, Then Within Severity
+
+```python
+one_key = trial.groupby('treatment')[['patients', 'recovered']].sum()
+one_key['rate'] = one_key['recovered'] / one_key['patients']
+display(one_key)
+
+two_keys = trial.groupby(['severity', 'treatment'])[['patients', 'recovered']].sum()
+two_keys['rate'] = two_keys['recovered'] / two_keys['patients']
+display(two_keys['rate'].unstack())
+```
+
+| treatment | patients | recovered | rate |
+| --- | --- | --- | --- |
+| New | 100 | 50 | 0.5 |
+| Standard | 100 | 70 | 0.7 |
+
+| severity | New | Standard |
+| --- | --- | --- |
+| Mild | 0.9 | 0.8 |
+| Severe | 0.4 | 0.3 |
+
+Grouped by treatment alone, New loses (0.5 against 0.7); within each severity level, New wins by 0.1. Sum the counts before dividing: averaging New's two severity rates gives 0.65, which ignores that 80 of its 100 patients were severe.
+
+![xkcd 2560: Confounding Variables. Ignore the confounder and it misleads you; control for everything and you mislead yourself](media/xkcd_2560.png)
+
 # Pivot Tables and Cross-Tabulations
 
 - **Pivot table**: summarizes one column by two keys at once, one down the rows and one across the columns, such as mean wait by clinic and visit type. It is the two-key `groupby(...).mean().unstack()` in a single call, and the shape of most handed-off reports: departments down the side, clinics or months across.
@@ -215,6 +259,7 @@ East    Follow-up    9
 | `pd.pivot_table(..., aggfunc=['sum', 'mean'])` | Several summaries at once; `result['sum']` selects one | Two-level column labels |
 | `pd.pivot_table(..., sort=True)` | Order the rows and columns by key (the default); `sort=False` leaves both in first-appearance order | Predictable row and column order |
 | `pd.crosstab(df['a'], df['b'])` | Count rows for each combination of two columns; pass a list such as `[df['a'], df['c']]` for two-level rows | Counts; absent combinations are 0 |
+| `pd.crosstab(df['a'], df['b'], normalize='index')` | Shares instead of counts: `'index'` makes each row sum to 1, `'columns'` each column, `'all'` the whole table | Proportions from 0 to 1 |
 | `pd.crosstab(df['a'], df['b'], values=df['v'], aggfunc='mean')` | Summarize a third column instead of counting, like `pivot_table` | Summary table; absent combinations are `NaN` |
 
 ### Code Snippet: A Pivot Table and Its GroupBy Twin
@@ -245,6 +290,8 @@ True
 | East | 1 | 0 |
 | North | 2 | 1 |
 | South | 0 | 2 |
+
+With `normalize='index'`, each clinic's row becomes its mix of visit types: `pd.crosstab(visits['clinic'], visits['visit_type'], normalize='index').round(2)` gives North 0.67 follow-up and 0.33 new, East 1.0 and 0.0, South 0.0 and 1.0.
 
 ## Totals and Absent Cells
 

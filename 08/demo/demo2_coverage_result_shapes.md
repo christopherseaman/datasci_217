@@ -176,7 +176,7 @@ flags = q4.groupby("department").agg(
 display(flags)
 ```
 
-Expect the flat rule to flag 7,203 visits, 6,708 of them in Orthopedics (4,721) and Family Medicine (1,987), and none in Behavioral Health. That is more than the nurses' 5,000 charts, and most of it is Orthopedics doing what Orthopedics usually does. The z-score rule flags 4,497 visits, within the budget, spread across every department, including 438 in Behavioral Health, where a 20-minute wait is far from usual.
+Expect the flat rule to flag 7,206 visits, 6,710 of them in Orthopedics (4,722) and Family Medicine (1,988), and none in Behavioral Health. That is more than the nurses' 5,000 charts, and most of it is Orthopedics doing what Orthopedics usually does. The z-score rule flags 4,489 visits, within the budget, spread across every department, including 437 in Behavioral Health, where a 20-minute wait is far from usual.
 
 Before recommending the z-score rule, check what it cannot see. A cell's own mean can be the problem: Demo 1 found Bayview's Orthopedics waits nearly doubled after September.
 
@@ -188,7 +188,7 @@ print("Over 60 minutes:", bayview["over_60"].sum(), " long for its cell:", bayvi
 
 Expect 6,136 visits with a mean wait of 62.4 minutes: 2,727 are over 60, but only 76 are long for their cell. Compared with its own slow quarter, almost nothing at Bayview looks unusual. The z-score finds odd visits within a group; the group summary (Demo 1's grid) finds the odd group.
 
-**What we tell Dr. Whitfield:** switch the chart review to the z-score rule (4,497 charts, every department). Keep Bayview Orthopedics on the agenda as a staffing problem, because a chart review will not flag it.
+**What we tell Dr. Whitfield:** switch the chart review to the z-score rule (4,489 charts, every department). Keep Bayview Orthopedics on the agenda as a staffing problem, because a chart review will not flag it.
 
 ### 4. Can every satisfaction cell be published?
 
@@ -220,7 +220,7 @@ public = pd.pivot_table(patients_rule, values="satisfaction", index="department"
 display(public.round(2))
 ```
 
-Expect 113,820 respondents. The row rule keeps 113,580, every respondent with a clinic (the 240 with no clinic have no group), and the patient rule keeps 21 fewer, 113,559. In the public table, Ridgecrest's Cardiology cell is `NaN` (suppressed), beside the cells for departments Ridgecrest does not run.
+Expect 113,819 respondents. The row rule keeps 113,579, every respondent with a clinic (the 240 with no clinic have no group), and the patient rule keeps 21 fewer, 113,558. In the public table, Ridgecrest's Cardiology cell is `NaN` (suppressed), beside the cells for departments Ridgecrest does not run.
 
 ```python
 fig, ax = plt.subplots(figsize=(10, 4.5))
@@ -231,7 +231,7 @@ ax.set(title="Mean satisfaction (1 to 5), Q4 2025, groups of 11+ patients", xlab
 plt.show()
 ```
 
-Expect Ridgecrest's Cardiology cell labeled `suppressed` and its three other blank cells, the departments it does not run, left empty. Scores follow waits: the Behavioral Health row, the shortest wait, is the greenest at every clinic (4.20 to 4.61), and Bayview's Orthopedics, the longest wait, is the reddest cell (2.95).
+Expect Ridgecrest's Cardiology cell labeled `suppressed` and its three other blank cells, the departments it does not run, left empty. Scores follow waits: the Behavioral Health row, the shortest wait, is the greenest at every clinic (4.20 to 4.62), and Bayview's Orthopedics, the longest wait, is the reddest cell (2.95).
 
 **What we tell Dr. Whitfield:** the table is ready to publish with one cell suppressed, Ridgecrest Cardiology (10 patients).
 
@@ -292,7 +292,7 @@ print(f"Row mask: {len(long_rows):,} visits from {len(long_rows.groupby(['clinic
 print(f"filter:   {len(slow):,} visits from 1 cell")
 ```
 
-Expect the row mask to keep 24,842 visits from 39 cells, and `filter` all 6,136 visits, short waits included, from Bayview Orthopedics.
+Expect the row mask to keep 24,872 visits from 40 cells, and `filter` all 6,136 visits, short waits included, from Bayview Orthopedics.
 
 ### 8. A reviewer rebuilds the z-scores with a lambda
 

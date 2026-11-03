@@ -24,7 +24,7 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 <callout icon="🧭" color="blue_bg">
 	# This Lecture
 	## Covers
-	- **Statistical modeling with `statsmodels`**: OLS formulas, coefficients, confidence intervals, p-values, power and multiple comparisons, residual plots, and new-patient intervals.
+	- **Statistical modeling with `statsmodels`**: OLS formulas, coefficients, confidence and bootstrap intervals, p-values, power and multiple comparisons, residual and Q-Q plots, and new-patient intervals.
 	- **Prediction setup**: features, targets, leakage, cyclic time features, and training, validation, and test rows split on target time.
 	- **scikit-learn**: the estimator pattern, linear regression with Ridge and Lasso, logistic regression for classification, baselines, pipelines, metrics including ROC AUC, choosing a cross-validation splitter, permutation importance, and the one final test.
 	- **Trees, boosting, and neural networks**: random forests, XGBoost with early stopping, and a small Keras classifier.
@@ -170,6 +170,7 @@ A coefficient is an estimate from one sample, so it comes with uncertainty:
 
 - The **standard error** measures how much the estimate would vary from sample to sample.
 - A **95% confidence interval** is roughly the estimate ± 2 standard errors: repeat the study many times and about 95% of these intervals would contain the true coefficient.
+- A **bootstrap** interval needs no formula: resample the rows with replacement (some patients twice, some not at all), refit, keep the coefficient, repeat 1,000 times, and take the 2.5th and 97.5th percentiles of the 1,000 values.
 - A **p-value** asks: if the true coefficient were 0 and the model assumptions held, how surprising would an estimate at least this far from 0, relative to its standard error, be? It is not the probability that a hypothesis is true.
 - **Statistical power**: the chance a study detects a real effect of a given size; it grows with sample and effect size. A large p-value from a small study can mean too few patients to tell.
 - **Multiple comparisons**: test 20 true-zero effects at 0.05 and at least one reaches p < 0.05 64% of the time. **Bonferroni** compares each p-value with 0.05 / (number of tests); **Holm**, a stepwise version, rejects at least as many.
@@ -182,12 +183,15 @@ A new patient gets two intervals:
 
 ![At age 55 the mean-response band (blue) is far narrower than the prediction band (orange): the BMI 30 patient's 147.2 has a mean interval of 144.3 to 150.2 and a prediction interval of 131.4 to 163.0.](media/ols_intervals.png)
 
+![1,000 bootstrap BMI slopes from resampled clinics: their middle 95%, 0.50 to 1.75, sits close to the formula interval from `conf_int()`, 0.52 to 1.86.](media/bootstrap_interval.png)
+
 ### Reference Card: OLS Uncertainty
 
 | Method / attribute | Purpose & arguments | Typical output |
 | :--- | :--- | :--- |
 | `results.bse` | Standard error of each coefficient. | Series indexed by term |
 | `results.conf_int(alpha=0.05)` | Lower and upper 95% bounds. | DataFrame with columns `0` and `1` |
+| `df.sample(frac=1, replace=True, random_state=rng)` or `rng.choice(n, size=n)`, `np.percentile(values, [2.5, 97.5])` | One bootstrap resample: as many rows as `df` (or `n` row positions), drawn with replacement; then the percentile bounds of the refit coefficients. | DataFrame; array of 2 bounds |
 | `results.pvalues` | p-value for each coefficient, testing "the true coefficient is 0". | Series |
 | `multipletests(pvalues, method='holm')` | Adjust several p-values together; `'bonferroni'` also works (`from statsmodels.stats.multitest import multipletests`). | Tuple: reject flags, adjusted p-values, ... |
 | `TTestIndPower().solve_power(effect_size=0.5, alpha=0.05, power=0.8)` | Patients needed per group to detect a half-SD difference 80% of the time (`from statsmodels.stats.power import TTestIndPower`). | `63.8` |
@@ -220,6 +224,23 @@ display(results.get_prediction(new_patient).summary_frame(alpha=0.05).round(1))
 - A p-value printed as 0.0000 is below 0.00005, not exactly 0.
 - For the new patient the mean-response interval is about 6 mmHg wide, the prediction interval about 32: a clinic can be confident about the average 55-year-old, much less about the one in the exam room.
 
+### Code Snippet: A Bootstrap Interval for the BMI Slope
+
+```python
+rng = np.random.default_rng(0)
+boot = []
+for _ in range(1000):
+    resample = clinic.sample(frac=1, replace=True, random_state=rng)
+    boot.append(smf.ols('sbp ~ age + bmi', data=resample).fit().params['bmi'])
+print(np.percentile(boot, [2.5, 97.5]).round(2))
+```
+
+```text
+[0.5  1.75]
+```
+
+The bootstrap interval nearly matches the formula's 0.52 to 1.86, and it also works for a statistic with no standard-error formula, such as a median.
+
 ![xkcd 882: Significant. Test twenty jelly-bean colors at p < 0.05 and one of them will look significant by chance.](media/xkcd_882.png)
 
 ## Checking Residuals
@@ -233,6 +254,10 @@ The default standard errors and intervals assume independent errors with constan
 
 ![Two residuals-versus-fitted plots. Left: the clinic fit's residuals scatter without pattern around a dashed zero line. Right: a straight line fitted to curved data leaves a U-shaped pattern.](media/ols_residuals_vs_fitted.png)
 
+A **Q-Q plot** (quantile-quantile) checks the normal-errors assumption: it sorts the residuals and plots them against the values a normal distribution would give. Points on the line mean roughly normal; tails curving away mean skew or heavy tails. It checks shape only, so a funnel in the residuals-versus-fitted plot can sit behind a straight Q-Q line.
+
+![Two Q-Q plots from `sm.qqplot(results.resid, line='s')`. Left: the clinic fit's residuals follow the line. Right: right-skewed residuals sit flat at the bottom and bend up at the top.](media/ols_qq.png)
+
 ![Anscombe's quartet: four datasets share one fitted line, y = 3.00 + 0.50x, and R² = 0.67, but only plots show that II curves, III has one point far off the line, and IV rests on a single point.](media/anscombe_quartet.png)
 
 ### Reference Card: Residual Diagnostics
@@ -241,6 +266,7 @@ The default standard errors and intervals assume independent errors with constan
 | :--- | :--- | :--- |
 | `results.fittedvalues` / `results.resid` | One fitted value and one residual (observed minus fitted) per row. | Series |
 | `ax.scatter(results.fittedvalues, results.resid)`, `ax.axhline(0, color='gray', linestyle='--')` | Residuals-versus-fitted plot; the reference line sits at 0. | Axes |
+| `sm.qqplot(results.resid, line='s', ax=ax)` | Q-Q plot of the residuals; `line='s'` draws the line a normal sample with the same mean and spread would follow. | Figure |
 | `fig.savefig(path)`, `plt.show()`, `plt.close(fig)` | Save, display, then close; an unclosed figure stays in memory. | PNG on disk |
 
 ### Code Snippet: Residuals Versus Fitted Values
