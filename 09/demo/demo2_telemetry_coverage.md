@@ -360,3 +360,13 @@ plt.show()
 ```
 
 Expect a daily line between about 130 and 220 visits with a nine-day break in mid-August, and a 28-day mean near 170 that keeps going through the break (a time window averages whatever days were reported). The bars are highest in January and December, the flu season, at about 190 a day, and near 170 the rest of the year. The monthly means use only reported days, so the outage does not pull August down.
+
+### 6. The rapid-response committee wants `S0297`'s last day as a table
+
+The committee reads 4-hour blocks, the same span as a nurse's vitals round. `agg()` with a list of functions gives one column per summary, and `count` shows how many readings each block holds.
+
+```python
+display(s0297.loc['2024-02-09'].resample('4h').agg(['mean', 'std', 'min', 'max', 'count']).round(1))
+```
+
+Expect six blocks. The `16:00` block has `count` `0` and `NaN` everywhere else: the patient was off the monitor. The `12:00` block holds only `15` readings (the gap began at 13:15), and the `20:00` block jumps to a mean of `121.0`, with a `max` of `132.0`, against means of `85` to `96` earlier in the day.

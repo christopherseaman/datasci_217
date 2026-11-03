@@ -63,18 +63,24 @@ Expect `(10000, 8) (270306, 6) (57934, 5)`: 10,000 ward encounters in 2024, thei
 
 ### 2. Three hospitals chart on three wall clocks
 
-To order readings and compare them with UTC lab times, every reading needs one clock. `tz_localize()` attaches the zone each hospital charted in, and `tz_convert('UTC')` moves the readings to UTC. This intentional error shows the first attempt at the New York rows, which include the night the clocks fell back, November 3, 2024.
+To order readings and compare them with UTC lab times, every reading needs one clock. `tz_localize()` attaches the zone each hospital charted in, and `tz_convert('UTC')` moves the readings to UTC. `.dt.tz` reads a column's zone. These intentional errors show two first attempts at the New York rows, which include the night the clocks fell back, November 3, 2024.
 
 ```python
 ZONES = {'New York': 'America/New_York', 'Chicago': 'America/Chicago', 'Phoenix': 'America/Phoenix'}
 new_york = vitals[vitals['site'] == 'New York']
+ny_local = pd.to_datetime(new_york['recorded_local'], format='%Y-%m-%d %H:%M')
+print('Zone:', ny_local.dt.tz)
 try:
-    pd.to_datetime(new_york['recorded_local'], format='%Y-%m-%d %H:%M').dt.tz_localize('America/New_York')
+    ny_local.dt.tz_convert('UTC')
+except TypeError as error:
+    print('TypeError:', error)
+try:
+    ny_local.dt.tz_localize('America/New_York')
 except ValueError as error:
     print('ValueError:', error)
 ```
 
-Expect `ValueError: Cannot infer dst time from 2024-11-03 01:52:00, try using the 'ambiguous' argument`. That clock time happened twice, and the text does not say which. The fix sets these readings aside as `NaT`, along with any time that never happened, then converts to UTC. Each site is one piece, and `pd.concat()` (Lecture 06) stacks them.
+Expect `Zone: None`: the parsed text is naive. Converting it raises `TypeError: Cannot convert tz-naive timestamps, use tz_localize to localize`, because pandas cannot move a time to UTC without knowing its starting zone. Localizing first raises `ValueError: Cannot infer dst time from 2024-11-03 01:52:00, try using the 'ambiguous' argument`. That clock time happened twice, and the text does not say which. The fix sets these readings aside as `NaT`, along with any time that never happened, then converts to UTC. Each site is one piece, and `pd.concat()` (Lecture 06) stacks them.
 
 ```python
 pieces = []
@@ -93,10 +99,10 @@ display(set_aside.sort_values('recorded_local')[['encounter_id', 'site', 'record
 vitals = (localized.dropna(subset=['recorded_at'])
           .sort_values(['encounter_id', 'recorded_at'])
           .reset_index(drop=True))
-print(vitals.shape, vitals['recorded_at'].dtype)
+print(vitals.shape, vitals['recorded_at'].dt.tz, encounters['admitted_at'].dt.tz)
 ```
 
-Expect `16` readings set aside: `12` in Chicago and `4` in New York, none in Phoenix, because Arizona does not change its clocks. The table lists `4` readings typed by hand at `2024-03-10 02:30` to `02:59`, an hour that never happened on the spring-forward night, and `12` charted between `2024-11-03 01:01` and `01:55`, the hour that happened twice. `vitals` keeps `(270290, 7)` rows, sorted by encounter and then time, in `datetime64[us, UTC]`.
+Expect `16` readings set aside: `12` in Chicago and `4` in New York, none in Phoenix, because Arizona does not change its clocks. The table lists `4` readings typed by hand at `2024-03-10 02:30` to `02:59`, an hour that never happened on the spring-forward night, and `12` charted between `2024-11-03 01:01` and `01:55`, the hour that happened twice. `vitals` keeps `(270290, 7)` rows, sorted by encounter and then time, and prints `UTC UTC`: the readings and the admission times now share one zone.
 
 **What we tell Dr. Kim:** 16 of 270,306 readings are set aside because their wall-clock time names no single instant; the table notes the count.
 
@@ -307,7 +313,7 @@ Expect readings every 4 hours between about 75 and 100 bpm for four days, then h
 
 ## Independent practice
 
-These are follow-up requests from the hospitals and reviewers; continue on your own after class. These cells reuse `vitals`, `last_vitals`, and `ZONES` from the core; if the runtime closed, run the cells above again first.
+These are follow-up requests from the hospitals and reviewers; continue on your own after class. These cells reuse `vitals`, `last_vitals`, `features`, and `ZONES` from the core; if the runtime closed, run the cells above again first.
 
 ### 1. New York's daily count does not match the system report
 
@@ -357,3 +363,14 @@ for zone in ZONES.values():
 ```
 
 Expect New York at `-0500` in January and `-0400` in July, Chicago at `-0600` and `-0500`, and Phoenix at `-0700` both times.
+
+### 4. Dr. Kim asks how old the newest training row will be when the pilot starts
+
+`pd.Timestamp.now(tz='UTC')` reads the current time as an aware UTC timestamp, so it can be subtracted from the aware `prediction_time` column; a naive `pd.Timestamp.now()` would raise the `TypeError` from step 6.
+
+```python
+now = pd.Timestamp.now(tz='UTC')
+print(now.tz, (now - features['prediction_time'].max()).days, 'days since the newest prediction time')
+```
+
+Expect `UTC` and a day count that depends on today's date: `670` on November 3, 2026, one more for each later day. The newest prediction time is `2025-01-02 05:06` UTC, so the pilot would start on data close to two years old.

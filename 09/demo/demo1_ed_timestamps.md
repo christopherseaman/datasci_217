@@ -63,16 +63,19 @@ Expect `(627505, 9)`: one row per visit at the Central, Northside, Eastside, and
 
 ### 2. Which dates does the committee's window cover?
 
-The committee also wants the last 28 days before the meeting. One date is a job for Python's `datetime`: `strptime()` reads the meeting date as the agenda writes it, `timedelta` counts back, and `strftime()` writes the start date the way the slide will.
+The committee also wants the last 28 days before the meeting, and the slide footer says how old the data is and when the numbers were pulled. Single dates are a job for Python's `datetime`: `strptime()` reads the meeting date as the agenda writes it, `timedelta` counts back, `datetime()` builds the extract's last day, subtracting two datetimes gives a `timedelta` whose `.days` counts whole days, `datetime.now()` reads the computer's clock, and `strftime()` writes dates the way the slide will.
 
 ```python
 meeting = datetime.strptime('January 7, 2025', '%B %d, %Y')
 window_start = meeting - timedelta(days=28)
+extract_end = datetime(2024, 12, 31)
 print(meeting)
 print('Window starts', window_start.strftime('%A, %B %d, %Y'))
+print('Data ends', (meeting - extract_end).days, 'days before the meeting')
+print('Pulled', datetime.now().strftime('%Y-%m-%d %H:%M'))
 ```
 
-Expect `2025-01-07 00:00:00` and `Window starts Tuesday, December 10, 2024`. Step 5 uses both dates to select rows.
+Expect `2025-01-07 00:00:00`, `Window starts Tuesday, December 10, 2024`, and `Data ends 7 days before the meeting`. The `Pulled` line shows your own date and time, so it changes on every run. Step 5 uses the meeting and window dates to select rows.
 
 ### 3. 150 arrival times will not parse
 
@@ -91,10 +94,11 @@ Expect `150` arrivals that failed and `7701` departures, all of them already mis
 
 ### 4. Do admitted patients really wait longest?
 
-Subtracting two datetime columns gives each visit's length of stay as a `timedelta64`; `.dt.total_seconds() / 3600` turns it into hours. A stay below zero is a typing error, so count those before trusting any summary.
+Subtracting two datetime columns gives each visit's length of stay as a `timedelta64`; `.dt.total_seconds() / 3600` turns it into hours, and `.dt.days` counts its whole days. A stay below zero is a typing error, so count those before trusting any summary.
 
 ```python
-ed['los_hours'] = (ed['departure'] - ed['arrival']).dt.total_seconds() / 3600
+ed['stay'] = ed['departure'] - ed['arrival']
+ed['los_hours'] = ed['stay'].dt.total_seconds() / 3600
 print('Departure before arrival:', (ed['los_hours'] < 0).sum())
 display(ed.loc[ed['los_hours'] < 0, ['arrival_time', 'departure_time', 'los_hours']].head(3).round(1))
 
@@ -103,9 +107,10 @@ valid['over_4h'] = valid['los_hours'] > 4
 display(valid.groupby('disposition').agg(visits=('los_hours', 'size'),
                                          median_hours=('los_hours', 'median'),
                                          share_over_4h=('over_4h', 'mean')).round(2))
+display(valid.loc[valid['stay'].dt.days >= 1, 'disposition'].value_counts())
 ```
 
-Expect `75` departures before arrival, from `-18.9` to `-22.1` hours in the first three: each departure was typed with the previous day's date, so they leave the summary. Admitted patients have the longest median stay, `6.88` hours, and `0.89` of them stay over 4 hours. Discharged patients have a median of `2.83` hours, with `0.26` over 4 hours.
+Expect `75` departures before arrival, from `-18.9` to `-22.1` hours in the first three: each departure was typed with the previous day's date, so they leave the summary. Admitted patients have the longest median stay, `6.88` hours, and `0.89` of them stay over 4 hours. Discharged patients have a median of `2.83` hours, with `0.26` over 4 hours. Of the `1010` stays of a whole day or more, `1001` are admitted patients.
 
 Draw each disposition's stays against the 4-hour target. Stays over 24 hours are drawn at 24.
 
@@ -235,7 +240,7 @@ The charge nurses count arrivals in 4-hour blocks and report each block when it 
 ```python
 central_day = by_time.loc['2024-03-07']
 central_day = central_day[central_day['site'] == 'Central']['visit_id']
-print('Arrivals at exactly 08:00:', (central_day.index == '2024-03-07 08:00').sum())
+print('Arrival at exactly 08:00:', central_day.loc['2024-03-07 08:00'])
 blocks = pd.DataFrame({
     'default (left)': central_day.resample('4h').count(),
     "closed='right', label='right'": central_day.resample('4h', closed='right', label='right').count(),
@@ -249,7 +254,7 @@ ax.legend(loc='upper left')
 plt.show()
 ```
 
-Expect `Arrivals at exactly 08:00: 1`, then one table with 7 labels: each rule leaves one label empty (`NaN`), and the shared labels hold different counts. By default, bins include their start and carry it as the label: `08:00` means 08:00 to 11:59 and holds `84.0`. With `closed='right', label='right'`, `08:00` means after 04:00 up to and including 08:00 and holds `26.0`, the nurses' number. In the chart, the blue bar at each label counts the 4 hours after it and the orange bar the 4 hours before it.
+Expect `Arrival at exactly 08:00: V00147280`: `.loc` with one timestamp returns that visit. Then one table with 7 labels: each rule leaves one label empty (`NaN`), and the shared labels hold different counts. By default, bins include their start and carry it as the label: `08:00` means 08:00 to 11:59 and holds `84.0`. With `closed='right', label='right'`, `08:00` means after 04:00 up to and including 08:00 and holds `26.0`, the nurses' number. In the chart, the blue bar at each label counts the 4 hours after it and the orange bar the 4 hours before it.
 
 **What we tell Dr. Reyes:** the two counts agree once both use the nurses' rule; the slide states it ("blocks end at the labeled hour").
 
@@ -310,7 +315,7 @@ except KeyError as error:
 print(by_time.loc['2024-03'].shape)
 ```
 
-Expect `(5,)`: the five weeks ending on a Sunday in March 2024. Then `KeyError: '2024-03'`, then the fix with `.loc`: `(25665, 11)`, every March 2024 visit.
+Expect `(5,)`: the five weeks ending on a Sunday in March 2024. Then `KeyError: '2024-03'`, then the fix with `.loc`: `(25665, 12)`, every March 2024 visit.
 
 ### 5. Care management wants an outreach calendar for frequent visitors
 
@@ -351,6 +356,32 @@ display(valid_by_time[['los_hours', 'age']].resample('ME').mean().loc['2024-01':
 ```
 
 Expect `TypeError: dtype 'str' does not support operation 'mean'`, then three month-end rows. January 2024 has the longest mean stay (`4.99` hours, against `4.21` in February and `4.08` in March); the mean age barely moves (`46.66` to `45.39`).
+
+### 7. The committee chair asks whether every winter rises
+
+Funding a team every year needs the rise in both winters. `.dt.year` and `.dt.month` read the calendar parts of each arrival, and `unstack()` (Lecture 08) puts the years side by side.
+
+```python
+by_month_year = valid.groupby([valid['arrival'].dt.month, valid['arrival'].dt.year])['over_4h'].mean().unstack()
+display(by_month_year.loc[[11, 12, 1, 2]].round(3))
+```
+
+Expect four month rows and a column per year. December rises in both years (`0.454` in 2023, `0.411` in 2024) from November's `0.394` and `0.380`, and January rises in both (`0.416` in 2023, `0.450` in 2024). February is back near `0.39`.
+
+### 8. The flu team asks whether both seasons peaked on the same date
+
+`idxmax()` returns the day with the most visits in each year. `.dt.day_name()` spells out its weekday, and `.dt.dayofyear` numbers it from 1 on January 1.
+
+```python
+daily_visits = arrived.groupby(arrived['arrival'].dt.floor('D')).size()
+peak_days = daily_visits.groupby(daily_visits.index.year).idxmax()
+display(pd.DataFrame({'peak_day': peak_days,
+                      'weekday': peak_days.dt.day_name(),
+                      'day_of_year': peak_days.dt.dayofyear,
+                      'visits': daily_visits[peak_days].to_numpy()}))
+```
+
+Expect `2023-12-25` (`Monday`, day `359`, `1139` visits) and `2024-01-01` (`Monday`, day `1`, `1184` visits). The peaks are one week apart, Christmas and New Year's Day, though their day-of-year numbers are 358 apart: day of year restarts at 1 each January, so compare winter seasons by date.
 
 ## Optional extension: the night shift's share and a feed check
 

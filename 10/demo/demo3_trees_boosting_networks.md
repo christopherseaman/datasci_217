@@ -218,13 +218,13 @@ Expect a recall of 0.303, a little above logistic regression (2,319 readmitted p
 
 ### 6. How many more can the same calls reach, and when does adding trees stop helping?
 
-XGBoost adds small trees one at a time, each aimed at what the trees so far get wrong, so it needs a stopping point. It takes NumPy arrays here, so the preparation step is fit once and applied to both parts. Early stopping watches validation log loss and stops 30 rounds after the best one.
+XGBoost adds small trees one at a time, each aimed at what the trees so far get wrong, so it needs a stopping point. It takes NumPy arrays here, so the preparation step learns its medians, scales, and categories from the fit rows (`fit_transform`) and reuses them unchanged on validation (`transform`). Early stopping watches validation log loss and stops 30 rounds after the best one.
 
 ```python
 import xgboost as xgb
 
-preprocess = make_preprocess().fit(X_fit)
-X_fit_ready = preprocess.transform(X_fit)
+preprocess = make_preprocess()
+X_fit_ready = preprocess.fit_transform(X_fit)
 X_valid_ready = preprocess.transform(X_valid)
 
 booster = xgb.XGBClassifier(n_estimators=1000, max_depth=4, learning_rate=0.05,
@@ -250,7 +250,7 @@ Expect best round 284 of a 1,000-round budget (validation log loss 0.3793), with
 
 ### 7. The CMIO asks whether "AI" would find more
 
-The CMIO's "AI" is a neural network. It reads the same prepared arrays. `set_random_seed` and `enable_op_determinism` make the run repeat on one machine; another machine can differ in the third decimal. `evaluate()` reports the validation loss and accuracy the network was compiled with.
+The CMIO's "AI" is a neural network. It reads the same prepared arrays. `summary()` lists each layer's output shape and weights for the CMIO. Rounding each probability at 0.5 gives labels (`> 0.5`, then `.astype(int).flatten()`), the list the network would make with no budget. `set_random_seed` and `enable_op_determinism` make the run repeat on one machine; another machine can differ in the third decimal. `evaluate()` reports the validation loss and accuracy the network was compiled with.
 
 ```python
 import os
@@ -272,10 +272,13 @@ network = keras.Sequential([
 network.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
 history = network.fit(X_fit_ready, y_fit.to_numpy(), epochs=15, batch_size=256,
                       validation_data=(X_valid_ready, y_valid.to_numpy()), verbose=0)
+network.summary()
 print("weights:", network.count_params())
 compare("neural network", network.predict(X_valid_ready, verbose=0).ravel())
 loss, accuracy = network.evaluate(X_valid_ready, y_valid.to_numpy(), verbose=0)
 print("validation log loss:", round(loss, 4), " accuracy at 0.5:", round(accuracy, 3))
+labels = (network.predict(X_valid_ready, verbose=0) > 0.5).astype(int).flatten()
+print("discharges flagged at 0.5:", labels.sum(), " readmitted among them:", (labels & y_valid.to_numpy()).sum())
 
 fig, ax = plt.subplots(figsize=(6, 3.5))
 ax.plot(range(1, 16), history.history["loss"], "o-", label="training")
@@ -286,7 +289,7 @@ plt.show()
 plt.close(fig)
 ```
 
-Expect a training loss that falls quickly over the first two epochs and keeps creeping down, and a validation loss that eases from about 0.387 to 0.383 by the fourth epoch and then stays flat, with no late rise: 131,927 rows give a network of 1,857 weights little room to memorize. `evaluate()` gives validation log loss 0.3829 and accuracy 0.844 at 0.5. Its recall at the budget is 0.300, between logistic regression and the forest. Training takes well under a minute.
+Expect a `summary()` table of three `Dense` layers and one `Dropout` layer with 1,312, 0, 528, and 17 weights: `Trainable params: 1,857`, the same as `count_params()`. Its `Total params` (5,573) also counts the optimizer's working values, which are not weights. Expect a training loss that falls quickly over the first two epochs and keeps creeping down, and a validation loss that eases from about 0.387 to 0.383 by the fourth epoch and then stays flat, with no late rise: 131,927 rows give a network of 1,857 weights little room to memorize. `evaluate()` gives validation log loss 0.3829 and accuracy 0.844 at 0.5. At 0.5 the network flags only 1,270 discharges, 786 of them readmitted: about a quarter of the 4,720 calls the nurses can make, which is why the list uses the budget instead of 0.5. Its recall at the budget is 0.300, between logistic regression and the forest. Training takes well under a minute.
 
 ### 8. Which list goes to the nurses?
 
@@ -327,19 +330,30 @@ Expect 179,288 final fit rows, 5,789 test readmissions, and a test recall of 0.3
 
 ### 1. The chief nursing officer asks which discharge details drive the list
 
-Permutation importance on validation rows measures what the forest relies on for new discharges. `scoring="neg_log_loss"` scores probabilities with log loss, the loss the classifiers were trained to reduce; a 10,000-row sample keeps it quick.
+Permutation importance on validation rows measures what the forest relies on for new discharges. `scoring="neg_log_loss"` scores probabilities with log loss, the loss the classifiers were trained to reduce. A 10,000-row sample keeps it quick; `train_test_split(..., stratify=...)` draws it so its readmission share matches validation's.
 
 ```python
 from sklearn.inspection import permutation_importance
+from sklearn.model_selection import train_test_split
 
-sample = valid.sample(10000, random_state=42)
+sample, _ = train_test_split(valid, train_size=10000, stratify=valid["readmit_30d"], random_state=42)
+print("readmission share: sample", round(sample["readmit_30d"].mean(), 4), " validation", round(valid["readmit_30d"].mean(), 4))
 permuted = permutation_importance(forest, sample[features], sample["readmit_30d"],
                                   scoring="neg_log_loss", n_repeats=5, random_state=42)
 display(pd.Series(permuted.importances_mean, index=features).sort_values(ascending=False).round(4)
         .rename("log_loss_increase"))
 ```
 
-Expect diagnosis group ahead (0.0135), then comorbidity count (0.0081), medication count (0.0064), prior admissions (0.0047), hemoglobin, age, and follow-up scheduled, with `hospital`, `adi_decile`, and `sex` near 0. Prior admissions and follow-up scheduled are missing from step 5's impurity top six: impurity rewards columns with many distinct values such as the labs, while permutation shuffles a whole original column and measures the loss on new discharges.
+Expect the sample's readmission share to match validation's (0.1622 in both). Then diagnosis group ahead (0.0128), comorbidity count (0.0098), hemoglobin and medication count (0.0060 each), prior admissions (0.0054), follow-up scheduled, and age, with `hospital`, `adi_decile`, and `sex` near 0. Prior admissions and follow-up scheduled are missing from step 5's impurity top six: impurity rewards columns with many distinct values such as the labs, while permutation shuffles a whole original column and measures the loss on new discharges.
+
+The list that goes to the nurses is XGBoost's. Its `feature_importances_` summarize how much each prepared column's splits improved the training fit, like the forest's impurity scores.
+
+```python
+boosted = pd.Series(booster.feature_importances_, index=preprocess.get_feature_names_out())
+display(boosted.sort_values(ascending=False).head(6).round(3).rename("XGBoost importance"))
+```
+
+Expect comorbidity count first (0.159), then the orthopedic (0.104) and heart-failure (0.093) diagnosis columns, both follow-up-scheduled columns (0.070 and 0.042), and medication count (0.043). XGBoost scores each one-hot column separately, so one original column such as `followup_scheduled` can appear twice. Like impurity, these scores come from the training fit; permutation importance above is the measure on new discharges.
 
 ### 2. The nurses want to read "30% risk" at face value
 
@@ -435,6 +449,67 @@ show(["logistic regression", "XGBoost", "logistic + hand-built terms"])
 ```
 
 Expect the hand-built logistic model at a recall of 0.298 (2,279 readmitted patients called): 55 more than plain logistic regression and 83 fewer than XGBoost, so the three columns close a little under half the gap. The rest sits in patterns these tables did not look at; a pivot table of `housing_unstable` by `ed_visits_6m` is one place to start. XGBoost needed no tables: its splits search for combinations on their own.
+
+### 7. The CMIO's data scientist proposes a wider network with a penalty
+
+The proposal: 64 and 32 units, an L2 penalty on each hidden layer's weights (the Ridge idea), and `validation_split=0.1`, which holds out the last 10% of the fit rows. The cohort is sorted by discharge date, so that holdout is the latest discharges, a time-ordered check inside the fit rows. The penalty is part of the reported loss, so the comparison uses recall at the budget, not loss.
+
+```python
+keras.utils.set_random_seed(42)
+penalty = keras.regularizers.l2(0.001)
+wide = keras.Sequential([
+    keras.layers.Input(shape=(X_fit_ready.shape[1],)),
+    keras.layers.Dense(64, activation="relu", kernel_regularizer=penalty),
+    keras.layers.Dense(32, activation="relu", kernel_regularizer=penalty),
+    keras.layers.Dense(1, activation="sigmoid"),
+])
+wide.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+wide_history = wide.fit(X_fit_ready, y_fit.to_numpy(), epochs=15, batch_size=256, validation_split=0.1, verbose=0)
+print("weights:", wide.count_params(), " last held-out accuracy:", round(wide_history.history["val_accuracy"][-1], 3))
+compare("wider network with L2", wide.predict(X_valid_ready, verbose=0).ravel())
+show(["neural network", "wider network with L2", "XGBoost"])
+```
+
+Expect 4,737 weights, about 2.5 times step 7's 1,857, and a held-out accuracy of 0.85 on the latest fit rows. At the 10% budget the wider network calls 2,292 readmitted patients (recall 0.299), 4 fewer than step 7's network and 70 fewer than XGBoost. The reply to the data scientist: more weights and a penalty do not reach more patients on these 19 columns.
+
+### 8. Bed management asks for each patient's expected length of stay
+
+The transitional-care nurses plan next week's first calls from the patients still in the hospital. Bed management asks whether the same tools can estimate length of stay at admission, from what is known then: age, sex, hospital, insurance, admission source, diagnosis group, comorbidities, and prior use. The target is `los_days`, so the regression versions apply: `RandomForestRegressor` (which by default lets every split consider all features; `max_features=0.5` makes the trees less alike) and `XGBRegressor`, beside a mean baseline, on the same fit and validation rows.
+
+```python
+from sklearn.dummy import DummyRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error
+
+at_admission_numeric = ["age", "n_comorbidities", "n_prior_admits_12m", "ed_visits_6m"]
+at_admission_categorical = ["hospital", "sex", "insurance", "admit_source", "dx_group"]
+at_admission = at_admission_numeric + at_admission_categorical
+admission_prep = ColumnTransformer([("numeric", StandardScaler(), at_admission_numeric),
+                                    ("categorical", OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+                                     at_admission_categorical)])
+los_fit = admission_prep.fit_transform(fit_rows[at_admission])
+los_valid = admission_prep.transform(valid[at_admission])
+
+stay_models = {
+    "mean baseline": DummyRegressor(strategy="mean"),
+    "random forest": RandomForestRegressor(n_estimators=100, max_features=0.5, max_depth=12,
+                                           min_samples_split=50, n_jobs=-1, random_state=42),
+    "XGBoost": xgb.XGBRegressor(n_estimators=300, max_depth=4, learning_rate=0.1, random_state=42, n_jobs=-1),
+}
+stay_mae = {}
+for name, model in stay_models.items():
+    model.fit(los_fit, fit_rows["los_days"])
+    stay_mae[name] = mean_absolute_error(valid["los_days"], model.predict(los_valid))
+display(pd.Series(stay_mae).round(2).rename("validation MAE (days)"))
+
+stay_by_dx = pd.DataFrame({"observed": valid["los_days"], "forest": stay_models["random forest"].predict(los_valid)})
+ax = stay_by_dx.groupby(valid["dx_group"]).mean().sort_values("observed").plot.barh(figsize=(7, 3.5))
+ax.set(xlabel="Mean length of stay (days), validation", ylabel="", title="Forest estimates by diagnosis group")
+plt.show()
+plt.close(ax.figure)
+```
+
+Expect a validation MAE of 2.28 days for the mean baseline and 2.16 for both the forest and XGBoost: the models miss by 0.12 day less, about 5%. The bars show why the gain is small: the forest tracks each diagnosis group's mean stay closely, from about 2.9 days after orthopedic stays to 6.8 after sepsis, but individual stays spread widely around those means, and nothing known at admission predicts that spread. The reply to bed management: plan by diagnosis group's average, and expect a typical miss of about 2 days per patient.
 
 ## Optional extension: the sodium cutoff the cardiology lead asks about
 

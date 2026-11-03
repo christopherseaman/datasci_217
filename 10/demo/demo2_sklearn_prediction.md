@@ -187,6 +187,8 @@ level_only = ["sbp_week", "sbp_4wk"]
 level_model = Pipeline([("preprocess", make_preprocess(level_only, [])), ("model", LinearRegression())])
 level_model.fit(fit_rows[level_only], y_fit)
 score("linear, level columns only", level_model.predict(valid[level_only]))
+level_fit = level_model.named_steps["model"]
+print("level model: intercept", round(level_fit.intercept_, 1), " coefficients per SD", level_fit.coef_.round(2))
 
 candidates = {"linear regression": LinearRegression(),
               "ridge (alpha=10)": Ridge(alpha=10),
@@ -206,7 +208,7 @@ plt.show()
 plt.close(ax.figure)
 ```
 
-Expect a linear model on the two level columns alone at 3.91 mmHg: weighting this week and the last four together beats either rule by 0.4. All three linear models on every feature reach 3.72, another 0.19 better and 13% below persistence. The chart leaves out the training mean (10.23) so the small gaps show: four model bars end left of the dashed persistence line at 4.28. Two lessons:
+Expect a linear model on the two level columns alone at 3.91 mmHg: weighting this week and the last four together beats either rule by 0.4. Its intercept is 145.6, the fit rows' mean SBP, because scaled columns average 0; its coefficients, 5.96 mmHg per SD for `sbp_week` and 5.14 for `sbp_4wk`, weight the two levels about equally. All three linear models on every feature reach 3.72, another 0.19 better and 13% below persistence. The chart leaves out the training mean (10.23) so the small gaps show: four model bars end left of the dashed persistence line at 4.28. Two lessons:
 
 - **The engineered features did real work.** The medication and refill columns tell the model what the level columns cannot: a patient who stopped refilling three drugs is about to rise, and one whose new drug is still taking effect is about to fall.
 - **Regularization changes little here.** With 68,324 rows and 36 prepared columns, Ridge and Lasso land within 0.003 mmHg of plain linear regression. Step 4 shows when the penalty matters.
@@ -293,7 +295,7 @@ Expect four folds scored from mid-March to the end of July, with Ridge between 3
 
 ### 6. Who is about to cross 150? Accuracy says the model is 96% right
 
-The call list is a yes/no question, so the target becomes `alert = sbp_next_week >= 150`, and the same preparation feeds a logistic regression fit on patients under 150 this week. `predict_proba` returns one column per class; `[:, 1]` keeps the probability of crossing 150. Before trusting the model's accuracy, compare it with a rule that calls nobody.
+The call list is a yes/no question, so the target becomes `alert = sbp_next_week >= 150`, and the same preparation feeds a logistic regression fit on patients under 150 this week. `predict_proba` returns one column per class; `[:, 1]` keeps the probability of crossing 150, and `classifier.score()` gives a classifier's accuracy at the default 0.5 threshold. Before trusting the model's accuracy, compare it with a rule that calls nobody. That rule flags no one, so its precision is 0 out of 0; `zero_division=0` reports 0 without a warning.
 
 ```python
 from sklearn.linear_model import LogisticRegression
@@ -313,8 +315,11 @@ classifier.fit(watch_fit[features], alert_fit)
 alert_probability = classifier.predict_proba(watch_valid[features])[:, 1]
 flag = (alert_probability >= 0.5).astype(int)
 
-print("always no: accuracy", round(accuracy_score(alert_valid, np.zeros(len(alert_valid))), 3))
-print("model at 0.5: accuracy", round(accuracy_score(alert_valid, flag), 3),
+always_no = np.zeros(len(alert_valid))
+print("always no: accuracy", round(accuracy_score(alert_valid, always_no), 3),
+      " precision", precision_score(alert_valid, always_no, zero_division=0),
+      " recall", recall_score(alert_valid, always_no))
+print("model at 0.5: accuracy", round(classifier.score(watch_valid[features], alert_valid), 3),
       " precision", round(precision_score(alert_valid, flag), 3),
       " recall", round(recall_score(alert_valid, flag), 3))
 print(confusion_matrix(alert_valid, flag))
@@ -332,7 +337,7 @@ plt.show()
 plt.close(fig)
 ```
 
-Expect about 3,561 patients under 150 each week, of whom about 160 average 150 or more the next week. The alert rate falls from 0.077 in the fit rows to 0.045 in validation: the program lowers blood pressure over time, and summer readings run lower. "Always no" scores 0.955 accuracy while calling nobody. At the default 0.5 threshold the model's accuracy is 0.956, its precision 0.535, and its recall only 0.194: the matrix `[[TN, FP], [FN, TP]]` shows 1,163 crossings missed and 280 caught over nine weeks. The histogram shows why: patients who stay under 150 pile up below 0.05, while those who cross spread from 0 to 1, and most of their orange area lies left of the 0.5 line. Accuracy cannot choose the list; recall at the nurses' budget can.
+Expect about 3,561 patients under 150 each week, of whom about 160 average 150 or more the next week. The alert rate falls from 0.077 in the fit rows to 0.045 in validation: the program lowers blood pressure over time, and summer readings run lower. "Always no" scores 0.955 accuracy while calling nobody, with precision 0.0 and recall 0.0. At the default 0.5 threshold the model's accuracy is 0.956, its precision 0.535, and its recall only 0.194: the matrix `[[TN, FP], [FN, TP]]` shows 1,163 crossings missed and 280 caught over nine weeks. The histogram shows why: patients who stay under 150 pile up below 0.05, while those who cross spread from 0 to 1, and most of their orange area lies left of the 0.5 line. Accuracy cannot choose the list; recall at the nurses' budget can.
 
 ### 7. Which list fills 100 calls a week best?
 
@@ -367,7 +372,11 @@ Expect the model's line above the rule's at all five budgets, from 25 to 200 cal
 
 The frozen choices: Ridge (alpha=10) as the dashboard forecast, and the logistic call list at 100 calls a week. Refit both on every fit and validation row whose label had arrived by the first test run, then score the test rows once, with the same rules beside them. These are the numbers that go on the committee slide.
 
+The model card for the committee records the frozen forecast's settings, read back from the fitted pipeline with `get_params(deep=False)`, so the refit uses exactly what validation chose.
+
 ```python
+display(pd.Series(fitted["ridge (alpha=10)"].named_steps["model"].get_params(deep=False), name="frozen forecast"))
+
 train_valid = pd.concat([train, valid])
 final_rows = train_valid[train_valid["label_arrival"] <= test["run_time"].min()]
 final_forecast = Pipeline([("preprocess", make_preprocess()), ("model", Ridge(alpha=10))])
@@ -391,7 +400,7 @@ for name, scores in [("model", final_classifier.predict_proba(watch_test[feature
           f" caught per week {(called & alert_test).sum() / watch_test['week'].nunique():.1f}")
 ```
 
-Expect 106,367 final fit rows. On the test weeks, Ridge misses by 4.00 mmHg against 4.55 for persistence, and the call list at 100 calls a week catches 44.8 crossings a week (recall 0.286, precision 0.448) against the rule's 27.9 (recall 0.178, precision 0.284). Both gains hold up on rows that played no part in any choice.
+Expect eight settings, `alpha` 10 among them and the rest at Ridge's defaults (`solver` auto, `fit_intercept` True); `random_state` stays None because the default solver has no randomness. Then 106,367 final fit rows. On the test weeks, Ridge misses by 4.00 mmHg against 4.55 for persistence, and the call list at 100 calls a week catches 44.8 crossings a week (recall 0.286, precision 0.448) against the rule's 27.9 (recall 0.178, precision 0.284). Both gains hold up on rows that played no part in any choice.
 
 **What we tell the committee**: on August and September, weeks no choice was tuned on, the forecast misses by 0.55 mmHg less than the dashboard's rule, and the model's call list reaches 17 more patients a week who go on to average 150 or more.
 

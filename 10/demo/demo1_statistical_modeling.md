@@ -101,10 +101,13 @@ Expect 2,599 double-fed copies, 160,000 first visits, 474 implausible SBP values
 
 ### 3. 10,873 patients drop out of the fit without a warning
 
-`smf.ols()` with the formula `sbp ~ age + bmi + C(sex)` answers "SBP by BMI at the same age and sex". `C(sex)` makes sex categorical; `F` is the reference level, so the `C(sex)[T.M]` coefficient compares men with women of the same age and BMI. `results.nobs` is the check before trusting the fit: how many rows it actually used.
+`smf.ols()` with the formula `sbp ~ age + bmi + C(sex)` answers "SBP by BMI at the same age and sex". `C(sex)` makes sex categorical; `F` is the reference level, so the `C(sex)[T.M]` coefficient compares men with women of the same age and BMI. The committee will ask for other adjustment sets, so the formula is built from a list of terms that later cells extend. `results.nobs` is the check before trusting the fit: how many rows it actually used.
 
 ```python
-results = smf.ols("sbp ~ age + bmi + C(sex)", data=cohort).fit()
+predictors = ["age", "bmi", "C(sex)"]
+formula = "sbp ~ " + " + ".join(predictors)
+print(formula)
+results = smf.ols(formula, data=cohort).fit()
 print("rows used:", int(results.nobs), "of", len(cohort))
 print("R-squared:", round(results.rsquared, 3))
 
@@ -114,7 +117,7 @@ print("share missing BMI, age 80 and over:", round(missing[cohort["age"] >= 80].
       " under 80:", round(missing[cohort["age"] < 80].mean(), 3))
 ```
 
-Expect `rows used: 148487 of 159360`: `statsmodels` silently dropped the 10,873 patients with no BMI. Expect R-squared 0.13: age, BMI, and sex explain a modest share of SBP, which also depends on medication, activity, and a patient's own baseline. The missing BMIs are not spread evenly: Marina is missing 19.7%, every other clinic 5.3% to 7.3%, and patients 80 and over 10.6% against 6.7% for younger ones. The estimates describe patients with a recorded BMI, so Marina's patients and the oldest patients count less than their share.
+Expect the formula `sbp ~ age + bmi + C(sex)`, then `rows used: 148487 of 159360`: `statsmodels` silently dropped the 10,873 patients with no BMI. Expect R-squared 0.13: age, BMI, and sex explain a modest share of SBP, which also depends on medication, activity, and a patient's own baseline. The missing BMIs are not spread evenly: Marina is missing 19.7%, every other clinic 5.3% to 7.3%, and patients 80 and over 10.6% against 6.7% for younger ones. The estimates describe patients with a recorded BMI, so Marina's patients and the oldest patients count less than their share.
 
 ### 4. How much higher does SBP run per BMI unit?
 
@@ -384,7 +387,7 @@ Every visit gives 3 times the rows. Fit the step 3 formula to every clean visit 
 
 ```python
 all_visits = deduped[deduped["sbp"].between(70, 260) & (deduped["sbp"] > deduped["dbp"]) & ~(deduped["bmi"] > 70)]
-every_visit = smf.ols("sbp ~ age + bmi + C(sex)", data=all_visits).fit()
+every_visit = smf.ols(formula, data=all_visits).fit()
 display(pd.DataFrame({"one_per_patient": results.bse, "every_visit": every_visit.bse}).round(4))
 print("rows used:", int(every_visit.nobs))
 ```
@@ -396,7 +399,7 @@ Expect 481,614 rows and standard errors about 45% smaller (BMI's falls from 0.00
 A draft slide shows treated patients reading higher. Add `C(on_bp_med)` to the step 3 formula and read its coefficient beside the raw difference between treated and untreated patients.
 
 ```python
-with_med = smf.ols("sbp ~ age + bmi + C(sex) + C(on_bp_med)", data=cohort).fit()
+with_med = smf.ols("sbp ~ " + " + ".join(predictors + ["C(on_bp_med)"]), data=cohort).fit()
 display(with_med.params.round(2).rename("coef"))
 display(cohort.groupby("on_bp_med")[["sbp", "age", "bmi"]].mean().round(1))
 ```
@@ -408,7 +411,7 @@ Expect `C(on_bp_med)[T.True]` near +1.1 mmHg: treated patients read _higher_ tha
 `C(clinic)` gives every clinic but the reference (Bayview, first alphabetically) its own coefficient. The reporting team's script fits the same model with the array API, `sm.OLS` with `sm.add_constant`, so check that it agrees: that API needs the missing-BMI rows dropped and the dummy columns built by hand.
 
 ```python
-by_clinic = smf.ols("sbp ~ age + bmi + C(sex) + C(clinic)", data=cohort).fit()
+by_clinic = smf.ols("sbp ~ " + " + ".join(predictors + ["C(clinic)"]), data=cohort).fit()
 display(by_clinic.params.filter(like="clinic").round(2).rename("vs Bayview"))
 display(cohort.groupby("clinic")["adi_decile"].mean().round(1).rename("mean ADI decile"))
 
@@ -423,25 +426,31 @@ Expect all five clinic coefficients below 0, from -3.5 (Excelsior) to -10.2 (Mar
 
 ### 4. The geriatrician asks whether a straight line understates her patients
 
-Add `I(age ** 2)` and compare the fits with R-squared and AIC. Then let BMI's slope depend on sex with `bmi * C(sex)`, in case the enrollment rule should differ for men and women.
+Try two curves in age, `I(age ** 2)` and `np.log(age)`, and compare the fits with R-squared, AIC, and BIC. Then let BMI's slope depend on sex with `bmi * C(sex)`, in case the enrollment rule should differ for men and women, and on age with the interaction-only term `age:bmi`, in case BMI matters less in her oldest patients.
 
 ```python
 curved = smf.ols("sbp ~ age + I(age ** 2) + bmi + C(sex)", data=cohort).fit()
-print("R-squared:", round(results.rsquared, 4), "->", round(curved.rsquared, 4))
-print("AIC:", round(results.aic), "->", round(curved.aic))
+logged = smf.ols("sbp ~ np.log(age) + bmi + C(sex)", data=cohort).fit()
+shapes = {"straight": results, "curved": curved, "log age": logged}
+display(pd.DataFrame({"R-squared": [fit.rsquared for fit in shapes.values()],
+                      "AIC": [fit.aic for fit in shapes.values()],
+                      "BIC": [fit.bic for fit in shapes.values()]}, index=list(shapes)).round(4))
 ages = pd.DataFrame({"age": [30, 50, 70, 85], "bmi": 28.0, "sex": "F"})
 display(pd.DataFrame({"age": ages["age"], "straight": results.predict(ages),
                       "curved": curved.predict(ages)}).round(1))
 
-interaction = smf.ols("sbp ~ age + bmi * C(sex)", data=cohort).fit()
-display(interaction.params.round(3).rename("coef"))
+interaction = smf.ols("sbp ~ age + bmi * C(sex) + age:bmi", data=cohort).fit()
+display(interaction.params.round(4).rename("coef"))
 ```
 
-Expect R-squared to rise only slightly (0.1299 to 0.1349) and AIC to fall (1233455 to 1232603). The curved model predicts higher SBP than the straight line at 30 and 85 and lower at 50: the straight line understates an 85-year-old by about 3.4 mmHg. In the interaction model, `bmi:C(sex)[T.M]` is -0.041: women's SBP rises 0.883 mmHg per BMI unit and men's 0.883 - 0.041 = 0.842, nearly the same slope, so one BMI rule serves both.
+Expect the squared term to raise R-squared only slightly (0.1299 to 0.1349) and lower AIC (1233455 to 1232603) and BIC (1233494 to 1232652). The log curve does worse than the straight line (R-squared 0.1242, AIC 1234419): it flattens at older ages, while SBP rises faster there. The curved model predicts higher SBP than the straight line at 30 and 85 and lower at 50: the straight line understates an 85-year-old by about 3.4 mmHg. In the interaction model:
+
+- **`bmi:C(sex)[T.M]`, -0.041**: men's BMI slope runs 0.041 mmHg per unit below women's, nearly the same, so one BMI rule serves both.
+- **`age:bmi`, -0.0009**: a woman's BMI slope is 0.931 - 0.0009 × age, about 0.89 mmHg per unit at 40 and 0.85 at 85. BMI matters about as much in the geriatrician's oldest patients.
 
 ### 5. Dr. Kim asks for a first forecast now
 
-She wants a number before Demo 2. Fit an OLS forecast on `fit_rows` and ask how often the validation weeks land inside their nominal 95% prediction intervals.
+She wants a number before Demo 2. Fit an OLS forecast on `fit_rows` and ask how often the validation weeks land inside their nominal 95% prediction intervals. `get_prediction(...).conf_int(obs=True)` returns only the two prediction bounds, one row per week, which is all this check needs.
 
 ```python
 fit_rows = fit_rows.merge(enrolled[["patient_id", "age"]], on="patient_id", how="left", validate="many_to_one")
@@ -449,10 +458,10 @@ valid = valid.merge(enrolled[["patient_id", "age"]], on="patient_id", how="left"
 forecast = smf.ols("sbp_next_week ~ sbp_week + age", data=fit_rows).fit()
 display(forecast.params.round(3).rename("coef"))
 
-bounds = forecast.get_prediction(valid).summary_frame(alpha=0.05)
-inside = valid["sbp_next_week"].between(bounds["obs_ci_lower"], bounds["obs_ci_upper"])
+bounds = forecast.get_prediction(valid).conf_int(obs=True, alpha=0.05)
+inside = valid["sbp_next_week"].between(bounds[:, 0], bounds[:, 1])
 print("validation weeks inside their 95% interval:", round(inside.mean(), 3))
-print("average miss (mmHg):", round((valid["sbp_next_week"] - bounds["mean"]).abs().mean(), 2))
+print("average miss (mmHg):", round((valid["sbp_next_week"] - forecast.predict(valid)).abs().mean(), 2))
 print("average miss of this week's mean as the forecast:", round((valid["sbp_next_week"] - valid["sbp_week"]).abs().mean(), 2))
 ```
 
@@ -472,6 +481,18 @@ print("median delay after the run:", delay.median().round("h"), " longest:", del
 
 Expect 310 late labels, all from the week of May 26, with a median delay of 1 day 11 hours after the June 2 run and the longest about 5.4 days. A **retrospective** split would fit all 68,634 training rows, including labels that did not exist yet when the first validation forecast was made.
 
+The cuff vendor's next feed will send `upload_time` in UTC. Cedar Valley's clocks run on Central time, so attach `America/Chicago` to the label arrivals, convert them to UTC as the feed will, and recount the late labels against the first run written in local time. A few uploads are stamped inside the hour skipped on March 9 (Lecture 09's spring-forward night); `nonexistent="NaT"` sets them aside instead of raising an error.
+
+```python
+arrival_local = train["label_arrival"].dt.tz_localize("America/Chicago", ambiguous="NaT", nonexistent="NaT")
+arrival_utc = arrival_local.dt.tz_convert("UTC")
+run_local = pd.Timestamp("2025-06-02 08:00", tz="America/Chicago")
+print("arrivals in the skipped hour:", arrival_utc.isna().sum(), " run in UTC:", run_local.tz_convert("UTC"))
+print("late labels from UTC arrivals:", (arrival_utc > run_local).sum())
+```
+
+Expect 12 arrivals in the skipped hour, the run at `2025-06-02 13:00:00+00:00` (Central daylight time is UTC minus 5), and the same 310 late labels: pandas compares the instants, so the UTC feed and the local run time need no further conversion.
+
 ### 7. The committee's statistician asks for the full regression table
 
 `results.summary()` prints every number `statsmodels` computed, including the adjusted R-squared, the F-test, and AIC from the header.
@@ -479,9 +500,27 @@ Expect 310 late labels, all from the week of May 26, with a median delay of 1 da
 ```python
 print(results.summary())
 print("adjusted R-squared:", round(results.rsquared_adj, 4), " AIC:", round(results.aic))
+print("F:", round(results.fvalue), " p:", results.f_pvalue, " residual df:", int(results.df_resid))
 ```
 
-Expect `No. Observations: 148487` in the header, R-squared and adjusted R-squared both 0.130 (adjusted 0.1299: four coefficients barely penalize 148,487 rows), an F-statistic of 7389 with `Prob (F-statistic)` 0.00, and the same coefficients and intervals as step 4 in the middle block. The header rounds AIC to 1.233e+06; the attribute gives 1233455, the value practice 4 compares against.
+Expect `No. Observations: 148487` in the header, R-squared and adjusted R-squared both 0.130 (adjusted 0.1299: four coefficients barely penalize 148,487 rows), an F-statistic of 7389 with `Prob (F-statistic)` 0.00, and the same coefficients and intervals as step 4 in the middle block. The header rounds AIC to 1.233e+06; the attribute gives 1233455, the value practice 4 compares against. The attributes repeat the header for the statistician's appendix: `fvalue` 7389, `f_pvalue` 0.0, and `df_resid` 148483 (148,487 rows minus 4 coefficients).
+
+### 8. Dr. Kim asks whether the forecast should know the season
+
+Summer readings run lower, and the forecast will keep running into winter. A season feature has to treat December 29 and January 5 as neighbors, the same problem as midnight on the clock face: an angle from `.dt.dayofyear` (minus 1, over 366) and its sine and cosine. The fit rows cover only January to May, so first look at how mean SBP moves by target month, then check the angle across New Year on three Mondays.
+
+```python
+display(weekly.groupby(weekly["target_week"].dt.month)["sbp_next_week"].mean().round(1).rename("mean SBP by target month"))
+
+mondays = pd.DataFrame({"week": pd.to_datetime(["2025-06-02", "2025-12-29", "2026-01-05"])})
+mondays["dayofyear"] = mondays["week"].dt.dayofyear
+angle = 2 * np.pi * (mondays["dayofyear"] - 1) / 366
+mondays["season_sin"] = np.sin(angle).round(3)
+mondays["season_cos"] = np.cos(angle).round(3)
+display(mondays)
+```
+
+Expect mean SBP to fall from 149.8 mmHg in January to 138.4 in August, then 138.8 in September. That drop mixes summer with the program's own effect (added drugs, Demo 2), and one partial year cannot separate them, so the season columns wait until the data covers a second winter. In the Monday table, the plain `dayofyear` jumps from 363 to 5 across New Year, while `season_sin` moves from -0.069 to 0.069 and `season_cos` stays at 0.998: the two Mondays sit side by side on the circle, as June 2 (0.507, -0.862) sits on the far side.
 
 ## Optional extension: a random intercept per patient
 

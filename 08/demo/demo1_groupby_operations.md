@@ -202,7 +202,17 @@ plt.show()
 
 Expect Parkside flat at 0 through June, then 5,575 in July, rising to 7,836 in December. From June to July, Sunset drops from 21,075 to 16,386.
 
-**What we tell Dr. Alvarez:** Sunset lost about 4,700 visits a month to Parkside, yet still misses the target at 15.4% for the year. Decide Sunset's 2026 hours after one full year of Parkside.
+Fewer visits may not mean shorter waits. With `values=` and `aggfunc=`, `crosstab` summarizes a third column instead of counting rows, like `pivot_table`; here, each month's share of visits over 30 minutes.
+
+```python
+share_by_month = pd.crosstab(visits["visit_month"], visits["clinic"],
+                             values=visits["over_30"], aggfunc="mean")
+display(share_by_month[["Sunset", "Parkside"]].round(3))
+```
+
+Expect 12 month rows. Parkside is `NaN` through June: no visits, so nothing to average, where the count crosstab showed 0. Sunset sits at 0.141 in June and 0.143 in July, and stays between 0.136 and 0.145 through November. Its worst months are January (0.202) and December (0.162).
+
+**What we tell Dr. Alvarez:** Sunset lost about 4,700 visits a month to Parkside, but its share over 30 minutes stayed near 14% (14.1% in June, 14.3% in July). Its 15.4% for the year comes from the winter months, 20.2% in January, so Sunset's 2026 hours should go to winter.
 
 ## Independent practice
 
@@ -250,6 +260,16 @@ print("Rows after stack():", len(long_again))
 
 Expect eight clinic rows. New patients wait about 3 minutes longer at every clinic (2.5 to 4.0), so the gap is system-wide, not one clinic's problem. `stack()` turns the two columns back into an index level: 16 rows, one per clinic and visit type.
 
+The data team's dashboard loads flat tables, one row per clinic and visit type with the keys as ordinary columns. `as_index=False` gives that shape directly.
+
+```python
+flat = visits.groupby(["clinic", "visit_type"], as_index=False)["wait_min"].mean()
+display(flat.head(4).round(1))
+print(flat.shape)
+```
+
+Expect `clinic`, `visit_type`, and `wait_min` columns with a `0..n-1` index, starting with Bayview Follow-up (21.0) and Bayview New (23.8), and a shape of `(16, 3)`: the same 16 pairs as `stack()`.
+
 ### 9. The board asks for patients, not visits
 
 ```python
@@ -263,3 +283,29 @@ display(per_patient.sort_values("visits_per_patient", ascending=False).round(2))
 ```
 
 Expect counts well below the visit counts in step 4, and Ridgecrest's Cardiology at 10 patients: ten regulars account for all 180 outreach visits. In the second table, Pediatrics has the most visits per patient (5.37), because every child's visits land in one department while an adult's spread across several; Dermatology has the fewest (1.96).
+
+### 10. Each clinic manager wants one line about their own clinic
+
+Dr. Alvarez sends every clinic manager a one-line note before the memo goes out. Looping over the GroupBy object hands over each clinic's name and its rows, one clinic at a time.
+
+```python
+for clinic, group in visits.groupby("clinic"):
+    print(f"{clinic}: {len(group):,} visits, {group['over_30'].mean():.1%} over 30 minutes")
+```
+
+Expect eight lines in alphabetical order, from `Bayview: 185,334 visits, 18.5% over 30 minutes` to `Sunset: 243,280 visits, 15.4% over 30 minutes`. The numbers match the scorecard: the loop writes one message per group, and the `agg` table stays the report.
+
+### 11. The board asks whether long waits cost satisfaction
+
+Select two columns to summarize both with one function, then use a dictionary in `.agg()` to give each column its own list of functions.
+
+```python
+display(visits.groupby("clinic")[["wait_min", "satisfaction"]].mean().round(2))
+
+wait_and_rating = visits.groupby("clinic").agg({"wait_min": ["mean", "median"],
+                                                 "satisfaction": ["mean", "count"]})
+display(wait_and_rating.round(2))
+print(wait_and_rating.columns.tolist())
+```
+
+Expect Mission with the longest mean wait (24.05 minutes) and the lowest satisfaction (3.83), and Ridgecrest with the shortest wait (13.32) and the highest satisfaction (4.09). The dictionary result has two-level column labels, such as `('wait_min', 'median')`; `wait_and_rating["satisfaction"]` selects one column's pair. The `count` column shows how many surveys stand behind each mean, from 12,940 at Ridgecrest to 90,417 at Mission.

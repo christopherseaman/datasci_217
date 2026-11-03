@@ -261,11 +261,38 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICm6gIA8vEmA6qytDJwgDG4zKtuAyeK7Iq3OA9m5BPFe
 
 `demo_key` is the private key: `-rw-------` means only you can read it, and it never leaves this computer. The one line in `demo_key.pub` is the padlock: on a real server, `ssh-copy-id` installs it, or the server's instructions say where to paste it.
 
+The nightly rebuild means many `ssh` and `scp` commands, and each would ask for the passphrase. Start an SSH agent for this terminal, then unlock the practice key once with `ssh-add`:
+
+```shell
+eval "$(ssh-agent -s)"
+ssh-add demo_key
+```
+
+Expect `Agent pid 4242` (your number differs), then `Enter passphrase for demo_key:`. Type `practice` and press Enter. Expect `Identity added: demo_key (ds217 practice key)`. With a real server, later `ssh` and `scp` commands in this terminal now log in without asking; macOS already runs an agent, so there `ssh-add` alone is enough. If `ssh-add` says it cannot connect to your authentication agent, skip it and type the passphrase when asked.
+
+This practice agent is needed only for the rehearsal, so stop it:
+
+```shell
+eval "$(ssh-agent -k)"
+```
+
+Expect `Agent pid 4242 killed`.
+
 ### 8. Run the nightly build so a dropped connection cannot stop it (terminal)
 
 On the server the full build runs for hours. A job started in a plain `ssh` session stops when the connection drops, such as when a laptop sleeps; a job inside `tmux` keeps running.
 
 `build_features.py` rebuilds the A1c features one month at a time, prints one progress line per month, and writes the year-end pilot list, Bayview and Excelsior patients with a latest A1c of 9% or more, to `output/pilot_list.csv`. It pauses 10 seconds per month to stand in for a job that takes hours, so it runs about two minutes.
+
+The lab results cannot leave the server, so the code goes to the data: copy the script up with `scp`. On the real server the command is `scp build_features.py jdoe@analysis.example.org:~/08-demo/`, run from your laptop's prompt. Here a practice folder stands in for the server: `scp` between two local paths uses the same syntax without the `user@host:` part.
+
+```shell
+mkdir -p ~/ds217_ssh_practice/server
+scp ~/08-demo/build_features.py ~/ds217_ssh_practice/server/
+ls ~/ds217_ssh_practice/server
+```
+
+Expect `build_features.py`. The rehearsal keeps running the job from `~/08-demo`, where `data/` is; on the server, you would run the copy you just uploaded.
 
 Check that tmux is installed:
 
@@ -389,6 +416,27 @@ Expect one row per clinic (the function returns one `Series` per group), medians
 ```
 
 Expect the category version about 2 times faster: pandas groups small integer codes instead of comparing text.
+
+### 13. The lab team reports a bad feed tonight: stop the build (terminal)
+
+The lab system sent tonight's results twice, so tonight's list must not be built. Start a rerun in tmux, detach, then end the session from outside with `tmux kill-session`, which stops the job inside it.
+
+```shell
+cd ~/08-demo
+tmux new -s rerun
+source .venv/bin/activate
+python3 build_features.py
+```
+
+After the first month line appears, press `Ctrl+b`, then `d`. Then:
+
+```shell
+tmux kill-session -t rerun
+tmux ls
+ls -l output/pilot_list.csv
+```
+
+Expect no output from `kill-session`, then `no server running on /tmp/tmux-1000/default` if `rerun` was your only session, then a `pilot_list.csv` time from your step 8 run. `build_features.py` writes the list only after month 12, so the stopped run left the last good list in place. On a server the commands are the same, typed after `ssh`.
 
 ## Optional extension: keep a notebook running on the server
 
