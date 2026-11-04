@@ -5,6 +5,8 @@ six-visit table with pandas, and the drawn numbers are asserted against the
 values the lecture prints, as are transform_vs_clinic.png and filter_vs_mask.png.
 simpsons_paradox.png is computed from the lecture's four-row trial table.
 ssh_laptop_server.png is a plain diagram.
+wait_distribution.png and visits_pairplot.png draw the lecture's EDA figures
+from Demo 1's visit extract.
 pivot_heatmap.png runs Demo 1's own code cells up to its heatmap cell, so the
 figure shows the demo's 1.2 million synthetic visits.
 
@@ -390,6 +392,50 @@ def pivot_heatmap():
     print("Generated: pivot_heatmap.png")
 
 
+def load_extract():
+    """Demo 1's visit extract, built by its generator when missing."""
+    sys.path.insert(0, str(DEMO1.parent))
+    with contextlib.chdir(DEMO1.parent):
+        if not Path("data/visits.parquet").exists():
+            import generate_data
+            generate_data.build()
+        return pd.read_parquet("data/visits.parquet")
+
+
+def wait_distribution():
+    """The lecture's EDA distribution figure: Demo 1's histogram with the IQR fence, and waits by department."""
+    import seaborn as sns
+
+    extract = load_extract()
+    q1, q3 = extract["wait_min"].quantile([0.25, 0.75])
+    upper = q3 + 1.5 * (q3 - q1)
+    above = int((extract["wait_min"] > upper).sum())
+    print(q1, q3, upper, above, extract["wait_min"].max())
+    # The lecture's sentence states these numbers
+    assert (q1, q3, upper, above) == (11.0, 26.0, 48.5, 53361), (q1, q3, upper, above)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    sns.histplot(data=extract, x="wait_min", binwidth=5, ax=axes[0])
+    axes[0].axvline(upper, color="red", linestyle="--")
+    axes[0].set(title="Wait per visit, 2025 (red: IQR fence)", xlabel="Minutes")
+    sns.boxplot(data=extract, y="department", x="wait_min", ax=axes[1])
+    axes[1].set(title="Wait by department", xlabel="Minutes", ylabel="")
+    fig.tight_layout()
+    save(fig, "wait_distribution.png")
+
+
+def visits_pairplot():
+    """The lecture's EDA pairplot: 2,000 sampled visits from Demo 1's extract."""
+    import seaborn as sns
+
+    extract = load_extract()
+    sample = extract[["age", "wait_min", "satisfaction"]].sample(2000, random_state=217)
+    print(sample.corr().round(2))
+    grid = sns.pairplot(sample, corner=True, plot_kws={"s": 8, "alpha": 0.4})
+    grid.savefig(MEDIA_DIR / "visits_pairplot.png", dpi=150, facecolor="white", bbox_inches="tight")
+    plt.close("all")
+    print("Generated: visits_pairplot.png")
+
+
 def run_demo_until_heatmap(env):
     for cell in jupytext.read(DEMO1).cells:
         if cell.cell_type != "code":
@@ -413,3 +459,5 @@ if __name__ == "__main__":
     simpsons_paradox()
     ssh_laptop_server()
     pivot_heatmap()
+    wait_distribution()
+    visits_pairplot()

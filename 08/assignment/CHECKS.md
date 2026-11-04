@@ -19,7 +19,7 @@ All checks passed.
 How the files are read:
 
 - Each check is scored on its own, so one mistake costs only that check's points.
-- A mistake is charged once. A missing column, or one saved under another name with the right values, costs only the columns check; values in the other columns are still checked. An empty table or one with no recognizable rows earns no value points.
+- A mistake is charged once. A missing column, or one saved under another name with the right values, costs only the columns check; values in the other columns are still checked. An empty table, or one that shares no row with the expected rows, earns no value points.
 - Spacing, line endings, quoting, column order, and row order never cost points.
 - Numbers are compared as numbers, so `6`, `6.0`, and `6.00` are the same value. A mean or median may keep every digit or be rounded to one or two decimals.
 - Site names, modalities, IDs, and column names are compared in any letter case.
@@ -47,15 +47,15 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | `output/site_modality_summary.csv` | Each `median_report_hr` is the median of the pair's report times. | site and modality: median_report_hr values | 4 |
 | `output/delayed_stat_exams.csv` | Its columns are the six in the Task 2.2 header line. | delayed STAT exams: columns | 4 |
 | `output/delayed_stat_exams.csv` | It holds the 190 STAT exams that waited over 8 hours, once each, and no other exam. | delayed STAT exams: one row per delayed exam | 4 |
-| `output/delayed_stat_exams.csv` | Each exam's `site`, `modality`, and `wait_hr` match `data/imaging_exams.parquet`. | delayed STAT exams: original exam values | 4 |
+| `output/delayed_stat_exams.csv` | Each expected exam that the file holds has `site`, `modality`, and `wait_hr` matching `data/imaging_exams.parquet`. | delayed STAT exams: original exam values | 4 |
 | `output/delayed_stat_exams.csv` | Each `peer_median_wait_hr` is the median wait of all STAT exams at that site and modality. | delayed STAT exams: peer_median_wait_hr values | 4 |
 | `output/delayed_stat_exams.csv` | Each `wait_vs_peer_hr` is `wait_hr` minus `peer_median_wait_hr`. | delayed STAT exams: wait_vs_peer_hr values | 4 |
 | `output/ct_dose_review.csv` | Its columns are the three in the Task 2.3 header line. | CT dose review: columns | 2 |
 | `output/ct_dose_review.csv` | It holds the 1,253 CTs of the 159 patients whose CT doses add up to at least 100 mSv, once each, and no other exam. | CT dose review: whole patients kept | 4 |
-| `output/ct_dose_review.csv` | Each exam's `patient_id` and `dose_msv` match `data/imaging_exams.parquet`. | CT dose review: original exam values | 2 |
+| `output/ct_dose_review.csv` | Each expected exam that the file holds has `patient_id` and `dose_msv` matching `data/imaging_exams.parquet`. | CT dose review: original exam values | 2 |
 | `output/slowest_stat_reports.csv` | Its columns are the four in the Task 2.4 header line. | slowest STAT reports: columns | 2 |
 | `output/slowest_stat_reports.csv` | It holds each site's three STAT exams with the longest `report_hr`, 24 in all, and no other exam. | slowest STAT reports: three per site | 4 |
-| `output/slowest_stat_reports.csv` | Each exam's `site`, `modality`, and `report_hr` match `data/imaging_exams.parquet`. | slowest STAT reports: original exam values | 2 |
+| `output/slowest_stat_reports.csv` | Each expected exam that the file holds has `site`, `modality`, and `report_hr` matching `data/imaging_exams.parquet`. | slowest STAT reports: original exam values | 2 |
 | `output/median_report_pivot.csv` | Its columns are `site`, `CT`, `MRI`, `Ultrasound`, and `X-ray`. | median report pivot: columns | 4 |
 | `output/median_report_pivot.csv` | It holds the eight sites with exams, once each. | median report pivot: one row per site | 4 |
 | `output/median_report_pivot.csv` | Each filled cell is the median report time for that site and modality. | median report pivot: median reports | 4 |

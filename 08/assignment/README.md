@@ -4,7 +4,7 @@
 
 Summarize a year of imaging exams by site and modality, flag delayed STAT exams against their peers, build a CT radiation-dose review list, pull each site's slowest STAT reports, and pivot report times, saving each result for the checks.
 
-`data/imaging_exams.parquet` is a synthetic export from a regional imaging network: 540,228 exams in 2025, one row per exam, at three hospitals (Downtown, Harbor, Northgate) and five outpatient imaging centers. A ninth site, Eastport, opens in 2026 and has no exams yet. Valley has no MRI scanner.
+`data/imaging_exams.parquet` is a synthetic export from a regional imaging network: 540,228 exams in 2025, one row per exam, at three hospitals (Downtown, Harbor, Northgate) and five outpatient imaging centers; Valley, a rural center, also runs a small ED. A ninth site, Eastport, opens in 2026 and has no exams yet. Valley has no MRI scanner.
 
 - `exam_id`, `patient_id` (most patients have several exams), `site`, and `exam_date`.
 - `age`, `sex`, and `setting`: `ED`, `Inpatient`, or `Outpatient`.
@@ -156,7 +156,7 @@ A pivot table lays Task 2.1's median report times out as a grid, one row per sit
     - Expect: `pivot matches its groupby twin: True` and `empty cells: 1`. That cell is Valley's MRI: no MRI happened there, so there is no report time to take the median of.
 3. Save `report_pivot` to `PIVOT_PATH` with its index: the site names are the index, and saving writes them as the first column. Leave the empty cell empty. Filling it with 0 would report reads signed instantly at a scanner that does not exist.
 
-The hospitals sign a CT in about 1.1 to 1.6 hours and the centers in about 10: more than half of the hospitals' CTs are STAT exams from the ED.
+The hospitals sign a CT in about 1.1 to 1.6 hours and the four centers without an ED in about 11; Valley, with its small ED, takes about 2. About half of the CTs at the hospitals and Valley are STAT exams from the ED.
 
 > **Checkpoint: `output/median_report_pivot.csv`**
 > The header line `site,CT,MRI,Ultrasound,X-ray`, then eight rows, Downtown to Valley. Valley's `MRI` cell is empty.

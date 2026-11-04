@@ -24,15 +24,15 @@ _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is wha
 <callout icon="🧭" color="blue_bg">
 	# This Lecture
 	## Covers
-	- **Split-apply-combine and GroupBy**: `groupby()` aggregation by one or two keys, including named aggregation, and Simpson's paradox when a second key reverses a comparison.
-	- **Pivot tables and cross-tabulations**: `pivot_table()` and `pd.crosstab()`, with totals, row shares, and fills for absent cells.
+	- **Exploratory data analysis**: the steps of EDA in order, missing values by group, the IQR rule for outliers, and pairplots.
+	- **GroupBy, pivot tables, and crosstabs**: `groupby()` by one or two keys with named aggregation, Simpson's paradox when a second key reverses a comparison, and `pivot_table()` and `pd.crosstab()` with totals, row shares, and fills for absent cells.
 	- **Group coverage and result shapes**: missing keys, unused categories, and `transform`, `filter`, and `apply`.
 	- **Performance optimization**: one `.agg()` per split, built-in aggregations over lambdas, and `category` keys, checked with `%timeit` and `memory_usage()`.
 	- **Remote computing with SSH**: `ssh`, `scp`, key pairs, and `tmux` sessions for long jobs.
-	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 7.5 and 10.1 to 10.5; Shotts, _The Linux Command Line_, Chapter 16; MIT _The Missing Semester of Your CS Education_, "Command-line Environment".
+	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 7.5, 9.2 (pair plots), and 10.1 to 10.5; Shotts, _The Linux Command Line_, Chapter 16; MIT _The Missing Semester of Your CS Education_, "Command-line Environment".
 	## Enables
-	- Summarize a visit log into one row per clinic with mean wait, visit count, and other named aggregations.
-	- Build a pivot table or crosstab of visits by department and clinic, with totals and zeros where no visits occurred.
+	- Explore a visit log before grouping it, from `info()` and missing shares by clinic to an IQR fence and `sns.pairplot()`.
+	- Summarize a visit log into one row per clinic with named aggregations, and into a department-by-clinic pivot table or crosstab with totals and zeros where no visits occurred.
 	- Keep visits with no clinic recorded and clinics with no visits in a report using `dropna=False`, `pd.Categorical`, and `observed=False`.
 	- Compare each visit's wait with its own department's mean using `transform`, and keep only departments that pass a size or mean rule with `filter`.
 	- Copy data to a server with `scp`, run an analysis inside `tmux`, and reattach after the connection drops.
@@ -47,6 +47,61 @@ _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is wha
 <bookmark url="https://qz.com/anthropic-mithril-medicine-acquisition-drug-programs-102826"></bookmark>
 
 <pdf src="media/Mithril-technical-report-v0.6-journal-style.pdf"></pdf>
+
+# Exploratory Data Analysis Before Grouping
+
+- **Exploratory data analysis (EDA)**: looking over a table before summarizing or modeling it, to learn what one row means, what is missing, and which values or patterns need a closer look.
+- The steps run in order because each depends on the one before: a missing share means little until you know what one row is.
+- Every step uses tools from Lectures 04 to 07 except the pairplot and one `groupby` preview. Its findings choose the grouped questions: waits missing more often at one clinic, or a long tail of waits, say which `groupby` to run next.
+
+## Five Steps, in Order
+
+### Reference Card: The Steps of EDA
+
+| Step | Ask | Method |
+| --- | --- | --- |
+| 1. Question and grain | What is the question, and what does one row represent? | `df.head()`; compare `df['id'].nunique()` with `len(df)` |
+| 2. Structure | Which columns, types, counts, and ranges? | `df.info()`, `df.describe()` |
+| 3. Missing values | How much is missing, overall and by group? | `df.isna().mean()`, `df['x'].isna().groupby(df['g']).mean()` |
+| 4. Distributions and outliers | What shape, and which values are extreme? | `sns.histplot(data=df, x='x')`, `sns.boxplot(data=df, x='g', y='x')`; the IQR rule (Lecture 05) flags values above `q3 + 1.5 * (q3 - q1)` or below `q1 - 1.5 * (q3 - q1)` |
+| 5. Relationships | Which columns move together, and how? | `df[cols].corr()`, `sns.pairplot(df[cols].sample(2000), corner=True)` |
+
+`extract` in these snippets is Demo 1's visit log: 1.2 million synthetic visits, one row per visit.
+
+![Waits per visit: a peak near 10 to 15 minutes, a long right tail past the 48.5-minute IQR fence, and Orthopedics slowest by department.](media/wait_distribution.png)
+
+The IQR fence (Lecture 05) sits at 48.5 minutes; 53,361 visits (4.4%) wait longer. The longest wait is 240 minutes, plausible for a clinic, so these stay in the data and pull each mean above its median.
+
+### Code Snippet: Missing Waits by Clinic
+
+```python
+display(extract['wait_min'].isna().groupby(extract['clinic']).mean().round(3))
+```
+
+| clinic | wait_min |
+| --- | --- |
+| Bayview | 0.018 |
+| Excelsior | 0.070 |
+| Marina | 0.018 |
+| Mission | 0.017 |
+| Parkside | 0.022 |
+| Richmond | 0.018 |
+| Ridgecrest | 0.017 |
+| Sunset | 0.018 |
+
+Each value is the share of that clinic's visits with no wait recorded. Preview: `.groupby(extract['clinic'])` computes the share separately for each clinic; the next sections teach `groupby`.
+
+Overall, 2.4% of visits have no wait recorded, but Excelsior loses 7.0%, so its summary rests on fewer visits than its neighbors'.
+
+## Pairwise Plots
+
+A **pairplot** draws a scatter plot for every pair of numeric columns, with each column's histogram on the diagonal. Use it to scan several columns at once; once you know which pair matters, draw that one scatter plot with labels. `corner=True` drops the mirrored upper half, and a 2,000-row sample keeps it fast and the points readable.
+
+![Pairplot of 2,000 sampled visits: age has two humps (children and older adults), waits have a long right tail, and satisfaction falls as waits grow.](media/visits_pairplot.png)
+
+The correlations agree with the picture: wait and satisfaction, -0.46; age and wait, 0.20. The cluster of short waits under age 18 hints that department, not age, drives the wait, a question for `groupby`.
+
+![xkcd 1798: Box Plot. Pumping up a box changes the picture; the data behind it stay the same.](media/xkcd_1798.png)
 
 # The Split-Apply-Combine Paradigm
 

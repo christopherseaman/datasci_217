@@ -57,20 +57,75 @@ Expect `(1200000, 10)`.
 
 ## Core walkthrough
 
-### 1. What is in the extract?
+### 1. An EDA pass before counting
 
-Before counting anything, check what one row is and which fields have gaps.
+Before building the scorecard, walk the extract through the steps of EDA: grain, structure, missing values, distributions, and relationships. Each finding below shapes a later step.
+
+#### Grain and structure
+
+One row should be one visit; check the ID, the columns, and their ranges.
 
 ```python
-display(visits.head())
+display(visits.head(3))
+print(f"Rows: {len(visits):,}, distinct visit IDs: {visits['visit_id'].nunique():,}")
 print(f"Distinct patients: {visits['patient_id'].nunique():,}")
 print("Months:", visits["visit_month"].min(), "to", visits["visit_month"].max())
-print(f"No clinic recorded: {visits['clinic'].isna().sum():,}")
-print(f"No wait recorded:   {visits['wait_min'].isna().sum():,}")
-print(f"Surveys returned:   {visits['satisfaction'].notna().sum():,}")
+visits.info()
+display(visits.describe().round(1))
 ```
 
-Expect five visits with ten columns, then 193,034 distinct patients, months `2025-01` to `2025-12`, 2,983 visits with no clinic, 28,964 with no wait (the check-in kiosk missed them), and 432,710 returned satisfaction surveys (1 to 5). The grain is one row per visit, so a patient seen ten times has ten rows. Two gaps matter for this ask: visits with no clinic cannot be assigned to a clinic, and visits with no wait cannot count for or against the target.
+Expect three visits, one row each, then 1,200,000 rows and as many visit IDs, so the grain is one row per visit; a patient seen ten times has ten rows. Then 193,034 distinct patients and months `2025-01` to `2025-12`. `info()` lists ten columns: `clinic` has 1,197,017 non-null values, `wait_min` 1,171,036, and `satisfaction` 432,710 (surveys returned, 1 to 5). `describe()` shows ages from 0 to 94 and waits from 1 to 240 minutes, with a median wait of 17.0 and a mean of 20.5.
+
+#### Missing values, overall and by clinic
+
+```python
+print(f"No clinic recorded: {visits['clinic'].isna().sum():,}")
+print(f"No wait recorded:   {visits['wait_min'].isna().sum():,}")
+display(visits["wait_min"].isna().groupby(visits["clinic"]).mean().round(3))
+```
+
+Expect 2,983 visits with no clinic and 28,964 with no wait (the check-in kiosk missed them). By clinic, 1.7% to 2.2% of waits are missing everywhere except Excelsior, at 7.0%. Two gaps matter for this ask: visits with no clinic cannot be assigned to a clinic, and visits with no wait cannot count for or against the target. Step 2 handles both, and Excelsior's gap gets a closer look there.
+
+#### Distribution and outliers
+
+A histogram shows the shape of the waits; the IQR rule from Lecture 05 marks the extreme ones, and a box plot by department shows where they sit. `ax.axvline(x)` draws a vertical reference line at `x`.
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+q1, q3 = visits["wait_min"].quantile([0.25, 0.75])
+upper = q3 + 1.5 * (q3 - q1)
+print(f"Quartiles {q1:.0f} and {q3:.0f} minutes; IQR upper fence {upper:.1f}")
+print(f"Waits above the fence: {(visits['wait_min'] > upper).sum():,}")
+
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+sns.histplot(data=visits, x="wait_min", binwidth=5, ax=axes[0])
+axes[0].axvline(upper, color="red", linestyle="--")
+axes[0].set(title="Wait per visit, 2025 (red: IQR fence)", xlabel="Minutes")
+sns.boxplot(data=visits, y="department", x="wait_min", ax=axes[1])
+axes[1].set(title="Wait by department", xlabel="Minutes", ylabel="")
+plt.tight_layout()
+plt.show()
+```
+
+Expect quartiles of 11 and 26 minutes, a fence at 48.5, and 53,361 waits above it. The histogram peaks near 10 to 15 minutes and has a long right tail to 240, so a few long waits will pull each clinic's mean above its median. These are long waits, not entry errors, so they stay. In the box plot, Orthopedics sits furthest right and Behavioral Health furthest left: the department mix will matter in step 3.
+
+#### Relationships
+
+A pairplot of 2,000 sampled visits shows every pair of the numeric columns at once.
+
+```python
+cols = ["age", "wait_min", "satisfaction"]
+sample = visits[cols].sample(2000, random_state=217)
+display(sample.corr().round(2))
+sns.pairplot(sample, corner=True, plot_kws={"s": 8, "alpha": 0.4})
+plt.show()
+```
+
+Expect correlations of -0.46 between wait and satisfaction, 0.20 between age and wait, and -0.06 between age and satisfaction. The age histogram has two humps, children and adults over 50. Children cluster at short waits, which points to departments (Pediatrics) rather than age. Ratings fall as waits grow, the question the board asks in step 12.
+
+**What the pass decides:** score clinics on the share of waits over 30 minutes rather than the mean, which the tail inflates; keep the missing waits out of that share; and break clinics down by department.
 
 ### 2. Which clinics miss the 30-minute target?
 
@@ -95,14 +150,17 @@ scorecard["visits_per_patient"] = scorecard["visits"] / scorecard["patients"]
 display(scorecard.sort_values("share_over_30", ascending=False).round(3))
 ```
 
-Expect eight rows, worst first. Mission has 24.0% of visits over 30 minutes, then Bayview (19.7%), Sunset (17.6%), Excelsior (17.5%), and Richmond (15.9%); Parkside (12.4%) and Marina (10.0%) pass, and Ridgecrest, the small rural clinic, is best (4.7%). Mission is also the busiest (264,185 visits from 62,757 patients). Every clinic's mean wait is above its median, because a few very long waits pull the mean up. Parkside has the fewest visits per patient (2.67) because it opened in July. Without the `NaN` fix, Excelsior would show 16.3%, because its kiosk lost most of October's waits.
-
-The slide for the memo: each clinic's share over 30 minutes beside the 15% line. `ax.axvline(x)` draws a vertical reference line at `x`.
+Expect eight rows, worst first. Mission has 24.0% of visits over 30 minutes, then Bayview (19.7%), Sunset (17.6%), Excelsior (17.5%), and Richmond (15.9%); Parkside (12.4%) and Marina (10.0%) pass, and Ridgecrest, the small rural clinic, is best (4.7%). Mission is also the busiest (264,185 visits from 62,757 patients). Every clinic's mean wait is above its median, because a few very long waits pull the mean up. Parkside has the fewest visits per patient (2.67) because it opened in July. Without the `NaN` fix, Excelsior would show 16.3%, because its kiosk lost most of October's waits. Count Excelsior's recorded waits by month to see the gap.
 
 ```python
-import matplotlib.pyplot as plt
-import seaborn as sns
+display(visits[visits["clinic"] == "Excelsior"].groupby("visit_month")["wait_min"].count())
+```
 
+Expect 10,716 to 13,744 recorded waits in every month except October, which drops to 5,309.
+
+The slide for the memo: each clinic's share over 30 minutes beside the 15% line.
+
+```python
 share = scorecard.set_index("clinic")["share_over_30"].sort_values()
 ax = share.plot.barh(figsize=(7, 4))
 ax.axvline(0.15, color="red", linestyle="--")
@@ -295,18 +353,16 @@ plt.show()
 
 Expect Parkside still higher within each visit type, but by less: 0.103 against 0.091 for follow-ups and 0.155 against 0.148 for new patients, against 0.124 and 0.100 for all visits. The chart shows Parkside's bar above Marina's in all three groups, with the gap smallest for new patients. Visit type explains part of the 2.4-point gap, not all of it.
 
-Visit type is not the only difference in case mix. Step 4 showed that Marina runs no Orthopedics, the slowest department, while 12.5% of Parkside's visits are Orthopedics. Repeat the table on the four departments both clinics run.
+Visit type is not the only difference in case mix. Step 4 showed that Marina runs no Orthopedics, the slowest department, while 12.5% of Parkside's visits are Orthopedics. Compare the two clinics within each department and visit type, on the four departments both clinics run.
 
 ```python
 shared = pair[pair["department"].isin(["Behavioral Health", "Cardiology", "Family Medicine", "Pediatrics"])]
-share_shared = shared.groupby(["clinic", "visit_type"])["over_30"].mean().unstack()
-share_shared["All visits"] = shared.groupby("clinic")["over_30"].mean()
-display(share_shared.round(3))
+display(shared.groupby(["department", "visit_type", "clinic"])["over_30"].mean().unstack().round(3))
 ```
 
-Expect Parkside lower in every column: 0.078 against 0.091 for follow-ups, 0.122 against 0.145 for new patients, and 0.096 against 0.100 for all visits. With Orthopedics out, the ranking reverses. This is Simpson's paradox: department is the confounder, because Orthopedics lengthens waits and only Parkside runs it.
+Expect eight rows with a Marina and a Parkside column. Parkside is lower or tied in every row: Cardiology 0.112 against 0.176 for follow-ups and 0.198 against 0.300 for new patients, Family Medicine 0.115 against 0.120 and 0.175 against 0.185, Pediatrics 0.004 against 0.008 and 0.012 against 0.027, and Behavioral Health 0 for both. Yet Parkside is higher overall (12.4% against 10.0%). This is Simpson's paradox: department is the confounder, and Orthopedics, which only Parkside runs, drives the overall gap.
 
-**What we tell Dr. Alvarez:** Parkside is faster than Marina at each visit type within the departments both clinics run. It ranks behind because of its case mix: 12.5% of its visits are Orthopedics, which Marina does not run, and 41.2% are new patients (17.5% at Marina). The memo compares clinics within department and visit type before ranking them.
+**What we tell Dr. Alvarez:** Parkside is as fast as Marina or faster in every department and visit type both clinics run. It ranks behind because of its case mix: 12.5% of its visits are Orthopedics, which Marina does not run, and 41.2% are new patients (17.5% at Marina). The memo compares clinics within department and visit type before ranking them.
 
 ### 10. The board asks for patients, not visits
 

@@ -26,7 +26,7 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 	## Covers
 	- **Capstone checklist and question**: the stages from one question to a checkable result, and how unit, outcome, and time frame make a question answerable.
 	- **Grain, keys, and complete panels**: row meaning, UTC time keys, and true zeros versus missing readings.
-	- **A step-by-step EDA pass**: the steps of EDA in order, pairwise plots, and selection and measurement bias.
+	- **A step-by-step EDA pass**: Lecture 08's EDA steps run on training rows, a time-structure step for hourly data, and selection and measurement bias.
 	- **Prediction time, baselines, and one honest test**: leakage, a simple baseline, and a chronological train, validation, and test split.
 	- **The worked example and transfer**: NYC taxi pickups carried through four notebooks, and how each decision changes for sensor data.
 	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 9.2 (pair plots) and Chapter 13.
@@ -167,26 +167,21 @@ display(panel.drop(columns="_merge"))
 
 # A Step-by-Step EDA Pass
 
-- **Exploratory data analysis (EDA)**: looking at a table before modeling it, to learn what its rows mean, what is missing, and which patterns a model could use.
-- The steps run in order because each depends on the one before: a missing share means little until you know what one row is.
-- For a forecast, explore only the earliest period, the **training rows**: patterns spotted in later rows would shape choices those rows are meant to test.
+- A forecast runs Lecture 08's EDA steps with two changes: it explores only the earliest period, and it adds a step for time structure.
+- **Training rows**: that earliest period. Patterns spotted in later rows would shape choices those rows are meant to test.
 
-## The steps, in order
+## The steps on a forecast table
 
-### Reference Card: The Steps of EDA
+### Reference Card: EDA Steps for a Forecast
 
-| Step | Ask | Method |
+| Step | For the taxi table | Method |
 | --- | --- | --- |
-| 1. Question and grain | What does one row represent? | `df.duplicated(subset=key).any()` on the key |
-| 2. Structure | Which columns, types, counts, and ranges? | `df.info()`, `df.describe()` |
-| 3. Missing values | How much is missing, overall and by group? | `df.isna().mean()`, `df["x"].isna().groupby(df["g"]).mean()` |
-| 4. Distributions and outliers | What shape, and which values are extreme? | `df["x"].hist(bins=50)`, `df.boxplot(column="x", by="g")`; the **IQR rule** flags values beyond 1.5 × (Q3 − Q1) outside the quartiles from `df["x"].quantile([0.25, 0.75])` |
-| 5. Relationships | Which columns move together, and how? | `df[cols].corr()`, `sns.pairplot(df.sample(2000), corner=True)` |
+| 1 to 5. Grain, structure, missing values, distributions, relationships | Training rows only; one row is one zone-hour, so check the key first | `df.duplicated(subset=key).any()`, then Lecture 08's card |
 | 6. Time structure | Are hours missing, and is there a daily or weekly cycle? | `s.asfreq("h")` turns absent hours into `NaN` rows; `df.groupby(df["t"].dt.hour)["x"].mean()` gives the hour profile |
 
 ## Pairwise plots
 
-A **pairplot** draws a scatter plot for every pair of numeric columns, with each column's histogram on the diagonal. `corner=True` drops the mirrored upper half; sampling 2,000 rows keeps it fast and the points readable.
+On the taxi rows, the pairplot shows a pattern that one correlation cannot describe.
 
 ![Taxi training rows: pickups track last hour and last week in straight bands, but against hour of day they form a daily cycle that one correlation cannot describe.](media/taxi_pairplot.png)
 
@@ -313,6 +308,7 @@ display(frame)
 | UTC keys, local calendar fields, and daylight-saving transitions | Lecture 09, Time Zone Handling | `02_wrangling.ipynb`: local calendar fields; `03_model_prep.ipynb`: split boundaries |
 | Times written as text (`Series.dt.strftime`) | Lecture 09, pandas DatetimeIndex | `01_setup.ipynb`: audit records; final Q4: `row_id` |
 | Past-only lags and rolling windows | Lecture 09, Entity-Aware Features and Past-Only Windows | `02_wrangling.ipynb`: construct history features |
+| Steps of EDA, the IQR rule, and pairplots | Lecture 08, Exploratory Data Analysis Before Grouping | `03_model_prep.ipynb`: EDA on training rows |
 | Aggregation and a question-shaped table | Lecture 08, Data Aggregation and Group Operations | `03_model_prep.ipynb`: training-only summaries; `04_modeling.ipynb`: error slices |
 | Aware UTC target times compared with a zoned local cutoff | Lecture 10, Splitting on Target Time | `03_model_prep.ipynb`: split boundaries; final Q5 and Q6: split boundaries |
 | Cyclic calendar features (sine and cosine) and recorded model settings (`get_params(deep=False)`) | Lecture 10, Cyclic Time Features; Freeze, Then Test Once | final Q4: calendar features; final Q7: model specification |
