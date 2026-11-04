@@ -11,7 +11,7 @@ notion:
 
 See [BONUS.md](BONUS.md) for the optional extensions.
 
-**Live notebooks in Colab:** [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo1_groupby_operations.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo2_coverage_result_shapes.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo3_remote_performance.ipynb)
+**Live notebooks in Colab:** [Demo 0](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo0_eda_pass.ipynb) · [Demo 1](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo1_groupby_operations.ipynb) · [Demo 2](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo2_coverage_result_shapes.ipynb) · [Demo 3](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo3_remote_performance.ipynb)
 
 **Run locally:**
 
@@ -66,7 +66,7 @@ _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is wha
 | 4. Distributions and outliers | What shape, and which values are extreme? | `sns.histplot(data=df, x='x')`, `sns.boxplot(data=df, x='g', y='x')`; the IQR rule (Lecture 05) flags values above `q3 + 1.5 * (q3 - q1)` or below `q1 - 1.5 * (q3 - q1)` |
 | 5. Relationships | Which columns move together, and how? | `df[cols].corr()`, `sns.pairplot(df[cols].sample(2000), corner=True)` |
 
-`extract` in these snippets is Demo 1's visit log (the demo calls it `visits`): 1.2 million synthetic visits, one row per visit.
+`extract` in these snippets is Demo 0's visit log (the demo calls it `visits`): 1.2 million synthetic visits, one row per visit.
 
 ![Waits per visit: a peak near 10 to 15 minutes, a long right tail past the 48.5-minute IQR fence, and Orthopedics slowest by department.](media/wait_distribution.png)
 
@@ -137,6 +137,10 @@ chart.save('pairplot.html')  # open in a browser and hover over a point
 ```
 
 ![xkcd 1798: Box Plot. Pumping up a box changes the picture; the data behind it stay the same.](media/xkcd_1798.png)
+
+# LIVE DEMO!
+
+[Open Demo 0 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo0_eda_pass.ipynb)
 
 # The Split-Apply-Combine Paradigm
 

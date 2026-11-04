@@ -20,7 +20,7 @@ How the files are read:
 
 - Each check is scored on its own, so one mistake costs only that check's points.
 - A mistake is charged once. A missing column, or one saved under another name with the right values, costs only the columns check; values in the other columns are still checked. An empty table, or one that shares no row with the expected rows, earns no value points, with one exception: a list of exams (Tasks 2.2 to 2.4) that holds none of the expected exams costs only its rows check, and its other values checks pass.
-- The pairplot is checked only by its file: which library drew it, its columns, sample size, colors, and labels are your choice.
+- The pairplot is checked only by its file: which library drew it, its sample size, colors, and labels are your choice. An Altair spec must hold at least three numeric columns; the check cannot read the columns of a PNG.
 - Spacing, line endings, quoting, column order, and row order never cost points.
 - Numbers are compared as numbers, so `6`, `6.0`, and `6.00` are the same value. A mean or median may keep every digit or be rounded to one or two decimals. A share of exams may keep every digit, be rounded to three decimals, or be written as a percent (`0.39` for `0.0039`), one unit for the whole column.
 - Site names, modalities, IDs, and column names are compared in any letter case.
@@ -37,7 +37,7 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | `output/missing_by_modality.csv` | Its columns are the three in the Task 1.1 header line. | missing by modality: columns | 2 |
 | `output/missing_by_modality.csv` | It holds the four modalities, once each. | missing by modality: one row per modality | 2 |
 | `output/missing_by_modality.csv` | Each `report_hr` is the share of the modality's exams with no signed report, and each `dose_msv` the share with no dose. | missing by modality: shares | 4 |
-| `output/pairplot.png`, `.html`, or `.json` | At least one of the three holds a pairplot: a PNG image at least 300 by 300 pixels and 10 KB, or a web page or JSON file whose Vega-Lite spec repeats or folds at least three of `age`, `scan_min`, `dose_msv`, `wait_hr`, and `report_hr`. A second file is never charged, even a broken one. | pairplot: saved chart | 4 |
+| `output/pairplot.png`, `.html`, or `.json` | At least one of the three holds a pairplot: a PNG image at least 300 by 300 pixels that is not blank, or a web page or JSON file whose Vega-Lite spec repeats or folds at least three of `age`, `scan_min`, `dose_msv`, `wait_hr`, and `report_hr`, and the message names any column it leaves out. A second file is never charged, even a broken one. | pairplot: saved chart | 4 |
 | `output/site_summary.csv` | Its columns are the six in the Task 1.3 header line. | site summary: columns | 2 |
 | `output/site_summary.csv` | It holds the eight sites with exams, once each. | site summary: one row per site | 2 |
 | `output/site_summary.csv` | Each `exam_count` is the site's number of exams. | site summary: exam_count values | 4 |

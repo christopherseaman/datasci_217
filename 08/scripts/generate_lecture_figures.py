@@ -6,7 +6,7 @@ values the lecture prints, as are transform_vs_clinic.png and filter_vs_mask.png
 simpsons_paradox.png is computed from the lecture's four-row trial table.
 ssh_laptop_server.png is a plain diagram.
 wait_distribution.png, visits_pairplot.png, and visits_pairplot_altair.png draw
-the lecture's EDA figures from Demo 1's visit extract; the Altair PNG needs
+the lecture's EDA figures from the demo visit extract; the Altair PNG needs
 vl-convert-python, added with --with below.
 pivot_heatmap.png runs Demo 1's own code cells up to its heatmap cell, so the
 figure shows the demo's 1.2 million synthetic visits.
@@ -394,7 +394,7 @@ def pivot_heatmap():
 
 
 def load_extract():
-    """Demo 1's visit extract, built by its generator when missing."""
+    """The demo visit extract, built by its generator when missing."""
     sys.path.insert(0, str(DEMO1.parent))
     with contextlib.chdir(DEMO1.parent):
         if not Path("data/visits.parquet").exists():
@@ -404,7 +404,7 @@ def load_extract():
 
 
 def wait_distribution():
-    """The lecture's EDA distribution figure: Demo 1's histogram with the IQR fence, and waits by department."""
+    """The lecture's EDA distribution figure: Demo 0's histogram with the IQR fence, and waits by department."""
     import seaborn as sns
 
     extract = load_extract()
@@ -425,7 +425,7 @@ def wait_distribution():
 
 
 def visits_pairplot():
-    """The lecture's EDA pairplot: 2,000 sampled visits from Demo 1's extract."""
+    """The lecture's EDA pairplot: 2,000 sampled visits from the demo visit extract."""
     import seaborn as sns
 
     extract = load_extract()

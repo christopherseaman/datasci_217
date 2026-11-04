@@ -18,19 +18,15 @@ jupyter:
 
 # Demo 1: Where Patients Waited in 2025
 
-**Project brief.** Dr. Renee Alvarez, VP of Ambulatory Operations at a health system with eight clinics, presents a 2025 access review to the board on January 15, 2026. The board uses it to decide where to add provider hours in 2026 and how large to make a diabetes care-management pilot at Bayview and Excelsior. The work comes in three phases:
-
-- **Demo 1**: the year-end wait scorecard for Dr. Alvarez's staffing memo.
-- **Demo 2**: the fourth-quarter packet for the Quality Committee.
-- **Demo 3**: the pilot's patient list, rebuilt every night on the secure analytics server.
+**Project so far.** Demo 0's EDA pass chose the share of waits over 30 minutes as the score, kept missing waits out of it, and found that waits differ by department.
 
 **This phase's ask.** By Friday, Dr. Alvarez wants three things: which clinics miss the system's access target (at least 85% of patients seen within 30 minutes), where inside those clinics the long waits are, and visit counts by department with totals for the board's appendix. The source is the 2025 visit extract: 1.2 million synthetic visits, one row per visit.
 
 Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas, pyarrow (for Parquet), dowhy (for the data generator), and altair in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 dowhy==0.14 altair==5.5.0
+# Installs the course's pandas, pyarrow (for Parquet), and dowhy (for the data generator) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 dowhy==0.14
 ```
 
 This supplied cell downloads `generate_data.py` when it is missing, runs `generate_data.build()` to write the tables into `data/` if they are not there yet (about 30 seconds), then loads the visit extract.
@@ -39,8 +35,10 @@ This supplied cell downloads `generate_data.py` when it is missing, runs `genera
 from pathlib import Path
 from urllib.request import urlretrieve
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/demo"
 if not Path("generate_data.py").exists():
@@ -57,117 +55,7 @@ Expect `(1200000, 10)`.
 
 ## Core walkthrough
 
-### 1. An EDA pass before counting
-
-Before building the scorecard, walk the extract through the steps of EDA: grain, structure, missing values, distributions, and relationships. Each finding below shapes a later step.
-
-#### Grain and structure
-
-One row should be one visit; check the ID, the columns, and their ranges.
-
-```python
-display(visits.head(3))
-print(f"Rows: {len(visits):,}, distinct visit IDs: {visits['visit_id'].nunique():,}")
-print(f"Distinct patients: {visits['patient_id'].nunique():,}")
-print("Months:", visits["visit_month"].min(), "to", visits["visit_month"].max())
-visits.info()
-display(visits.describe().round(1))
-```
-
-Expect three visits, one row each, then 1,200,000 rows and as many visit IDs, so the grain is one row per visit; a patient seen ten times has ten rows. Then 193,034 distinct patients and months `2025-01` to `2025-12`. `info()` lists ten columns: `clinic` has 1,197,017 non-null values, `wait_min` 1,171,036, and `satisfaction` 420,456 (surveys returned, 1 to 5). `describe()` shows ages from 0 to 94 and waits from 1 to 240 minutes, with a median wait of 17.0 and a mean of 20.5.
-
-#### Missing values, overall and by clinic
-
-```python
-print(f"No clinic recorded: {visits['clinic'].isna().sum():,}")
-print(f"No wait recorded:   {visits['wait_min'].isna().sum():,}")
-display(visits["wait_min"].isna().groupby(visits["clinic"]).mean().round(3))
-```
-
-Expect 2,983 visits with no clinic and 28,964 with no wait (the check-in kiosk missed them). By clinic, 1.7% to 2.2% of waits are missing everywhere except Excelsior, at 7.0%. Two gaps matter for this ask: visits with no clinic cannot be assigned to a clinic, and visits with no wait cannot count for or against the target. Step 2 handles both, and Excelsior's gap gets a closer look there.
-
-#### Distribution and outliers
-
-A histogram shows the shape of the waits; the IQR rule from Lecture 05 marks the extreme ones, and a box plot by department shows where they sit. `ax.axvline(x)` draws a vertical reference line at `x`.
-
-```python
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-q1, q3 = visits["wait_min"].quantile([0.25, 0.75])
-upper = q3 + 1.5 * (q3 - q1)
-print(f"Quartiles {q1:.0f} and {q3:.0f} minutes; IQR upper fence {upper:.1f}")
-print(f"Waits above the fence: {(visits['wait_min'] > upper).sum():,}")
-
-fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-sns.histplot(data=visits, x="wait_min", binwidth=5, ax=axes[0])
-axes[0].axvline(upper, color="red", linestyle="--")
-axes[0].set(title="Wait per visit, 2025 (red: IQR fence)", xlabel="Minutes")
-sns.boxplot(data=visits, y="department", x="wait_min", ax=axes[1])
-axes[1].set(title="Wait by department", xlabel="Minutes", ylabel="")
-plt.tight_layout()
-plt.show()
-```
-
-Expect quartiles of 11 and 26 minutes, a fence at 48.5, and 53,361 waits above it. The histogram peaks near 10 to 15 minutes and has a long right tail to 240, so a few long waits will pull each clinic's mean above its median. These are long waits, not entry errors, so they stay. In the box plot, Orthopedics sits furthest right and Behavioral Health furthest left: the department mix will matter in step 3.
-
-#### Relationships
-
-A pairplot of 2,000 sampled visits shows every pair of the numeric columns at once.
-
-```python
-cols = ["age", "wait_min", "satisfaction"]
-sample = visits[cols].sample(2000, random_state=217)
-display(sample.corr().round(2))
-sns.pairplot(sample, corner=True, plot_kws={"s": 8, "alpha": 0.4})
-plt.show()
-```
-
-Expect correlations of -0.5 between wait and satisfaction, 0.2 between age and wait, and -0.1 between age and satisfaction. The age histogram has two humps, children and adults over 50. Children cluster at short waits, which points to departments (Pediatrics) rather than age. Ratings fall as waits grow, the question the board asks in step 12.
-
-The analytics team wants the same view on the operations dashboard, where a clinic manager can hover over a point to read its age, wait, and rating. Altair draws it as a repeated scatter and saves two files: a web page that opens in any browser, and the Vega-Lite specification the dashboard loads. A brush links the panels: `.add_params(brush)` attaches it to the chart, and `alt.condition(brush, ...)` picks one color for points inside the box and another for points outside.
-
-```python
-import altair as alt
-
-Path("output").mkdir(exist_ok=True)
-# alt.selection_interval(): drag a box; resolve="global" shares one box across every panel
-brush = alt.selection_interval(resolve="global")
-pairs = alt.Chart(sample).mark_point(size=10, opacity=0.4).encode(
-    alt.X(alt.repeat("column"), type="quantitative"),
-    alt.Y(alt.repeat("row"), type="quantitative"),
-    color=alt.condition(brush, alt.value("steelblue"), alt.value("lightgray")),
-    tooltip=cols,
-).add_params(brush).properties(width=150, height=150).repeat(row=cols, column=cols)
-pairs.save("output/visits_pairplot.html")
-pairs.save("output/visits_pairplot.json")
-pairs
-```
-
-Expect a 3 by 3 grid of the same 2,000 visits, with the same clouds as the seaborn pairplot. The diagonal panels plot each column against itself, so they are straight lines where seaborn drew histograms. The grid is live in Jupyter, VS Code, and Colab because `pairs` is the cell's last line. Hovering over a point shows its three values. Drag a box in any panel, for example long waits in the wait-by-satisfaction panel: the same visits stay blue in every other panel and the rest turn gray, so you can see where the long waits fall on age and rating. Double-click to clear the box. The saved HTML page behaves the same way. The sample stays at 2,000 rows because Altair refuses more than 5,000 by default (`MaxRowsError`).
-
-Look inside the two saved files.
-
-```python
-import json
-
-html = Path("output/visits_pairplot.html").read_text()
-for line in html.splitlines():
-    if "<script" in line or "vegaEmbed(" in line:
-        print(line.strip())
-
-spec = json.loads(Path("output/visits_pairplot.json").read_text())
-print(sorted(spec))
-print(spec["repeat"])
-print(spec["params"][0]["select"])
-print(len(next(iter(spec["datasets"].values()))), "rows embedded")
-```
-
-Expect three `<script>` tags that load `vega@5`, `vega-lite@5.20.1`, and `vega-embed@6` from `cdn.jsdelivr.net`, then the page's own `<script>` and its `vegaEmbed("#vis", spec, embedOpt)` call, which draws the chart in the `#vis` box. The page needs internet access to fetch those three libraries. The JSON's top-level keys are `$schema`, `config`, `datasets`, `params`, `repeat`, and `spec`: `repeat` lists the three columns for the rows and the columns, `spec` is the one scatter Vega-Lite repeats, `params` holds the brush (`param_1`, an interval selection shared by all nine panels), and `datasets` holds the 2,000 rows. The brush prints as `{'type': 'interval', 'resolve': 'global'}`. Each file is about 105 KB.
-
-**What the pass decides:** score clinics on the share of waits over 30 minutes rather than the mean, which the tail inflates; keep the missing waits out of that share; and break clinics down by department.
-
-### 2. Which clinics miss the 30-minute target?
+### 1. Which clinics miss the 30-minute target?
 
 Mark each visit as over 30 minutes or not. A missing wait compares as `False`, so the second line puts the missing waits back; without it, the 28,964 visits the kiosk missed would count as on time.
 
@@ -224,7 +112,7 @@ Expect a gap of 2,983: exactly the visits with no clinic recorded, which `groupb
 
 **What we tell Dr. Alvarez:** five clinics miss the target, Mission by the most (24.0% over 30 minutes). 2,983 visits (0.2%) have no clinic recorded and are footnoted, not assigned.
 
-### 3. Where inside the clinics are the long waits?
+### 2. Where inside the clinics are the long waits?
 
 A clinic-level share cannot say which department to staff. Group by two keys, one group per observed (department, clinic) pair, then `.unstack()` the clinics into columns. A heatmap colors each cell of the grid by its value.
 
@@ -256,9 +144,9 @@ Expect 23,690 visits, 1,743 to 2,273 a month, then a flat line at 29 to 34 minut
 
 **What we tell Dr. Alvarez:** Bayview's Orthopedics waits nearly doubled in September with no rise in visits. She confirms Bayview lost an orthopedic surgeon that month, so a replacement goes first in the staffing memo.
 
-### 4. The board appendix: visits by department, with totals
+### 3. The board appendix: visits by department, with totals
 
-The appendix uses `pivot_table`, the board's usual layout. First confirm that `pivot_table` gives the same grid as the analysis in step 3, so the appendix and the heatmap cannot disagree.
+The appendix uses `pivot_table`, the board's usual layout. First confirm that `pivot_table` gives the same grid as the analysis in step 2, so the appendix and the heatmap cannot disagree.
 
 ```python
 median_wait = pd.pivot_table(visits, values="wait_min", index="department",
@@ -279,7 +167,7 @@ print(f"Corner cell: {volume.loc['Total', 'Total']:,}")
 
 Expect seven department rows plus `Total`, eight clinic columns plus `Total`, and `0` where a clinic does not run a department (Orthopedics at Marina; Dermatology and Endocrinology at Parkside; Dermatology, Endocrinology, and Orthopedics at Ridgecrest). Ridgecrest's Cardiology count is 179, from its monthly outreach clinic (one more outreach visit has no clinic recorded). The corner cell is 1,197,017, the scorecard's total, so the appendix and the memo agree.
 
-### 5. Did Parkside take load off Sunset?
+### 4. Did Parkside take load off Sunset?
 
 Parkside opened in July to relieve Sunset. `crosstab` counts rows for each pair of values directly, here month by clinic.
 
@@ -316,7 +204,7 @@ Expect 12 month rows. Parkside is `NaN` through June: no visits, so nothing to a
 
 Run the core walkthrough first. Each item is a follow-up question that came back after the memo went out.
 
-### 6. The CFO asks whether the Total column is the system average
+### 5. The CFO asks whether the Total column is the system average
 
 In a pivot table of means, the `Total` column is the mean of all the department's visits, not the average of its cells. Check it on Orthopedics.
 
@@ -330,7 +218,7 @@ print("Average of clinic cells:", round(ortho.drop("Total").mean(), 2))
 
 Expect two different numbers, 36.71 and 35.25. Mission, slow and busy, has the most Orthopedics visits, so it counts for more in the `Total`; that is the system average a patient experiences. The empty Marina and Ridgecrest cells are `NaN`, and `.mean()` skips them.
 
-### 7. A reviewer asks how many waits stand behind each median
+### 6. A reviewer asks how many waits stand behind each median
 
 A median is only as good as the count behind it. `aggfunc=["count", "median"]` gives both grids from one pivot table.
 
@@ -343,7 +231,7 @@ display(wait_stats["median"])
 
 Expect two 7 by 8 tables. Most cells rest on thousands of waits, but Ridgecrest's Cardiology median (14.0) rests on 179, from 10 outreach patients. The counts print as `179.0` because the absent cells are `NaN`, which forces the column to floats.
 
-### 8. Dr. Alvarez asks whether new patients wait longer
+### 7. Dr. Alvarez asks whether new patients wait longer
 
 Group by clinic and visit type, then `unstack` the visit types into columns to subtract them.
 
@@ -368,9 +256,9 @@ print(flat.shape)
 
 Expect `clinic`, `visit_type`, and `wait_min` columns with a `0..n-1` index, starting with Bayview Follow-up (21.4) and Bayview New (24.5), and a shape of `(16, 3)`: the same 16 pairs as `stack()`.
 
-### 9. Parkside's manager disputes the ranking
+### 8. Parkside's manager disputes the ranking
 
-The scorecard puts Parkside (12.4% over 30 minutes) behind Marina (10.0%). Parkside's manager replies that a clinic opened in July sees mostly new patients, and step 8 showed new patients wait longer everywhere. First compare the visit mix: `normalize="index"` turns each clinic's row of counts into shares that sum to 1.
+The scorecard puts Parkside (12.4% over 30 minutes) behind Marina (10.0%). Parkside's manager replies that a clinic opened in July sees mostly new patients, and step 7 showed new patients wait longer everywhere. First compare the visit mix: `normalize="index"` turns each clinic's row of counts into shares that sum to 1.
 
 ```python
 pair = visits[visits["clinic"].isin(["Marina", "Parkside"])]
@@ -393,7 +281,7 @@ plt.show()
 
 Expect Parkside still higher within each visit type, but by less: 0.103 against 0.091 for follow-ups and 0.155 against 0.148 for new patients, against 0.124 and 0.100 for all visits. The chart shows Parkside's bar above Marina's in all three groups, with the gap smallest for new patients. Visit type explains part of the 2.4-point gap, not all of it.
 
-Visit type is not the only difference in case mix. Step 4 showed that Marina runs no Orthopedics, the slowest department, while 12.5% of Parkside's visits are Orthopedics. Compare the two clinics within each department and visit type, on the four departments both clinics run.
+Visit type is not the only difference in case mix. Step 3 showed that Marina runs no Orthopedics, the slowest department, while 12.5% of Parkside's visits are Orthopedics. Compare the two clinics within each department and visit type, on the four departments both clinics run.
 
 ```python
 shared = pair[pair["department"].isin(["Behavioral Health", "Cardiology", "Family Medicine", "Pediatrics"])]
@@ -405,7 +293,7 @@ Expect eight rows with a Marina and a Parkside column. Parkside is lower or tied
 
 **What we tell Dr. Alvarez:** Parkside is as fast as Marina or faster in every department and visit type both clinics run. It ranks behind because of its case mix: 12.5% of its visits are Orthopedics, which Marina does not run, and 41.2% are new patients (17.5% at Marina). The memo compares clinics within department and visit type before ranking them.
 
-### 10. The board asks for patients, not visits
+### 9. The board asks for patients, not visits
 
 ```python
 patients = pd.pivot_table(visits, values="patient_id", index="department", columns="clinic",
@@ -417,9 +305,9 @@ per_patient["visits_per_patient"] = per_patient["visits"] / per_patient["patient
 display(per_patient.sort_values("visits_per_patient", ascending=False).round(2))
 ```
 
-Expect counts well below the visit counts in step 4, and Ridgecrest's Cardiology at 10 patients: ten regulars account for all 179 outreach visits with a clinic recorded. In the second table, Pediatrics has the most visits per patient (5.36), because every child's visits land in one department while an adult's spread across several; Dermatology has the fewest (1.96).
+Expect counts well below the visit counts in step 3, and Ridgecrest's Cardiology at 10 patients: ten regulars account for all 179 outreach visits with a clinic recorded. In the second table, Pediatrics has the most visits per patient (5.36), because every child's visits land in one department while an adult's spread across several; Dermatology has the fewest (1.96).
 
-### 11. Each clinic manager wants one line about their own clinic
+### 10. Each clinic manager wants one line about their own clinic
 
 Dr. Alvarez sends every clinic manager a one-line note before the memo goes out. Looping over the GroupBy object hands over each clinic's name and its rows, one clinic at a time.
 
@@ -430,7 +318,7 @@ for clinic, group in visits.groupby("clinic"):
 
 Expect eight lines in alphabetical order, from `Bayview: 185,625 visits, 19.7% over 30 minutes` to `Sunset: 245,192 visits, 17.6% over 30 minutes`. The numbers match the scorecard: the loop writes one message per group, and the `agg` table stays the report.
 
-### 12. The board asks whether long waits cost satisfaction
+### 11. The board asks whether long waits cost satisfaction
 
 Select two columns to summarize both with one function, then use a dictionary in `.agg()` to give each column its own list of functions.
 

@@ -24,6 +24,7 @@ curl -fsSL "$base_url/uv.lock" -o uv.lock
 curl -fsSL "$base_url/.python-version" -o .python-version
 curl -fsSL "$base_url/generate_data.py" -o generate_data.py
 curl -fsSL "$base_url/build_features.py" -o build_features.py
+curl -fsSL "$base_url/demo0_eda_pass.ipynb" -o demo0_eda_pass.ipynb
 curl -fsSL "$base_url/demo1_groupby_operations.ipynb" -o demo1_groupby_operations.ipynb
 curl -fsSL "$base_url/demo2_coverage_result_shapes.ipynb" -o demo2_coverage_result_shapes.ipynb
 curl -fsSL "$base_url/demo3_remote_performance.ipynb" -o demo3_remote_performance.ipynb

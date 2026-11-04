@@ -36,6 +36,7 @@ import difflib
 import json
 import math
 import re
+import zlib
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -2492,31 +2493,92 @@ def _when_peer_medians_blank(note: str) -> Callable[[Table, dict[str, str]], str
     return cause
 
 
-# Task 1.1 step 6: one pairplot, from seaborn as a PNG or from Altair as a web page or a Vega-Lite JSON file.
+# Task 1.1 step 3: one pairplot, from seaborn as a PNG or from Altair as a web page or a Vega-Lite JSON file.
 PAIRPLOT_PNG, PAIRPLOT_HTML, PAIRPLOT_JSON = "output/pairplot.png", "output/pairplot.html", "output/pairplot.json"
-# The numeric columns of data/imaging_exams.parquet; a pairplot needs at least PAIRPLOT_MIN_COLUMNS of them.
+# The numeric columns of data/imaging_exams.parquet; the README asks for all five, and a pairplot passes with
+# at least PAIRPLOT_MIN_COLUMNS of them because the columns of a seaborn PNG cannot be read.
 NUMERIC_COLUMNS = ("age", "scan_min", "dose_msv", "wait_hr", "report_hr")
 PAIRPLOT_MIN_COLUMNS = 3
-# A seaborn pairplot of three columns is about 750 pixels square and 40 KB; a blank figure is far smaller.
-PAIRPLOT_MIN_PIXELS = 300
-PAIRPLOT_MIN_BYTES = 10_000
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+# Bytes per pixel for 8-bit PNG colour types: grey, RGB, grey with alpha, RGBA (matplotlib saves RGBA).
+PNG_CHANNELS = {0: 1, 2: 3, 4: 2, 6: 4}
 # Where an HTML page starts its Vega-Lite spec: Altair's `var spec = {...}`, or an object passed to vegaEmbed().
 SPEC_START = re.compile(r"\bspec\s*=\s*(?=\{)|vegaEmbed\(\s*[\"'][^\"']*[\"']\s*,\s*(?=\{)")
 
 
 def _png_problem(path: Path) -> str | None:
-    """None when the file is a PNG image big enough to hold a pairplot, else what is wrong with it."""
-    data = path.read_bytes()
-    if not data.startswith(PNG_SIGNATURE) or data[12:16] != b"IHDR":
-        return (f"{PAIRPLOT_PNG} is not a PNG image; save the pairplot's figure with .savefig() to a name "
-                "ending in .png")
-    width, height = int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
-    if min(width, height) < PAIRPLOT_MIN_PIXELS or len(data) < PAIRPLOT_MIN_BYTES:
-        return (f"{PAIRPLOT_PNG} is {width} by {height} pixels and {len(data):,} bytes, expected at least "
-                f"{PAIRPLOT_MIN_PIXELS} by {PAIRPLOT_MIN_PIXELS} and {PAIRPLOT_MIN_BYTES:,} bytes: save the grid "
+    """None when the file is a complete PNG image with something drawn on it, else what is wrong with it."""
+    not_png = (f"{PAIRPLOT_PNG} is not a complete PNG image; save the pairplot's figure with .savefig() to a name "
+               "ending in .png")
+    decoded = _png_decode(path.read_bytes())
+    if decoded is None:
+        return not_png
+    width, height, varied = decoded
+    if varied is False:
+        return (f"{PAIRPLOT_PNG} is {width} by {height} pixels of one colour, an empty figure: save the grid "
                 "sns.pairplot() returns after it draws, not an empty figure")
     return None
+
+
+def _png_decode(data: bytes):
+    """(width, height, varied) for a PNG whose chunks, checksums, and image data are all intact, else None.
+
+    varied says whether any two pixels differ, for 8-bit, non-interlaced images; it is None for other PNG
+    layouts, which are still valid images but are not checked for blankness.
+    """
+    if not data.startswith(PNG_SIGNATURE):
+        return None
+    chunks, position = [], len(PNG_SIGNATURE)
+    while position + 12 <= len(data):
+        length = int.from_bytes(data[position:position + 4], "big")
+        kind, body = data[position + 4:position + 8], data[position + 8:position + 8 + length]
+        crc = data[position + 8 + length:position + 12 + length]
+        if len(body) != length or zlib.crc32(kind + body).to_bytes(4, "big") != crc:
+            return None
+        chunks.append((kind, body))
+        position += 12 + length
+        if kind == b"IEND":
+            break
+    if not chunks or chunks[0][0] != b"IHDR" or len(chunks[0][1]) != 13 or chunks[-1][0] != b"IEND":
+        return None
+    header = chunks[0][1]
+    width, height = int.from_bytes(header[0:4], "big"), int.from_bytes(header[4:8], "big")
+    depth, colour, interlace = header[8], header[9], header[12]
+    try:
+        raw = zlib.decompress(b"".join(body for kind, body in chunks if kind == b"IDAT"))
+    except zlib.error:
+        return None
+    if width == 0 or height == 0:
+        return None
+    if depth != 8 or colour not in PNG_CHANNELS or interlace != 0:
+        return width, height, None
+    step = PNG_CHANNELS[colour]
+    stride = width * step
+    if len(raw) != height * (stride + 1):
+        return None
+    first, previous = None, bytearray(stride)
+    for row in range(height):
+        kind, line = raw[row * (stride + 1)], bytearray(raw[row * (stride + 1) + 1:(row + 1) * (stride + 1)])
+        for i in range(stride):
+            left = line[i - step] if i >= step else 0
+            up, corner = previous[i], previous[i - step] if i >= step else 0
+            if kind == 1:
+                line[i] = (line[i] + left) & 0xFF
+            elif kind == 2:
+                line[i] = (line[i] + up) & 0xFF
+            elif kind == 3:
+                line[i] = (line[i] + (left + up) // 2) & 0xFF
+            elif kind == 4:
+                guess = left + up - corner
+                pa, pb, pc = abs(guess - left), abs(guess - up), abs(guess - corner)
+                line[i] = (line[i] + (left if pa <= pb and pa <= pc else up if pb <= pc else corner)) & 0xFF
+            elif kind != 0:
+                return None
+        first = first if first is not None else bytes(line[:step])
+        if line != first * width:
+            return width, height, True
+        previous = line
+    return width, height, False
 
 
 def _spec_columns(spec: object) -> set[str]:
@@ -2556,13 +2618,15 @@ def _spec_columns(spec: object) -> set[str]:
 
 
 def _spec_problem(spec: object, where: str) -> str | None:
-    """None when the spec spans at least PAIRPLOT_MIN_COLUMNS numeric columns, else what it holds."""
-    columns = sorted(_spec_columns(spec))
-    if len(columns) >= PAIRPLOT_MIN_COLUMNS:
+    """None when the spec spans at least PAIRPLOT_MIN_COLUMNS numeric columns, else which ones it lacks."""
+    found = _spec_columns(spec)
+    if len(found) >= PAIRPLOT_MIN_COLUMNS:
         return None
-    held = f"only {_join(columns)}" if columns else "none of them"
-    return (f"{where} plots {held}, expected at least {PAIRPLOT_MIN_COLUMNS} of {_join(NUMERIC_COLUMNS)}: list "
-            "three or more numeric columns in .repeat(row=..., column=...) and fill x and y from alt.repeat()")
+    absent = [column for column in NUMERIC_COLUMNS if column not in found]
+    held = f"only {_join([column for column in NUMERIC_COLUMNS if column in found])}" if found else "none of them"
+    return (f"{where} plots {held}, expected at least {PAIRPLOT_MIN_COLUMNS} of the five numeric columns, "
+            f"{_join(NUMERIC_COLUMNS)}; missing {_join(absent)}: list all five in .repeat(row=..., column=...) "
+            "and fill x and y from alt.repeat()")
 
 
 def _json_problem(path: Path) -> str | None:
@@ -2644,7 +2708,7 @@ CHECKS = (
             "for CT and X-ray.",
         ),
     ),
-    # Task 1.1 step 6: output/pairplot.png, .html, or .json
+    # Task 1.1 step 3: output/pairplot.png, .html, or .json
     Check("pairplot: saved chart", pairplot_check),
     # Task 1.3: output/site_summary.csv
     Check(

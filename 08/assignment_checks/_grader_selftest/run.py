@@ -123,7 +123,7 @@ def solve(categorical: bool = True, observed: bool = True, use_filter: bool = Fa
 
 # Saved with their index, as the README says: the modalities and the sites are the index.
 WITH_INDEX = (MISSING, PIVOT)
-PAIRPLOT_COLUMNS = ["wait_hr", "scan_min", "report_hr", "dose_msv"]
+PAIRPLOT_COLUMNS = ["age", "wait_hr", "scan_min", "report_hr", "dose_msv"]
 
 
 def png(width: int = 986, height: int = 986, noise: int = 40_000) -> bytes:
@@ -331,8 +331,8 @@ def alternative() -> dict[str, str | bytes]:
     pivot = frames[PIVOT][["X-ray", "Ultrasound", "MRI", "CT"]].round(1).reset_index().rename(columns={"site": "SITE"})
 
     return {
-        # The Altair route: a Vega-Lite spec of three columns, and no PNG.
-        JSON: json.dumps(altair_spec(PAIRPLOT_COLUMNS[:3]), indent=2),
+        # The Altair route: a Vega-Lite spec of the five numeric columns, and no PNG.
+        JSON: json.dumps(altair_spec(PAIRPLOT_COLUMNS), indent=2),
         MISSING: missing.to_csv(),
         # Columns reversed, upper-case site names, one decimal, CRLF, and UTF-16, as Windows PowerShell 5.1 writes.
         SUMMARY: codecs.BOM_UTF16_LE + summary.to_csv(index=False, lineterminator="\r\n").encode("utf-16-le"),
@@ -463,14 +463,15 @@ def run() -> None:
 
         # The pairplot is the student's choice: any one valid file earns its check, and a second file never costs it.
         without_png = {path: text for path, text in correct.items() if path != PNG}
-        spec4 = altair_spec(PAIRPLOT_COLUMNS)
-        for label, extra in (("pairplot-html", {HTML: altair_page(spec4)}),
-                             ("pairplot-json", {JSON: json.dumps(spec4)}),
-                             ("pairplot-html-and-json", {HTML: altair_page(spec4), JSON: json.dumps(spec4)}),
-                             ("pairplot-all-three", {PNG: SEABORN_PNG, HTML: altair_page(spec4), JSON: json.dumps(spec4)}),
-                             ("pairplot-upper-case", {"output/PairPlot.JSON": json.dumps(spec4).replace("wait_hr", "WAIT_HR")}),
+        spec5 = altair_spec(PAIRPLOT_COLUMNS)
+        for label, extra in (("pairplot-html", {HTML: altair_page(spec5)}),
+                             ("pairplot-json", {JSON: json.dumps(spec5)}),
+                             ("pairplot-html-and-json", {HTML: altair_page(spec5), JSON: json.dumps(spec5)}),
+                             ("pairplot-all-three", {PNG: SEABORN_PNG, HTML: altair_page(spec5), JSON: json.dumps(spec5)}),
+                             ("pairplot-upper-case", {"output/PairPlot.JSON": json.dumps(spec5).replace("wait_hr", "WAIT_HR")}),
+                             ("pairplot-three-columns", {HTML: altair_page(altair_spec(["wait_hr", "scan_min", "report_hr"]))}),
                              ("pairplot-broken-json-beside-png", {PNG: SEABORN_PNG, JSON: '{"repeat": '}),
-                             ("pairplot-fold", {JSON: json.dumps({"transform": [{"fold": PAIRPLOT_COLUMNS[:3]}],
+                             ("pairplot-fold", {JSON: json.dumps({"transform": [{"fold": PAIRPLOT_COLUMNS}],
                                                                   "facet": {"field": "key"}, "spec": {"mark": "bar"}})})):
             files = dict(without_png)
             files.update(extra)
@@ -480,16 +481,16 @@ def run() -> None:
         only("pairplot-none", without_png, {pairplot}, "No pairplot found", PNG, HTML, JSON)
         only("pairplot-pdf", {**without_png, "output/pairplot.pdf": b"%PDF-1.4"}, {pairplot},
              "Found output/pairplot.pdf")
-        only("pairplot-broken-json", {**without_png, JSON: json.dumps(spec4)[:-40]}, {pairplot}, "is not valid JSON")
+        only("pairplot-broken-json", {**without_png, JSON: json.dumps(spec5)[:-40]}, {pairplot}, "is not valid JSON")
         only("pairplot-two-columns", {**without_png, JSON: json.dumps(altair_spec(["wait_hr", "scan_min"]))}, {pairplot},
-             "plots only scan_min and wait_hr, expected at least 3")
+             "plots only scan_min and wait_hr, expected at least 3", "missing age, dose_msv and report_hr")
         only("pairplot-text-columns", {**without_png, HTML: altair_page(altair_spec(["site", "modality", "wait_hr"]))},
              {pairplot}, "plots only wait_hr")
         only("pairplot-page-without-spec", {**without_png, HTML: "<html><body><img src='pairplot.png'></body></html>"},
              {pairplot}, "embeds no Vega-Lite spec")
-        only("pairplot-blank-png", {**without_png, PNG: png(750, 750, noise=0)}, {pairplot}, "750 by 750 pixels",
+        only("pairplot-blank-png", {**without_png, PNG: png(750, 750, noise=0)}, {pairplot}, "of one colour",
              "not an empty figure")
-        only("pairplot-not-png", {**without_png, PNG: b"\xff\xd8\xff\xe0 JPEG data" * 2000}, {pairplot}, "is not a PNG")
+        only("pairplot-not-png", {**without_png, PNG: b"\xff\xd8\xff\xe0 JPEG data" * 2000}, {pairplot}, "is not a complete PNG image")
 
         # Summaries grouped without as_index=False keep their keys when saved with the index: full marks.
         exams = EXAMS

@@ -66,27 +66,29 @@ assignment/
 
 ### 1.1 Explore the exam log
 
-Before grouping, walk the log through the steps of EDA in Lecture 08's "The Steps of EDA" card. Demo 1's step 1 runs the same pass on a visit log. In the Task 1.1 cell:
+Before grouping, walk the log through the steps of EDA in Lecture 08's "The Steps of EDA" card. Demo 0 runs the same pass on a visit log. Task 1.1 has three cells: steps 1 and 2 go in the first, step 3 in the pairplot cell, and steps 4 to 6 in the third.
 
 1. Check the grain: compare the number of distinct `exam_id` values with the number of rows, then count the distinct patients.
     - Expect: `rows: 540228`, `distinct exams: 540228`, and `patients: 210000`. One row is one exam, and most patients have several.
-2. Check the structure with `info()` and `describe()`.
-    - Expect: 15 columns. Only `dose_msv` (347,619 non-null) and `report_hr` (537,966 non-null) have blanks.
-3. Build `missing_by_modality`: for each modality, the share of exams with no `report_hr` and the share with no `dose_msv`. Lecture 08's "Missing Waits by Clinic" snippet does this for one column and one grouping key; select both columns at once.
-    - Expect: four rows, one per modality. `dose_msv` is 1.0 for MRI and Ultrasound and 0.0 for CT and X-ray: those blanks are by design, since MRI and ultrasound use no radiation. `report_hr` is about 0.004 for every modality: unsigned reports are rare and spread evenly.
-4. Save it to `MISSING_PATH` with its index: the modalities are the index, and saving writes them as the first column. Leave the shares unrounded or round them to three decimals.
-5. Find the IQR fence for `wait_hr` (Lecture 05) and count the waits above it, as Demo 1's step 1 does for its waits.
-    - Expect: quartiles of 1.5 and 96.1 hours, an upper fence of about 238 hours (printed as 237.99999999999997), and 55,401 waits above it. Nearly all of them are routine exams, three in four of them MRIs. They are real waits for a scanner slot, not entry errors, so they stay; this long tail is why Task 2.1 uses medians.
-6. In the Task 1.1 pairplot cell, draw a pairplot of a random sample of 1,000 exams in the library of your choice, as Lecture 08's "Pairwise Plots" section shows in both; Demo 1's step 1 draws both for its visit log. Use at least three numeric columns: `wait_hr`, `scan_min`, `report_hr`, and `dose_msv` show the most. Sample only the columns you plot, with a `random_state` so every run draws the same exams; 1,000 rows of a few columns stays under Altair's 5,000-row limit and keeps a saved Altair file small.
-    - seaborn: draw it with `corner=True`, as the lecture does, and save the grid to `PAIRPLOT_PNG`.
-    - Altair: build the repeated scatter and save it to `PAIRPLOT_HTML` (a web page) or `PAIRPLOT_JSON` (its Vega-Lite specification), not both.
-    - Expect: waits pile up near 0 with a tail past 1,000 hours, the tail the fence just counted. About a third of the sample has no `dose_msv` (the MRIs and ultrasounds), so the dose panels show only CT and X-ray exams: X-rays near 0, CTs spread up to about 25 mSv.
+2. Check the structure with `info()` and `describe()`, and note which columns are numeric.
+    - Expect: 15 columns. Five are numeric: `age`, `scan_min`, `dose_msv`, `wait_hr`, and `report_hr`. Only `dose_msv` (347,619 non-null) and `report_hr` (537,966 non-null) have blanks.
+3. Draw a pairplot of all five numeric columns for a random sample of 1,000 exams, in the library of your choice, as Lecture 08's "Pairwise Plots" section shows in both; Demo 0's steps 4 and 5 draw both for its visit log. Sample only those five columns, with a `random_state` so every run draws the same exams; 1,000 rows stays under Altair's 5,000-row limit.
+    - seaborn: draw it with `corner=True`, and save the grid to `PAIRPLOT_PNG`.
+    - Altair: build the repeated scatter over all five columns and save it to `PAIRPLOT_HTML` (a web page) or `PAIRPLOT_JSON` (its Vega-Lite specification), not both.
+    - Look for skew: `scan_min`, `dose_msv`, `wait_hr`, and `report_hr` pile up near 0 with long right tails, and waits stretch to hundreds of hours. `age` spans about 1 to 97 years, centered near 58.
+    - Look for the dose gap: about a third of the sample has no `dose_msv` (the MRIs and ultrasounds), so the dose panels show only CT and X-ray exams, X-rays near 0 and CTs spread up to about 25 mSv.
+    - Look for relationships: longer scans tend to wait longer and carry more dose. `age` shows no clear pattern with the other columns.
+4. Build `missing_by_modality`: for each modality, the share of exams with no `report_hr` and the share with no `dose_msv`. Lecture 08's "Missing Waits by Clinic" snippet does this for one column and one grouping key; select both columns at once.
+    - Expect: four rows, one per modality. `dose_msv` is 1.0 for MRI and Ultrasound and 0.0 for CT and X-ray: those blanks are by design, since MRI and ultrasound use no radiation, the gap step 3 showed. `report_hr` is about 0.004 for every modality: unsigned reports are rare and spread evenly.
+5. Save it to `MISSING_PATH` with its index: the modalities are the index, and saving writes them as the first column. Leave the shares unrounded or round them to three decimals.
+6. Find the IQR fence for `wait_hr` (Lecture 05) and count the waits above it, as Demo 0's step 3 does for its waits.
+    - Expect: quartiles of 1.5 and 96.1 hours, an upper fence of about 238 hours (printed as 237.99999999999997), and 55,401 waits above it: the long tail of the pairplot's `wait_hr` panel. Nearly all of them are routine exams, three in four of them MRIs. They are real waits for a scanner slot, not entry errors, so they stay; this long tail is why Task 2.1 uses medians.
+
+> **Checkpoint: `output/pairplot.png`, or `output/pairplot.html` or `.json`**
+> One of them is enough. The PNG is a real image at least 300 pixels on a side; the HTML or JSON repeats all five numeric columns of the exam log.
 
 > **Checkpoint: `output/missing_by_modality.csv`**
 > The header line `modality,report_hr,dose_msv`, then four rows, CT to X-ray. MRI reads `MRI,0.00535...,1.0`: about one MRI in 190 has no signed report, and none has a dose.
-
-> **Checkpoint: `output/pairplot.png`, or `output/pairplot.html` or `.json`**
-> One of them is enough. The PNG is a real image at least 300 pixels on a side; the HTML or JSON repeats at least three numeric columns of the exam log.
 
 ### 1.2 Put the sites in reporting order
 
