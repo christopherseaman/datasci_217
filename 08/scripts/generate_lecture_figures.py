@@ -5,8 +5,9 @@ six-visit table with pandas, and the drawn numbers are asserted against the
 values the lecture prints, as are transform_vs_clinic.png and filter_vs_mask.png.
 simpsons_paradox.png is computed from the lecture's four-row trial table.
 ssh_laptop_server.png is a plain diagram.
-wait_distribution.png, visits_pairplot.png, and visits_pairplot_altair.png draw
-the lecture's EDA figures from the demo visit extract; the Altair PNG needs
+wait_distribution.png, visits_pairplot.png (with r on each panel), and
+visits_pairplot_altair.png (with a heatmap of r) draw the lecture's EDA figures
+from the demo visit extract; the Altair PNG needs
 vl-convert-python, added with --with below.
 pivot_heatmap.png runs Demo 1's own code cells up to its heatmap cell, so the
 figure shows the demo's 1.2 million synthetic visits.
@@ -413,7 +414,7 @@ def wait_distribution():
     above = int((extract["wait_min"] > upper).sum())
     print(q1, q3, upper, above, extract["wait_min"].max())
     # The lecture's sentence states these numbers
-    assert (q1, q3, upper, above) == (11.0, 26.0, 48.5, 53361), (q1, q3, upper, above)
+    assert (q1, q3, upper, above) == (11.0, 26.0, 48.5, 47266), (q1, q3, upper, above)
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     sns.histplot(data=extract, x="wait_min", binwidth=5, ax=axes[0])
     axes[0].axvline(upper, color="red", linestyle="--")
@@ -425,20 +426,31 @@ def wait_distribution():
 
 
 def visits_pairplot():
-    """The lecture's EDA pairplot: 2,000 sampled visits from the demo visit extract."""
+    """The lecture's EDA pairplot: 2,000 sampled visits with r written on each lower panel."""
     import seaborn as sns
 
-    extract = load_extract()
-    sample = extract[["age", "wait_min", "satisfaction"]].sample(2000, random_state=217)
-    print(sample.corr().round(2))
+    cols = ["age", "wait_min", "satisfaction"]
+    sample = load_extract()[cols].sample(2000, random_state=217)
+    r = sample.corr().round(2)
+    print(r)
+    # The lecture's sentences state these values and pair counts
+    assert (r.loc["wait_min", "satisfaction"], r.loc["age", "wait_min"]) == (-0.48, 0.20)
+    assert len(sample.dropna(subset=["wait_min", "satisfaction"])) == 665
+    assert len(sample.dropna(subset=["age", "wait_min"])) == 1936
     grid = sns.pairplot(sample, corner=True, plot_kws={"s": 8, "alpha": 0.4})
+
+    def show_r(x, y, **kwargs):
+        plt.gca().annotate(f"r = {x.corr(y):.2f}", xy=(0.95, 0.95), xycoords="axes fraction",
+                           ha="right", va="top", backgroundcolor="white")
+
+    grid.map_lower(show_r)
     grid.savefig(MEDIA_DIR / "visits_pairplot.png", dpi=150, facecolor="white", bbox_inches="tight")
     plt.close("all")
     print("Generated: visits_pairplot.png")
 
 
 def visits_pairplot_altair():
-    """The lecture's Altair pairplot: the same 2,000 visits as a repeated scatter."""
+    """The lecture's Altair pairplot: the same 2,000 visits as a repeated scatter beside a heatmap of r."""
     import altair as alt
 
     cols = ["age", "wait_min", "satisfaction"]
@@ -447,7 +459,12 @@ def visits_pairplot_altair():
         alt.X(alt.repeat("column"), type="quantitative"),
         alt.Y(alt.repeat("row"), type="quantitative"),
     ).properties(width=150, height=150).repeat(row=cols, column=cols)
-    chart.save(MEDIA_DIR / "visits_pairplot_altair.png", scale_factor=2)
+    r = sample.corr().rename_axis(index="row", columns="column").stack().reset_index(name="r")
+    base = alt.Chart(r).encode(alt.X("column:N", sort=cols), alt.Y("row:N", sort=cols))
+    heat = base.mark_rect().encode(alt.Color("r:Q", scale=alt.Scale(scheme="redblue", domain=[-1, 1])))
+    labels = base.mark_text(fontSize=14).encode(alt.Text("r:Q", format=".2f"))
+    combined = chart | (heat + labels).properties(width=240, height=240)
+    combined.save(MEDIA_DIR / "visits_pairplot_altair.png", scale_factor=2)
     print("Generated: visits_pairplot_altair.png")
 
 

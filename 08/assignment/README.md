@@ -96,7 +96,7 @@ The exam log has one row per exam. Every answer in the rest of Task 1 has one ro
 
 This step saves nothing. The network's board lists sites in the order of `SITE_ORDER`, hospitals first, and wants to see that Eastport has no exams yet.
 
-1. Overwrite the `site` column with an ordered categorical in `SITE_ORDER`, as Lecture 08's "A Reporting Order and an Unused Clinic" snippet does.
+1. Overwrite the `site` column with an ordered categorical in `SITE_ORDER`, as Lecture 08's "Every Clinic and Every Visit" snippet does.
     - Expect: `site dtype: category`.
 2. Count the exams at each site as `exams_per_site`, keeping the unused category, as the same snippet does with `observed`.
     - Expect: nine sites in `SITE_ORDER`, starting with Downtown 129,876 and ending with Valley 25,384 and Eastport 0.
@@ -122,7 +122,7 @@ The operations director wants one row per site. In the Task 1.3 cell:
 
 ### 2.1 Summarize each site and modality
 
-Grouping by two keys gives one row per observed pair, as Lecture 08's "Grouping by Two Keys" section shows. In the Task 2.1 cell:
+Grouping by two keys gives one row per observed pair, as Lecture 08's "Aggregating Each Group" section shows. In the Task 2.1 cell:
 
 1. Build `site_modality` from a `groupby()` on `site` and `modality`, with both kept as columns and three named aggregations: `exam_count` (every exam), `median_wait_hr`, and `median_report_hr`. Waits are skewed: a few routine MRIs wait weeks, so the median describes a typical exam better than the mean.
     - Expect: `rows: 31`. Valley has no MRI pair.
@@ -164,7 +164,7 @@ The radiation safety officer reviews every patient whose CT doses this year add 
 
 ### 2.4 Pull each site's three slowest STAT reports
 
-For the monthly quality meeting, each site reviews its three STAT exams whose signed report took longest. `apply` hands each site's rows to your function, as Lecture 08's "Sort Within Clinics and Keep the Two Longest Waits" snippet and Demo 3's step 2 show with `nlargest()`. In the Task 2.4 cell:
+For the monthly quality meeting, each site reviews its three STAT exams whose signed report took longest. `apply` hands each site's rows to your function, as Lecture 08's "Keep the Two Longest Waits at Each Clinic" snippet and Demo 3's step 2 show with `nlargest()`. In the Task 2.4 cell:
 
 1. Build `slowest`: group `stat` from Task 2.2 by site and `.apply()` a `lambda` that keeps each site's three largest `report_hr`. Leave the grouping column out of what the `lambda` receives, as the snippet does.
     - Expect: `rows: 24` and `index levels: 2`: the site, then each exam's original row number.
@@ -178,7 +178,7 @@ For the monthly quality meeting, each site reviews its three STAT exams whose si
 
 ### 3.1 Build the pivot table and check it
 
-A pivot table lays Task 2.1's median report times out as a grid, one row per site and one column per modality, as Lecture 08's "A Pivot Table and Its GroupBy Twin" snippet shows. In the Task 3.1 cell:
+A pivot table lays Task 2.1's median report times out as a grid, one row per site and one column per modality, as Lecture 08's "Pivot Table Review" card shows. In the Task 3.1 cell:
 
 1. Build `report_pivot` with `pd.pivot_table()` on `exams`: the median `report_hr`, sites as rows, modalities as columns, observed pairs only.
 2. Build its twin, `groupby_twin`: the same medians from a two-key `groupby()`, with `modality` moved into columns by `.unstack()`, as the snippet does.

@@ -20,7 +20,7 @@ jupyter:
 
 **Project so far.** Demo 1 found the clinics that miss the wait target, and Demo 2 delivered the Quality Committee's fourth-quarter packet. The board approved the diabetes care-management pilot at Bayview and Excelsior, the two clinics in the most deprived neighborhoods.
 
-**This phase's ask.** Dana Okafor, RN, manages the pilot's four care managers, and the pilot starts on February 2, 2026. She needs a list of Bayview and Excelsior patients whose latest A1c is 9% or more, poorly controlled diabetes, with each patient's number of A1c tests, mean, spread, highest, and latest value. The list must be rebuilt every night on the secure analytics server, because lab results are patient records that may not leave it. Two questions decide the pilot's size: how many patients qualify, and whether four care managers, at 150 patients each, can cover them. The source is the 2025 lab extract: 2,000,000 synthetic results, one row per result.
+**This phase's ask.** Dana Okafor, RN, manages the pilot's four care managers, and the pilot starts on February 2, 2026. She needs a list of Bayview and Excelsior patients whose latest A1c is 9% or more, poorly controlled diabetes, with each patient's number of A1c tests, mean, spread, highest, and latest value. The list is rebuilt every night from the lab extract on the secure analytics server, so the build must be fast and fit in memory. Two questions decide the pilot's size: how many patients qualify, and whether four care managers, at 150 patients each, can cover them. The source is the 2025 lab extract: 2,000,000 synthetic results, one row per result.
 
 Run the cells from top to bottom.
 
@@ -29,7 +29,7 @@ Run the cells from top to bottom.
 %pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 dowhy==0.14
 ```
 
-This supplied cell downloads `generate_data.py` and `build_features.py` when they are missing, runs `generate_data.build()` to write the tables into `data/` if they are not there yet (about 30 seconds), then loads the lab results.
+This supplied cell downloads `generate_data.py` when they are missing, runs `generate_data.build()` to write the tables into `data/` if they are not there yet (about 30 seconds), then loads the lab results.
 
 ```python
 from pathlib import Path
@@ -39,9 +39,8 @@ import numpy as np
 import pandas as pd
 
 REPO_RAW = "https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/demo"
-for filename in ["generate_data.py", "build_features.py"]:
-    if not Path(filename).exists():
-        urlretrieve(f"{REPO_RAW}/{filename}", filename)
+if not Path("generate_data.py").exists():
+    urlretrieve(f"{REPO_RAW}/generate_data.py", "generate_data.py")
 if not all(Path(f"data/{name}.parquet").exists() for name in ["clinics", "visits", "labs"]):
     import generate_data
     generate_data.build()
@@ -216,137 +215,11 @@ Expect the `clinic`, `test_name`, and `unit` bars to shrink from 25 to 32 MB eac
 
 **What we tell the server team:** the job holds about 150 MB as loaded and 68 MB once it converts the three repeated text keys to `category`.
 
-### 7. Get a key for the secure server (terminal)
-
-Steps 7 and 8 run in VS Code's terminal on your own computer, in the `~/08-demo` folder where you ran this notebook. Colab users first set it up there with `curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/08/demo/setup_demo.sh | sh`, then run this notebook once so `data/` exists. Type the commands into the terminal, not into the notebook. Your own computer plays the server: you run the commands you would type after `ssh`.
-
-The analytics team grants server access by public key: you send them the public half of a key pair, and the private half never leaves your computer.
-
-Make the key pair in a practice folder, and use `-f demo_key` so it is saved there under its own name. Without `-f`, `ssh-keygen` offers `~/.ssh/id_ed25519`, and saving over that file would replace your real key.
-
-```shell
-mkdir -p ~/ds217_ssh_practice
-cd ~/ds217_ssh_practice
-ssh-keygen -t ed25519 -f demo_key -C "ds217 practice key"
-```
-
-When it asks for a passphrase, type one (such as `practice`) and press Enter; nothing appears as you type. Type it again to confirm.
-
-Expect (your fingerprint and picture will differ):
-
-```text
-Generating public/private ed25519 key pair.
-Your identification has been saved in demo_key
-Your public key has been saved in demo_key.pub
-The key fingerprint is:
-SHA256:Quuk5GjxuLAT+BgTU7tk7mIv5JZ9MdQsKg0F0JYgl1M ds217 practice key
-The key's randomart image is:
-+--[ED25519 256]--+
-...
-+----[SHA256]-----+
-```
-
-```shell
-ls -l demo_key*
-cat demo_key.pub
-```
-
-Expect:
-
-```text
--rw------- 1 you you 464 Oct 29 14:50 demo_key
--rw-r--r-- 1 you you 100 Oct 29 14:50 demo_key.pub
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICm6gIA8vEmA6qytDJwgDG4zKtuAyeK7Iq3OA9m5BPFe ds217 practice key
-```
-
-`demo_key` is the private key: `-rw-------` means only you can read it, and it never leaves this computer. The one line in `demo_key.pub` is the padlock: on a real server, `ssh-copy-id` installs it, or the server's instructions say where to paste it.
-
-The nightly rebuild means many `ssh` and `scp` commands, and each would ask for the passphrase. Start an SSH agent for this terminal, then unlock the practice key once with `ssh-add`:
-
-```shell
-eval "$(ssh-agent -s)"
-ssh-add demo_key
-```
-
-Expect `Agent pid 4242` (your number differs), then `Enter passphrase for demo_key:`. Type `practice` and press Enter. Expect `Identity added: demo_key (ds217 practice key)`. With a real server, later `ssh` and `scp` commands in this terminal now log in without asking; macOS already runs an agent, so there `ssh-add` alone is enough. If `ssh-add` says it cannot connect to your authentication agent, skip it and type the passphrase when asked.
-
-This practice agent is needed only for the rehearsal, so stop it:
-
-```shell
-eval "$(ssh-agent -k)"
-```
-
-Expect `Agent pid 4242 killed`.
-
-### 8. Run the nightly build so a dropped connection cannot stop it (terminal)
-
-On the server the full build runs for hours. A job started in a plain `ssh` session stops when the connection drops, such as when a laptop sleeps; a job inside `tmux` keeps running.
-
-`build_features.py` rebuilds the A1c features one month at a time, prints one progress line per month, and writes the year-end pilot list, Bayview and Excelsior patients with a latest A1c of 9% or more, to `output/pilot_list.csv`. It pauses 10 seconds per month to stand in for a job that takes hours, so it runs about two minutes.
-
-The lab results cannot leave the server, so the code goes to the data: copy the script up with `scp`. On the real server the command is `scp build_features.py jdoe@analysis.example.org:~/08-demo/`, run from your laptop's prompt. Here a practice folder stands in for the server: `scp` between two local paths uses the same syntax without the `user@host:` part.
-
-```shell
-mkdir -p ~/ds217_ssh_practice/server
-scp ~/08-demo/build_features.py ~/ds217_ssh_practice/server/
-ls ~/ds217_ssh_practice/server
-```
-
-Expect `build_features.py`. The rehearsal keeps running the job from `~/08-demo`, where `data/` is; on the server, you would run the copy you just uploaded.
-
-Check that tmux is installed:
-
-```shell
-tmux -V
-```
-
-Expect a version such as `tmux 3.6`; any 3.x works. If you see `command not found`, install it with `sudo apt install tmux` (Ubuntu or WSL) or `brew install tmux` (macOS).
-
-Start a session in the demo folder, then start the job inside it:
-
-```shell
-cd ~/08-demo
-tmux new -s features
-source .venv/bin/activate
-time python3 build_features.py
-```
-
-Expect a status bar across the bottom with `[features]` at its left, then `month 1 of 12: 8,605 patients`, and a new line every 10 seconds.
-
-Press `Ctrl+b`, let go, then press `d`.
-
-Expect `[detached (from session features)]` and your normal prompt. The job is still running inside the session.
-
-```shell
-tmux ls
-```
-
-Expect `features: 1 windows (created Thu Oct 29 14:52:11 2026)`, with your date and time.
-
-Now rehearse losing your connection: open a **new** terminal window, then close the old one. (Open the new one first; on Windows, closing every WSL window can shut WSL down.) In the new window:
-
-```shell
-tmux ls
-tmux attach -t features
-```
-
-Expect the session still listed, and after you attach, more month lines than when you left: the job kept running with no window showing it. It ends with `month 12 of 12: 90,178 patients` and `done: wrote 668 patients to output/pilot_list.csv`, and `time` reports about two minutes: bash prints a line such as `real 2m1.9s`, and zsh (the macOS default) ends its line with `2:01.93 total`.
-
-End the session and check the result:
-
-```shell
-exit
-tmux ls
-head -3 ~/08-demo/output/pilot_list.csv
-```
-
-Expect `[exited]`, then `no server running on /tmp/tmux-1000/default` if this was your only session (the path differs by computer), then the header `patient_id,clinic,tests,mean_a1c,sd_a1c,max_a1c,latest_a1c` and two pilot patients' features.
-
 ## Independent practice
 
 Run the core walkthrough first. Each item is a request that came back after the list went out.
 
-### 9. The care managers ask who is already improving
+### 7. The care managers ask who is already improving
 
 A patient whose A1c is already falling may need less outreach. Among all patients with a latest A1c of 6.5% or more, sort inside each patient with `apply`, keep the last two results, and compare them.
 
@@ -366,7 +239,7 @@ print(f"Improved by 0.5 points or more: {(change['change'] <= -0.5).mean():.1%}"
 
 Expect a two-level index (patient, then original row number) with up to two rows per patient, oldest first; P000028 went from 7.3 to 7.1, P000039 from 8.7 to 8.4, and P000002 and P000013 have only one result. 15,716 patients with a latest A1c of 6.5% or more have two results, and 8.7% of them improved by half a point or more between their last two tests.
 
-### 10. A reviewer wants each result beside the patient's own mean
+### 8. A reviewer wants each result beside the patient's own mean
 
 A grouped `transform` puts each patient's mean on every result row. Compare the built-in `transform("mean")` with a `lambda` version, for values and for speed.
 
@@ -388,7 +261,7 @@ The lambda takes more than 10 seconds on all 90,178 patients, so `-r 1` times on
 
 Expect about 3 ms against about 15 s: over 4,000 times slower.
 
-### 11. Dr. Alvarez asks how the pilot clinics compare with the rest
+### 9. Dr. Alvarez asks how the pilot clinics compare with the rest
 
 A function that returns a `Series` gives one summary row per clinic through `apply`.
 
@@ -408,7 +281,7 @@ print("Same medians as agg('median')?", clinic_summary["median"].equals(a1c.grou
 
 Expect one row per clinic (the function returns one `Series` per group), medians from 5.6% (Marina) to 6.7% (Bayview), 2.8% to 5.1% of results at 9% or more, and `True`. Bayview and Excelsior, in the most deprived neighborhoods, have the highest medians (6.7% and 6.5%) and, with Ridgecrest, the highest shares; Marina, in the least deprived, is lowest on both, which supports the board's choice of pilot clinics. `results` shows `.0` because a `Series` holding a share stores every value as a float.
 
-### 12. Do category keys also speed up the build?
+### 10. Do category keys also speed up the build?
 
 ```python
 %timeit labs.groupby("test_name")["result"].mean()
@@ -416,43 +289,3 @@ Expect one row per clinic (the function returns one `Series` per group), medians
 ```
 
 Expect the category version about 2 times faster: pandas groups small integer codes instead of comparing text.
-
-### 13. The lab team reports a bad feed tonight: stop the build (terminal)
-
-The lab system sent tonight's results twice, so tonight's list must not be built. Start a rerun in tmux, detach, then end the session from outside with `tmux kill-session`, which stops the job inside it.
-
-```shell
-cd ~/08-demo
-tmux new -s rerun
-source .venv/bin/activate
-python3 build_features.py
-```
-
-After the first month line appears, press `Ctrl+b`, then `d`. Then:
-
-```shell
-tmux kill-session -t rerun
-tmux ls
-ls -l output/pilot_list.csv
-```
-
-Expect no output from `kill-session`, then `no server running on /tmp/tmux-1000/default` if `rerun` was your only session, then a `pilot_list.csv` time from your step 8 run. `build_features.py` writes the list only after month 12, so the stopped run left the last good list in place. On a server the commands are the same, typed after `ssh`.
-
-## Optional extension: keep a notebook running on the server
-
-Prerequisite: BONUS.md, Run Jupyter Through an SSH Tunnel.
-
-On a server, Jupyter runs inside tmux and your browser reaches it through an SSH tunnel. This rehearses everything except the tunnel, in the same `~/08-demo` folder, whose `pyproject.toml` lists JupyterLab.
-
-```shell
-cd ~/08-demo
-tmux new -s notebooks
-source .venv/bin/activate
-jupyter lab --ip=127.0.0.1 --port=8888 --no-browser
-```
-
-Expect log lines ending in a URL such as `http://127.0.0.1:8888/lab?token=...`. Copy that URL into your browser, and JupyterLab opens. If port 8888 is busy, Jupyter picks 8889 and prints that URL instead.
-
-Detach with `Ctrl+b`, then `d`, and reload the browser page. Expect JupyterLab still working, because Jupyter keeps running inside tmux.
-
-Clean up: `tmux attach -t notebooks`, press `Ctrl+C` twice to stop Jupyter, then type `exit`. Expect `[exited]`. The practice key stays in `~/ds217_ssh_practice`; keep it out of Git, like a real one.

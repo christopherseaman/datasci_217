@@ -66,66 +66,83 @@ _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is wha
 | 4. Distributions and outliers | What shape, and which values are extreme? | `sns.histplot(data=df, x='x')`, `sns.boxplot(data=df, x='g', y='x')`; the IQR rule (Lecture 05) flags values above `q3 + 1.5 * (q3 - q1)` or below `q1 - 1.5 * (q3 - q1)` |
 | 5. Relationships | Which columns move together, and how? | `df[cols].corr()`, `sns.pairplot(df[cols].sample(2000), corner=True)` |
 
-`extract` in these snippets is Demo 0's visit log (the demo calls it `visits`): 1.2 million synthetic visits, one row per visit.
+`visits` in these snippets is Demo 0's visit log: 1.2 million synthetic visits, one row per visit.
 
 ![Waits per visit: a peak near 10 to 15 minutes, a long right tail past the 48.5-minute IQR fence, and Orthopedics slowest by department.](media/wait_distribution.png)
 
-The IQR fence (Lecture 05) sits at 48.5 minutes; 53,361 visits (4.4%) wait longer. The longest wait is 240 minutes, plausible for a clinic, so these stay in the data and pull each mean above its median.
+The IQR fence (Lecture 05) sits at 48.5 minutes; 47,266 visits (3.9%) wait longer. The longest wait is 240 minutes, plausible for a clinic, so these stay in the data and pull each mean above its median.
 
 ### Code Snippet: Missing Waits by Clinic
 
 ```python
-display(extract['wait_min'].isna().groupby(extract['clinic']).mean().round(3))
+display(visits['wait_min'].isna().groupby(visits['clinic']).mean().round(3))
 ```
 
 | clinic | wait_min |
 | --- | --- |
-| Bayview | 0.018 |
-| Excelsior | 0.070 |
-| Marina | 0.018 |
-| Mission | 0.017 |
-| Parkside | 0.022 |
-| Richmond | 0.018 |
-| Ridgecrest | 0.017 |
-| Sunset | 0.018 |
+| Bayview | 0.027 |
+| Excelsior | 0.074 |
+| Marina | 0.020 |
+| Mission | 0.025 |
+| Parkside | 0.024 |
+| Richmond | 0.022 |
+| Ridgecrest | 0.018 |
+| Sunset | 0.022 |
 
-Each value is the share of that clinic's visits with no wait recorded. Preview: `.groupby(extract['clinic'])` computes the share separately for each clinic; the next sections teach `groupby`.
+Each value is the share of that clinic's visits with no wait recorded. Preview: `.groupby(visits['clinic'])` computes the share separately for each clinic; the next sections teach `groupby`.
 
-Overall, 2.4% of visits have no wait recorded, but Excelsior loses 7.0%, so its summary rests on fewer visits than its neighbors'.
+Overall, 2.9% of visits have no wait recorded, but Excelsior loses 7.4%, so its summary rests on fewer visits than its neighbors'.
 
 ## Pairwise Plots
 
 A **pairplot** draws a scatter plot for every pair of numeric columns, with each column's histogram on the diagonal. Use it to scan several columns at once; once you know which pair matters, draw that one scatter plot with labels. `corner=True` drops the mirrored upper half, and a 2,000-row sample keeps it fast and the points readable.
 
-![Pairplot of 2,000 sampled visits: age has two humps (children and older adults), waits have a long right tail, and satisfaction falls as waits grow.](media/visits_pairplot.png)
+![Pairplot of 2,000 sampled visits with r on each panel: age has two humps (children and older adults), waits have a long right tail, and satisfaction falls as waits grow (r = -0.48).](media/visits_pairplot.png)
 
-The correlations of the 2,000 sampled visits (`.corr()`) agree with the picture: wait and satisfaction, -0.50, from the 690 sampled visits with a survey; age and wait, 0.20. The cluster of short waits under age 18 hints that department, not age, drives the wait, a question for `groupby`.
+- **Correlation (r)**: how closely two columns follow a straight line, from -1 (one falls as the other rises) through 0 (no straight-line pattern) to 1; `.corr()` computes it for every pair.
+- **r squared**: the share of one column's variation a straight line on the other accounts for; it drops the sign, so wait and satisfaction's r of -0.48 becomes 0.23.
 
-### Pairplots in Altair
+Each r uses only the rows where both columns are recorded: wait and satisfaction, -0.48, from 665 of the 2,000 sampled visits (most visits have no survey); age and wait, 0.20, from 1,936. The cluster of short waits under age 18 hints that department, not age, drives the wait, a question for `groupby`.
 
-Altair (Lecture 07) builds a pairplot as a **repeated chart**: one scatter specification that Vega-Lite draws once for every row and column pair. Altair refuses data over 5,000 rows by default (`MaxRowsError`), one more reason to sample first.
-
-![The same 2,000 visits as an Altair repeated scatter: the clouds match the seaborn pairplot, and the diagonal panels plot each column against itself, so they are straight lines where seaborn drew histograms.](media/visits_pairplot_altair.png)
-
-### Reference Card: Pairplots in seaborn and Altair
+### Reference Card: Pairplots in seaborn
 
 - `sns.pairplot(sample, corner=True)`: Scatter for every pair, histograms on the diagonal; returns a grid saved with `.savefig('pairplot.png')`.
-- `alt.X(alt.repeat('column'), type='quantitative')`: Fill the x encoding from the repeat list; `alt.repeat('row')` fills y.
-- `.repeat(row=cols, column=cols)`: Draw the chart once per pair of columns in `cols`.
-- `brush = alt.selection_interval(resolve='global')`, `.add_params(brush)`, `color=alt.condition(brush, alt.value('steelblue'), alt.value('lightgray'))`: Drag a box in any panel to keep the selected points colored in every panel; double-click clears it.
-- `chart.save('pairplot.html')`: A web page whose script tags load `vega`, `vega-lite`, and `vega-embed` from a CDN and call `vegaEmbed()` to draw the chart; opening it needs internet access.
-- `chart.save('pairplot.json')` / `chart.to_json()`: The Vega-Lite specification with the rows embedded; top-level keys `$schema`, `config`, `datasets`, `repeat`, and `spec`.
-- **Choosing**: seaborn for a static image in a report, slide, or PDF; Altair for a web page or dashboard where readers hover for tooltips.
+- `grid.map_lower(func)`: Call `func(x, y)` once per lower panel with that panel's two columns as Series; inside it, `plt.gca().annotate(text, xy=(0.95, 0.95), xycoords='axes fraction')` writes on the current panel.
+- `x.corr(y)`: r for two Series, skipping rows where either is missing; `df.corr()` gives every pair as a table.
 
 ### Code Snippet: Pairplot in seaborn
 
 ```python
 cols = ['age', 'wait_min', 'satisfaction']
-sample = extract[cols].sample(2000, random_state=217)
-sns.pairplot(sample, corner=True, plot_kws={'s': 8, 'alpha': 0.4})
+sample = visits[cols].sample(2000, random_state=217)
+grid = sns.pairplot(sample, corner=True, plot_kws={'s': 8, 'alpha': 0.4})
+
+def show_r(x, y, **kwargs):
+    plt.gca().annotate(f'r = {x.corr(y):.2f}', xy=(0.95, 0.95), xycoords='axes fraction',
+                       ha='right', va='top', backgroundcolor='white')
+
+grid.map_lower(show_r)
 ```
 
-### Code Snippet: Pairplot in Altair
+## Pairwise Plots in Altair
+
+Altair (Lecture 07) builds a pairplot as a **repeated chart**: one scatter specification that Vega-Lite draws once for every row and column pair. Altair refuses data over 5,000 rows by default (`MaxRowsError`), one more reason to sample first.
+
+A repeated chart has no per-panel hook like seaborn's `map_lower`, and Altair's `transform_regression(..., params=True)`, which reports `rSquared`, rejects `alt.repeat()` fields. Show r instead as a **correlation heatmap** beside the scatter: one colored, labeled cell per pair of columns.
+
+![The same 2,000 visits as an Altair repeated scatter beside a heatmap of r: the clouds match the seaborn pairplot, the diagonal panels are straight lines (each column against itself), and the reddest cell is wait and satisfaction at -0.48.](media/visits_pairplot_altair.png)
+
+### Reference Card: Pairplots in Altair
+
+- `alt.X(alt.repeat('column'), type='quantitative')`: Fill the x encoding from the repeat list; `alt.repeat('row')` fills y.
+- `.repeat(row=cols, column=cols)`: Draw the chart once per pair of columns in `cols`.
+- `brush = alt.selection_interval(resolve='global')`, `.add_params(brush)`, `color=alt.condition(brush, alt.value('steelblue'), alt.value('lightgray'))`: Drag a box in any panel to keep the selected points colored in every panel; double-click clears it.
+- `df.corr().rename_axis(index='row', columns='column').stack().reset_index(name='r')`: The correlation table in long form, one row per pair, ready for `mark_rect()` (colored cells) layered with `mark_text()` (the r labels) using `+`; `chart | heatmap` places two charts side by side.
+- `chart.save('pairplot.html')`: A web page whose script tags load `vega`, `vega-lite`, and `vega-embed` from a CDN and call `vegaEmbed()` to draw the chart; opening it needs internet access.
+- `chart.save('pairplot.json')` / `chart.to_json()`: The Vega-Lite specification with the rows embedded; top-level keys `$schema`, `config`, `datasets`, `repeat`, and `spec`.
+- **Choosing**: seaborn for a static image in a report, slide, or PDF; Altair for a web page or dashboard where readers hover for tooltips.
+
+### Code Snippet: Pairplot and Correlation Heatmap in Altair
 
 ```python
 chart = alt.Chart(sample).mark_point(size=10, opacity=0.4).encode(
@@ -133,7 +150,12 @@ chart = alt.Chart(sample).mark_point(size=10, opacity=0.4).encode(
     alt.Y(alt.repeat('row'), type='quantitative'),
     tooltip=cols,
 ).properties(width=150, height=150).repeat(row=cols, column=cols)
-chart.save('pairplot.html')  # open in a browser and hover over a point
+
+r = sample.corr().rename_axis(index='row', columns='column').stack().reset_index(name='r')
+base = alt.Chart(r).encode(alt.X('column:N', sort=cols), alt.Y('row:N', sort=cols))
+heat = base.mark_rect().encode(alt.Color('r:Q', scale=alt.Scale(scheme='redblue', domain=[-1, 1])))
+labels = base.mark_text(fontSize=14).encode(alt.Text('r:Q', format='.2f'))
+(chart | (heat + labels).properties(width=240, height=240)).save('pairplot.html')
 ```
 
 ![xkcd 1798: Box Plot. Pumping up a box changes the picture; the data behind it stay the same.](media/xkcd_1798.png)
@@ -160,7 +182,7 @@ chart.save('pairplot.html')  # open in a browser and hover over a point
 
 ## Aggregating Each Group
 
-From here on, most snippets use `visits`, six clinic visits:
+From here on, `visits` is a six-row table, so each step's output fits on screen:
 
 |  | clinic | visit_type | patient_id | wait_min | satisfaction |
 | --- | --- | --- | --- | --- | --- |
@@ -175,54 +197,14 @@ From here on, most snippets use `visits`, six clinic visits:
 
 | Task | Call | Purpose and key arguments | Output |
 | --- | --- | --- | --- |
-| Split | `df.groupby('key')` | Group rows by one key; pass a list for several keys | `DataFrameGroupBy`; nothing computed yet |
+| Split | `df.groupby('key')` | Group rows by one key, or by a list of keys such as `['clinic', 'visit_type']` | `DataFrameGroupBy`; nothing computed yet |
 | Split | `s.groupby(df['key'])` | Group a Series, such as `df['x'].isna()`, by another column of the same rows | `SeriesGroupBy` |
-| Inspect | `for name, group in grouped:` / `grouped.get_group('North')` | See each group's key and rows; useful for checking a split before summarizing it | One small DataFrame per group |
-| Select | `grouped['col']` / `grouped[['a', 'b']]` | Choose the columns to summarize; `.mean()` on text columns raises `TypeError`, and `.sum()` glues text together (`P01P02P01`) | `SeriesGroupBy` / `DataFrameGroupBy` |
-| Summarize | `.mean()`, `.median()`, `.sum()`, `.min()`, `.max()` | One summary per group of the selected numeric column | One row per group |
-| Count | `.size()` | Rows per group, including rows with missing values | One count per group |
-| Count | `['col'].count()` | Non-missing values of `col` per group | One count per group |
-| Count | `['col'].nunique()` | Distinct non-missing values of `col` per group | One count per group |
-| Several at once | `.agg(name=('col', 'func'), ...)` | **Named aggregation**: each keyword names an output column; its value is a `(source column, function)` pair | One flat column per name |
-| Several at once | `grouped['col'].agg(['mean', 'std'])` | A list of functions for one column | One column per function, named `mean`, `std` |
-| Several at once | `.agg({'col': ['mean', 'max']})` | Several functions per column | Two-level column labels |
-| Result shape | `groupby(..., as_index=False)` | Keep keys as ordinary columns | Flat table, `0..n-1` index |
-| Result shape | `groupby(..., sort=True)` | Sort rows by key (the default); categorical keys follow category order | Ordered rows |
-
-### Code Snippet: One Mean per Clinic
-
-```python
-grouped = visits.groupby('clinic')
-print(grouped)
-display(grouped['wait_min'].mean())
-```
-
-```text
-<pandas.api.typing.DataFrameGroupBy object at 0x...>
-```
-
-| clinic | wait_min |
-| --- | --- |
-| East | 9.0 |
-| North | 11.0 |
-| South | 25.0 |
-
-The GroupBy object shows no numbers; `.mean()` on the selected column runs the apply and combine steps, with the clinics in alphabetical order.
-
-### Code Snippet: Look Inside the Groups
-
-```python
-for clinic, group in visits.groupby('clinic'):
-    print(clinic, group['wait_min'].tolist())
-```
-
-```text
-East [9]
-North [12, 15, 6]
-South [20, 30]
-```
-
-Each pass of the loop hands over one clinic's name and its rows, the split step from the diagram above.
+| Inspect | `for name, group in grouped:` | See each group's key and rows before summarizing | One small DataFrame per group |
+| Summarize | `grouped['col'].mean()` (or `median`, `sum`, `min`, `max`) | One summary per group of a numeric column; text columns raise `TypeError` | One row per group |
+| Count | `.size()` / `['col'].count()` / `['col'].nunique()` | Rows, non-missing values, distinct values per group | One count per group |
+| Several at once | `.agg(name=('col', 'func'), ...)` | **Named aggregation**: each keyword names an output column from a `(source column, function)` pair | One flat column per name |
+| Several at once | `['col'].agg(['size', 'mean'])` / `.agg({'col': ['mean', 'max']})` | A quick list of functions, or a dict of lists per column | Columns named after the functions; a dict gives two-level labels |
+| Result shape | `as_index=False` / `result.unstack()` / `wide.stack()` | Keep keys as columns; move the inner key of a two-key result into columns, or back | Flat table / grid / long |
 
 ### Code Snippet: Count and Summarize Each Clinic
 
@@ -244,43 +226,11 @@ display(summary)
 
 North had three visits (`size`) from two patients (`nunique`: P01 came twice), and only two of those visits have a satisfaction score (`count` skips `NaN`).
 
+A list of keys, `visits.groupby(['clinic', 'visit_type'])`, gives one group per observed pair, with one index level per key (Lecture 06's MultiIndex); `.unstack()` turns the inner key into columns, and a pair with no rows becomes `NaN`, not 0.
+
 ![xkcd 2533: Slope Hypothesis Testing. Measuring the same people again adds rows, not people, which is why size and nunique answer different questions](media/xkcd_2533.png)
 
-## Grouping by Two Keys
-
-Pass a list of keys to get one group per observed combination, with a MultiIndex (Lecture 06), one index level per key.
-
-### Reference Card: Two-Key Results
-
-- `df.groupby(['a', 'b'])['col'].mean()`: One value per observed `(a, b)` pair; MultiIndex `Series`.
-- `result.unstack()`: Move the inner level (`b`) into columns so the table reads like a grid; absent pairs become `NaN`.
-- `wide.stack()`: Move the columns back into the inner index level; absent pairs come back as `NaN` rows.
-- `df.groupby(['a', 'b'], as_index=False)`: Keep `a` and `b` as ordinary columns; one flat row per pair.
-
-### Code Snippet: Mean Wait by Clinic and Visit Type
-
-```python
-by_type = visits.groupby(['clinic', 'visit_type'])['wait_min'].mean()
-display(by_type)
-display(by_type.unstack())
-```
-
-| clinic | visit_type | wait_min |
-| --- | --- | --- |
-| East | Follow-up | 9.0 |
-| North | Follow-up | 10.5 |
-|  | New | 12.0 |
-| South | New | 25.0 |
-
-| clinic | Follow-up | New |
-| --- | --- | --- |
-| East | 9.0 | NaN |
-| North | 10.5 | 12.0 |
-| South | NaN | 25.0 |
-
-East had no new-patient visits, so the East `New` cell is `NaN`: there was nothing to average, which is not a zero-minute wait (those exist only in clinic brochures).
-
-### Simpson's Paradox: A Second Key Can Reverse the Answer
+## Simpson's Paradox: A Second Key Can Reverse the Answer
 
 - **Simpson's paradox**: a comparison that holds inside every group reverses when the groups are combined.
 - **Confounder**: a variable that affects both which group a row lands in and the outcome. Here, sicker patients were more likely to get the new treatment, and sicker patients recover less often.
@@ -326,10 +276,13 @@ Grouped by treatment alone, New loses (0.5 against 0.7); within each severity le
 
 # Pivot Tables and Cross-Tabulations
 
-- **Pivot table**: summarizes one column by two keys at once, one down the rows and one across the columns, such as mean wait by clinic and visit type. `pd.pivot_table(df, ...)` is the same call as Lecture 06's `df.pivot_table(...)`, used here to summarize rather than reshape. It is the two-key `groupby(...).mean().unstack()` in a single call, and the shape of most handed-off reports: departments down the side, clinics or months across.
+- **Pivot table**: summarizes one column by two keys at once, one down the rows and one across the columns, such as mean wait by clinic and visit type.
+    - Same call as Lecture 06's `df.pivot_table(...)`, used here to summarize rather than reshape.
+    - Equal to the two-key `groupby(...).mean().unstack()` in a single call.
+    - The shape of most handed-off reports: departments down the side, clinics or months across.
 - **Cross-tabulation** (crosstab): the special case that counts the rows in each combination.
 
-![A pivot table as a heatmap: median wait (minutes) for 1.2 million synthetic 2025 visits, 7 departments by 8 clinics; Orthopedics is slowest at every clinic that runs it, Bayview's Orthopedics cell is darkest at 38, and blank cells are departments a clinic does not run](media/pivot_heatmap.png)
+![A pivot table as a heatmap: median wait (minutes) for 1.2 million synthetic 2025 visits, 7 departments by 8 clinics; Orthopedics is slowest at every clinic that runs it, Bayview's Orthopedics cell is darkest at 36, and blank cells are departments a clinic does not run](media/pivot_heatmap.png)
 
 ```text
 LONG: one row per visit                    PIVOT TABLE: mean wait_min, one row per clinic
@@ -344,7 +297,7 @@ East    Follow-up    9
 
 ![The greatest research skill you can have is being a nosy bitch who wants to find out: a pivot table is how you find out](media/research.png)
 
-## Basic Pivot Tables
+## Pivot Table Review
 
 ### Reference Card: Pivot Tables and Crosstabs
 
@@ -357,40 +310,9 @@ East    Follow-up    9
 | `pd.crosstab(df['a'], df['b'], normalize='index')` | Shares instead of counts: `'index'` makes each row sum to 1, `'columns'` each column, `'all'` the whole table | Proportions from 0 to 1 |
 | `pd.crosstab(df['a'], df['b'], values=df['v'], aggfunc='mean')` | Summarize a third column instead of counting, like `pivot_table` | Summary table; absent combinations are `NaN` |
 
-### Code Snippet: A Pivot Table and Its GroupBy Twin
-
-```python
-mean_wait = pd.pivot_table(visits, values='wait_min', index='clinic',
-                           columns='visit_type', aggfunc='mean')
-display(mean_wait)
-
-same = visits.groupby(['clinic', 'visit_type'])['wait_min'].mean().unstack()
-print(mean_wait.equals(same))
-
-display(pd.crosstab(visits['clinic'], visits['visit_type']))
-```
-
-| clinic | Follow-up | New |
-| --- | --- | --- |
-| East | 9.0 | NaN |
-| North | 10.5 | 12.0 |
-| South | NaN | 25.0 |
-
-```text
-True
-```
-
-| clinic | Follow-up | New |
-| --- | --- | --- |
-| East | 1 | 0 |
-| North | 2 | 1 |
-| South | 0 | 2 |
-
-With `normalize='index'`, each clinic's row becomes its mix of visit types: `pd.crosstab(visits['clinic'], visits['visit_type'], normalize='index').round(2)` gives North 0.67 follow-up and 0.33 new, East 1.0 and 0.0, South 0.0 and 1.0.
-
 ## Totals and Absent Cells
 
-- **Margins**: a total row and column computed from the underlying rows, not from the cells. In a table of means, a clinic's `Total` is the mean of all its visits, not the average of its cell means: North's `Total` is 11.0, the mean of its three waits, while averaging its cell means (10.5 and 12.0) gives 11.25.
+**Margins** are a total row and column that `pivot_table` computes from the underlying rows. Use them for a report's totals, and never average a row of cell means by hand: each cell mean covers a different number of visits. North's `Total` is 11.0, the mean of its three waits; averaging its two cell means (10.5 and 12.0) gives 11.25, because it weights one new-patient visit as heavily as two follow-ups.
 
 ```text
 pivot_table(..., aggfunc='mean', margins=True, margins_name='Total')
@@ -431,11 +353,12 @@ display(total_wait)
 
 [Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo1_groupby_operations.ipynb)
 
-# Which Groups Appear in a Summary
+# Missing and Empty Groups
 
-- **Group coverage**: which groups a summary lists. Two pandas defaults shrink it without warning:
-    - Rows with a missing key are dropped before the split, so visits with no clinic recorded go uncounted.
-    - A categorical key (Lecture 05) lists only the categories that occur, so a new clinic with no visits yet has no row.
+A clinic report should list every clinic, even one with no visits yet, and count every visit, even one with no clinic recorded. Two `groupby` defaults break both rules without a warning:
+
+- Rows with a missing key are dropped before the split, so a visit with no clinic recorded goes uncounted.
+- A categorical key (Lecture 05) lists only the categories that occur, so a new clinic with no visits has no row.
 
 ## Missing Keys and Unused Categories
 
@@ -452,56 +375,40 @@ display(total_wait)
 - `df.groupby('key', observed=False)`: For a categorical key, list every defined category; an unused one shows 0 for counts and sums and `NaN` for means. The pandas 3 default, `observed=True`, lists only categories present.
 - `pd.pivot_table(..., observed=False, dropna=False)`: The same two choices for a pivot table's rows and columns.
 
-### Code Snippet: A Reporting Order and an Unused Clinic
+### Code Snippet: Every Clinic and Every Visit
 
 ```python
-levels = ['North', 'South', 'East', 'West']   # reporting order; West has no visits yet
-cat_visits = visits.copy()
-cat_visits['clinic'] = pd.Categorical(visits['clinic'], categories=levels, ordered=True)
-display(cat_visits.groupby('clinic', observed=True)['wait_min'].count())
-display(cat_visits.groupby('clinic', observed=False)['wait_min'].count())
+report = visits.copy()
+report.loc[5, 'clinic'] = None     # East's only visit has no clinic recorded
+report['clinic'] = pd.Categorical(report['clinic'], categories=['North', 'South', 'East', 'West'], ordered=True)
+display(report.groupby('clinic')['wait_min'].count())
+display(report.groupby('clinic', observed=False, dropna=False)['wait_min'].count())
 ```
 
 | clinic | wait_min |
 | --- | --- |
 | North | 3 |
 | South | 2 |
-| East | 1 |
 
 | clinic | wait_min |
 | --- | --- |
 | North | 3 |
 | South | 2 |
-| East | 1 |
+| East | 0 |
 | West | 0 |
-
-### Code Snippet: A Visit with No Clinic Recorded
-
-```python
-unrecorded = visits.copy()
-unrecorded.loc[5, 'clinic'] = None     # the clinic was not written down for this visit
-display(unrecorded.groupby('clinic')['wait_min'].count())
-display(unrecorded.groupby('clinic', dropna=False)['wait_min'].count())
-```
-
-| clinic | wait_min |
-| --- | --- |
-| North | 3 |
-| South | 2 |
-
-| clinic | wait_min |
-| --- | --- |
-| North | 3 |
-| South | 2 |
 | NaN | 1 |
 
-That visit was East's only one, so the default report drops East entirely: six visits went in, five are counted, and nothing says so.
+The default report counts five of six visits and lists two of four clinics, with nothing to say so. The second lists every clinic in reporting order and the unrecorded visit as its own `NaN` row.
 
 ![xkcd 2523: Endangered. A flu lineage going extinct is good news; a clinic silently vanishing from your report is not](media/xkcd_2523.png)
 
-# GroupBy Result-Shape Choices
+# Beyond Aggregation: transform, filter, and apply
 
-- **Result shape**: how many rows a GroupBy method returns, and at which grain. Decide the grain the answer needs, then choose the method that returns it.
+Aggregation returns one row per group. Three other methods also run on each group's rows, but return rows of the original table instead:
+
+- `transform` returns one value for every original row, so a group statistic can sit beside each visit.
+- `filter` returns the original rows of the groups that pass a test.
+- `apply` returns whatever your function returns for each group, such as each clinic's top two rows.
 
 | Operation | Question it answers (clinic visits) | Rows returned | Grain of the result |
 | --- | --- | --- | --- |
@@ -518,7 +425,8 @@ That visit was East's only one, so the default report drops East entirely: six v
 
 - **transform**: computes a statistic for each group and copies it back to every row of that group. The result has the table's length and index, so it can become a new column.
 - **Where it comes up**: comparing each lab value with the patient's own average, flagging waits far above their clinic's usual, and filling a missing value from its own clinic.
-- **z-score**: `(value - group_mean) / group_std`, a row's distance from its group's mean in standard deviations; 0 is the mean, 1 is one standard deviation above it.
+- **z-score**: `(value - group_mean) / group_std`, a row's distance from its group's mean in standard deviations; 0 is the mean, 1 is one standard deviation above it. A one-row group has no standard deviation, so its z-score is `NaN`; keep it missing.
+- **Group-specific fill**: `fillna()` with each group's own median keeps one clinic's typical value from filling another clinic's gaps.
 
 ![Each visit's wait beside its clinic's mean: transform gives rows 0 to 2 North's 11, rows 3 and 4 South's 25, and row 5 East's 9, and each dotted gap is wait_min minus that mean](media/transform_vs_clinic.png)
 
@@ -551,49 +459,9 @@ display(with_context[['clinic', 'patient_id', 'wait_min', 'clinic_mean_wait', 'w
 
 East's one visit sits exactly at its clinic's mean: it is easy to be average when you are the whole group.
 
-### Code Snippet: Put Differences on a Common Scale
-
-Divide each difference by its clinic's standard deviation to compare waits across clinics with different spreads.
-
-```python
-clinic_sd = visits.groupby('clinic')['wait_min'].transform('std')
-display((with_context['wait_vs_clinic'] / clinic_sd).round(2))
-```
-
-| Visit row | z-score |
-| --- | --- |
-| 0 | 0.22 |
-| 1 | 0.87 |
-| 2 | -1.09 |
-| 3 | -0.71 |
-| 4 | 0.71 |
-| 5 | NaN |
-
-East's single visit has no sample standard deviation, so its z-score is undefined. A group whose waits are all identical also has no usable scale: its standard deviation is zero. Keep these z-scores missing rather than reporting them as average waits.
-
-### Code Snippet: Fill Missing Scores with the Clinic Median
-
-```python
-clinic_median = visits.groupby('clinic')['satisfaction'].transform('median')
-display(visits['satisfaction'].fillna(clinic_median))
-```
-
-|  | satisfaction |
-| --- | --- |
-| 0 | 4.0 |
-| 1 | 4.5 |
-| 2 | 5.0 |
-| 3 | 3.0 |
-| 4 | 3.0 |
-| 5 | 4.0 |
-
-North's missing score becomes 4.5, the median of North's 4.0 and 5.0, and South's becomes 3.0. A whole-column `fillna(visits['satisfaction'].median())` would give both 4.0.
-
-If a clinic has no recorded scores, its median is missing too; the fill leaves those scores missing.
-
 <callout icon="⚠️" color="yellow_bg">
-	## A group summary does not line up with the rows
-	`visits['clinic_mean_wait'] = visits.groupby('clinic')['wait_min'].mean()` fills every row with `NaN`, without an error: pandas matches a new column to rows by index label (Lecture 04), and the summary is labeled by clinic while the rows are labeled 0 to 5. `.mean().values` fails instead: `ValueError: Length of values (3) does not match length of index (6)`. Use `transform('mean')`.
+	## New column from a group statistic: use `transform`
+	`visits['clinic_mean'] = visits.groupby('clinic')['wait_min'].mean()` fills the column with `NaN`: the summary has one row per clinic, the table one row per visit. Adding `.values` raises `ValueError: Length of values (3) does not match length of index (6)`. `transform('mean')` returns one value per visit.
 </callout>
 
 ![xkcd 2118: Normal Distribution. A z-score counts standard deviations from the mean, not a share of patients](media/xkcd_2118.png)
@@ -638,16 +506,10 @@ print(len(busy), heavy['clinic'].unique().tolist())
 
 East (one visit, mean 9) fails both the size and the mean test. Only South's waits total more than 40 minutes (North's add up to 33). The row mask `visits[visits['wait_min'] > 10]` would instead drop North's 6-minute visit; `filter` keeps it, because North as a whole passes.
 
-# LIVE DEMO!
-
-[Open Demo 2 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo2_coverage_result_shapes.ipynb)
-
-# Apply: Your Own Function per Group
+## Apply: Your Own Function per Group
 
 - **apply**: hands each group to your function as a small DataFrame and stitches the results together. The result can be a number, a summary, or several original rows, so its shape depends on what your function returns. It is the slower fallback: use it when no built-in aggregation fits.
 - **Where it comes up**: each patient's two most recent lab results, or each clinic's longest waits for a quality review.
-
-## Sorting and Keeping Top Rows Within Groups
 
 ### Reference Card: Apply Operations
 
@@ -659,27 +521,14 @@ East (one visit, mean 9) fails both the size and the mean test. Only South's wai
 | `grouped.apply(lambda g: g.nlargest(2, 'col'), include_groups=False)` | Keep the top two rows in each group | Up to two rows per group |
 | `df.sort_values('col', ascending=False).groupby('key').head(2)` | The same top two rows without `apply`; `.tail(1)` after an ascending date sort keeps each patient's latest row | Up to two rows per group, original flat index |
 
-### Code Snippet: Sort Within Clinics and Keep the Two Longest Waits
+### Code Snippet: Keep the Two Longest Waits at Each Clinic
 
 ```python
-by_wait = visits.groupby('clinic').apply(
-    lambda g: g.sort_values('wait_min'), include_groups=False,
-)
 top2 = visits.groupby('clinic').apply(
     lambda g: g.nlargest(2, 'wait_min'), include_groups=False,
 )
-display(by_wait[['patient_id', 'wait_min']])
 display(top2[['patient_id', 'wait_min']])
 ```
-
-| clinic |  | patient_id | wait_min |
-| --- | --- | --- | --- |
-| East | 5 | P05 | 9 |
-| North | 2 | P01 | 6 |
-|  | 0 | P01 | 12 |
-|  | 1 | P02 | 15 |
-| South | 3 | P03 | 20 |
-|  | 4 | P04 | 30 |
 
 | clinic |  | patient_id | wait_min |
 | --- | --- | --- | --- |
@@ -690,27 +539,14 @@ display(top2[['patient_id', 'wait_min']])
 |  | 3 | P03 | 20 |
 
 - The index has two levels (a MultiIndex): the clinic, then each visit's original row number.
-- North's rows come back in wait order, and East keeps its single visit because `nlargest(2)` returns as many rows as the group has.
-- In pandas 3, `include_groups=False` is the default and the only allowed value, so your function never receives the clinic column; writing it out keeps the code working on pandas 2.2, where the default was still `True`.
-
-### Code Snippet: The Same Top Two Without apply
-
-```python
-top2_flat = visits.sort_values('wait_min', ascending=False).groupby('clinic').head(2)
-display(top2_flat[['clinic', 'patient_id', 'wait_min']])
-```
-
-|  | clinic | patient_id | wait_min |
-| --- | --- | --- | --- |
-| 4 | South | P04 | 30 |
-| 3 | South | P03 | 20 |
-| 1 | North | P02 | 15 |
-| 0 | North | P01 | 12 |
-| 5 | East | P05 | 9 |
-
-The same five visits, in overall wait order with the original flat index. `head` keeps each group's first rows in the current order, so sorting by date first and taking `.tail(1)` gives each patient's latest result.
+- East keeps its single visit because `nlargest(2)` returns as many rows as the group has.
+- In pandas 3, `include_groups=False` is the default and the only allowed value, so your function never receives the clinic column; writing it out keeps the code working on pandas 2.2.
 
 ![xkcd 1172: Workflow. Every change breaks someone's workflow, including pandas 3's change to what apply hands your function](media/xkcd_1172.png)
+
+# LIVE DEMO!
+
+[Open Demo 2 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/08/demo/demo2_coverage_result_shapes.ipynb)
 
 # Performance Optimization
 
@@ -797,6 +633,7 @@ you@laptop:~$
 | `ssh-keygen -t ed25519 -f path` | Save the pair at `path` instead of the default, such as a practice key that must not replace your real one | `path` and `path.pub` |
 | `ssh-copy-id user@host` | Install the public key where supported | Passwordless key login |
 | `ssh-add` | Unlock your private key once per login session; the SSH agent keeps it unlocked | Later `ssh` and `scp` stop asking for the passphrase |
+| `gh codespace ssh --config >> ~/.ssh/config` | Write an SSH entry for each of your GitHub Codespaces, a cloud machine you can practice on | Plain `ssh` and `scp` reach the codespace by the name it prints |
 
 ### Code Snippet: Create a Key Pair
 

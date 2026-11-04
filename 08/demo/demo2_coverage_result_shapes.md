@@ -56,7 +56,7 @@ visits = pd.read_parquet("data/visits.parquet")
 print(clinics.shape, visits.shape)
 ```
 
-Expect `(9, 3) (1200000, 10)`.
+Expect `(9, 3) (1200000, 11)`.
 
 ## Core walkthrough
 
@@ -150,7 +150,7 @@ q4["over_60"] = q4["wait_min"] > 60
 display(q4[["clinic", "department", "wait_min", "cell_mean", "wait_z"]].head().round(2))
 ```
 
-Expect five visits, each with its own cell's mean wait and a z-score, the number of standard deviations above that mean. The first, an 18-minute Cardiology wait at Mission, has a z-score of -0.77, below its cell's mean of 27.61. A visit with no recorded wait or no clinic gets a `NaN` z-score. The index keeps the visits' row numbers from the full extract (884392 onward).
+Expect five visits, each with its own cell's mean wait and a z-score, the number of standard deviations above that mean. The first, an 18-minute Cardiology wait at Mission, has a z-score of -0.78, below its cell's mean of 27.38. A visit with no recorded wait or no clinic gets a `NaN` z-score. The index keeps the visits' row numbers from the full extract (884392 onward).
 
 The committee's old rule flagged every wait over 60 minutes. Compare it with a z-score rule (more than 3 standard deviations above the cell's mean), department by department: raw waits against the 60-minute line, and z-scores against the line at 3. `ax.axvline(x)` draws a vertical reference line at `x`.
 
@@ -176,7 +176,7 @@ flags = q4.groupby("department").agg(
 display(flags)
 ```
 
-Expect the flat rule to flag 7,109 visits, 6,531 of them in Orthopedics (4,546) and Family Medicine (1,985), and none in Behavioral Health. That is more than the nurses' 5,000 charts, and most of it is Orthopedics doing what Orthopedics usually does. The z-score rule flags 4,336 visits, within the budget, spread across every department, including 398 in Behavioral Health, where a 20-minute wait is far from usual.
+Expect the flat rule to flag 5,336 visits, 4,908 of them in Orthopedics (3,414) and Family Medicine (1,494), and none in Behavioral Health. That is more than the nurses' 5,000 charts, and most of it is Orthopedics doing what Orthopedics usually does. The z-score rule flags 4,199 visits, within the budget, spread across every department, including 398 in Behavioral Health, where a 20-minute wait is far from usual.
 
 Before recommending the z-score rule, check what it cannot see. A cell's own mean can be the problem: Demo 1 found Bayview's Orthopedics waits nearly doubled after September.
 
@@ -186,9 +186,9 @@ print(f"Visits: {len(bayview):,}  mean wait: {bayview['wait_min'].mean():.1f}")
 print("Over 60 minutes:", bayview["over_60"].sum(), " long for its cell:", bayview["long_for_cell"].sum())
 ```
 
-Expect 6,191 visits with a mean wait of 64.2 minutes: 2,710 are over 60, but only 110 are long for their cell. Compared with its own slow quarter, almost nothing at Bayview looks unusual. The z-score finds odd visits within a group; the group summary (Demo 1's grid) finds the odd group.
+Expect 6,191 visits with a mean wait of 60.7 minutes: 2,043 are over 60, but only 106 are long for their cell. Compared with its own slow quarter, almost nothing at Bayview looks unusual. The z-score finds odd visits within a group; the group summary (Demo 1's grid) finds the odd group.
 
-**What we tell Dr. Whitfield:** switch the chart review to the z-score rule (4,336 charts, every department). Keep Bayview Orthopedics on the agenda as a staffing problem, because a chart review will not flag it.
+**What we tell Dr. Whitfield:** switch the chart review to the z-score rule (4,199 charts, every department). Keep Bayview Orthopedics on the agenda as a staffing problem, because a chart review will not flag it.
 
 ### 4. Can every satisfaction cell be published?
 
@@ -235,11 +235,42 @@ Expect Ridgecrest's Cardiology cell labeled `suppressed` and its three other bla
 
 **What we tell Dr. Whitfield:** the table is ready to publish with one cell suppressed, Ridgecrest Cardiology (10 patients).
 
+### 5. Which two visits should each clinic's reviewer pull first?
+
+The chart reviewers start with each clinic's two longest waits, as whole rows with department and date. `groupby(...).apply(func)` runs a function on each clinic's rows and stitches the results together; `g.nlargest(2, "wait_min")` returns the two rows of group `g` with the longest waits. `include_groups=False` leaves the grouping column out of `g`.
+
+```python
+top2 = q4.groupby("clinic", observed=True).apply(
+    lambda g: g.nlargest(2, "wait_min"), include_groups=False
+)
+display(top2[["department", "visit_month", "wait_min"]].head(4))
+print(top2.shape, top2.index.nlevels)
+
+fig, ax = plt.subplots(figsize=(7, 4))
+sns.scatterplot(data=top2.reset_index(level=0), x="wait_min", y="clinic", hue="department", s=80, ax=ax)
+ax.set(title="Two longest Q4 waits per clinic", xlabel="Wait (minutes)", ylabel="")
+plt.show()
+```
+
+Expect `(16, 15) 2`: 2 visits for each of the 8 clinics with visits (Oceanview and the unrecorded clinic have none to show), with the columns of `q4` so far. The index has two levels, the clinic in committee order and the original row number. The first four rows are Mission's Family Medicine waits of 240 and 191 minutes, then Sunset's Orthopedics waits of 170 and 158. The chart shows one pair of dots per clinic, from Ridgecrest's 98 minutes, the lowest of the 16, up to the 240-minute maximum.
+
+The same rows without `apply`: sort the waits, then keep the first two rows of each group.
+
+```python
+flat = q4.sort_values("wait_min", ascending=False, kind="stable").groupby("clinic", observed=True).head(2)
+print(flat.shape, flat.index.nlevels)
+print("Same visits:", set(flat["visit_id"]) == set(top2["visit_id"]))
+```
+
+Expect `(16, 16) 1` and `Same visits: True`: the same 16 visits with a flat row-number index and the clinic still a column. `apply` fits when the per-group step is more than one built-in call; the sort-and-`head` version is faster on 315,608 rows.
+
+**What we tell Dr. Whitfield:** the reviewers start with 16 visits, two per clinic. Four are at 240 minutes (two at Bayview, one each at Excelsior and Mission), the highest wait recorded, so the true waits may be longer.
+
 ## Independent practice
 
 Run the core walkthrough first. Each item is a request that came back from the committee.
 
-### 5. The committee asks what Excelsior's October waits would have been
+### 6. The committee asks what Excelsior's October waits would have been
 
 Excelsior's kiosk was down for most of October. Fill each missing wait with the median of its own clinic and department, a group-specific fill with `transform`, and compare it with one overall median.
 
@@ -257,7 +288,7 @@ print("Excelsior Orthopedics, overall fill:   ", overall_fill[excelsior_ortho].u
 
 Expect Excelsior's October `count` (5,309) far below its `size` (13,190): its kiosk was down for most of the month. The cell-median fill gives Excelsior's missing Orthopedics waits `[29.]`, its own Orthopedics median; the overall fill gives them `[17.]`, the all-visit median. Waits with no clinic recorded stay missing, because their group has no key.
 
-### 6. Finance wants the volume table as a clinic-by-department grid
+### 7. Finance wants the volume table as a clinic-by-department grid
 
 The same coverage choices, `observed=False` and `dropna=False`, work in `pivot_table`.
 
@@ -270,7 +301,7 @@ print("Rows:", len(volume_grid), " total:", volume_grid.to_numpy().sum())
 
 Expect 10 rows: a `NaN` row for the unrecorded visits (listed first here, so find it by its label), the nine clinics, and Oceanview all zeros. The total is 315,608. A count of 0 is a real value here, so `fill_value=0` is right.
 
-### 7. The staffing subcommittee asks where patient time goes
+### 8. The staffing subcommittee asks where patient time goes
 
 Two `filter` rules on the clinic and department cells: a mean wait over 40 minutes (slow cells) and a total over 365,000 minutes (cells where patients spend the most time).
 
@@ -282,7 +313,7 @@ print("Mean wait over 40 minutes:", slow.groupby(["clinic", "department"], obser
 display(heavy.groupby(["clinic", "department"], observed=True)["wait_min"].agg(["size", "sum", "mean"]))
 ```
 
-Expect one cell by mean, Bayview Orthopedics with 6,191 visits. By total minutes, Bayview Orthopedics (391,568 minutes) appears again, beside Family Medicine at Mission (601,603), with a mean wait of about 25: not slow, but where the most patient time goes.
+Expect one cell by mean, Bayview Orthopedics with 6,191 visits. By total minutes, one cell: Family Medicine at Mission (585,878 minutes), with a mean wait of about 25: not slow, but where the most patient time goes. Bayview Orthopedics records 328,780 minutes, below the line, but the kiosk lost 777 of its 6,191 waits, many of them long (Demo 0); at its own mean of 60.7, those would add about 47,000 minutes and put it over.
 
 A row mask with the same threshold answers a different question: it keeps single long waits from every cell.
 
@@ -292,9 +323,9 @@ print(f"Row mask: {len(long_rows):,} visits from {len(long_rows.groupby(['clinic
 print(f"filter:   {len(slow):,} visits from 1 cell")
 ```
 
-Expect the row mask to keep 25,601 visits from 40 cells, and `filter` all 6,191 visits, short waits included, from Bayview Orthopedics.
+Expect the row mask to keep 23,762 visits from 40 cells, and `filter` all 6,191 visits, short waits included, from Bayview Orthopedics.
 
-### 8. A reviewer rebuilds the z-scores with a lambda
+### 9. A reviewer rebuilds the z-scores with a lambda
 
 A reviewer on the committee recomputes the z-scores with `transform` and a `lambda` to check step 3.
 
@@ -320,4 +351,4 @@ for drop in [True, False]:
 display(means.round(1))
 ```
 
-Expect 8 rows with `dropna=True`: the `NaN` group goes because its key is missing, and Oceanview goes because every one of its cells is `NaN`. With `dropna=False`, 10 rows. The `NaN` row, listed first, holds real means, such as 41.4 minutes in Orthopedics, computed from the 786 visits the default report never mentions. They sit within the range of the clinics' own means, so the unrecorded visits look like a registration slip, not a different kind of visit.
+Expect 8 rows with `dropna=True`: the `NaN` group goes because its key is missing, and Oceanview goes because every one of its cells is `NaN`. With `dropna=False`, 10 rows. The `NaN` row, listed first, holds real means, such as 39.5 minutes in Orthopedics, computed from the 786 visits the default report never mentions. They sit within the range of the clinics' own means, so the unrecorded visits look like a registration slip, not a different kind of visit.

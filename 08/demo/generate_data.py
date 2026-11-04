@@ -3,7 +3,8 @@
 build() writes three Parquet files under data/:
 
 - clinics.parquet: 9 clinics in the board's reporting order, including Oceanview, which opens in 2026.
-- visits.parquet: 1,200,000 outpatient visits in 2025, one row per visit.
+- visits.parquet: 1,200,000 outpatient visits in 2025, one row per visit; the check-in kiosk
+  records the wait, and the EHR records the visit length from arrival to checkout.
 - labs.parquet: 2,000,000 lab results in 2025, one row per result.
 
 The data come from one causal graph, declared in MODEL below with dowhy.gcm (a structural
@@ -20,7 +21,8 @@ formula's argument names. An arrow means "is an input to":
     home clinic, date -> clinic of the visit; main department, conditions, clinic -> department
     first visit of the year, first visit at a clinic opened in 2025 -> visit type
     department, clinic, provider, visit type, weekday, season -> wait
-    visit type, kiosk outage -> wait not recorded
+    visit type, kiosk outage, wait -> wait not recorded (the kiosk times out on long waits)
+    department, visit type -> exam time; wait, exam time -> visit length (recorded by the EHR)
     clinic -> survey returned; wait, provider -> satisfaction score
 
 Confounding comes from these edges, not from patches. Parkside opened in July, so most of its
@@ -92,6 +94,8 @@ WAIT_LOG_SD = np.array([0.55, 0.40, 0.35, 0.40, 0.42, 0.38, 0.40])
 # Departments a clinic does not run; those visits go to Family Medicine instead.
 NOT_OFFERED = {MARINA: [ORTHOPEDICS], PARKSIDE: [DERMATOLOGY, ENDOCRINOLOGY],
                RIDGECREST: [CARDIOLOGY, ORTHOPEDICS, ENDOCRINOLOGY, DERMATOLOGY]}
+# Median minutes from rooming to checkout; therapy sessions run longest.
+EXAM_MEDIAN = np.array([20, 18, 50, 25, 25, 25, 15])
 HOLIDAYS = pd.to_datetime(['2025-01-01', '2025-01-20', '2025-02-17', '2025-05-26', '2025-07-04',
                            '2025-09-01', '2025-11-27', '2025-11-28', '2025-12-25'])
 DAYS = pd.date_range('2025-01-01', '2025-12-31', freq='D')
@@ -288,13 +292,19 @@ MODEL = {
                       + 0.10 * np.isin(month, [1, 2]) + 0.05 * (month == 12)
                       + 0.62 * short_staffed                          # Bayview Orthopedics after September
                       + WAIT_LOG_SD[department.astype(int)] * wait_luck, 0.02),
-    # Check-in kiosks miss some waits, more often for new patients filling in paper forms.
-    'wait_lost': chance(lambda new_patient, kiosk_down: np.where(kiosk_down == 1, 0.6, 0.015 + 0.015 * new_patient)),
+    # Check-in kiosks miss some waits, more often for new patients filling in paper forms; a kiosk session
+    # also expires after an hour without rooming, so about a quarter of waits over 60 minutes are lost.
+    'wait_lost': chance(lambda new_patient, kiosk_down, wait:
+                        np.where(kiosk_down == 1, 0.6, 0.015 + 0.015 * new_patient + 0.25 * (wait > 60))),
     # About one survey in three comes back, 33% to 38% by clinic. The return does not depend on the wait,
     # the provider, or the patient, so respondents' mean ratings within a clinic match all visits'.
     'returned': chance(lambda clinic: SURVEY_RETURN[clinic.astype(int)]),
     'satisfaction': chance(lambda wait, provider_manner: binned_normal(4.55 - 0.03 * wait + provider_manner, 0.7,
                                                                        np.arange(1, 6)), classes=np.arange(1, 6)),
+    # Time with the provider and at checkout; new-patient visits run about 30% longer.
+    'exam': lognormal(lambda department, new_patient: np.log(EXAM_MEDIAN[department.astype(int)]) + 0.25 * new_patient, 0.3),
+    # The EHR stamps arrival at the front desk and checkout, independently of the kiosk.
+    'visit_length': additive(lambda wait, exam: wait + exam, 1.0),
 }
 # Inputs that numpy builds from the calendar and the visit rows, with the nodes they come from.
 INPUTS = {
@@ -398,7 +408,7 @@ def build_visits(rng, scm, p):
     provider_id = offset[cell_code] + (rng.random(n) * n_providers[cell_code]).astype(int)
     v['provider_pace'] = rng.normal(0, 0.15, n_providers.sum())[provider_id]
     v['provider_manner'] = rng.normal(0, 0.25, n_providers.sum())[provider_id]
-    v = draw(scm, v, ['new_patient', 'wait_luck', 'wait', 'wait_lost', 'returned', 'satisfaction'])
+    v = draw(scm, v, ['new_patient', 'wait_luck', 'wait', 'wait_lost', 'returned', 'satisfaction', 'exam', 'visit_length'])
     # Repeated and skipped outreach rows become Family visits by the patient first drawn there, on the outreach date;
     # their wait, new_patient, and satisfaction draws stay in place.
     back = v['family_who'].to_numpy() >= 0
@@ -422,6 +432,7 @@ def build_visits(rng, scm, p):
         'visit_type': np.where(v['new_patient'] == 1, 'New', 'Follow-up'),
         'age': v['age'].astype(int),
         'wait_min': np.where(v['wait_lost'] == 1, np.nan, wait),
+        'visit_length_min': np.clip(v['visit_length'], 1, None).round(),
         'satisfaction': np.where(v['returned'] == 1, v['satisfaction'], np.nan),
     })
 
@@ -568,6 +579,10 @@ def check(clinics, visits, labs):
     assert ridge['patient_id'].nunique() == 10 and not ridge.duplicated(['patient_id', 'visit_date']).any()
     october = visits[(visits['visit_month'] == '2025-10') & (visits['clinic'] == 'Excelsior')]
     assert october['wait_min'].isna().mean() > 0.4
+    # The kiosk loses long waits: follow-up visits outside the outage with no wait ran longer by the EHR.
+    usual = visits[(visits['visit_type'] == 'Follow-up') & ~visits.index.isin(october.index)]
+    lengths = usual.groupby(usual['wait_min'].isna())['visit_length_min'].mean()
+    assert lengths[True] > lengths[False] + 10, lengths
     assert (labs['result'] == 9999).sum() == 23
     a1c = labs[labs['test_name'] == 'A1c'].dropna(subset=['result'])
     assert a1c['result'].between(4, 15).all()

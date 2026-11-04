@@ -18,7 +18,7 @@ jupyter:
 
 # Demo 1: Where Patients Waited in 2025
 
-**Project so far.** Demo 0's EDA pass chose the share of waits over 30 minutes as the score, kept missing waits out of it, and found that waits differ by department.
+**Project so far.** Demo 0's EDA pass chose the share of waits over 30 minutes as the score, kept missing waits out of it, found that the kiosk loses long waits (so each share is a lower bound), and found that waits differ by department.
 
 **This phase's ask.** By Friday, Dr. Alvarez wants three things: which clinics miss the system's access target (at least 85% of patients seen within 30 minutes), where inside those clinics the long waits are, and visit counts by department with totals for the board's appendix. The source is the 2025 visit extract: 1.2 million synthetic visits, one row per visit.
 
@@ -51,13 +51,13 @@ visits = pd.read_parquet("data/visits.parquet")
 print(visits.shape)
 ```
 
-Expect `(1200000, 10)`.
+Expect `(1200000, 11)`.
 
 ## Core walkthrough
 
 ### 1. Which clinics miss the 30-minute target?
 
-Mark each visit as over 30 minutes or not. A missing wait compares as `False`, so the second line puts the missing waits back; without it, the 28,964 visits the kiosk missed would count as on time.
+Mark each visit as over 30 minutes or not. A missing wait compares as `False`, so the second line puts the missing waits back; without it, the 35,059 visits the kiosk missed would count as on time.
 
 ```python
 visits["over_30"] = (visits["wait_min"] > 30).astype(float)
@@ -78,13 +78,13 @@ scorecard["visits_per_patient"] = scorecard["visits"] / scorecard["patients"]
 display(scorecard.sort_values("share_over_30", ascending=False).round(3))
 ```
 
-Expect eight rows, worst first. Mission has 24.0% of visits over 30 minutes, then Bayview (19.7%), Sunset (17.6%), Excelsior (17.5%), and Richmond (15.9%); Parkside (12.4%) and Marina (10.0%) pass, and Ridgecrest, the small rural clinic, is best (4.7%). Mission is also the busiest (264,185 visits from 62,757 patients). Every clinic's mean wait is above its median, because a few very long waits pull the mean up. Parkside has the fewest visits per patient (2.67) because it opened in July. Without the `NaN` fix, Excelsior would show 16.3%, because its kiosk lost most of October's waits. Count Excelsior's recorded waits by month to see the gap.
+Expect eight rows, worst first. Mission has 23.5% of visits over 30 minutes, then Bayview (18.9%), Sunset and Excelsior (17.2% each), and Richmond (15.5%); Parkside (12.2%) and Marina (9.9%) pass, and Ridgecrest, the small rural clinic, is best (4.6%). Mission is also the busiest (264,185 visits from 62,757 patients). Every clinic's mean wait is above its median, because a few very long waits pull the mean up. Parkside has the fewest visits per patient (2.67) because it opened in July. Without the `NaN` fix, Excelsior would show 15.9%, because its kiosk lost most of October's waits. Count Excelsior's recorded waits by month to see the gap.
 
 ```python
 display(visits[visits["clinic"] == "Excelsior"].groupby("visit_month")["wait_min"].count())
 ```
 
-Expect 10,716 to 13,744 recorded waits in every month except October, which drops to 5,309.
+Expect 10,680 to 13,674 recorded waits in every month except October, which drops to 5,309.
 
 The slide for the memo: each clinic's share over 30 minutes beside the 15% line.
 
@@ -110,7 +110,7 @@ print(f"Distinct patients:       {visits['patient_id'].nunique():,}")
 
 Expect a gap of 2,983: exactly the visits with no clinic recorded, which `groupby` dropped without a warning. The clinic patient counts add up to 304,452, more than the 193,034 distinct patients, because a patient seen at two clinics counts once at each: visit counts add up across groups, distinct counts do not.
 
-**What we tell Dr. Alvarez:** five clinics miss the target, Mission by the most (24.0% over 30 minutes). 2,983 visits (0.2%) have no clinic recorded and are footnoted, not assigned.
+**What we tell Dr. Alvarez:** five clinics miss the target, Mission by the most (23.5% over 30 minutes). 2,983 visits (0.2%) have no clinic recorded and are footnoted, not assigned.
 
 ### 2. Where inside the clinics are the long waits?
 
@@ -126,7 +126,7 @@ ax.set(title="Median wait (minutes) by department and clinic, 2025", xlabel="Cli
 plt.show()
 ```
 
-Expect a 7 by 8 grid of median waits. Orthopedics, the darkest row, is the slowest department at every clinic that runs it (25 to 38 minutes), and Bayview's Orthopedics cell, 38, is the darkest of all. Mission's column is a shade darker than its neighbors: it has the longest median in every other department (tied with Bayview in Dermatology), 1 to 4 minutes above Sunset. The blank cells are departments a clinic does not run, such as Orthopedics at Marina: no visits, so the median is `NaN`.
+Expect a 7 by 8 grid of median waits. Orthopedics, the darkest row, is the slowest department at every clinic that runs it (25 to 36 minutes), and Bayview's Orthopedics cell, 36, is the darkest of all. Mission's column is a shade darker than its neighbors: it has the longest median in every other department (tied with Bayview in Dermatology), 1 to 4 minutes above Sunset. The blank cells are departments a clinic does not run, such as Orthopedics at Marina: no visits, so the median is `NaN`.
 
 Bayview's Orthopedics cell is the outlier, so pull out that one group with `get_group` and plot its median wait month by month.
 
@@ -140,7 +140,7 @@ ax.set(title="Bayview Orthopedics: median wait by month, 2025", xlabel="", ylabe
 plt.show()
 ```
 
-Expect 23,690 visits, 1,743 to 2,273 a month, then a flat line at 29 to 34 minutes from January to August that jumps to 55 to 60 from September on. Volume stayed level while the wait nearly doubled. The yearly cell of 38 hid that jump.
+Expect 23,690 visits, 1,743 to 2,273 a month, then a flat line at 29 to 34 minutes from January to August that jumps to 51 to 55 from September on. Volume stayed level while the wait nearly doubled. The yearly cell of 36 hid that jump. The kiosk loses about a quarter of waits over an hour (Demo 0), so the real jump is larger still.
 
 **What we tell Dr. Alvarez:** Bayview's Orthopedics waits nearly doubled in September with no rise in visits. She confirms Bayview lost an orthopedic surgeon that month, so a replacement goes first in the staffing memo.
 
@@ -196,9 +196,9 @@ share_by_month = pd.crosstab(visits["visit_month"], visits["clinic"],
 display(share_by_month[["Sunset", "Parkside"]].round(3))
 ```
 
-Expect 12 month rows. Parkside is `NaN` through June: no visits, so nothing to average, where the count crosstab showed 0. Sunset sits at 0.163 in June and 0.162 in July, and stays between 0.155 and 0.163 through November. Its worst months are January (0.219), February (0.209), and December (0.187).
+Expect 12 month rows. Parkside is `NaN` through June: no visits, so nothing to average, where the count crosstab showed 0. Sunset sits at 0.160 in June and 0.159 in July, and stays between 0.153 and 0.160 through November. Its worst months are January (0.214), February (0.204), and December (0.183).
 
-**What we tell Dr. Alvarez:** Sunset lost about 5,000 visits a month to Parkside, but its share over 30 minutes stayed near 16% (16.3% in June, 16.2% in July). It misses the 15% target in every month and by the most in winter (21.9% in January), so Sunset needs 2026 hours all year, with the most in winter.
+**What we tell Dr. Alvarez:** Sunset lost about 5,000 visits a month to Parkside, but its share over 30 minutes stayed near 16% (16.0% in June, 15.9% in July). It misses the 15% target in every month and by the most in winter (21.4% in January), so Sunset needs 2026 hours all year, with the most in winter.
 
 ## Independent practice
 
@@ -216,7 +216,7 @@ print("Total column:          ", round(ortho["Total"], 2))
 print("Average of clinic cells:", round(ortho.drop("Total").mean(), 2))
 ```
 
-Expect two different numbers, 36.71 and 35.25. Mission, slow and busy, has the most Orthopedics visits, so it counts for more in the `Total`; that is the system average a patient experiences. The empty Marina and Ridgecrest cells are `NaN`, and `.mean()` skips them.
+Expect two different numbers, 35.58 and 34.29. Mission, slow and busy, has the most Orthopedics visits, so it counts for more in the `Total`; that is the system average a patient experiences. The empty Marina and Ridgecrest cells are `NaN`, and `.mean()` skips them.
 
 ### 6. A reviewer asks how many waits stand behind each median
 
@@ -244,7 +244,7 @@ long_again = by_type[["Follow-up", "New"]].stack()
 print("Rows after stack():", len(long_again))
 ```
 
-Expect eight clinic rows. New patients wait about 3 minutes longer at every clinic (1.9 to 3.9), so the gap is system-wide, not one clinic's problem. `stack()` turns the two columns back into an index level: 16 rows, one per clinic and visit type.
+Expect eight clinic rows. New patients wait about 3 minutes longer at every clinic (1.9 to 3.6), so the gap is system-wide, not one clinic's problem. `stack()` turns the two columns back into an index level: 16 rows, one per clinic and visit type.
 
 The data team's dashboard loads flat tables, one row per clinic and visit type with the keys as ordinary columns. `as_index=False` gives that shape directly.
 
@@ -254,7 +254,7 @@ display(flat.head(4).round(1))
 print(flat.shape)
 ```
 
-Expect `clinic`, `visit_type`, and `wait_min` columns with a `0..n-1` index, starting with Bayview Follow-up (21.4) and Bayview New (24.5), and a shape of `(16, 3)`: the same 16 pairs as `stack()`.
+Expect `clinic`, `visit_type`, and `wait_min` columns with a `0..n-1` index, starting with Bayview Follow-up (20.8) and Bayview New (23.8), and a shape of `(16, 3)`: the same 16 pairs as `stack()`.
 
 ### 8. Parkside's manager disputes the ranking
 
@@ -279,7 +279,7 @@ ax.set(title="Share of 2025 visits over 30 minutes", xlabel="", ylabel="Share of
 plt.show()
 ```
 
-Expect Parkside still higher within each visit type, but by less: 0.103 against 0.091 for follow-ups and 0.155 against 0.148 for new patients, against 0.124 and 0.100 for all visits. The chart shows Parkside's bar above Marina's in all three groups, with the gap smallest for new patients. Visit type explains part of the 2.4-point gap, not all of it.
+Expect Parkside still higher within each visit type, but by less: 0.102 against 0.089 for follow-ups and 0.152 against 0.146 for new patients, against 0.122 and 0.099 for all visits. The chart shows Parkside's bar above Marina's in all three groups, with the gap smallest for new patients. Visit type explains part of the 2.3-point gap, not all of it.
 
 Visit type is not the only difference in case mix. Step 3 showed that Marina runs no Orthopedics, the slowest department, while 12.5% of Parkside's visits are Orthopedics. Compare the two clinics within each department and visit type, on the four departments both clinics run.
 
@@ -289,7 +289,7 @@ display(shared.groupby(["department", "visit_type", "clinic"])["over_30"].mean()
 display(shared.groupby("clinic")["over_30"].mean().round(3))
 ```
 
-Expect eight rows with a Marina and a Parkside column. Parkside is lower or tied in every row: Cardiology 0.112 against 0.176 for follow-ups and 0.198 against 0.300 for new patients, Family Medicine 0.115 against 0.120 and 0.175 against 0.185, Pediatrics 0.004 against 0.008 and 0.012 against 0.027, and Behavioral Health 0 for both. Then two rows for the four departments both clinics run combined: Marina 0.100 and Parkside 0.096. Parkside is lower there too, so nothing reverses and this is not Simpson's paradox. Parkside is higher overall (12.4% against 10.0%) only because 12.5% of its visits are Orthopedics, which Marina does not run.
+Expect eight rows with a Marina and a Parkside column. Parkside is lower or tied in every row: Cardiology 0.112 against 0.174 for follow-ups and 0.198 against 0.299 for new patients, Family Medicine 0.113 against 0.118 and 0.171 against 0.182, Pediatrics 0.004 against 0.007 and 0.012 against 0.027, and Behavioral Health 0 for both. Then two rows for the four departments both clinics run combined: Marina 0.099 and Parkside 0.095. Parkside is lower there too, so nothing reverses and this is not Simpson's paradox. Parkside is higher overall (12.2% against 9.9%) only because 12.5% of its visits are Orthopedics, which Marina does not run.
 
 **What we tell Dr. Alvarez:** Parkside is as fast as Marina or faster in every department and visit type both clinics run. It ranks behind because of its case mix: 12.5% of its visits are Orthopedics, which Marina does not run, and 41.2% are new patients (17.5% at Marina). The memo compares clinics within department and visit type before ranking them.
 
@@ -316,7 +316,7 @@ for clinic, group in visits.groupby("clinic"):
     print(f"{clinic}: {len(group):,} visits, {group['over_30'].mean():.1%} over 30 minutes")
 ```
 
-Expect eight lines in alphabetical order, from `Bayview: 185,625 visits, 19.7% over 30 minutes` to `Sunset: 245,192 visits, 17.6% over 30 minutes`. The numbers match the scorecard: the loop writes one message per group, and the `agg` table stays the report.
+Expect eight lines in alphabetical order, from `Bayview: 185,625 visits, 18.9% over 30 minutes` to `Sunset: 245,192 visits, 17.2% over 30 minutes`. The numbers match the scorecard: the loop writes one message per group, and the `agg` table stays the report.
 
 ### 11. The board asks whether long waits cost satisfaction
 
@@ -331,4 +331,4 @@ display(wait_and_rating.round(2))
 print(wait_and_rating.columns.tolist())
 ```
 
-Expect Mission with the longest mean wait (23.42 minutes) and the lowest satisfaction (3.81), and Ridgecrest with the shortest wait (13.29) and the highest satisfaction (4.19). The dictionary result has two-level column labels, such as `('wait_min', 'median')`; `wait_and_rating["satisfaction"]` selects one column's pair. The `count` column shows how many surveys stand behind each mean, from 12,341 at Ridgecrest to 89,951 at Mission.
+Expect Mission with the longest mean wait (23.04 minutes) and the lowest satisfaction (3.81), and Ridgecrest with the shortest wait (13.25) and the highest satisfaction (4.19). The dictionary result has two-level column labels, such as `('wait_min', 'median')`; `wait_and_rating["satisfaction"]` selects one column's pair. The `count` column shows how many surveys stand behind each mean, from 12,341 at Ridgecrest to 89,951 at Mission.
