@@ -367,6 +367,19 @@ Expected output: the age curve rises about 40 mmHg from age 25 to 89 and steepen
 
 # Advanced Deep Learning
 
+## Dropout and L2 in Keras
+
+- **Dropout**: randomly masks a fraction of units during training; all units are active when the model predicts. Like L2, it is a regularization choice to validate against a plain network, not a guarantee against overfitting.
+
+![The plain 64-32 network's validation loss turns up after epoch 20, while with dropout and L2 the two curves fall together; both get 111 of 114 validation biopsies right (0.9737).](media/keras_dropout_curves.png)
+
+### Reference Card: Dropout and L2 Layers
+
+| Method / class | Purpose & arguments | Typical output |
+| :--- | :--- | :--- |
+| `keras.layers.Dropout(0.3)` | During training, randomly zero 30% of the previous layer's outputs. | Layer |
+| `Dense(..., kernel_regularizer=keras.regularizers.l2(0.01))` | Add an L2 penalty on that layer's weights (the Ridge idea from the linear-estimator card). The loss Keras reports then includes the penalty, so compare such a network with others on accuracy, not loss. | Layer |
+
 ## Transfer Learning
 
 **Transfer learning** reuses features learned on a large source dataset. Here VGG16 supplies frozen image features, and a small new classifier learns to separate normal chest X-rays from pneumonia; ImageNet features are a starting point, not evidence of medical-image accuracy.

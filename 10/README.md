@@ -136,17 +136,27 @@ display(results.params.round(2).rename('coef'))
 
 ![The clinic fit's full `results.summary()` printout, with the parts this lecture reads boxed in color among fit statistics and diagnostics it skips.](media/ols_summary.png)
 
-Transforms and interactions name their own coefficient rows:
+Add a transform or interaction term when the plain model misses a pattern:
+
+- **Log**, `np.log(x)`: a right-skewed predictor, or an effect that shrinks as the value grows (each extra unit of a lab matters less at high values).
+- **Squared term**, `I(x ** 2)`: residuals plotted against `x` curve, such as a U shape.
+- **Interaction**, `a * b`: one feature's effect depends on another, such as age raising SBP more at high BMI.
+
+### Code Snippet: Reading an Interaction Coefficient
 
 ```python
-print(smf.ols('sbp ~ age * bmi', data=clinic).fit().params.index.tolist())
-print(smf.ols('sbp ~ np.log(age) + I(bmi ** 2)', data=clinic).fit().params.index.tolist())
+results = smf.ols('sbp ~ age * bmi', data=clinic).fit()
+display(results.params.round(3).rename('coef'))
 ```
 
-```text
-['Intercept', 'age', 'bmi', 'age:bmi']
-['Intercept', 'np.log(age)', 'I(bmi ** 2)']
-```
+|  | coef |
+| --- | --- |
+| Intercept | 64.653 |
+| age | 0.881 |
+| bmi | 1.569 |
+| age:bmi | -0.008 |
+
+Each extra kg/m² of BMI changes the age slope by -0.008 mmHg per year: 0.68 mmHg per year at BMI 25, 0.60 at BMI 35. Its p-value is 0.80, and `clinic` was generated with no interaction, so the plain `age + bmi` model is enough. A transform names its own row the same way: `sbp ~ np.log(age) + I(bmi ** 2)` gives `np.log(age)` and `I(bmi ** 2)`.
 
 <callout icon="⚠️" color="yellow_bg">
 	## Check `results.nobs` after every fit
@@ -315,6 +325,8 @@ Keep a candidate feature only if it is known by prediction time: `candidates['re
 | `np.sin(2 * np.pi * df['hour'] / 24)` | The hour's height on the clock face; `np.pi` is the constant π, and `np.sin()` works column-wise like `np.sqrt()`. | Float Series, -1 to 1 |
 | `np.cos(2 * np.pi * df['hour'] / 24)` | Its side-to-side position. Pair it with the sine: either column alone gives two different hours the same value. | Float Series, -1 to 1 |
 | `2 * np.pi * (df['dayofyear'] - 1) / 366` | Yearly cycle: subtract 1 because `dayofyear` starts at 1, then divide by the cycle length (7 for `.dt.dayofweek`, which starts at 0). A fixed 366 leaves a small gap from December 31 to January 1 in non-leap years. | Float Series |
+
+Two alternatives to sine and cosine: hour bands as a categorical, such as `C(hour_band)` in a formula or one-hot columns for night, morning, afternoon, and evening; or a tree model, which can split on the plain hour twice (`hour < 6` and `hour >= 22`) to group the night hours.
 
 ## Training, Validation, and Test Rows
 
@@ -812,9 +824,6 @@ predicted = model.predict(X_valid)  # one 0/1 label per validation row
 ## `TensorFlow`/`Keras`: The High-Level Approach
 
 - **Keras** (`tf.keras`): TensorFlow's high-level interface: stack layers, `compile()` with a loss and an optimizer, then `fit()` and `predict()` much like `scikit-learn`.
-- **Dropout**: randomly masks a fraction of units during training; all units are active when the model predicts. Like L2, it is a regularization choice to validate against a plain network, not a guarantee against overfitting.
-
-![The plain 64-32 network's validation loss turns up after epoch 20, while with dropout and L2 the two curves fall together; both get 111 of 114 validation biopsies right (0.9737).](media/keras_dropout_curves.png)
 
 ### Reference Card: `tf.keras`
 
@@ -825,8 +834,6 @@ predicted = model.predict(X_valid)  # one 0/1 label per validation row
 | `keras.Sequential([...])` | Build a linear stack of layers. | Keras model |
 | `keras.layers.Input(shape=(n_features,))` | Declare the input width as the first item in `Sequential`. | Input placeholder |
 | `keras.layers.Dense(units, activation=...)` | Add a fully connected layer. | Layer |
-| `keras.layers.Dropout(0.3)` | During training, randomly zero 30% of the previous layer's outputs. | Layer |
-| `Dense(..., kernel_regularizer=keras.regularizers.l2(0.01))` | Add an L2 penalty on that layer's weights (the Ridge idea from the linear-estimator card). The loss Keras reports then includes the penalty, so compare such a network with others on accuracy, not loss. | Layer |
 | `model.summary()` / `model.count_params()` | Print each layer's output shape and parameter count / return the total number of weights. | Printed table / integer |
 | `model.compile(optimizer, loss, metrics)` | Configure optimization, loss, and reported metrics. | Configured model |
 | `model.fit(X_train, y_train, epochs=..., batch_size=..., validation_data=(X_valid, y_valid))` | Train for epochs, reporting validation loss and metrics after each; `validation_split=0.2` instead holds out the last 20% of the training rows. | `History` object |
