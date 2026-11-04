@@ -99,7 +99,7 @@ A **pairplot** draws a scatter plot for every pair of numeric columns, with each
 
 ![Pairplot of 2,000 sampled visits: age has two humps (children and older adults), waits have a long right tail, and satisfaction falls as waits grow.](media/visits_pairplot.png)
 
-The correlations of the 2,000 sampled visits (`.corr()`) agree with the picture: wait and satisfaction, -0.50, from the 689 sampled visits with a survey; age and wait, 0.20. The cluster of short waits under age 18 hints that department, not age, drives the wait, a question for `groupby`.
+The correlations of the 2,000 sampled visits (`.corr()`) agree with the picture: wait and satisfaction, -0.50, from the 690 sampled visits with a survey; age and wait, 0.20. The cluster of short waits under age 18 hints that department, not age, drives the wait, a question for `groupby`.
 
 ### Pairplots in Altair
 

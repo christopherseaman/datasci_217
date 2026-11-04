@@ -363,16 +363,23 @@ def build_visits(rng, scm, p):
     v['who'], v['day'] = who, day
     v = draw(scm, v, ['clinic', 'department'])
 
-    # Ridgecrest's monthly cardiology outreach: 10 hypertensive regulars, one or two visits a month each.
+    # Ridgecrest's monthly cardiology outreach: 10 hypertensive regulars, at most one visit each first Tuesday.
     outreach = np.flatnonzero((v['clinic'] == RIDGECREST) & (v['department'] == FAMILY)
                               & (v['age'] >= 55) & (v['hypertension'] == 1))
     pool = rng.choice(np.unique(who[outreach]), 10, replace=False)
     first_tuesdays = [i for i, d in enumerate(DAYS) if d.dayofweek == 1 and d.day <= 7]
     rows = rng.choice(outreach, 10 * 12 + 60, replace=False)
     regulars = np.concatenate([np.repeat(pool, 12), rng.choice(pool, 60)])
+    days = first_tuesdays * 10 + list(rng.choice(first_tuesdays, 60))
+    # The 60 extra rows repeat a month, and grid months matching the first 20 extra pairs are skipped:
+    # after the draws, those rows become Family visits by the patient first drawn there, so most regulars come most months.
+    missed = pd.MultiIndex.from_arrays([regulars[120:140], days[120:140]])
+    back = np.concatenate([pd.MultiIndex.from_arrays([regulars[:120], days[:120]]).isin(missed), np.ones(60, bool)])
+    v['family_who'] = -1
+    v.loc[rows[back], 'family_who'] = v.loc[rows[back], 'who'].to_numpy()
     patient_cols = PATIENT_NODES + ['who']
     v.loc[rows, patient_cols] = p.iloc[regulars][PATIENT_NODES].assign(who=regulars).to_numpy()
-    v.loc[rows, 'day'] = first_tuesdays * 10 + list(rng.choice(first_tuesdays, 60))
+    v.loc[rows, 'day'] = days
     v.loc[rows, 'department'] = CARDIOLOGY
 
     v = v.sort_values(['day', 'who'], kind='stable', ignore_index=True)
@@ -392,6 +399,14 @@ def build_visits(rng, scm, p):
     v['provider_pace'] = rng.normal(0, 0.15, n_providers.sum())[provider_id]
     v['provider_manner'] = rng.normal(0, 0.25, n_providers.sum())[provider_id]
     v = draw(scm, v, ['new_patient', 'wait_luck', 'wait', 'wait_lost', 'returned', 'satisfaction'])
+    # Repeated and skipped outreach rows become Family visits by the patient first drawn there, on the outreach date;
+    # their wait, new_patient, and satisfaction draws stay in place.
+    back = v['family_who'].to_numpy() >= 0
+    family = v.loc[back, 'family_who'].to_numpy()
+    v.loc[back, patient_cols] = p.iloc[family][PATIENT_NODES].assign(who=family).to_numpy()
+    v.loc[back, 'department'] = FAMILY
+    # The outreach nurse collects a survey at every visit, so the cell has more surveys than patients.
+    v.loc[(v['clinic'] == RIDGECREST) & (v['department'] == CARDIOLOGY), 'returned'] = 1
 
     clinic = CLINICS['clinic'].to_numpy()[v['clinic'].astype(int)].astype(object)
     # A few registrations never recorded the clinic.
@@ -550,7 +565,7 @@ def check(clinics, visits, labs):
     combo = visits.groupby(['clinic', 'department']).size()
     assert ('Marina', 'Orthopedics') not in combo.index and ('Ridgecrest', 'Dermatology') not in combo.index
     ridge = visits[(visits['clinic'] == 'Ridgecrest') & (visits['department'] == 'Cardiology')]
-    assert ridge['patient_id'].nunique() == 10
+    assert ridge['patient_id'].nunique() == 10 and not ridge.duplicated(['patient_id', 'visit_date']).any()
     october = visits[(visits['visit_month'] == '2025-10') & (visits['clinic'] == 'Excelsior')]
     assert october['wait_min'].isna().mean() > 0.4
     assert (labs['result'] == 9999).sum() == 23

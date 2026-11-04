@@ -703,6 +703,65 @@ def run() -> None:
                                 both_clis=False), "delayed STAT exams: wait_vs_peer_hr values")
         assert "E0000544 has wait_vs_peer_hr -15.7, expected 15.7" in message and "minus" in message, message
 
+        # Dropping the waits above the IQR fence (Task 1.1 step 6 keeps them) is one mistake: the first exam_count
+        # check names it, the other checks it changes say they share that cause, and none blames its own aggregation.
+        def built_from(kept: pd.DataFrame) -> dict[str, str | bytes]:
+            """The correct files, with the summaries and the CT dose review built from `kept` in place of the log."""
+            kept_ct = kept[kept["modality"] == "CT"]
+            files = dict(correct)
+            files[SUMMARY] = kept.groupby("site", as_index=False).agg(
+                exam_count=("exam_id", "size"), report_count=("report_hr", "count"), patient_count=("patient_id", "nunique"),
+                total_scan_min=("scan_min", "sum"), mean_scan_min=("scan_min", "mean")).to_csv(index=False)
+            files[PAIRS] = kept.groupby(["site", "modality"], as_index=False).agg(
+                exam_count=("exam_id", "size"), median_wait_hr=("wait_hr", "median"),
+                median_report_hr=("report_hr", "median")).to_csv(index=False)
+            files[DOSE] = kept_ct[kept_ct.groupby("patient_id")["dose_msv"].transform("sum") >= 100][
+                ["exam_id", "patient_id", "dose_msv"]].to_csv(index=False)
+            files[PIVOT] = kept.pivot_table(values="report_hr", index="site", columns="modality", aggfunc="median").to_csv()
+            return files
+
+        q1, q3 = EXAMS["wait_hr"].quantile([0.25, 0.75])
+        kept = EXAMS[EXAMS["wait_hr"] <= q3 + 1.5 * (q3 - q1)]
+        assert len(EXAMS) - len(kept) == value_checks.FENCE_DROPS == 55401
+        assert len(kept[kept["priority"] == "STAT"]) == 152925, "the fence no longer drops only routine exams; extend this case"
+        same_cause = {"site summary: report_count values", "site summary: patient_count values",
+                      "site summary: total_scan_min values", "site and modality: exam_count values",
+                      "site and modality: median_wait_hr values", "site and modality: median_report_hr values",
+                      "CT dose review: whole patients kept"}
+        result = only("fence-drop", built_from(kept), {"site summary: exam_count values", *same_cause},
+                      "55,401 fewer than the 540,228", "Task 1.1 step 6", "IQR fence", check="site summary: exam_count values")
+        for name in same_cause:
+            message = detail(result, name)
+            assert "Same cause as output/site_summary.csv's exam_count check" in message, (name, message)
+            assert "Fix it in" not in message and " is (" not in message, (name, message)
+        # Any other drop, such as the blank report_hr rows, gets the general fix and is not blamed on the fence.
+        kept = EXAMS.dropna(subset=["report_hr"])
+        same_cause = {"site summary: patient_count values", "site summary: total_scan_min values",
+                      "site and modality: exam_count values", "site and modality: median_wait_hr values",
+                      "CT dose review: whole patients kept"}
+        result = only("dropna-report-hr", built_from(kept), {"site summary: exam_count values", *same_cause},
+                      "2,262 fewer than the 540,228", "Remove the filter or dropna()", check="site summary: exam_count values")
+        for name in same_cause | {"site summary: exam_count values"}:
+            message = detail(result, name)
+            assert "as many as the waits" not in message and "Task 1.1 step 6," not in message, (name, message)
+            assert "Fix it in" not in message and " is (" not in message, (name, message)
+        # Dropped rows only lower patient_count: one above expected is its own mistake, as is exam_count beside it.
+        two = frames[SUMMARY].assign(exam_count=frames[SUMMARY]["report_count"], patient_count=frames[SUMMARY]["exam_count"])
+        result = only("count-mistakes", changed(SUMMARY, two.to_csv(index=False)),
+                      {"site summary: exam_count values", "site summary: patient_count values"})
+        assert 'Fix it in Task 1.3: patient_count is ("patient_id", "nunique")' in detail(result, "site summary: patient_count values")
+        # Rows dropped only before Task 2.1 are placed there, after the full site summary.
+        late = dict(correct)
+        late[PAIRS] = built_from(EXAMS[EXAMS["wait_hr"] <= q3 + 1.5 * (q3 - q1)])[PAIRS]
+        result = only("late-fence-drop", late, {"site and modality: exam_count values", "site and modality: median_wait_hr values",
+                                                "site and modality: median_report_hr values"},
+                      "A step between Task 1.3 and Task 2.1 dropped 55,401 rows", check="site and modality: exam_count values")
+        assert "Task 1.1 step 6" not in detail(result, "site and modality: exam_count values")
+        # A count over a column with blanks changes exam_count alone: it is that check's own mistake, not dropped rows.
+        counted = frames[SUMMARY].assign(exam_count=frames[SUMMARY]["report_count"])
+        only("exam-count-of-reports", changed(SUMMARY, counted.to_csv(index=False)), {"site summary: exam_count values"},
+             'Fix it in Task 1.3: exam_count is ("exam_id", "size")')
+
         # A missing file costs only its own artifact's checks, and is never told to take another required file's name.
         for number, path in enumerate(correct):
             files = {other: text for other, text in correct.items() if other != path}

@@ -24,6 +24,10 @@ another name with the right values. One renamed with wrong values also costs
 its values check. A selection of exams that holds none of the expected exams
 costs only its rows check: its other values checks have nothing to compare.
 A share column is read in one unit, all shares or all percents.
+When a summary's exam_count shows rows dropped from the exam log, its exam_count
+check names the shortfall and Task 1.1 step 6, and the other checks those rows
+change say they share that cause; mean_scan_min is also judged against the
+file's own total_scan_min and exam_count.
 
 Nothing here imports, runs, or inspects student code.
 """
@@ -1564,6 +1568,10 @@ SLOWEST_STAT_REPORTS = {
 }
 # END GENERATED
 
+# Task 1.1 step 6: how many waits sit above the IQR fence, Q3 + 1.5 * IQR of wait_hr. Frozen by hand from
+# data/imaging_exams.parquet; the self-test recomputes it from the data.
+FENCE_DROPS = 55401
+
 # Task 1.1: the share of each modality's exams with no report_hr and no dose_msv. Frozen by hand from
 # data/imaging_exams.parquet; the self-test recomputes it from the data.
 MISSING_BY_MODALITY = {
@@ -2348,6 +2356,12 @@ def rows_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
         if unknown:
             shown = _join(unknown[:4]) + (f" and {len(unknown) - 4} more" if len(unknown) > 4 else "")
             problems.append(f"also has {shown}")
+        dropped = _dropped(root) if missing and not repeated and not unknown and artifact.key == ("exam_id",) else None
+        if dropped is not None:
+            raise AssertionError(
+                f"{artifact.path} is missing {_some([_key_name(key) for key in missing])} ({len(missing)} of the "
+                f"{len(artifact.rows)} expected exams) and holds no other exam. {_same_cause(dropped)}"
+            )
         _assert(
             not problems,
             f"{artifact.path} " + "; ".join(problems) + "; it should hold one row for each of "
@@ -2455,6 +2469,16 @@ def values_check(
                     f"no saved column holds {column}: {table.header(spare)} does not match it (expected {column} "
                     f"{_show_value(artifact, artifact.rows[first][column])} for {_key_name(first)}, for example)"
                 )
+        short = _short_by(root, artifact) if wrong and artifact in COUNTED else None
+        if short is not None:
+            source = _dropped(root)
+            if source[0] is artifact and columns == ("exam_count",):
+                raise AssertionError(
+                    f"{artifact.path}: exam_count adds up to {EXAM_ROWS - short:,} exams, {short:,} fewer than the "
+                    f"{EXAM_ROWS:,} in data/imaging_exams.parquet, and no row has more exams than expected "
+                    f"({_listed(wrong, 2)}). {_drop_fix(source)}"
+                )
+            raise AssertionError(f"{artifact.path}: {_listed(wrong, 1)}. {_same_cause(source)}")
         note = cause(table, found) if cause else ""
         message = f"{artifact.path}: " + _listed(wrong) + "."
         _assert(
@@ -2480,6 +2504,93 @@ def _saved_wait_vs_peer(row: dict[str, str], found: dict[str, str]) -> tuple[flo
     if wait is None or median is None:
         return None
     return wait - median, "wait_hr minus the peer_median_wait_hr saved on that row"
+
+
+def _saved_mean_scan(row: dict[str, str], found: dict[str, str]) -> tuple[float, str] | None:
+    """total_scan_min divided by exam_count from the row's own saved cells, or None when either is not usable."""
+    total, count = (
+        _finite(row[found[column]]) if column in found else None for column in ("total_scan_min", "exam_count")
+    )
+    if total is None or not count:
+        return None
+    return total / count, "total_scan_min divided by the exam_count saved on that row"
+
+
+# The summaries whose exam_count, summed, should give every exam in the log.
+COUNTED = (SITE_SUMMARY_TABLE, SITE_MODALITY_TABLE)
+# A count column that dropped rows can only lower; a value above expected is that column's own mistake.
+NEVER_RAISED = ("report_count", "patient_count", "total_scan_min")
+
+
+def _drop_fix(source: tuple[Artifact, int]) -> str:
+    """Where the rows were dropped and how to keep them, judged by which summary first comes up short and by how many."""
+    artifact, short = source
+    if artifact is not COUNTED[0]:
+        return (
+            f"A step between {COUNTED[0].task} and {artifact.task} dropped {short:,} rows, since {COUNTED[0].path} "
+            f"counts every exam. Group the full log in {artifact.task} and rerun the notebook."
+        )
+    if short == FENCE_DROPS:
+        return (
+            f"A step before {artifact.task} dropped {short:,} rows, as many as the waits above the IQR fence. Fix it "
+            "in Task 1.1 step 6: that step only counts those waits. They are real waits, not entry errors, so every "
+            "exam stays in the log; remove the line that filters them out and rerun the notebook."
+        )
+    return (
+        f"A step before {artifact.task} dropped {short:,} rows. Every exam stays in the log: the waits above the IQR "
+        "fence (Task 1.1 step 6) and the blank report_hr and dose_msv cells are real data. Remove the filter or "
+        "dropna() that dropped them and rerun the notebook."
+    )
+
+
+def _short_by(root: Path, artifact: Artifact) -> int | None:
+    """How many exams `artifact`'s exam_count is short of the exam log by, when rows were dropped before its task.
+
+    Dropped rows leave every saved count at or below its expected value and change another column too, such as
+    report_count or a median. A count over a column with blanks, such as ("report_hr", "count"), changes
+    exam_count alone, so it is not taken for dropped rows. None when the table shows no such shortfall or
+    cannot be read; its own checks charge that.
+    """
+    try:
+        table = read_table(root, artifact)
+        found = _resolve(table, artifact, root)
+        grouped, _ = _group(table, artifact, found)
+    except (AssertionError, OSError, ValueError, UnicodeDecodeError, csv.Error):
+        return None
+    if "exam_count" not in found or any(len(grouped.get(key, ())) != 1 for key in artifact.rows):
+        return None
+    rows = {key: grouped[key][0] for key in artifact.rows}
+    counts = [_finite(row[found["exam_count"]]) for row in rows.values()]
+    if any(count is None or count > artifact.rows[key]["exam_count"] for key, count in zip(rows, counts)):
+        return None
+    for column in (column for column in NEVER_RAISED if column in found and column in artifact.columns):
+        for key, row in rows.items():
+            value, expected = _finite(row[found[column]]), artifact.rows[key][column]
+            if value is not None and expected is not None and value > expected and not _value_matches(artifact, row[found[column]], expected):
+                return None
+    others = [column for column in artifact.columns if column not in (*artifact.key, "exam_count") and column in found]
+    changed = any(not _value_matches(artifact, row[found[column]], artifact.rows[key][column])
+                  for key, row in rows.items() for column in others)
+    short = EXAM_ROWS - round(sum(counts))
+    return short if short > 0 and changed else None
+
+
+def _dropped(root: Path) -> tuple[Artifact, int] | None:
+    """The first summary whose exam_count shows rows dropped from the exam log, and how many, or None."""
+    for artifact in COUNTED:
+        short = _short_by(root, artifact)
+        if short is not None:
+            return artifact, short
+    return None
+
+
+def _same_cause(source: tuple[Artifact, int]) -> str:
+    artifact, short = source
+    where = ", in Task 1.1 step 6" if artifact is COUNTED[0] and short == FENCE_DROPS else ""
+    return (
+        f"Same cause as {artifact.path}'s exam_count check: {short:,} of the {EXAM_ROWS:,} exams were dropped before "
+        f"{artifact.task}. Fix that first{where}, then rerun the notebook."
+    )
 
 
 def _when_peer_medians_blank(note: str) -> Callable[[Table, dict[str, str]], str]:
@@ -2753,6 +2864,7 @@ CHECKS = (
             SITE_SUMMARY_TABLE,
             ("mean_scan_min",),
             'mean_scan_min is ("scan_min", "mean"); save it unrounded or to at least one decimal.',
+            also=_saved_mean_scan,
         ),
     ),
     # Task 2.1: output/site_modality_summary.csv

@@ -19,8 +19,9 @@ All checks passed.
 How the files are read:
 
 - Each check is scored on its own, so one mistake costs only that check's points.
-- A mistake is charged once. A missing column, or one saved under another name with the right values, costs only the columns check; values in the other columns are still checked. An empty table, or one that shares no row with the expected rows, earns no value points, with one exception: a list of exams (Tasks 2.2 to 2.4) that holds none of the expected exams costs only its rows check, and its other values checks pass.
+- A mistake is charged once, except dropped rows. A missing column, or one saved under another name with the right values, costs only the columns check; values in the other columns are still checked. An empty table, or one that shares no row with the expected rows, earns no value points, with one exception: a list of exams (Tasks 2.2 to 2.4) that holds none of the expected exams costs only its rows check, and its other values checks pass.
 - The pairplot is checked only by its file: which library drew it, its sample size, colors, and labels are your choice. An Altair spec must hold at least three numeric columns; the check cannot read the columns of a PNG.
+- Rows dropped from the exam log fail every check they change. The first `exam_count` check that comes up short names the cause and how many exams are missing. The others say they share that cause. A `mean_scan_min` that is the file's own `total_scan_min` divided by its `exam_count` passes.
 - Spacing, line endings, quoting, column order, and row order never cost points.
 - Numbers are compared as numbers, so `6`, `6.0`, and `6.00` are the same value. A mean or median may keep every digit or be rounded to one or two decimals. A share of exams may keep every digit, be rounded to three decimals, or be written as a percent (`0.39` for `0.0039`), one unit for the whole column.
 - Site names, modalities, IDs, and column names are compared in any letter case.

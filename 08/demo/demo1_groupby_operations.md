@@ -108,7 +108,7 @@ print(f"Sum of clinic patients:  {scorecard['patients'].sum():,}")
 print(f"Distinct patients:       {visits['patient_id'].nunique():,}")
 ```
 
-Expect a gap of 2,983: exactly the visits with no clinic recorded, which `groupby` dropped without a warning. The clinic patient counts add up to 304,445, more than the 193,034 distinct patients, because a patient seen at two clinics counts once at each: visit counts add up across groups, distinct counts do not.
+Expect a gap of 2,983: exactly the visits with no clinic recorded, which `groupby` dropped without a warning. The clinic patient counts add up to 304,452, more than the 193,034 distinct patients, because a patient seen at two clinics counts once at each: visit counts add up across groups, distinct counts do not.
 
 **What we tell Dr. Alvarez:** five clinics miss the target, Mission by the most (24.0% over 30 minutes). 2,983 visits (0.2%) have no clinic recorded and are footnoted, not assigned.
 
@@ -165,7 +165,7 @@ display(volume)
 print(f"Corner cell: {volume.loc['Total', 'Total']:,}")
 ```
 
-Expect seven department rows plus `Total`, eight clinic columns plus `Total`, and `0` where a clinic does not run a department (Orthopedics at Marina; Dermatology and Endocrinology at Parkside; Dermatology, Endocrinology, and Orthopedics at Ridgecrest). Ridgecrest's Cardiology count is 179, from its monthly outreach clinic (one more outreach visit has no clinic recorded). The corner cell is 1,197,017, the scorecard's total, so the appendix and the memo agree.
+Expect seven department rows plus `Total`, eight clinic columns plus `Total`, and `0` where a clinic does not run a department (Orthopedics at Marina; Dermatology and Endocrinology at Parkside; Dermatology, Endocrinology, and Orthopedics at Ridgecrest). Ridgecrest's Cardiology count is 100, from its monthly outreach clinic (one more outreach visit has no clinic recorded). The corner cell is 1,197,017, the scorecard's total, so the appendix and the memo agree.
 
 ### 4. Did Parkside take load off Sunset?
 
@@ -229,7 +229,7 @@ display(wait_stats["count"])
 display(wait_stats["median"])
 ```
 
-Expect two 7 by 8 tables. Most cells rest on thousands of waits, but Ridgecrest's Cardiology median (14.0) rests on 179, from 10 outreach patients. The counts print as `179.0` because the absent cells are `NaN`, which forces the column to floats.
+Expect two 7 by 8 tables. Most cells rest on thousands of waits, but Ridgecrest's Cardiology median (14.0) rests on 100, from 10 outreach patients. The counts print as `100.0` because the absent cells are `NaN`, which forces the column to floats.
 
 ### 7. Dr. Alvarez asks whether new patients wait longer
 
@@ -305,7 +305,7 @@ per_patient["visits_per_patient"] = per_patient["visits"] / per_patient["patient
 display(per_patient.sort_values("visits_per_patient", ascending=False).round(2))
 ```
 
-Expect counts well below the visit counts in step 3, and Ridgecrest's Cardiology at 10 patients: ten regulars account for all 179 outreach visits with a clinic recorded. In the second table, Pediatrics has the most visits per patient (5.36), because every child's visits land in one department while an adult's spread across several; Dermatology has the fewest (1.96).
+Expect counts well below the visit counts in step 3, and Ridgecrest's Cardiology at 10 patients: ten regulars account for all 100 outreach visits with a clinic recorded. In the second table, Pediatrics has the most visits per patient (5.36), because every child's visits land in one department while an adult's spread across several; Dermatology has the fewest (1.96).
 
 ### 10. Each clinic manager wants one line about their own clinic
 
@@ -331,4 +331,4 @@ display(wait_and_rating.round(2))
 print(wait_and_rating.columns.tolist())
 ```
 
-Expect Mission with the longest mean wait (23.42 minutes) and the lowest satisfaction (3.81), and Ridgecrest with the shortest wait (13.29) and the highest satisfaction (4.19). The dictionary result has two-level column labels, such as `('wait_min', 'median')`; `wait_and_rating["satisfaction"]` selects one column's pair. The `count` column shows how many surveys stand behind each mean, from 12,280 at Ridgecrest to 89,951 at Mission.
+Expect Mission with the longest mean wait (23.42 minutes) and the lowest satisfaction (3.81), and Ridgecrest with the shortest wait (13.29) and the highest satisfaction (4.19). The dictionary result has two-level column labels, such as `('wait_min', 'median')`; `wait_and_rating["satisfaction"]` selects one column's pair. The `count` column shows how many surveys stand behind each mean, from 12,341 at Ridgecrest to 89,951 at Mission.

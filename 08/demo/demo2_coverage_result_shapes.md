@@ -203,7 +203,7 @@ cells = respondents.groupby(["clinic", "department"], observed=True).agg(
 display(cells[cells["patients"] < 11])
 ```
 
-Expect one cell, Ridgecrest Cardiology: 22 surveys from only 10 patients, because its outreach clinic sees the same regulars every month.
+Expect one cell, Ridgecrest Cardiology: 23 surveys from only 10 patients, because its outreach clinic sees the same regulars every month and collects a survey at each visit.
 
 A size rule is the obvious draft, but it counts surveys. `filter` keeps every row of the groups that pass a test, so the test decides what is published: counting rows would publish that cell; counting distinct patients hides it.
 
@@ -220,7 +220,7 @@ public = pd.pivot_table(patients_rule, values="satisfaction", index="department"
 display(public.round(2))
 ```
 
-Expect 110,746 respondents. The row rule keeps 110,458, every respondent with a clinic (the 288 with no clinic have no group), and the patient rule keeps 22 fewer, 110,436. In the public table, Ridgecrest's Cardiology cell is `NaN` (suppressed), beside the cells for departments Ridgecrest does not run.
+Expect 110,760 respondents. The row rule keeps 110,472, every respondent with a clinic (the 288 with no clinic have no group), and the patient rule keeps 23 fewer, 110,449. In the public table, Ridgecrest's Cardiology cell is `NaN` (suppressed), beside the cells for departments Ridgecrest does not run.
 
 ```python
 fig, ax = plt.subplots(figsize=(10, 4.5))
