@@ -18,7 +18,7 @@ jupyter:
 
 # Demo 0: An EDA Pass on the 2025 Visit Extract
 
-**Project brief.** Dr. Renee Alvarez, VP of Ambulatory Operations at a health system with eight clinics, presents a 2025 access review to the board on January 15, 2026. The board uses it to decide where to add provider hours in 2026 and how large to make a diabetes care-management pilot at Bayview and Excelsior. The work comes in four phases:
+**Project brief.** Dr. Renee Alvarez, VP of Ambulatory Operations at a health system with eight clinics, presents a 2025 access review to the board on January 15, 2026. The board uses it to decide where to add provider hours in 2026 and whether to fund a diabetes care-management pilot at Bayview and Excelsior. The work comes in four phases:
 
 - **Demo 0**: an EDA pass on the visit extract before any counting.
 - **Demo 1**: the year-end wait scorecard for Dr. Alvarez's staffing memo.

@@ -99,7 +99,7 @@ A **pairplot** draws a scatter plot for every pair of numeric columns, with each
 
 ![Pairplot of 2,000 sampled visits: age has two humps (children and older adults), waits have a long right tail, and satisfaction falls as waits grow.](media/visits_pairplot.png)
 
-The correlations (`sample.corr()`) agree with the picture: wait and satisfaction, -0.50, from the 689 sampled visits with a survey; age and wait, 0.20. The cluster of short waits under age 18 hints that department, not age, drives the wait, a question for `groupby`.
+The correlations of the 2,000 sampled visits (`.corr()`) agree with the picture: wait and satisfaction, -0.50, from the 689 sampled visits with a survey; age and wait, 0.20. The cluster of short waits under age 18 hints that department, not age, drives the wait, a question for `groupby`.
 
 ### Pairplots in Altair
 
@@ -160,7 +160,7 @@ chart.save('pairplot.html')  # open in a browser and hover over a point
 
 ## Aggregating Each Group
 
-The snippets in this lecture use `visits`, six clinic visits:
+From here on, most snippets use `visits`, six clinic visits:
 
 |  | clinic | visit_type | patient_id | wait_min | satisfaction |
 | --- | --- | --- | --- | --- | --- |
@@ -732,23 +732,23 @@ The same five visits, in overall wait order with the original flat index. `head`
 
 ### Code Snippet: Time One Split and Shrink a Text Key
 
-`labs` holds 2,000,000 synthetic lab results (`patient_id`, `clinic`, `test_name`, `result`) from eight clinics, and `a1c` holds its 118,645 A1c results from 90,178 patients; timings depend on the machine.
+`labs` holds 2,000,000 synthetic lab results (`patient_id`, `clinic`, `test_name`, `result`) from eight clinics, and `a1c` holds its 118,645 A1c results with a value, from 90,178 patients; timings depend on the machine.
 
 ```python
-%timeit [a1c.groupby('patient_id')['result'].agg(f) for f in ['mean', 'std', 'count']]
-%timeit a1c.groupby('patient_id')['result'].agg(['mean', 'std', 'count'])
+%timeit [a1c.groupby('patient_id')['result'].agg(f) for f in ['count', 'mean', 'std', 'max']]
+%timeit a1c.groupby('patient_id')['result'].agg(['count', 'mean', 'std', 'max'])
 print(labs['clinic'].memory_usage(deep=True) / 1e6)
 print(labs['clinic'].astype('category').memory_usage(deep=True) / 1e6)
 ```
 
 ```text
-128 ms ± 1.29 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
-47.5 ms ± 332 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+165 ms ± 580 μs per loop (mean ± std. dev. of 7 runs, 2 loops each)
+48.8 ms ± 760 μs per loop (mean ± std. dev. of 7 runs, 5 loops each)
 30.427492
 2.000258
 ```
 
-One split is about 2.7 times faster than three. The text `clinic` column takes 30.4 MB; as a category, 2.0 MB.
+One split is about 3.4 times faster than four. The text `clinic` column takes 30.4 MB; as a category, 2.0 MB.
 
 ![xkcd 1319: Automation. Making code faster is work too, so measure first and spend the effort only where the time goes](media/xkcd_1319.png)
 

@@ -106,7 +106,7 @@ axes[1].set(title="After marking 9999 as missing", xlabel="Glucose (mg/dL)")
 plt.show()
 ```
 
-Expect the left panel's dots bunched under 700 at the left edge, except Excelsior's dot alone at 9999 (its two results are identical, so they overlap). On the right the x-axis runs from about 440 to 750, and every clinic's two dots sit between 442 and 740 mg/dL.
+Expect the left panel's dots bunched under 750 at the left edge, except Excelsior's dot alone at 9999 (its two results are identical, so they overlap). On the right the x-axis runs from about 440 to 750, and every clinic's two dots sit between 442 and 740 mg/dL.
 
 ### 3. How many patients would the pilot take on?
 

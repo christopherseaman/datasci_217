@@ -66,7 +66,7 @@ assignment/
 
 ### 1.1 Explore the exam log
 
-Before grouping, walk the log through the steps of EDA in Lecture 08's "The Steps of EDA" card. Demo 0 runs the same pass on a visit log. Task 1.1 has three cells: steps 1 and 2 go in the first, step 3 in the pairplot cell, and steps 4 to 6 in the third.
+Before grouping, walk the log through the steps of EDA in Lecture 08's "The Steps of EDA" card. Demo 0 runs the same pass on a visit log. Task 1.1 has three cells: steps 1 and 2 below go in the first, step 3 in the pairplot cell, and steps 4 to 6 in the third.
 
 1. Check the grain: compare the number of distinct `exam_id` values with the number of rows, then count the distinct patients.
     - Expect: `rows: 540228`, `distinct exams: 540228`, and `patients: 210000`. One row is one exam, and most patients have several.
