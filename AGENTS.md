@@ -29,7 +29,7 @@ Adapted from DataSci 223's lecture style guide (`../datasci_223/AGENTS.md`): con
 - Each major topic blends concepts, reference material, practical examples, and hands-on demos.
 - Order topics so each uses only what came before. Python follows McKinney's _Python for Data Analysis_ progression.
 - A section that develops one tool fits, where it helps: problem → basic tool → options → pitfalls and safeguards.
-- Topics form blocks, each ending at a demo break where a conceptual group finishes, not at a word count. Usually three demos near the first third, second third, and end; Lecture 01 keeps four (Git/GitHub setup, shell, Python basics, control structures and debugging); Lecture 11 keeps one.
+- Topics form blocks, each ending at a demo break where a conceptual group finishes, not at a word count. Usually three demos near the first third, second third, and end; Lecture 01 keeps four (Git/GitHub setup, shell, Python basics, control structures and debugging); Lecture 08 keeps four (a mini EDA demo, Demo 0, after its opening EDA topic); Lecture 11 keeps one.
 - Place breaks from the lecture (timing, grouping), then move demo sections so each demo practices the block before it. A break may move and topics may be reordered to balance blocks. Demo placement and content change together; a demo that needs untaught material names the sections to move; it is never a reason to leave the break where it is.
 - Class is 90 minutes: about 60 of lecture and 30 of core demo walkthroughs. Reference coverage may exceed what is discussed. Each demo has a compact core route; label independent practice for outside class, since not every variation is part of the live route. Lecture 11 keeps its project-workflow exception.
 - Size: about 850 lines and 3,000 prose words (outside code, tables, headings), with breaks roughly evenly spaced and a little more in the first block. Soft targets for spotting bloat, never a reason to cut a sentence that earns its place. Measure with `python3 scripts/lecture_metrics.py`.
@@ -206,6 +206,8 @@ Organization first, styling last. Fix substance (add the missing explanation, vi
 - Charts may preview a tool taught later, such as seaborn in Lecture 06, when they make a step's result easier to see. The demo's first chart cell opens with `# Preview: plotting is taught later`; the `%pip` line pins the plotting package and lets pip choose its dependencies.
 - Lecture 01 uses plain `print()`; f-strings start in Lecture 02.
 - Build progressive workflows from preceding material, with realistic data and edge cases where they serve the lesson.
+- From Lecture 08 on, a lecture's demos form one believable project for a named stakeholder: each demo opens with the ask, steps are named after the project question (never after a method) and still name the method they use, and independent practice items are follow-up requests. Every concept gets visual output.
+- Demo data come from a seeded generator (`NN/demo/generate_data.py`, `dowhy.gcm` from Lecture 08 on) that declares a causal graph between columns, so confounding and effects arise from the graph and each lesson holds in the fitted numbers. Large (hundreds of thousands to millions of rows), deterministic, Parquet. Fixing a generator to keep a lesson honest is routine work.
 - Show intermediate values, tables, diffs, or saved files after meaningful steps, with concrete expected results.
 - Label an intentional failure's expected error and show the fix. Otherwise demos run end to end without errors.
 
@@ -215,6 +217,7 @@ Organization first, styling last. Fix substance (add the missing explanation, vi
 
 - README order: Overview (a brief task summary, then the dataset), Setup, Files, the tasks, Check your work.
 - Task-first: annotated scaffold tree, numbered subtasks, each step paired with what to expect, prominent artifact checkpoints. No preambles, forbidden-code lists, instructor notes, or repeated explanations.
+- Steps follow Assignment 07: state the requirement, point to the lecture snippet or demo step to adapt, name the key method, and say what to expect; never print the full answer expression. Notebook TODOs point at the README step.
 - Setup follows Lecture 03 (`uv venv --seed`, activate, `uv sync` on the supplied `pyproject.toml` and `uv.lock`). Terminal and git-identity setup appear only in Assignment 01, git identity as a fallback for when a commit or push asks for it. No Windows or troubleshooting paragraphs.
 - Check your work is very brief. Homework notebooks list both the manual `python3 check_assignment.py` run and the notebook's final `run_checks()` cell (GitHub runs the latest checks on push), then commit the outputs. Exams: Restart and Run All, then commit and push, with no file table or shell checks (each task's Checkpoint names its artifact, header, and line count) and no separate Submit section. The positive, artifact-based completion contract lives in a linked `CHECKS.md`. Say "checks," not "public checks."
 - Checks run on every push; a new fork may need Actions enabled once.
@@ -224,6 +227,7 @@ Organization first, styling last. Fix substance (add the missing explanation, vi
 ### Data and artifacts
 
 - Generated data (05 and 06): the handout ships a seeded stdlib `generate_data.py` and `data_manifest.json`; `data/` is gitignored, and the notebook's first cell builds and verifies it. Several MB, so students must use code; identical bytes on every platform and Python 3.9 to 3.13.
+- Hosted data (08 to 10): `scripts/build_assignmentNN_data.py` builds a large fixed dataset into `NN/assignment/data/*.parquet`, committed here; the scaffold's first cells download it from `main` when missing.
 - Graded outputs are small CSV summaries an analyst would hand over (audits, counts, logs, fixed small extracts) and charts; checks grade what an artifact shows, never its file size.
 - Parquet is the default for generated datasets and saved demo tables from Lecture 05 on; graded artifacts stay CSV.
 - Files that do not depend on a validation gate save before its `assert`.
@@ -236,7 +240,8 @@ Organization first, styling last. Fix substance (add the missing explanation, vi
 - A failure message states what was found beside what was expected, and the likely cause and fix (an empty timestamp, `>` overwriting a file, the wrong axis, positions used for labels).
 - Checker code runs on any Python 3, including macOS's system 3.9: no `zip(strict=True)`, `match`, or other 3.10+ features.
 - Each assignment's handout folder is the `source` in `assignments.json`, with its course-owned checks beside it under the same name plus `_checks`: `NN/assignment/` and `NN/assignment_checks/`, except the 06 midterm in `06/mid-term/` and `06/mid-term_checks/`. `05/mid-term/` and `06/assignment/` (with their `_checks`) are inactive earlier versions; tooling neither publishes, tests, nor grades them.
-- Homework is pass/fail and self-tested: the handout ships a byte-identical copy of its course-owned checks (`NN/assignment/` and `NN/assignment_checks/`); correct both.
+- Homework is pass/fail and self-tested: the handout ships a byte-identical copy of its course-owned checks (`NN/assignment/` and `NN/assignment_checks/`); correct both. Its checks are feedback tests: judge them by whether each failure names the real mistake, and when one mistake breaks later checks, the first failure diagnoses it and the rest say "same cause". Points matter only for exams.
+- No arbitrary caps unrelated to the work (file size, pixel counts); extra files in `output/` are fine. A chart artifact passes when it is a real, non-blank image or a Vega-Lite spec of the asked columns.
 - `check_assignment.py` downloads the latest course checks from `main` (falling back to the bundled copy offline or on failure). Assignments 02–05 and 07–10 also expose `run_checks()` for a notebook's last cell; 01, 06, and 11 do not. `DS217_LOCAL_CHECKS` (or `--local-checks`) skips the download; CI sets it.
 - The CI workflow (`NN/assignment/.github/workflows/tests.yml`: `CHECKS_REPO: christopherseaman/datasci_217`, `CHECKS_REF`, `CHECKS_PATH: NN/assignment_checks`, `CHECKS_FILES`) downloads the current checks each run, so fixes reach forks on their next push. Fetch the set named by `CHECKS_FILES` whole (`grading.py` pairs checks with `POINTS` and raises on a mismatch), validate and smoke-test it, and fall back to the vendored copy; a run that can use neither fails. Never fetch or overwrite student work.
 - Judge a checker by its JSON, never its exit status (it exits non-zero on any incomplete submission).
@@ -254,6 +259,21 @@ Organization first, styling last. Fix substance (add the missing explanation, vi
 
 - Publish only when the user asks; a publish replaces the page.
 - Reconcile first: fetch the live page and compare it with the local file, including child pages, links, images, and synced blocks. Notion holds edits the repo lacks; never overwrite an unrecognized change. If the fetch is incomplete or they conflict, stop and ask. Notion page titles may differ deliberately.
-- Publish with `python3 scripts/notion_push.py <page.md>` (`--dry-run` to rehearse): it pages child blocks to the end, uploads images, refuses unless every child page is in the payload, writes, attaches images, and verifies. Audit with `python3 scripts/notion_check_pages.py` (non-zero on a broken image).
+- Publish with `python3 scripts/notion_push.py <page.md>` (`--dry-run` to rehearse, which uploads nothing): it pages child blocks to the end, uploads images, `<video src>` and `<pdf src>` files, refuses unless every child page is in the payload, writes, attaches media, recreates `<bookmark url>` tags as bookmark blocks, and verifies. Every other block is replaced, so Notion-only media and bookmarks must be added to the repo first (Lecture 08's instructor video and PDFs live in `08/media/`). Audit with `python3 scripts/notion_check_pages.py` (non-zero on a broken image).
 - Why the script: a payload missing a child page makes `ntn pages edit` hang until killed and can wedge the page (a stalled publish means a missing `<page>` tag, not a slow API); and `ntn pages edit` stores `file-upload://` images as external blocks with empty URLs, so images are attached afterwards. An image is broken when its source URL is empty, not merely when the key is missing.
 - Upload media from local files, never GitHub links. Uploads expire about an hour after creation: upload and publish in one sitting. Write `![Caption](file-upload://ID)`; `![Caption](<image src="file-upload://ID"></image>)` stores a dead text link.
+
+## Decisions to preserve
+
+Instructor decisions; do not reopen them in reviews.
+
+- 01: keep non-repeated Git guidance (including website upload), some duck typing, the Quick References, and the VS Code commit and sync screenshots with Microsoft's merge-conflict link. 02: keep Markdown as communication material, non-repeated Git, the Command-Line Catalog, and the debugger as an optional BONUS exercise. Already distributed 01 and 02 handouts stay unchanged this term.
+- 03: mention venv/Conda in main with their workflows in BONUS; keep 2-D boolean indexing, the Examples of Wildcards table, and 2-D sorting in main, 3-D selection in BONUS; its length is accepted.
+- 04 keeps Parquet (its demo pins pyarrow); 05 keeps all cleaning functionality; missing gender in 05 is an audit flag allowed in the final table.
+- 06 keeps the join-type comparison and cross-join audit. 07 keeps its accepted compaction.
+- 08 keeps SSH/tmux/Jupyter (rehearsed locally), filter thresholds, within-group apply (sorting, `nlargest`), the MultiIndex result, the `.values` length error, the instructor's video, PDFs, and bookmark after the callout, and `research.png`.
+- 09's blocks are dated data plus basic resampling, then grids and windows, then clocks (time zones) and honest entity history; its Python `datetime` section stays in main; frequency inference, specialized schedules, clock-time alternatives, percentage changes, and Grouper are BONUS.
+- 10 keeps XGBoost and Keras, the Zoolander hook, and the lab-analyzer, practice-exam, and scrambled-chart analogies. Assignment 10's 30/8/10 split is retrospective; Demo 10's prospective workflow uses only labels available at its first validation cutoff.
+- 11 stays at its pre-pacing version plus "A Step-by-Step EDA Pass" and the EDA step in Demo 03. Lecture 11 uses NYC taxis; Assignment 11 uses Chicago beach weather.
+- The midterm is `06/mid-term`; its data keep `E04` as an unmatched satellite code and 70/250 mmHg as teaching boundaries. Assignment 01's report gets full credit when the summary prints sit inside the loop.
+- Spoken-practice material (mock interviews, talk-through prompts) is covered by another course. Colab validation is out of scope.
