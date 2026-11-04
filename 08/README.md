@@ -28,7 +28,7 @@ _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is wha
 	- **GroupBy, pivot tables, and crosstabs**: `groupby()` by one or two keys with named aggregation, Simpson's paradox when a second key reverses a comparison, and `pivot_table()` and `pd.crosstab()` with totals, row shares, and fills for absent cells.
 	- **Group coverage and result shapes**: missing keys, unused categories, and `transform`, `filter`, and `apply`.
 	- **Performance optimization**: one `.agg()` per split, built-in aggregations over lambdas, and `category` keys, checked with `%timeit` and `memory_usage()`.
-	- **Remote computing with SSH**: `ssh`, `scp`, key pairs, and `tmux` sessions for long jobs.
+	- **tmux and SSH**: `tmux` sessions that keep long jobs running, then `ssh`, `scp`, and key pairs for remote servers.
 	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 7.5, 9.2 (pair plots), and 10.1 to 10.5; Shotts, _The Linux Command Line_, Chapter 16; MIT _The Missing Semester of Your CS Education_, "Command-line Environment".
 	## Enables
 	- Explore a visit log before grouping it, from `info()` and missing shares by clinic to an IQR fence and `sns.pairplot()`.
@@ -588,6 +588,57 @@ One split is about 3.4 times faster than four. The text `clinic` column takes 30
 
 ![xkcd 1319: Automation. Making code faster is work too, so measure first and spend the effort only where the time goes](media/xkcd_1319.png)
 
+# Terminal Sessions with tmux
+
+- **Terminal multiplexer**: a program such as `tmux` that runs shells inside a **session** that keeps going on its own. You **detach** from it, close the terminal, and **attach** again later to find the job still running.
+- It works on your laptop or on a server: locally it keeps a long job going after you close the terminal window, and over SSH it survives a dropped connection. A session does not survive a restart of the machine it runs on.
+- `screen` is an older alternative; use whichever the machine provides.
+
+```text
+terminal (laptop, or over ssh) ──> tmux session "analysis"   (keeps running after you detach)
+                                     └─ python3 analysis.py
+```
+
+![A tmux session named analysis running analysis.py at step 10 of 120; the green status bar shows the session name, analysis, and the window 0:python3](media/tmux_session.png)
+
+## Sessions, Windows, and Panes
+
+### Reference Card: tmux Commands
+
+Every shortcut starts with the **prefix**, `Ctrl+b`: press it, release, then press the next key.
+
+| Task | Command or keys | Result |
+| :--- | :--- | :--- |
+| Install | `brew install tmux` (macOS), `sudo apt install tmux` (Ubuntu or WSL); `tmux -V` | Version such as `tmux 3.6`; servers usually have it |
+| Start | `tmux new -s analysis` | New session named `analysis`, status bar at the bottom |
+| Detach | `Ctrl+b`, then `d` | Back at the normal prompt; the session keeps running |
+| List | `tmux ls` | `analysis: 1 windows (created ...)`, or `no server running` when none exist |
+| Reattach | `tmux attach -t analysis` | The session, exactly as you left it |
+| New window | `Ctrl+b`, then `c`; switch with `Ctrl+b`, then `n` (next) or `p` (previous) | A second shell in the same session |
+| Split | `Ctrl+b`, then `%` (side by side) or `"` (stacked); move with `Ctrl+b`, then an arrow key | Two shells on one screen |
+| Scroll | `Ctrl+b`, then `[`; arrow keys or Page Up; `q` to leave | Read output that scrolled off the screen |
+| End | `exit` inside the session, or `tmux kill-session -t analysis` from outside | Session closed, stopping anything still running in it |
+| screen | `screen -S analysis`; detach `Ctrl+a`, then `d`; `screen -r analysis` | The same idea with `screen` |
+
+### Code Snippet: Keep an Analysis Running
+
+In a project folder whose environment you built with `uv venv --seed` and `uv sync` (Lecture 03), on your laptop or after `ssh`:
+
+```bash
+tmux new -s analysis
+source .venv/bin/activate
+time python3 analysis.py
+```
+
+Press `Ctrl+b`, then `d`, to detach; now it is safe to close the terminal or disconnect. Later, find the session and attach to it; when the job ends, `time` reports how long it ran:
+
+```bash
+tmux ls
+tmux attach -t analysis
+```
+
+![xkcd 2659: Unreliable Connection. Wi-Fi that drops at random is why a long job runs inside tmux](media/xkcd_2659.png)
+
 # Remote Computing with SSH
 
 - **SSH** (Secure Shell): opens an encrypted terminal on another computer, a **server** or **host**, so you can run analyses too large or too long for a laptop.
@@ -612,6 +663,29 @@ you@laptop:~$
 
 - **Host key fingerprint**: the code shown on your first connection that identifies the server. Type `yes` only if it matches the fingerprint the administrator published; SSH remembers the server after that.
 - A password prompt shows nothing as you type; that is normal.
+
+### Reference Card: Connect and Copy
+
+| Command | Purpose and key arguments | Result |
+| :--- | :--- | :--- |
+| `ssh user@host` | Open a remote shell; `exit` returns | Remote prompt |
+| `ssh -p port user@host` | Connect through a nondefault port | Remote prompt |
+| `ssh user@host 'command'` | Run one command remotely | Command output locally |
+| `scp local user@host:path` | Copy a local file to the server | Remote file |
+| `scp user@host:path local` | Copy a remote file back | Local file |
+| `gh codespace ssh --config >> ~/.ssh/config` | Write an SSH entry for each of your GitHub Codespaces, a cloud machine you can practice on | Plain `ssh` and `scp` reach the codespace by the name it prints |
+
+### Code Snippet: Upload a File and Download a Result
+
+Run these from your laptop's prompt, not inside an `ssh` session. The first copies `data.csv` into the server's existing `~/data/` folder; the second copies `analysis.csv` into your current local folder:
+
+```bash
+scp data.csv jdoe@analysis.example.org:~/data/
+scp jdoe@analysis.example.org:~/results/analysis.csv ./
+```
+
+## SSH Keys
+
 - **SSH key pair**: what most servers use instead of a password. `ssh-keygen` creates the **public key**, `~/.ssh/id_ed25519.pub`, a padlock you install on every server you use, and the **private key**, `~/.ssh/id_ed25519`, the only key that opens it.
 - **SSH agent**: a background program on your laptop (macOS runs one for you) that keeps an unlocked private key in memory, so `ssh` and `scp` stop asking for the passphrase.
 
@@ -620,20 +694,14 @@ you@laptop:~$
 	Never email, upload, or commit `~/.ssh/id_ed25519`: anyone holding it can log in as you. Only the `.pub` file goes to servers.
 </callout>
 
-### Reference Card: SSH File and Shell Commands
+### Reference Card: SSH Keys
 
 | Command | Purpose and key arguments | Result |
 | :--- | :--- | :--- |
-| `ssh user@host` | Open a remote shell | Remote prompt |
-| `ssh -p port user@host` | Connect through a nondefault port | Remote prompt |
-| `ssh user@host 'command'` | Run one command remotely | Command output locally |
-| `scp local user@host:path` | Copy a local file to the server | Remote file |
-| `scp user@host:path local` | Copy a remote file back | Local file |
 | `ssh-keygen -t ed25519` | Create a public/private key pair; `-C "email"` labels it | `~/.ssh/id_ed25519` and `~/.ssh/id_ed25519.pub` |
 | `ssh-keygen -t ed25519 -f path` | Save the pair at `path` instead of the default, such as a practice key that must not replace your real one | `path` and `path.pub` |
 | `ssh-copy-id user@host` | Install the public key where supported | Passwordless key login |
 | `ssh-add` | Unlock your private key once per login session; the SSH agent keeps it unlocked | Later `ssh` and `scp` stop asking for the passphrase |
-| `gh codespace ssh --config >> ~/.ssh/config` | Write an SSH entry for each of your GitHub Codespaces, a cloud machine you can practice on | Plain `ssh` and `scp` reach the codespace by the name it prints |
 
 ### Code Snippet: Create a Key Pair
 
@@ -646,59 +714,6 @@ ssh-keygen -t ed25519 -C "your_email@example.com"
 - Press Enter for the default location, and set a passphrase that protects the private key file.
 - `ssh-add` asks for the passphrase once, and the agent keeps the key unlocked until you log out. If `ssh-add` cannot connect to your authentication agent (common in WSL), skip it and type the passphrase when asked.
 - `Overwrite (y/n)?` means a key already exists: answer `n` and keep using it, because replacing it breaks access to servers that trust its public half.
-
-### Code Snippet: Upload a File and Download a Result
-
-Run these from your laptop's prompt, not inside an `ssh` session. The first copies `data.csv` into the server's existing `~/data/` folder; the second copies `analysis.csv` into your current local folder:
-
-```bash
-scp data.csv jdoe@analysis.example.org:~/data/
-scp jdoe@analysis.example.org:~/results/analysis.csv ./
-```
-
-![xkcd 2659: Unreliable Connection. Wi-Fi that drops at random is why a long job runs inside tmux](media/xkcd_2659.png)
-
-## Keep Long Jobs Alive with tmux or screen
-
-- When an SSH connection drops (laptop sleeps, Wi-Fi changes), programs tied to that terminal can stop, including an analysis three hours into a four-hour run.
-- **Terminal multiplexer**: a program such as `tmux` that keeps a shell running on the server by itself. You **detach**, disconnect, and later **attach** again to find the job still running. A session survives disconnects, not a server restart.
-- `screen` is an older alternative; use whichever the server provides. [Tmux Fundamentals](https://linuxhandbook.com/courses/tmux/) is a guided introduction.
-
-```text
-laptop ── ssh ──> server
-                   └─ tmux session "analysis"   (keeps running after you disconnect)
-                        └─ python3 analysis.py
-```
-
-![A tmux session named analysis running analysis.py at step 10 of 120; the green status bar shows the session name, analysis, and the window 0:python3](media/tmux_session.png)
-
-### Reference Card: tmux Sessions
-
-- Install: servers usually have tmux already. To practice on your laptop, `brew install tmux` (macOS) or `sudo apt install tmux` (Ubuntu or WSL); `tmux -V` prints the version.
-- `tmux new -s analysis`: Start a session named `analysis`; a status bar appears at the bottom.
-- `Ctrl+b`, then `d`: Detach; the session keeps running and you return to the normal prompt.
-- `tmux ls` (short for `tmux list-sessions`): List sessions; output looks like `analysis: 1 windows (created Fri Sep 18 15:32:45 2026)`.
-- `tmux attach -t analysis`: Reattach to the session.
-- `exit` inside the session: End it when the job is done.
-- `tmux kill-session -t analysis`: End a detached session from outside, stopping anything still running in it.
-- Alternative: `screen -S analysis`; detach with `Ctrl+a`, then `d`; reattach with `screen -r analysis`.
-
-### Code Snippet: Keep an Analysis Running
-
-On the server, after `ssh`, in a project folder whose environment you built there with `uv venv --seed` and `uv sync` (Lecture 03):
-
-```bash
-tmux new -s analysis
-source .venv/bin/activate
-time python3 analysis.py
-```
-
-Press `Ctrl+b`, then `d`, to detach; now it is safe to disconnect. Later, after reconnecting with `ssh`, find the session and attach to it; when the job ends, `time` reports how long it ran:
-
-```bash
-tmux ls
-tmux attach -t analysis
-```
 
 # LIVE DEMO!
 

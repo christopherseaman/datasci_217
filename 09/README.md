@@ -25,8 +25,8 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 	# This Lecture
 	## Covers
 	- **Dated data**: timestamps, periods, panels, Python `datetime`, a pandas DatetimeIndex, frequency grids, and calendar slicing.
-	- **Resampling**: daily or hourly summaries, bin edges, upsampling, per-patient grids, and gap runs.
-	- **Rolling windows**: count and time windows, centered windows, and EWM.
+	- **Review: tmux and SSH**: Lecture 08's long-job sessions, remote shells, file copies, and keys.
+	- **Resampling and rolling windows**: daily or hourly summaries, bin edges, upsampling, per-patient grids, gap runs, count and time windows, and EWM.
 	- **Time series visualization**: EDA steps for a series (spacing, profiles, autocorrelation), then raw readings with a smoother, gaps that break the line, and seasonal bars.
 	- **Clocks and honest history**: UTC conversion, clock-change nights, grouped lags, past-only windows, and availability at prediction time.
 	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 9.2, 11.1 to 11.4, 11.6, and 11.7.
@@ -37,6 +37,131 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 	- Convert two clinics' local visit times to UTC and flag repeated or skipped times on clock-change nights.
 	- Build previous-reading and past-only rolling-mean features per patient with `groupby()`, `shift()`, and `rolling(..., closed='left')`, keeping later rows out.
 </callout>
+
+# Terminal Sessions with tmux (Review from Lecture 08)
+
+- **Terminal multiplexer**: a program such as `tmux` that runs shells inside a **session** that keeps going on its own. You **detach** from it, close the terminal, and **attach** again later to find the job still running.
+- It works on your laptop or on a server: locally it keeps a long job going after you close the terminal window, and over SSH it survives a dropped connection. A session does not survive a restart of the machine it runs on.
+- `screen` is an older alternative; use whichever the machine provides.
+
+```text
+terminal (laptop, or over ssh) ──> tmux session "analysis"   (keeps running after you detach)
+                                     └─ python3 analysis.py
+```
+
+![A tmux session named analysis running analysis.py at step 10 of 120; the green status bar shows the session name, analysis, and the window 0:python3](media/tmux_session.png)
+
+## Sessions, Windows, and Panes
+
+### Reference Card: tmux Commands
+
+Every shortcut starts with the **prefix**, `Ctrl+b`: press it, release, then press the next key.
+
+| Task | Command or keys | Result |
+| :--- | :--- | :--- |
+| Install | `brew install tmux` (macOS), `sudo apt install tmux` (Ubuntu or WSL); `tmux -V` | Version such as `tmux 3.6`; servers usually have it |
+| Start | `tmux new -s analysis` | New session named `analysis`, status bar at the bottom |
+| Detach | `Ctrl+b`, then `d` | Back at the normal prompt; the session keeps running |
+| List | `tmux ls` | `analysis: 1 windows (created ...)`, or `no server running` when none exist |
+| Reattach | `tmux attach -t analysis` | The session, exactly as you left it |
+| New window | `Ctrl+b`, then `c`; switch with `Ctrl+b`, then `n` (next) or `p` (previous) | A second shell in the same session |
+| Split | `Ctrl+b`, then `%` (side by side) or `"` (stacked); move with `Ctrl+b`, then an arrow key | Two shells on one screen |
+| Scroll | `Ctrl+b`, then `[`; arrow keys or Page Up; `q` to leave | Read output that scrolled off the screen |
+| End | `exit` inside the session, or `tmux kill-session -t analysis` from outside | Session closed, stopping anything still running in it |
+| screen | `screen -S analysis`; detach `Ctrl+a`, then `d`; `screen -r analysis` | The same idea with `screen` |
+
+### Code Snippet: Keep an Analysis Running
+
+In a project folder whose environment you built with `uv venv --seed` and `uv sync` (Lecture 03), on your laptop or after `ssh`:
+
+```bash
+tmux new -s analysis
+source .venv/bin/activate
+time python3 analysis.py
+```
+
+Press `Ctrl+b`, then `d`, to detach; now it is safe to close the terminal or disconnect. Later, find the session and attach to it; when the job ends, `time` reports how long it ran:
+
+```bash
+tmux ls
+tmux attach -t analysis
+```
+
+# Remote Computing with SSH (Review from Lecture 08)
+
+- **SSH** (Secure Shell): opens an encrypted terminal on another computer, a **server** or **host**, so you can run analyses too large or too long for a laptop.
+- **Protected health information** (PHI), records that can identify a person, often may not leave an approved secure server, so you bring your code to the data and take back only permitted results.
+
+![ssh opens a shell on the server, scp copies data.csv up and analysis.csv back, and patient records (PHI) stay on the server](media/ssh_laptop_server.png)
+
+## Connect and Copy Files
+
+The server's operator supplies its hostname, your account, and how to log in. Once connected, shell commands (`pwd`, `ls`, `cd`, `python3`) run on the server, and the prompt shows where you are; `exit` returns to your laptop:
+
+```text
+you@laptop:~$ ssh jdoe@analysis.example.org
+The authenticity of host 'analysis.example.org' can't be established.
+ED25519 key fingerprint is SHA256:...
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+jdoe@analysis:~$ hostname
+analysis
+jdoe@analysis:~$ exit
+you@laptop:~$
+```
+
+- **Host key fingerprint**: the code shown on your first connection that identifies the server. Type `yes` only if it matches the fingerprint the administrator published; SSH remembers the server after that.
+- A password prompt shows nothing as you type; that is normal.
+
+### Reference Card: Connect and Copy
+
+| Command | Purpose and key arguments | Result |
+| :--- | :--- | :--- |
+| `ssh user@host` | Open a remote shell; `exit` returns | Remote prompt |
+| `ssh -p port user@host` | Connect through a nondefault port | Remote prompt |
+| `ssh user@host 'command'` | Run one command remotely | Command output locally |
+| `scp local user@host:path` | Copy a local file to the server | Remote file |
+| `scp user@host:path local` | Copy a remote file back | Local file |
+| `gh codespace ssh --config >> ~/.ssh/config` | Write an SSH entry for each of your GitHub Codespaces, a cloud machine you can practice on | Plain `ssh` and `scp` reach the codespace by the name it prints |
+
+### Code Snippet: Upload a File and Download a Result
+
+Run these from your laptop's prompt, not inside an `ssh` session. The first copies `data.csv` into the server's existing `~/data/` folder; the second copies `analysis.csv` into your current local folder:
+
+```bash
+scp data.csv jdoe@analysis.example.org:~/data/
+scp jdoe@analysis.example.org:~/results/analysis.csv ./
+```
+
+## SSH Keys
+
+- **SSH key pair**: what most servers use instead of a password. `ssh-keygen` creates the **public key**, `~/.ssh/id_ed25519.pub`, a padlock you install on every server you use, and the **private key**, `~/.ssh/id_ed25519`, the only key that opens it.
+- **SSH agent**: a background program on your laptop (macOS runs one for you) that keeps an unlocked private key in memory, so `ssh` and `scp` stop asking for the passphrase.
+
+<callout icon="⚠️" color="yellow_bg">
+	## Never share your private key
+	Never email, upload, or commit `~/.ssh/id_ed25519`: anyone holding it can log in as you. Only the `.pub` file goes to servers.
+</callout>
+
+### Reference Card: SSH Keys
+
+| Command | Purpose and key arguments | Result |
+| :--- | :--- | :--- |
+| `ssh-keygen -t ed25519` | Create a public/private key pair; `-C "email"` labels it | `~/.ssh/id_ed25519` and `~/.ssh/id_ed25519.pub` |
+| `ssh-keygen -t ed25519 -f path` | Save the pair at `path` instead of the default, such as a practice key that must not replace your real one | `path` and `path.pub` |
+| `ssh-copy-id user@host` | Install the public key where supported | Passwordless key login |
+| `ssh-add` | Unlock your private key once per login session; the SSH agent keeps it unlocked | Later `ssh` and `scp` stop asking for the passphrase |
+
+### Code Snippet: Create a Key Pair
+
+Run this once on your laptop, then install only the public half using the server's instructions or `ssh-copy-id`:
+
+```bash
+ssh-keygen -t ed25519 -C "your_email@example.com"
+```
+
+- Press Enter for the default location, and set a passphrase that protects the private key file.
+- `ssh-add` asks for the passphrase once, and the agent keeps the key unlocked until you log out. If `ssh-add` cannot connect to your authentication agent (common in WSL), skip it and type the passphrase when asked.
+- `Overwrite (y/n)?` means a key already exists: answer `n` and keep using it, because replacing it breaks access to servers that trust its public half.
 
 # Understanding Time Series Data
 
