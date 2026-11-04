@@ -2561,7 +2561,7 @@ def _spec_problem(spec: object, where: str) -> str | None:
     if len(columns) >= PAIRPLOT_MIN_COLUMNS:
         return None
     held = f"only {_join(columns)}" if columns else "none of them"
-    return (f"{where} repeats {held}, expected at least {PAIRPLOT_MIN_COLUMNS} of {_join(NUMERIC_COLUMNS)}: list "
+    return (f"{where} plots {held}, expected at least {PAIRPLOT_MIN_COLUMNS} of {_join(NUMERIC_COLUMNS)}: list "
             "three or more numeric columns in .repeat(row=..., column=...) and fill x and y from alt.repeat()")
 
 

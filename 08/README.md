@@ -66,7 +66,7 @@ _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is wha
 | 4. Distributions and outliers | What shape, and which values are extreme? | `sns.histplot(data=df, x='x')`, `sns.boxplot(data=df, x='g', y='x')`; the IQR rule (Lecture 05) flags values above `q3 + 1.5 * (q3 - q1)` or below `q1 - 1.5 * (q3 - q1)` |
 | 5. Relationships | Which columns move together, and how? | `df[cols].corr()`, `sns.pairplot(df[cols].sample(2000), corner=True)` |
 
-`extract` in these snippets is Demo 1's visit log: 1.2 million synthetic visits, one row per visit.
+`extract` in these snippets is Demo 1's visit log (the demo calls it `visits`): 1.2 million synthetic visits, one row per visit.
 
 ![Waits per visit: a peak near 10 to 15 minutes, a long right tail past the 48.5-minute IQR fence, and Orthopedics slowest by department.](media/wait_distribution.png)
 
@@ -99,19 +99,20 @@ A **pairplot** draws a scatter plot for every pair of numeric columns, with each
 
 ![Pairplot of 2,000 sampled visits: age has two humps (children and older adults), waits have a long right tail, and satisfaction falls as waits grow.](media/visits_pairplot.png)
 
-The correlations agree with the picture: wait and satisfaction, -0.50; age and wait, 0.20. The cluster of short waits under age 18 hints that department, not age, drives the wait, a question for `groupby`.
+The correlations (`sample.corr()`) agree with the picture: wait and satisfaction, -0.50, from the 689 sampled visits with a survey; age and wait, 0.20. The cluster of short waits under age 18 hints that department, not age, drives the wait, a question for `groupby`.
 
 ### Pairplots in Altair
 
-Altair (Lecture 07) builds a pairplot as a **repeated chart**: one scatter specification that Vega-Lite draws once for every row and column pair. Altair refuses data over 5,000 rows (`MaxRowsError`), one more reason to sample first.
+Altair (Lecture 07) builds a pairplot as a **repeated chart**: one scatter specification that Vega-Lite draws once for every row and column pair. Altair refuses data over 5,000 rows by default (`MaxRowsError`), one more reason to sample first.
 
-![The same 2,000 visits as an Altair repeated scatter: the clouds match the seaborn pairplot, and the diagonal panels are straight lines where seaborn drew histograms.](media/visits_pairplot_altair.png)
+![The same 2,000 visits as an Altair repeated scatter: the clouds match the seaborn pairplot, and the diagonal panels plot each column against itself, so they are straight lines where seaborn drew histograms.](media/visits_pairplot_altair.png)
 
 ### Reference Card: Pairplots in seaborn and Altair
 
 - `sns.pairplot(sample, corner=True)`: Scatter for every pair, histograms on the diagonal; returns a grid saved with `.savefig('pairplot.png')`.
 - `alt.X(alt.repeat('column'), type='quantitative')`: Fill the x encoding from the repeat list; `alt.repeat('row')` fills y.
 - `.repeat(row=cols, column=cols)`: Draw the chart once per pair of columns in `cols`.
+- `brush = alt.selection_interval(resolve='global')`, `.add_params(brush)`, `color=alt.condition(brush, alt.value('steelblue'), alt.value('lightgray'))`: Drag a box in any panel to keep the selected points colored in every panel; double-click clears it.
 - `chart.save('pairplot.html')`: A web page whose script tags load `vega`, `vega-lite`, and `vega-embed` from a CDN and call `vegaEmbed()` to draw the chart; opening it needs internet access.
 - `chart.save('pairplot.json')` / `chart.to_json()`: The Vega-Lite specification with the rows embedded; top-level keys `$schema`, `config`, `datasets`, `repeat`, and `spec`.
 - **Choosing**: seaborn for a static image in a report, slide, or PDF; Altair for a web page or dashboard where readers hover for tooltips.
@@ -171,6 +172,7 @@ The snippets in this lecture use `visits`, six clinic visits:
 | Task | Call | Purpose and key arguments | Output |
 | --- | --- | --- | --- |
 | Split | `df.groupby('key')` | Group rows by one key; pass a list for several keys | `DataFrameGroupBy`; nothing computed yet |
+| Split | `s.groupby(df['key'])` | Group a Series, such as `df['x'].isna()`, by another column of the same rows | `SeriesGroupBy` |
 | Inspect | `for name, group in grouped:` / `grouped.get_group('North')` | See each group's key and rows; useful for checking a split before summarizing it | One small DataFrame per group |
 | Select | `grouped['col']` / `grouped[['a', 'b']]` | Choose the columns to summarize; `.mean()` on text columns raises `TypeError`, and `.sum()` glues text together (`P01P02P01`) | `SeriesGroupBy` / `DataFrameGroupBy` |
 | Summarize | `.mean()`, `.median()`, `.sum()`, `.min()`, `.max()` | One summary per group of the selected numeric column | One row per group |
@@ -320,10 +322,10 @@ Grouped by treatment alone, New loses (0.5 against 0.7); within each severity le
 
 # Pivot Tables and Cross-Tabulations
 
-- **Pivot table**: summarizes one column by two keys at once, one down the rows and one across the columns, such as mean wait by clinic and visit type. It is the two-key `groupby(...).mean().unstack()` in a single call, and the shape of most handed-off reports: departments down the side, clinics or months across.
+- **Pivot table**: summarizes one column by two keys at once, one down the rows and one across the columns, such as mean wait by clinic and visit type. `pd.pivot_table(df, ...)` is the same call as Lecture 06's `df.pivot_table(...)`, used here to summarize rather than reshape. It is the two-key `groupby(...).mean().unstack()` in a single call, and the shape of most handed-off reports: departments down the side, clinics or months across.
 - **Cross-tabulation** (crosstab): the special case that counts the rows in each combination.
 
-![A pivot table as a heatmap: median wait (minutes) for 1.2 million synthetic 2025 visits, 7 departments by 8 clinics; Orthopedics is slowest everywhere, Bayview's Orthopedics cell is darkest at 38, and blank cells are departments a clinic does not run](media/pivot_heatmap.png)
+![A pivot table as a heatmap: median wait (minutes) for 1.2 million synthetic 2025 visits, 7 departments by 8 clinics; Orthopedics is slowest at every clinic that runs it, Bayview's Orthopedics cell is darkest at 38, and blank cells are departments a clinic does not run](media/pivot_heatmap.png)
 
 ```text
 LONG: one row per visit                    PIVOT TABLE: mean wait_min, one row per clinic
@@ -598,7 +600,7 @@ If a clinic has no recorded scores, its median is missing too; the fill leaves t
 - A boolean mask such as `visits[visits['wait_min'] > 10]` (Lecture 04) tests each row; `filter` tests each group.
 - **Where it comes up**: public reports of patient data often hide any group with 10 or fewer patients (the CMS cell-size rule), and `filter(lambda g: g['patient_id'].nunique() >= 11)` drops those groups before the report is built.
 
-![A row mask with wait_min > 10 keeps 4 visits and drops North's 6-minute visit; filter with a clinic mean above 10 keeps all 5 North and South visits and drops East, whose mean is 9](media/filter_vs_mask.png)
+![A row mask with wait_min > 10 keeps 4 visits, dropping North's 6-minute and East's 9-minute visits; filter with a clinic mean above 10 keeps all 5 North and South visits and drops East, whose mean is 9](media/filter_vs_mask.png)
 
 ### Reference Card: Filter Operations
 
@@ -710,7 +712,7 @@ The same five visits, in overall wait order with the original flat index. `head`
 
 - **Performance optimization**: making an analysis run faster or use less memory, which matters once a summary that takes a second on a class example takes minutes on a year of hospital lab results.
 - One `.agg()` call computing several summaries beats calling `groupby()` again for each summary, because every new `groupby()` call redoes the split.
-- Built-in aggregations named by string (`'mean'`, `'std'`, `transform('mean')`) run as fast compiled code; a Python `lambda` or `apply` runs once per group. On 118,645 A1c results from 90,178 patients, a lambda was about 1,400 times slower for a standard deviation and 4,500 times slower for a transform.
+- Built-in aggregations named by string (`'mean'`, `'std'`, `transform('mean')`) run as fast compiled code; a Python `lambda` or `apply` runs once per group. On 118,645 A1c results from 90,178 patients, a lambda was about 1,400 times slower for a standard deviation and thousands of times slower for a transform.
 - A repeated text key stored as `category` (Lecture 05) uses far less memory.
 
 ![Measured on 118,645 A1c results and the 2,000,000-row lab table: one agg beats four groupby calls 3.4 to 1, the built-in std beats a lambda about 1,400 to 1, and category keys halve the table's memory](media/perf_combined.png)

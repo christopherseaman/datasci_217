@@ -79,7 +79,7 @@ Before grouping, walk the log through the steps of EDA in Lecture 08's "The Step
     - Expect: quartiles of 1.5 and 96.1 hours, an upper fence of about 238 hours (printed as 237.99999999999997), and 55,401 waits above it. Nearly all of them are routine exams, three in four of them MRIs. They are real waits for a scanner slot, not entry errors, so they stay; this long tail is why Task 2.1 uses medians.
 6. In the Task 1.1 pairplot cell, draw a pairplot of a random sample of 1,000 exams in the library of your choice, as Lecture 08's "Pairwise Plots" section shows in both; Demo 1's step 1 draws both for its visit log. Use at least three numeric columns: `wait_hr`, `scan_min`, `report_hr`, and `dose_msv` show the most. Sample only the columns you plot, with a `random_state` so every run draws the same exams; 1,000 rows of a few columns stays under Altair's 5,000-row limit and keeps a saved Altair file small.
     - seaborn: draw it with `corner=True`, as the lecture does, and save the grid to `PAIRPLOT_PNG`.
-    - Altair: build the repeated scatter and save it to `PAIRPLOT_HTML` (a web page) or `PAIRPLOT_JSON` (its Vega-Lite specification).
+    - Altair: build the repeated scatter and save it to `PAIRPLOT_HTML` (a web page) or `PAIRPLOT_JSON` (its Vega-Lite specification), not both.
     - Expect: waits pile up near 0 with a tail past 1,000 hours, the tail the fence just counted. About a third of the sample has no `dose_msv` (the MRIs and ultrasounds), so the dose panels show only CT and X-ray exams: X-rays near 0, CTs spread up to about 25 mSv.
 
 > **Checkpoint: `output/missing_by_modality.csv`**

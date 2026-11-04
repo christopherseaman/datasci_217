@@ -482,9 +482,9 @@ def run() -> None:
              "Found output/pairplot.pdf")
         only("pairplot-broken-json", {**without_png, JSON: json.dumps(spec4)[:-40]}, {pairplot}, "is not valid JSON")
         only("pairplot-two-columns", {**without_png, JSON: json.dumps(altair_spec(["wait_hr", "scan_min"]))}, {pairplot},
-             "repeats only scan_min and wait_hr, expected at least 3")
+             "plots only scan_min and wait_hr, expected at least 3")
         only("pairplot-text-columns", {**without_png, HTML: altair_page(altair_spec(["site", "modality", "wait_hr"]))},
-             {pairplot}, "repeats only wait_hr")
+             {pairplot}, "plots only wait_hr")
         only("pairplot-page-without-spec", {**without_png, HTML: "<html><body><img src='pairplot.png'></body></html>"},
              {pairplot}, "embeds no Vega-Lite spec")
         only("pairplot-blank-png", {**without_png, PNG: png(750, 750, noise=0)}, {pairplot}, "750 by 750 pixels",

@@ -123,9 +123,9 @@ sns.pairplot(sample, corner=True, plot_kws={"s": 8, "alpha": 0.4})
 plt.show()
 ```
 
-Expect correlations of -0.50 between wait and satisfaction, 0.20 between age and wait, and -0.10 between age and satisfaction. The age histogram has two humps, children and adults over 50. Children cluster at short waits, which points to departments (Pediatrics) rather than age. Ratings fall as waits grow, the question the board asks in step 12.
+Expect correlations of -0.5 between wait and satisfaction, 0.2 between age and wait, and -0.1 between age and satisfaction. The age histogram has two humps, children and adults over 50. Children cluster at short waits, which points to departments (Pediatrics) rather than age. Ratings fall as waits grow, the question the board asks in step 12.
 
-The analytics team wants the same view on the operations dashboard, where a clinic manager can hover over a point to read its age, wait, and rating. Altair draws it as a repeated scatter and saves two files: a web page that opens in any browser, and the Vega-Lite specification the dashboard loads.
+The analytics team wants the same view on the operations dashboard, where a clinic manager can hover over a point to read its age, wait, and rating. Altair draws it as a repeated scatter and saves two files: a web page that opens in any browser, and the Vega-Lite specification the dashboard loads. A brush links the panels: `.add_params(brush)` attaches it to the chart, and `alt.condition(brush, ...)` picks one color for points inside the box and another for points outside.
 
 ```python
 import altair as alt
@@ -159,10 +159,11 @@ for line in html.splitlines():
 spec = json.loads(Path("output/visits_pairplot.json").read_text())
 print(sorted(spec))
 print(spec["repeat"])
+print(spec["params"][0]["select"])
 print(len(next(iter(spec["datasets"].values()))), "rows embedded")
 ```
 
-Expect three `<script>` tags that load `vega@5`, `vega-lite@5.20.1`, and `vega-embed@6` from `cdn.jsdelivr.net`, then the page's own `<script>` and its `vegaEmbed("#vis", spec, embedOpt)` call, which draws the chart in the `#vis` box. The page needs internet access to fetch those three libraries. The JSON's top-level keys are `$schema`, `config`, `datasets`, `repeat`, and `spec`: `repeat` lists the three columns for the rows and the columns, `spec` is the one scatter Vega-Lite repeats, and `datasets` holds the 2,000 rows. Each file is about 105 KB.
+Expect three `<script>` tags that load `vega@5`, `vega-lite@5.20.1`, and `vega-embed@6` from `cdn.jsdelivr.net`, then the page's own `<script>` and its `vegaEmbed("#vis", spec, embedOpt)` call, which draws the chart in the `#vis` box. The page needs internet access to fetch those three libraries. The JSON's top-level keys are `$schema`, `config`, `datasets`, `params`, `repeat`, and `spec`: `repeat` lists the three columns for the rows and the columns, `spec` is the one scatter Vega-Lite repeats, `params` holds the brush (`param_1`, an interval selection shared by all nine panels), and `datasets` holds the 2,000 rows. The brush prints as `{'type': 'interval', 'resolve': 'global'}`. Each file is about 105 KB.
 
 **What the pass decides:** score clinics on the share of waits over 30 minutes rather than the mean, which the tail inflates; keep the missing waits out of that share; and break clinics down by department.
 
@@ -231,7 +232,7 @@ A clinic-level share cannot say which department to staff. Group by two keys, on
 by_cell = visits.groupby(["department", "clinic"])
 wait_grid = by_cell["wait_min"].median().unstack()
 
-fig, ax = plt.subplots(figsize=(10, 4.5))
+fig, ax = plt.subplots(figsize=(11, 4.5))
 sns.heatmap(wait_grid, annot=True, fmt=".0f", cmap="YlOrRd", ax=ax)
 ax.set(title="Median wait (minutes) by department and clinic, 2025", xlabel="Clinic", ylabel="")
 plt.show()
@@ -397,9 +398,10 @@ Visit type is not the only difference in case mix. Step 4 showed that Marina run
 ```python
 shared = pair[pair["department"].isin(["Behavioral Health", "Cardiology", "Family Medicine", "Pediatrics"])]
 display(shared.groupby(["department", "visit_type", "clinic"])["over_30"].mean().unstack().round(3))
+display(shared.groupby("clinic")["over_30"].mean().round(3))
 ```
 
-Expect eight rows with a Marina and a Parkside column. Parkside is lower or tied in every row: Cardiology 0.112 against 0.176 for follow-ups and 0.198 against 0.300 for new patients, Family Medicine 0.115 against 0.120 and 0.175 against 0.185, Pediatrics 0.004 against 0.008 and 0.012 against 0.027, and Behavioral Health 0 for both. Yet Parkside is higher overall (12.4% against 10.0%). This is Simpson's paradox: department is the confounder, and Orthopedics, which only Parkside runs, drives the overall gap.
+Expect eight rows with a Marina and a Parkside column. Parkside is lower or tied in every row: Cardiology 0.112 against 0.176 for follow-ups and 0.198 against 0.300 for new patients, Family Medicine 0.115 against 0.120 and 0.175 against 0.185, Pediatrics 0.004 against 0.008 and 0.012 against 0.027, and Behavioral Health 0 for both. Then two rows for the four departments both clinics run combined: Marina 0.100 and Parkside 0.096. Parkside is lower there too, so nothing reverses and this is not Simpson's paradox. Parkside is higher overall (12.4% against 10.0%) only because 12.5% of its visits are Orthopedics, which Marina does not run.
 
 **What we tell Dr. Alvarez:** Parkside is as fast as Marina or faster in every department and visit type both clinics run. It ranks behind because of its case mix: 12.5% of its visits are Orthopedics, which Marina does not run, and 41.2% are new patients (17.5% at Marina). The memo compares clinics within department and visit type before ranking them.
 
