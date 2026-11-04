@@ -81,7 +81,7 @@ _Pro tip: Start simple. "But why male models?" Because sometimes the simplest mo
 # Statistical Modeling with `statsmodels`
 
 - **`statsmodels`**: Python's library for statistical inference.
-- **Linear regression**: its workhorse; estimates an outcome as an intercept plus a weighted sum of predictors, as in `sbp = b0 + b1 * age + b2 * bmi`, and reports how uncertain each weight is, so it can say whether higher BMI goes with higher SBP among patients of the same age.
+- **Linear regression**: its workhorse; it fits `sbp = b0 + b1 * age + b2 * bmi` and reports how uncertain each weight is.
 
 _Think of linear regression as the Derek Zoolander of modeling: simple, reliable, and it can turn left, turn right, or even turn statistically significant._
 
@@ -183,8 +183,6 @@ A new patient gets two intervals:
 
 ![At age 55 the mean-response band (blue) is far narrower than the prediction band (orange): the BMI 30 patient's 147.2 has a mean interval of 144.3 to 150.2 and a prediction interval of 131.4 to 163.0.](media/ols_intervals.png)
 
-![1,000 bootstrap BMI slopes from resampled clinics: their middle 95%, 0.50 to 1.75, sits close to the formula interval from `conf_int()`, 0.52 to 1.86.](media/bootstrap_interval.png)
-
 ### Reference Card: OLS Uncertainty
 
 | Method / attribute | Purpose & arguments | Typical output |
@@ -222,7 +220,6 @@ display(results.get_prediction(new_patient).summary_frame(alpha=0.05).round(1))
 - `age` row: holding BMI fixed, each extra year is associated with about 0.66 mmHg higher fitted SBP (95% CI 0.48 to 0.84).
 - Both intervals contain the slopes the data were simulated with.
 - A p-value printed as 0.0000 is below 0.00005, not exactly 0.
-- For the new patient the mean-response interval is about 6 mmHg wide, the prediction interval about 32: a clinic can be confident about the average 55-year-old, much less about the one in the exam room.
 
 ### Code Snippet: A Bootstrap Interval for the BMI Slope
 
@@ -267,7 +264,6 @@ A **Q-Q plot** (quantile-quantile) checks the normal-errors assumption: it sorts
 | `results.fittedvalues` / `results.resid` | One fitted value and one residual (observed minus fitted) per row. | Series |
 | `ax.scatter(results.fittedvalues, results.resid)`, `ax.axhline(0, color='gray', linestyle='--')` | Residuals-versus-fitted plot; the reference line sits at 0. | Axes |
 | `sm.qqplot(results.resid, line='s', ax=ax)` | Q-Q plot of the residuals; `line='s'` draws the line a normal sample with the same mean and spread would follow. | Figure |
-| `fig.savefig(path)`, `plt.show()`, `plt.close(fig)` | Save, display, then close; an unclosed figure stays in memory. | PNG on disk |
 
 ### Code Snippet: Residuals Versus Fitted Values
 
@@ -307,13 +303,7 @@ The plot is the left panel of the residuals figure above: no curve, no funnel.
 - The **prediction unit** receives one prediction (one visit); **prediction time** is when it is made, and every feature must be known by then.
 - **Leakage** is information unavailable at prediction time sneaking into training, such as a lab result that arrives 24 hours _after_ the visit.
 
-Keep a candidate feature only if it is known by prediction time: `candidates['resulted_at'] <= prediction_time`, or `candidates['hours_after_visit'] <= 0` for offsets like these, with the prediction made at the end of the visit:
-
-| Candidate feature | Becomes known | Hours after the visit | Decision |
-| --- | --- | --- | --- |
-| `age` | Before the visit | 0 | Keep |
-| `sbp_today` | During the visit | 0 | Keep |
-| `a1c_result` | When the lab reports the next day | 24 | Exclude (leakage) |
+Keep a candidate feature only if it is known by prediction time: `candidates['resulted_at'] <= prediction_time`, or `candidates['hours_after_visit'] <= 0` for hours counted from the visit, with the prediction made at the end of the visit.
 
 ![Candidate features placed by when they become known: age and sbp_today by the end of the visit (keep), a1c_result 24 hours later (leakage), and the target, sbp_next_visit, 168 hours later.](media/leakage_timeline.png)
 
@@ -335,22 +325,6 @@ Keep a candidate feature only if it is known by prediction time: `candidates['re
 | `np.cos(2 * np.pi * df['hour'] / 24)` | Its side-to-side position. Pair it with the sine: either column alone gives two different hours the same value. | Float Series, -1 to 1 |
 | `2 * np.pi * (df['dayofyear'] - 1) / 366` | Yearly cycle: subtract 1 because `dayofyear` starts at 1, then divide by the cycle length (7 for `.dt.dayofweek`, which starts at 0). A fixed 366 leaves a small gap from December 31 to January 1 in non-leap years. | Float Series |
 
-### Code Snippet: Hours on a Clock Face
-
-```python
-hours = pd.DataFrame({'hour': [0, 1, 12, 23]})
-hours['hour_sin'] = np.sin(2 * np.pi * hours['hour'] / 24).round(2)
-hours['hour_cos'] = np.cos(2 * np.pi * hours['hour'] / 24).round(2)
-display(hours)
-```
-
-|  | hour | hour_sin | hour_cos |
-| --- | --- | --- | --- |
-| 0 | 0 | 0.00 | 1.00 |
-| 1 | 1 | 0.26 | 0.97 |
-| 2 | 12 | 0.00 | -1.00 |
-| 3 | 23 | -0.26 | 0.97 |
-
 ## Training, Validation, and Test Rows
 
 To estimate performance honestly, give rows three roles:
@@ -370,13 +344,7 @@ Comparing the errors on these sets shows two failure modes:
 ![Curves fit to 30 diabetes patients' progression against BMI and scored on 402 others in the same BMI range: degree 0 underfits (train MAE 64, validation 68), degree 1 fits (52, 53), and degree 10 overfits (45, 82).](media/overfit_polynomial.png)
 
 - Independent rows with no time order: split at random (`train_test_split`, in the next topic).
-- A model that will predict the _future_: split into chronological blocks of target times:
-
-| Target weeks (next visit) | Role | Why |
-| --- | --- | --- |
-| Jan 11 to Feb 8 | Training | Oldest outcomes fit the model |
-| Feb 15 to Feb 22 | Validation | Next period chooses between candidates |
-| Mar 1 to Mar 15 | Test | Newest outcomes, opened once |
+- A model that will predict the _future_: split into chronological blocks of target times.
 
 <callout icon="⚠️" color="yellow_bg">
 	## Split on the target time, not the visit date
@@ -436,8 +404,6 @@ display(valid[['visit_date', 'target_date']])
 
 ## The Estimator Pattern
 
-Create the estimator and choose its settings, `fit()` it on training rows where `X` and `y` are both known, then `predict()` rows where only `X` is known.
-
 ![`LinearRegression().fit()` on the 45 training patients learns sbp = 80.9 + 0.59 * age + 1.09 * bmi; `predict()` then gives 3 new patients 153.3, 136.1, and 149.2 mmHg from age and BMI alone.](media/estimator_pattern.png)
 
 ### Reference Card: The Estimator Workflow
@@ -462,11 +428,6 @@ Create the estimator and choose its settings, `fit()` it on training rows where 
 ![Coefficients for 10 diabetes features on 264 scaled training patients as alpha grows: Ridge shrinks their overall size without setting any to exactly 0 (tc from -51 to about -12 at alpha 10, while correlated ldl flips from 27 to -3), and Lasso sets some to exactly 0, keeping 7 of 10 at alpha 2.](media/ridge_lasso_paths.png)
 
 **Regression** predicts a number, such as next-visit SBP. **Classification** predicts a category, such as readmitted or not. Despite its name, **logistic regression** is a classifier: it converts a weighted sum of features to a probability between 0 and 1, then a threshold turns that probability into a label.
-
-```text
-Age, BMI, today's SBP → linear regression → 146.2 mmHg
-Discharge measurements → logistic regression → 0.72 probability → flag 1 at a 0.5 threshold
-```
 
 ![Logistic regression's S-shaped curve turns a weighted sum of 0.94 into probability 0.72, which is above the 0.5 threshold, so the patient is flagged 1.](media/logistic_threshold.png)
 
@@ -579,9 +540,7 @@ Import each by name: `from sklearn.metrics import mean_absolute_error, r2_score,
 
 ![The same Lasso predictions as a flag for progression above 200: TN 55, FP 5, FN 17, TP 12, so recall is 12 / 29 = 0.414 and precision is 12 / 17 = 0.706.](media/confusion_matrix.png)
 
-![A logistic regression flagging progression above 200 on the same 89 patients: at threshold 0.5 it flags 22 and catches 15 of 29; at 0.2 it flags 42 and catches 23, with precision falling from 0.68 to 0.55.](media/threshold_tradeoff.png)
-
-![The same logistic regression at every threshold: the ROC curve passes through threshold 0.5 (recall 0.52) and 0.2 (recall 0.79) for an AUC of 0.850, and the precision-recall curve gives an average precision of 0.753 against 0.326 for a random ranking.](media/roc_pr_curves.png)
+![A logistic regression flagging progression above 200 on the same 89 patients, at every threshold: the ROC curve passes through threshold 0.5 (recall 0.52) and 0.2 (recall 0.79) for an AUC of 0.850, and the precision-recall curve gives an average precision of 0.753 against 0.326 for a random ranking.](media/roc_pr_curves.png)
 
 ### Code Snippet: Comparing on Validation Rows
 
@@ -677,13 +636,6 @@ AUC=0.867 AP=0.806
 
 `permutation_importance(estimator, X, y, scoring=..., n_repeats=10, random_state=...)` shuffles each column of `X` `n_repeats` times and records how much the score drops (`from sklearn.inspection import permutation_importance`).
 
-| Argument | Purpose | Effect |
-| --- | --- | --- |
-| `estimator` | A fitted model or pipeline | Predictions reuse its training-fitted preprocessing |
-| `X`, `y` | Validation features and target | Keeps the test set sealed |
-| `scoring` | Metric; scorers are "higher is better", so MAE is `'neg_mean_absolute_error'` | Importance = increase in MAE |
-| `n_repeats`, `random_state` | Shuffles per feature and seed | Reproducible mean and spread |
-
 Returns an object whose `importances_mean` and `importances_std` hold one value per column.
 
 ### Code Snippet: Permutation Importance on Validation Rows
@@ -754,9 +706,6 @@ _"Did you ever think that maybe there's more to life than being really, really, 
 | `max_features=...` | How many features each question may choose from. Defaults to the square root of the count for `RandomForestClassifier` but to all of them for `RandomForestRegressor`; fewer features make the trees less alike. | Setting |
 | `max_depth=...`, `min_samples_split=...` | Limit how deep each tree grows and how many rows a question needs before it splits; smaller trees memorize less. | Settings |
 | `n_jobs=-1` | Build trees on all CPU cores at once. | Setting |
-| `model.fit(X_train, y_train)` | Fit the trees on training data. | Fitted estimator |
-| `model.predict(X_valid)` | Return class labels or numeric predictions. | Array |
-| `model.predict_proba(X_valid)` | Return class probabilities (classification only). | 2-D array |
 | `model.feature_importances_` | Read impurity-based feature importance scores (how much each feature's questions reduced error while training). Tree models only, and measured on the training fit; `permutation_importance` measures held-out reliance for any model. | Array; not causal evidence |
 
 ### Code Snippet: Random-Forest Classification
@@ -787,7 +736,6 @@ The forest leans on the size and shape of the most irregular nuclei. `worst area
 # The Secret Weapon: Gradient Boosting
 
 - **Gradient boosting**: builds trees in sequence instead of in parallel, each small tree aimed at what the ensemble so far still gets wrong (the bottom row of the trees figure).
-- Boosted trees are a standard strong candidate for tables such as clinic records, and XGBoost is the widely used library for them.
 
 _Gradient boosting is the Magnum of machine learning: a signature look, built one small correction at a time._
 
@@ -810,7 +758,7 @@ _Gradient boosting is the Magnum of machine learning: a signature look, built on
 ## `XGBoost` Basics
 
 - **XGBoost** (Extreme Gradient Boosting, "extreme" for its speed and memory engineering): follows the same `fit`/`predict` pattern as `scikit-learn`.
-- **Early stopping**: ends training when validation performance stops improving; validation then helps select the model, so keep a separate test set for the one final evaluation.
+- **Early stopping**: ends training when validation performance stops improving.
 
 ![XGBoost's validation log loss on biopsy data is lowest at round 54 (0.1168); with early_stopping_rounds=10, training stops at round 64 of a 500-round budget.](media/xgboost_early_stopping.png)
 
@@ -821,11 +769,9 @@ _Gradient boosting is the Magnum of machine learning: a signature look, built on
 | `xgb.XGBClassifier(...)` | Build a gradient-boosted classifier (`import xgboost as xgb`). | Estimator |
 | `xgb.XGBRegressor(...)` | Build a gradient-boosted regressor; accepts `random_state` and `n_jobs` like `scikit-learn` models. | Estimator |
 | `model.fit(X_train, y_train, eval_set=[(X_valid, y_valid)], verbose=False)` | Fit trees and monitor validation data after each round. | Fitted estimator |
-| `model.predict(X)` / `model.predict_proba(X)` | Return predictions or class probabilities. | Array |
 | `early_stopping_rounds=10` (in the constructor) | Stop after validation performance fails to improve for 10 rounds. | Fewer trees |
 | `model.evals_result()['validation_0']['logloss']` | Validation loss after each round, for plotting the early-stopping curve. | List of floats |
 | `model.best_iteration` / `model.best_score` | After early stopping: the round with the best validation score (counting from 0), and that score. | Integer / float |
-| `model.feature_importances_` | Summarize fitted tree usage; do not interpret as causation. | Array |
 
 ### Reference Card: XGBoost Hyperparameters
 
@@ -868,7 +814,7 @@ predicted = model.predict(X_valid)  # one 0/1 label per validation row
 
 - Training repeats one loop: predict, measure the loss (`binary_crossentropy` for yes/no targets), and let the **optimizer** (such as Adam) nudge every weight to reduce it.
 - **Epoch**: one pass through the training rows, processed in **batches** of, say, 32.
-- Representation learning pays off where useful features are hard to write by hand. On a clinic table of a few hundred rows, a linear model or boosted trees usually match a network for far less effort, and a network overfits easily, so watch the loss curves.
+- On a clinic table of a few hundred rows, a linear model or boosted trees usually match a network for far less effort, and a network overfits easily, so watch the loss curves.
 
 ![A 64-32 network's training loss keeps falling, while its validation loss bottoms out at 0.0726 at epoch 20 and creeps up to 0.0903 by epoch 50.](media/keras_loss_curves.png)
 
@@ -918,17 +864,10 @@ print(len(history.history['val_loss']), probability.shape)  # 10 (114,)
 
 ## Comparing Model Families
 
-- A well-tuned linear regression often beats a poorly tuned neural network.
-- Dataset, implementation, hardware, and budget rule out universal rankings, so the same validation rows decide:
+- Dataset, implementation, hardware, and budget rule out universal rankings, so the same validation rows decide.
+- For a probability flag, also check **calibration**: whether predicted probabilities match observed rates, e.g. 30% of patients scored 0.3 are readmitted.
 
 ![Validation accuracy on the same 114 biopsies: every model beats the majority-class baseline (0.6228, 71 of 114), and logistic regression ties the forest and two networks at 0.9737 (111 of 114).](media/model_comparison.png)
-
-| Model family | Useful role in a shortlist | Potential strengths | Check before choosing |
-|---|---|---|---|
-| Linear models | Simple baseline or inference model | Fast, compact, often easy to explain | Functional form and statistical assumptions |
-| Random forests | Nonlinear tabular candidate | Interactions, limited preprocessing, robust baseline | Latency, **calibration** (whether predicted probabilities match observed rates, e.g. 30% of patients scored 0.3 are readmitted), and explanation needs |
-| Gradient-boosted trees | Tabular prediction candidate | Flexible nonlinear fits and strong empirical performance | Tuning, calibration, and validation stability |
-| Deep neural networks | Representation-learning candidate | Flexible architectures for images, text, audio, and other complex inputs | Data, compute, deployment, and explanation requirements |
 
 ![xkcd 2400: Statistics. When the data are good enough, the answer is obvious without any statistics; better data settles what no model choice can.](media/xkcd_2400.png)
 
