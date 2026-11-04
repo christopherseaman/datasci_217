@@ -20,6 +20,7 @@ How the files are read:
 
 - Each check is scored on its own, so one mistake costs only that check's points.
 - A mistake is charged once. A missing column, or one saved under another name with the right values, costs only the columns check; values in the other columns are still checked. An empty table, or one that shares no row with the expected rows, earns no value points, with one exception: a list of exams (Tasks 2.2 to 2.4) that holds none of the expected exams costs only its rows check, and its other values checks pass.
+- The pairplot is checked only by its file: which library drew it, its columns, sample size, colors, and labels are your choice.
 - Spacing, line endings, quoting, column order, and row order never cost points.
 - Numbers are compared as numbers, so `6`, `6.0`, and `6.00` are the same value. A mean or median may keep every digit or be rounded to one or two decimals. A share of exams may keep every digit, be rounded to three decimals, or be written as a percent (`0.39` for `0.0039`), one unit for the whole column.
 - Site names, modalities, IDs, and column names are compared in any letter case.
@@ -36,15 +37,16 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | `output/missing_by_modality.csv` | Its columns are the three in the Task 1.1 header line. | missing by modality: columns | 2 |
 | `output/missing_by_modality.csv` | It holds the four modalities, once each. | missing by modality: one row per modality | 2 |
 | `output/missing_by_modality.csv` | Each `report_hr` is the share of the modality's exams with no signed report, and each `dose_msv` the share with no dose. | missing by modality: shares | 4 |
+| `output/pairplot.png`, `.html`, or `.json` | At least one of the three holds a pairplot: a PNG image at least 300 by 300 pixels and 10 KB, or a web page or JSON file whose Vega-Lite spec repeats or folds at least three of `age`, `scan_min`, `dose_msv`, `wait_hr`, and `report_hr`. A second file is never charged, even a broken one. | pairplot: saved chart | 4 |
 | `output/site_summary.csv` | Its columns are the six in the Task 1.3 header line. | site summary: columns | 2 |
-| `output/site_summary.csv` | It holds the eight sites with exams, once each. | site summary: one row per site | 4 |
+| `output/site_summary.csv` | It holds the eight sites with exams, once each. | site summary: one row per site | 2 |
 | `output/site_summary.csv` | Each `exam_count` is the site's number of exams. | site summary: exam_count values | 4 |
 | `output/site_summary.csv` | Each `report_count` is the site's number of exams with a signed report. | site summary: report_count values | 4 |
 | `output/site_summary.csv` | Each `patient_count` is the site's number of distinct patients. | site summary: patient_count values | 4 |
 | `output/site_summary.csv` | Each `total_scan_min` is the sum of the site's scan minutes. | site summary: total_scan_min values | 4 |
 | `output/site_summary.csv` | Each `mean_scan_min` is the mean of the site's scan minutes. | site summary: mean_scan_min values | 4 |
 | `output/site_modality_summary.csv` | Its columns are the five in the Task 2.1 header line. | site and modality: columns | 2 |
-| `output/site_modality_summary.csv` | It holds each of the 31 site and modality pairs with exams once. | site and modality: one row per pair | 4 |
+| `output/site_modality_summary.csv` | It holds each of the 31 site and modality pairs with exams once. | site and modality: one row per pair | 2 |
 | `output/site_modality_summary.csv` | Each `exam_count` is the pair's number of exams. | site and modality: exam_count values | 4 |
 | `output/site_modality_summary.csv` | Each `median_wait_hr` is the median of the pair's waits. | site and modality: median_wait_hr values | 4 |
 | `output/site_modality_summary.csv` | Each `median_report_hr` is the median of the pair's report times. | site and modality: median_report_hr values | 4 |

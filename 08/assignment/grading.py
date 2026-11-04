@@ -12,13 +12,13 @@ from _value_checks import run_checks
 
 
 # One value per check in _value_checks.CHECKS, in the same order: the missing
-# values by modality (Task 1.1), the site summary (Task 1.3), the site and
+# values by modality and the pairplot (Task 1.1), the site summary (Task 1.3), the site and
 # modality summary (Task 2.1), the delayed STAT exams (Task 2.2), the CT dose
 # review (Task 2.3), the slowest STAT reports (Task 2.4), then the pivot (Task 3.1).
 POINTS = (
-    2, 2, 4,
-    2, 4, 4, 4, 4, 4, 4,
-    2, 4, 4, 4, 4,
+    2, 2, 4, 4,
+    2, 2, 4, 4, 4, 4, 4,
+    2, 2, 4, 4, 4,
     2, 4, 4, 4, 4,
     2, 4, 2,
     2, 4, 2,

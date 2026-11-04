@@ -11,4 +11,5 @@ dependencies = [
     "jupytext==1.18.1",
     "pyarrow==25.0.0",
     "dowhy==0.14",
+    "altair==5.5.0",
 ]

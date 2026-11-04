@@ -15,6 +15,7 @@ name = "08-demo"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "altair" },
     { name = "dowhy" },
     { name = "jupyterlab" },
     { name = "jupytext" },
@@ -27,6 +28,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "altair", specifier = "==5.5.0" },
     { name = "dowhy", specifier = "==0.14" },
     { name = "jupyterlab", specifier = "==4.4.10" },
     { name = "jupytext", specifier = "==1.18.1" },
@@ -35,6 +37,22 @@ requires-dist = [
     { name = "pandas", specifier = "==3.0.5" },
     { name = "pyarrow", specifier = "==25.0.0" },
     { name = "seaborn", specifier = "==0.13.2" },
+]
+
+[[package]]
+name = "altair"
+version = "5.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jinja2" },
+    { name = "jsonschema" },
+    { name = "narwhals" },
+    { name = "packaging" },
+    { name = "typing-extensions", marker = "python_full_version < '3.14'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/16/b1/f2969c7bdb8ad8bbdda031687defdce2c19afba2aa2c8e1d2a17f78376d8/altair-5.5.0.tar.gz", hash = "sha256:d960ebe6178c56de3855a68c47b516be38640b73fb3b5111c2a9ca90546dd73d", size = 705305, upload-time = "2024-11-23T23:39:58.542Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/aa/f3/0b6ced594e51cc95d8c1fc1640d3623770d01e4969d29c0bd09945fafefa/altair-5.5.0-py3-none-any.whl", hash = "sha256:91a310b926508d560fe0148d02a194f38b824122641ef528113d029fcd129f8c", size = 731200, upload-time = "2024-11-23T23:39:56.4Z" },
 ]
 
 [[package]]

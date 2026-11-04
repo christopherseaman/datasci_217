@@ -5,13 +5,14 @@ six-visit table with pandas, and the drawn numbers are asserted against the
 values the lecture prints, as are transform_vs_clinic.png and filter_vs_mask.png.
 simpsons_paradox.png is computed from the lecture's four-row trial table.
 ssh_laptop_server.png is a plain diagram.
-wait_distribution.png and visits_pairplot.png draw the lecture's EDA figures
-from Demo 1's visit extract.
+wait_distribution.png, visits_pairplot.png, and visits_pairplot_altair.png draw
+the lecture's EDA figures from Demo 1's visit extract; the Altair PNG needs
+vl-convert-python, added with --with below.
 pivot_heatmap.png runs Demo 1's own code cells up to its heatmap cell, so the
 figure shows the demo's 1.2 million synthetic visits.
 
 Run from the repository root:
-    uv run --project 08/demo python 08/scripts/generate_lecture_figures.py
+    uv run --project 08/demo --with vl-convert-python==1.9.0 python 08/scripts/generate_lecture_figures.py
 """
 
 import contextlib
@@ -436,6 +437,20 @@ def visits_pairplot():
     print("Generated: visits_pairplot.png")
 
 
+def visits_pairplot_altair():
+    """The lecture's Altair pairplot: the same 2,000 visits as a repeated scatter."""
+    import altair as alt
+
+    cols = ["age", "wait_min", "satisfaction"]
+    sample = load_extract()[cols].sample(2000, random_state=217)
+    chart = alt.Chart(sample).mark_point(size=10, opacity=0.4).encode(
+        alt.X(alt.repeat("column"), type="quantitative"),
+        alt.Y(alt.repeat("row"), type="quantitative"),
+    ).properties(width=150, height=150).repeat(row=cols, column=cols)
+    chart.save(MEDIA_DIR / "visits_pairplot_altair.png", scale_factor=2)
+    print("Generated: visits_pairplot_altair.png")
+
+
 def run_demo_until_heatmap(env):
     for cell in jupytext.read(DEMO1).cells:
         if cell.cell_type != "code":
@@ -461,3 +476,4 @@ if __name__ == "__main__":
     pivot_heatmap()
     wait_distribution()
     visits_pairplot()
+    visits_pairplot_altair()

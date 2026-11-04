@@ -2,7 +2,7 @@
 
 ## Overview
 
-Explore a year of imaging exams, summarize them by site and modality, flag delayed STAT exams against their peers, build a CT radiation-dose review list, pull each site's slowest STAT reports, and pivot report times, saving each result for the checks.
+Explore a year of imaging exams and draw a pairplot in seaborn or Altair, then summarize the exams by site and modality, flag delayed STAT exams against their peers, build a CT radiation-dose review list, pull each site's slowest STAT reports, and pivot report times, saving each result for the checks.
 
 `data/imaging_exams.parquet` is a synthetic export from a regional imaging network: 540,228 exams in 2025, one row per exam, at three hospitals (Downtown, Harbor, Northgate) and five outpatient imaging centers; Valley, a rural center, also runs a small ED. A ninth site, Eastport, opens in 2026 and has no exams yet. Valley has no MRI scanner.
 
@@ -43,7 +43,7 @@ assignment/
 ├── assignment.ipynb        # the notebook you complete
 ├── data/
 │   └── imaging_exams.parquet  # supplied exam log; keep it exactly as handed out
-├── pyproject.toml          # supplied: numpy, pandas, pyarrow (for Parquet), and ipykernel
+├── pyproject.toml          # supplied: numpy, pandas, pyarrow (for Parquet), seaborn, altair, and ipykernel
 ├── uv.lock                 # supplied: the exact versions `uv sync` installs
 ├── .python-version         # supplied: tells uv to use Python 3.13
 ├── CHECKS.md               # supplied: what each check looks for
@@ -52,6 +52,8 @@ assignment/
 ├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
 └── output/
     ├── missing_by_modality.csv    # you generate in Task 1.1
+    ├── pairplot.png               # you generate in Task 1.1 with seaborn,
+    ├── pairplot.html, .json       # or one of these with Altair
     ├── site_summary.csv           # you generate in Task 1.3
     ├── site_modality_summary.csv  # you generate in Task 2.1
     ├── delayed_stat_exams.csv     # you generate in Task 2.2
@@ -75,9 +77,16 @@ Before grouping, walk the log through the steps of EDA in Lecture 08's "The Step
 4. Save it to `MISSING_PATH` with its index: the modalities are the index, and saving writes them as the first column. Leave the shares unrounded or round them to three decimals.
 5. Find the IQR fence for `wait_hr` (Lecture 05) and count the waits above it, as Demo 1's step 1 does for its waits.
     - Expect: quartiles of 1.5 and 96.1 hours, an upper fence of about 238 hours (printed as 237.99999999999997), and 55,401 waits above it. Nearly all of them are routine exams, three in four of them MRIs. They are real waits for a scanner slot, not entry errors, so they stay; this long tail is why Task 2.1 uses medians.
+6. In the Task 1.1 pairplot cell, draw a pairplot of a random sample of 1,000 exams in the library of your choice, as Lecture 08's "Pairwise Plots" section shows in both; Demo 1's step 1 draws both for its visit log. Use at least three numeric columns: `wait_hr`, `scan_min`, `report_hr`, and `dose_msv` show the most. Sample only the columns you plot, with a `random_state` so every run draws the same exams; 1,000 rows of a few columns stays under Altair's 5,000-row limit and keeps a saved Altair file small.
+    - seaborn: draw it with `corner=True`, as the lecture does, and save the grid to `PAIRPLOT_PNG`.
+    - Altair: build the repeated scatter and save it to `PAIRPLOT_HTML` (a web page) or `PAIRPLOT_JSON` (its Vega-Lite specification).
+    - Expect: waits pile up near 0 with a tail past 1,000 hours, the tail the fence just counted. About a third of the sample has no `dose_msv` (the MRIs and ultrasounds), so the dose panels show only CT and X-ray exams: X-rays near 0, CTs spread up to about 25 mSv.
 
 > **Checkpoint: `output/missing_by_modality.csv`**
 > The header line `modality,report_hr,dose_msv`, then four rows, CT to X-ray. MRI reads `MRI,0.00535...,1.0`: about one MRI in 190 has no signed report, and none has a dose.
+
+> **Checkpoint: `output/pairplot.png`, or `output/pairplot.html` or `.json`**
+> One of them is enough. The PNG is a real image at least 300 pixels on a side; the HTML or JSON repeats at least three numeric columns of the exam log.
 
 ### 1.2 Put the sites in reporting order
 

@@ -4,7 +4,9 @@ The course keeps these checks in 08/assignment_checks/, which the assignment
 workflow downloads on every push, and the handout ships a byte-identical copy
 so a local run reports exactly what GitHub will. They read the seven CSV files a
 submission saves in output/ and compare them with values frozen below from the
-supplied data/imaging_exams.parquet. scripts/build_assignment08_data.py writes
+supplied data/imaging_exams.parquet, and check that output/ holds a pairplot:
+a seaborn PNG, or an Altair web page or Vega-Lite JSON file that repeats at
+least three of the exam log's numeric columns. scripts/build_assignment08_data.py writes
 the data and that block together, so the two always agree.
 
 Each check scores one thing, so one mistake costs only its own points, and no
@@ -31,6 +33,7 @@ from __future__ import annotations
 import codecs
 import csv
 import difflib
+import json
 import math
 import re
 from collections.abc import Callable
@@ -2489,6 +2492,132 @@ def _when_peer_medians_blank(note: str) -> Callable[[Table, dict[str, str]], str
     return cause
 
 
+# Task 1.1 step 6: one pairplot, from seaborn as a PNG or from Altair as a web page or a Vega-Lite JSON file.
+PAIRPLOT_PNG, PAIRPLOT_HTML, PAIRPLOT_JSON = "output/pairplot.png", "output/pairplot.html", "output/pairplot.json"
+# The numeric columns of data/imaging_exams.parquet; a pairplot needs at least PAIRPLOT_MIN_COLUMNS of them.
+NUMERIC_COLUMNS = ("age", "scan_min", "dose_msv", "wait_hr", "report_hr")
+PAIRPLOT_MIN_COLUMNS = 3
+# A seaborn pairplot of three columns is about 750 pixels square and 40 KB; a blank figure is far smaller.
+PAIRPLOT_MIN_PIXELS = 300
+PAIRPLOT_MIN_BYTES = 10_000
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+# Where an HTML page starts its Vega-Lite spec: Altair's `var spec = {...}`, or an object passed to vegaEmbed().
+SPEC_START = re.compile(r"\bspec\s*=\s*(?=\{)|vegaEmbed\(\s*[\"'][^\"']*[\"']\s*,\s*(?=\{)")
+
+
+def _png_problem(path: Path) -> str | None:
+    """None when the file is a PNG image big enough to hold a pairplot, else what is wrong with it."""
+    data = path.read_bytes()
+    if not data.startswith(PNG_SIGNATURE) or data[12:16] != b"IHDR":
+        return (f"{PAIRPLOT_PNG} is not a PNG image; save the pairplot's figure with .savefig() to a name "
+                "ending in .png")
+    width, height = int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
+    if min(width, height) < PAIRPLOT_MIN_PIXELS or len(data) < PAIRPLOT_MIN_BYTES:
+        return (f"{PAIRPLOT_PNG} is {width} by {height} pixels and {len(data):,} bytes, expected at least "
+                f"{PAIRPLOT_MIN_PIXELS} by {PAIRPLOT_MIN_PIXELS} and {PAIRPLOT_MIN_BYTES:,} bytes: save the grid "
+                "sns.pairplot() returns after it draws, not an empty figure")
+    return None
+
+
+def _spec_columns(spec: object) -> set[str]:
+    """The numeric exam columns a Vega-Lite spec repeats, folds, or puts on an x or y axis, anywhere in it."""
+    found: set[str] = set()
+    numeric = {column.casefold() for column in NUMERIC_COLUMNS}
+
+    def add(names: object) -> None:
+        for name in names if isinstance(names, list) else []:
+            if isinstance(name, str) and name.casefold() in numeric:
+                found.add(name.casefold())
+
+    def walk(node: object) -> None:
+        if isinstance(node, list):
+            for item in node:
+                walk(item)
+        elif isinstance(node, dict):
+            repeat = node.get("repeat")
+            if isinstance(repeat, dict):
+                for names in repeat.values():
+                    add(names)
+            else:
+                add(repeat)
+            add(node.get("fold"))
+            encoding = node.get("encoding")
+            if isinstance(encoding, dict):
+                for channel in ("x", "y"):
+                    axis = encoding.get(channel)
+                    if isinstance(axis, dict):
+                        add([axis.get("field")])
+            for key, value in node.items():
+                if key != "datasets":
+                    walk(value)
+
+    walk(spec)
+    return found
+
+
+def _spec_problem(spec: object, where: str) -> str | None:
+    """None when the spec spans at least PAIRPLOT_MIN_COLUMNS numeric columns, else what it holds."""
+    columns = sorted(_spec_columns(spec))
+    if len(columns) >= PAIRPLOT_MIN_COLUMNS:
+        return None
+    held = f"only {_join(columns)}" if columns else "none of them"
+    return (f"{where} repeats {held}, expected at least {PAIRPLOT_MIN_COLUMNS} of {_join(NUMERIC_COLUMNS)}: list "
+            "three or more numeric columns in .repeat(row=..., column=...) and fill x and y from alt.repeat()")
+
+
+def _json_problem(path: Path) -> str | None:
+    try:
+        spec = json.loads(_decode(path.read_bytes()))
+    except ValueError as error:
+        return (f"{PAIRPLOT_JSON} is not valid JSON ({error}); write it with chart.save() on a name ending in "
+                ".json rather than by hand")
+    return _spec_problem(spec, PAIRPLOT_JSON)
+
+
+def _html_problem(path: Path) -> str | None:
+    text = _decode(path.read_bytes())
+    decoder = json.JSONDecoder()
+    specs = []
+    for match in SPEC_START.finditer(text):
+        try:
+            specs.append(decoder.raw_decode(text, match.end())[0])
+        except ValueError:
+            continue
+    if not specs:
+        return (f"{PAIRPLOT_HTML} embeds no Vega-Lite spec (no `var spec = {{...}}` or vegaEmbed() call): save the "
+                "Altair chart itself with chart.save() on a name ending in .html")
+    problems = [_spec_problem(spec, PAIRPLOT_HTML) for spec in specs]
+    return None if None in problems else problems[0]
+
+
+PAIRPLOT_READERS = ((PAIRPLOT_PNG, _png_problem), (PAIRPLOT_HTML, _html_problem), (PAIRPLOT_JSON, _json_problem))
+
+
+def pairplot_check(root: Path) -> None:
+    """At least one of the three pairplot files holds a pairplot; the others may be absent or anything."""
+    problems = []
+    for name, reader in PAIRPLOT_READERS:
+        path = _artifact_path(root, name)
+        if path is None:
+            continue
+        problem = reader(path)
+        if problem is None:
+            return
+        problems.append(problem)
+    if problems:
+        raise AssertionError("; ".join(problems) + ".")
+    message = (f"No pairplot found: save {PAIRPLOT_PNG} from seaborn, or {PAIRPLOT_HTML} or {PAIRPLOT_JSON} from "
+               "Altair, in the Task 1.1 cell, then commit it.")
+    folder = root / "output"
+    others = sorted(
+        path.relative_to(root).as_posix() for path in folder.iterdir()
+        if path.is_file() and "pair" in path.name.casefold()
+    ) if folder.is_dir() else []
+    if others:
+        message += f" Found {_join(others)}; save it under one of those three names instead."
+    raise AssertionError(message)
+
+
 ORIGINAL = "Each row keeps the exam's own values from data/imaging_exams.parquet unchanged."
 
 CHECKS = (
@@ -2515,6 +2644,8 @@ CHECKS = (
             "for CT and X-ray.",
         ),
     ),
+    # Task 1.1 step 6: output/pairplot.png, .html, or .json
+    Check("pairplot: saved chart", pairplot_check),
     # Task 1.3: output/site_summary.csv
     Check(
         "site summary: columns",

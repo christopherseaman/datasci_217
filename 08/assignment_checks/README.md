@@ -2,7 +2,9 @@
 
 These are the checks that decide the Assignment 08 grade. They read the seven
 CSV files a submission saves in `output/` and compare them with values frozen
-from the supplied exam log, `data/imaging_exams.parquet`.
+from the supplied exam log, `data/imaging_exams.parquet`. One more check reads
+the student's choice of pairplot: `output/pairplot.png` from seaborn, or
+`output/pairplot.html` or `output/pairplot.json` from Altair.
 `08/assignment/.github/workflows/tests.yml` downloads them on every student
 push from `christopherseaman/datasci_217@main:08/assignment_checks/` (its
 `CHECKS_REPO`, `CHECKS_REF`, and `CHECKS_PATH`), checks that they run, and

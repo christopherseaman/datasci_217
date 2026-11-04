@@ -101,6 +101,40 @@ A **pairplot** draws a scatter plot for every pair of numeric columns, with each
 
 The correlations agree with the picture: wait and satisfaction, -0.50; age and wait, 0.20. The cluster of short waits under age 18 hints that department, not age, drives the wait, a question for `groupby`.
 
+### Pairplots in Altair
+
+Altair (Lecture 07) builds a pairplot as a **repeated chart**: one scatter specification that Vega-Lite draws once for every row and column pair. Altair refuses data over 5,000 rows (`MaxRowsError`), one more reason to sample first.
+
+![The same 2,000 visits as an Altair repeated scatter: the clouds match the seaborn pairplot, and the diagonal panels are straight lines where seaborn drew histograms.](media/visits_pairplot_altair.png)
+
+### Reference Card: Pairplots in seaborn and Altair
+
+- `sns.pairplot(sample, corner=True)`: Scatter for every pair, histograms on the diagonal; returns a grid saved with `.savefig('pairplot.png')`.
+- `alt.X(alt.repeat('column'), type='quantitative')`: Fill the x encoding from the repeat list; `alt.repeat('row')` fills y.
+- `.repeat(row=cols, column=cols)`: Draw the chart once per pair of columns in `cols`.
+- `chart.save('pairplot.html')`: A web page whose script tags load `vega`, `vega-lite`, and `vega-embed` from a CDN and call `vegaEmbed()` to draw the chart; opening it needs internet access.
+- `chart.save('pairplot.json')` / `chart.to_json()`: The Vega-Lite specification with the rows embedded; top-level keys `$schema`, `config`, `datasets`, `repeat`, and `spec`.
+- **Choosing**: seaborn for a static image in a report, slide, or PDF; Altair for a web page or dashboard where readers hover for tooltips.
+
+### Code Snippet: Pairplot in seaborn
+
+```python
+cols = ['age', 'wait_min', 'satisfaction']
+sample = extract[cols].sample(2000, random_state=217)
+sns.pairplot(sample, corner=True, plot_kws={'s': 8, 'alpha': 0.4})
+```
+
+### Code Snippet: Pairplot in Altair
+
+```python
+chart = alt.Chart(sample).mark_point(size=10, opacity=0.4).encode(
+    alt.X(alt.repeat('column'), type='quantitative'),
+    alt.Y(alt.repeat('row'), type='quantitative'),
+    tooltip=cols,
+).properties(width=150, height=150).repeat(row=cols, column=cols)
+chart.save('pairplot.html')  # open in a browser and hover over a point
+```
+
 ![xkcd 1798: Box Plot. Pumping up a box changes the picture; the data behind it stay the same.](media/xkcd_1798.png)
 
 # The Split-Apply-Combine Paradigm

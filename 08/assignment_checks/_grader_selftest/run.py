@@ -15,7 +15,10 @@ filter over every modality, top reports over every priority, a row mask in
 place of filter, `fill_value=0`, swapped pivot axes, margins, list arguments,
 missing counts or rounded shares in place of shares) each cost only their own
 checks, with messages naming the cause. A list of exams that holds none of the
-expected exams costs only its rows check. It also
+expected exams costs only its rows check. The pairplot passes from a seaborn
+PNG, an Altair web page, or a Vega-Lite JSON file, alone or together, and costs
+only its own check when none is saved, the JSON is broken, or it repeats fewer
+than three numeric columns. It also
 confirms that the frozen values in `_value_checks.py` match
 `08/assignment/data/imaging_exams.parquet` and the generator, that the README's
 checkpoints and the completion contract agree with the checks and the README
@@ -39,6 +42,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zlib
 
 import pandas as pd
 
@@ -63,8 +67,10 @@ ARTIFACTS = {artifact.path: artifact for artifact in value_checks.ARTIFACTS}
 MISSING = "output/missing_by_modality.csv"
 SUMMARY, PAIRS, DELAYED = "output/site_summary.csv", "output/site_modality_summary.csv", "output/delayed_stat_exams.csv"
 DOSE, SLOWEST, PIVOT = "output/ct_dose_review.csv", "output/slowest_stat_reports.csv", "output/median_report_pivot.csv"
+PNG, HTML, JSON = value_checks.PAIRPLOT_PNG, value_checks.PAIRPLOT_HTML, value_checks.PAIRPLOT_JSON
 PREFIX = {MISSING: "missing by modality:", SUMMARY: "site summary:", PAIRS: "site and modality:", DELAYED: "delayed STAT exams:",
-          DOSE: "CT dose review:", SLOWEST: "slowest STAT reports:", PIVOT: "median report pivot:"}
+          DOSE: "CT dose review:", SLOWEST: "slowest STAT reports:", PIVOT: "median report pivot:", PNG: "pairplot:",
+          HTML: "pairplot:", JSON: "pairplot:"}
 DELAYED_COLUMNS = ["exam_id", "site", "modality", "wait_hr", "peer_median_wait_hr", "wait_vs_peer_hr"]
 EXAMS = pd.read_parquet(HANDOUT / "data" / "imaging_exams.parquet")
 
@@ -117,11 +123,63 @@ def solve(categorical: bool = True, observed: bool = True, use_filter: bool = Fa
 
 # Saved with their index, as the README says: the modalities and the sites are the index.
 WITH_INDEX = (MISSING, PIVOT)
+PAIRPLOT_COLUMNS = ["wait_hr", "scan_min", "report_hr", "dose_msv"]
 
 
-def as_files(frames: dict[str, pd.DataFrame]) -> dict[str, str]:
-    """The way the README saves each frame: index=False, except the two that keep their index."""
-    return {path: frame.to_csv() if path in WITH_INDEX else frame.to_csv(index=False) for path, frame in frames.items()}
+def png(width: int = 986, height: int = 986, noise: int = 40_000) -> bytes:
+    """A real PNG of `width` by `height` grey pixels, the first `noise` bytes random so it does not compress away.
+
+    The self-test runs without matplotlib; scratch completions check real seaborn output.
+    """
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return len(data).to_bytes(4, "big") + kind + data + zlib.crc32(kind + data).to_bytes(4, "big")
+
+    pixels = bytearray(b"\x80" * ((width + 1) * height))
+    pixels[: min(noise, len(pixels))] = os.urandom(min(noise, len(pixels)))
+    for row in range(height):
+        pixels[row * (width + 1)] = 0  # each scanline starts with filter type 0
+    header = width.to_bytes(4, "big") + height.to_bytes(4, "big") + bytes([8, 0, 0, 0, 0])
+    return value_checks.PNG_SIGNATURE + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(bytes(pixels))) + chunk(
+        b"IEND", b"")
+
+
+def altair_spec(columns: list[str]) -> dict:
+    """The spec Altair 5.5 writes for the lecture's repeated scatter of a 3-row sample of `columns`."""
+    rows = json.loads(EXAMS[columns].head(3).to_json(orient="records"))
+    return {
+        "config": {"view": {"continuousWidth": 300, "continuousHeight": 300}},
+        "repeat": {"column": columns, "row": columns},
+        "spec": {"data": {"name": "data-0123"}, "mark": {"type": "point", "opacity": 0.4},
+                 "encoding": {"tooltip": [{"field": column, "type": "quantitative"} for column in columns],
+                              "x": {"field": {"repeat": "column"}, "type": "quantitative"},
+                              "y": {"field": {"repeat": "row"}, "type": "quantitative"}}},
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.20.1.json",
+        "datasets": {"data-0123": rows},
+    }
+
+
+def altair_page(spec: dict) -> str:
+    """The web page Altair 5.5's chart.save("pairplot.html") writes around `spec`, trimmed to what matters."""
+    return (
+        '<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n'
+        '  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega@5"></script>\n'
+        '  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega-lite@5.20.1"></script>\n'
+        '  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>\n'
+        '</head>\n<body>\n  <div id="vis"></div>\n  <script>\n    (function(vegaEmbed) {\n'
+        f'      var spec = {json.dumps(spec)};\n      var embedOpt = {{"mode": "vega-lite"}};\n'
+        '      vegaEmbed("#vis", spec, embedOpt);\n    })(vegaEmbed);\n  </script>\n</body>\n</html>\n'
+    )
+
+
+SEABORN_PNG = png()
+
+
+def as_files(frames: dict[str, pd.DataFrame]) -> dict[str, str | bytes]:
+    """The way the README saves each frame: index=False, except the two that keep their index; plus a seaborn PNG."""
+    files: dict[str, str | bytes] = {
+        path: frame.to_csv() if path in WITH_INDEX else frame.to_csv(index=False) for path, frame in frames.items()}
+    files[PNG] = SEABORN_PNG
+    return files
 
 
 def failing(result: dict) -> set[str]:
@@ -189,7 +247,7 @@ def check_readme() -> None:
     assert {path: header for path, header in checkpoints} == {
         path: ",".join(artifact.columns) for path, artifact in ARTIFACTS.items()
     }, checkpoints
-    contract = re.findall(r"^\| `(output/[^`]+)` \| .* \| ([^|]+) \| (\d+) \|$", checks_md, re.M)
+    contract = re.findall(r"^\| `(output/[^`]+)`[^|]* \| .* \| ([^|]+) \| (\d+) \|$", checks_md, re.M)
     assert [(name.strip(), int(points)) for _, name, points in contract] == list(zip(NAMES, POINTS)), contract
     for path, name, _ in contract:
         assert name.strip().startswith(PREFIX[path]), (path, name)
@@ -273,6 +331,8 @@ def alternative() -> dict[str, str | bytes]:
     pivot = frames[PIVOT][["X-ray", "Ultrasound", "MRI", "CT"]].round(1).reset_index().rename(columns={"site": "SITE"})
 
     return {
+        # The Altair route: a Vega-Lite spec of three columns, and no PNG.
+        JSON: json.dumps(altair_spec(PAIRPLOT_COLUMNS[:3]), indent=2),
         MISSING: missing.to_csv(),
         # Columns reversed, upper-case site names, one decimal, CRLF, and UTF-16, as Windows PowerShell 5.1 writes.
         SUMMARY: codecs.BOM_UTF16_LE + summary.to_csv(index=False, lineterminator="\r\n").encode("utf-16-le"),
@@ -356,8 +416,8 @@ def run() -> None:
         root = submission("correct", correct)
         result = graded(root)
         assert result["score"] == 100, {name: detail(result, name) for name in failing(result)}
-        size = sum((root / path).stat().st_size for path in correct)
-        assert size < 100_000, f"a complete output/ is {size} bytes"
+        size = sum((root / path).stat().st_size for path in correct if path.endswith(".csv"))
+        assert size < 100_000, f"the CSV files of a complete output/ are {size} bytes"
 
         # The checks read only output/: poisoned data and code in the submission change nothing.
         (root / "data").mkdir()
@@ -377,17 +437,21 @@ def run() -> None:
         (root / "output").mkdir(parents=True)
         for path, frame in frames.items():
             frame.to_csv(root / path)
+        (root / PNG).write_bytes(SEABORN_PNG)
         stat = EXAMS[EXAMS["priority"] == "STAT"]
         stat.groupby("site").apply(lambda g: g.nlargest(3, "report_hr"), include_groups=False)[
             ["exam_id", "modality", "report_hr"]].to_csv(root / SLOWEST)
         assert graded(root)["score"] == 100
 
         # Cells separated by semicolons, with a European spreadsheet's decimal commas, or by tabs: full marks.
-        def separated(sep: str, decimal: str = ".") -> dict[str, str]:
-            return {path: frame.to_csv(index=path in WITH_INDEX, sep=sep, decimal=decimal) for path, frame in frames.items()}
+        def separated(sep: str, decimal: str = ".") -> dict[str, str | bytes]:
+            files: dict[str, str | bytes] = {
+                path: frame.to_csv(index=path in WITH_INDEX, sep=sep, decimal=decimal) for path, frame in frames.items()}
+            files[HTML] = altair_page(altair_spec(PAIRPLOT_COLUMNS))
+            return files
 
         semicolons = separated(";", ",")
-        assert any(re.search(r";-?\d+,\d", text) for text in semicolons.values())
+        assert any(re.search(r";-?\d+,\d", text) for path, text in semicolons.items() if path != HTML)
         for label, files in (("semicolons", semicolons), ("tabs", separated("\t"))):
             result = graded(submission(label, files))
             assert result["score"] == 100, (label, {name: detail(result, name) for name in failing(result)})
@@ -396,6 +460,36 @@ def run() -> None:
         files = separated(";", ",")
         files[SUMMARY] = wrong.to_csv(index=False, sep=";", decimal=",")
         only("semicolons-one-wrong-value", files, {"site summary: mean_scan_min values"}, "Valley has mean_scan_min 15.5")
+
+        # The pairplot is the student's choice: any one valid file earns its check, and a second file never costs it.
+        without_png = {path: text for path, text in correct.items() if path != PNG}
+        spec4 = altair_spec(PAIRPLOT_COLUMNS)
+        for label, extra in (("pairplot-html", {HTML: altair_page(spec4)}),
+                             ("pairplot-json", {JSON: json.dumps(spec4)}),
+                             ("pairplot-html-and-json", {HTML: altair_page(spec4), JSON: json.dumps(spec4)}),
+                             ("pairplot-all-three", {PNG: SEABORN_PNG, HTML: altair_page(spec4), JSON: json.dumps(spec4)}),
+                             ("pairplot-upper-case", {"output/PairPlot.JSON": json.dumps(spec4).replace("wait_hr", "WAIT_HR")}),
+                             ("pairplot-broken-json-beside-png", {PNG: SEABORN_PNG, JSON: '{"repeat": '}),
+                             ("pairplot-fold", {JSON: json.dumps({"transform": [{"fold": PAIRPLOT_COLUMNS[:3]}],
+                                                                  "facet": {"field": "key"}, "spec": {"mark": "bar"}})})):
+            files = dict(without_png)
+            files.update(extra)
+            result = graded(submission(label, files), both_clis=False)
+            assert result["score"] == 100, (label, {name: detail(result, name) for name in failing(result)})
+        pairplot = "pairplot: saved chart"
+        only("pairplot-none", without_png, {pairplot}, "No pairplot found", PNG, HTML, JSON)
+        only("pairplot-pdf", {**without_png, "output/pairplot.pdf": b"%PDF-1.4"}, {pairplot},
+             "Found output/pairplot.pdf")
+        only("pairplot-broken-json", {**without_png, JSON: json.dumps(spec4)[:-40]}, {pairplot}, "is not valid JSON")
+        only("pairplot-two-columns", {**without_png, JSON: json.dumps(altair_spec(["wait_hr", "scan_min"]))}, {pairplot},
+             "repeats only scan_min and wait_hr, expected at least 3")
+        only("pairplot-text-columns", {**without_png, HTML: altair_page(altair_spec(["site", "modality", "wait_hr"]))},
+             {pairplot}, "repeats only wait_hr")
+        only("pairplot-page-without-spec", {**without_png, HTML: "<html><body><img src='pairplot.png'></body></html>"},
+             {pairplot}, "embeds no Vega-Lite spec")
+        only("pairplot-blank-png", {**without_png, PNG: png(750, 750, noise=0)}, {pairplot}, "750 by 750 pixels",
+             "not an empty figure")
+        only("pairplot-not-png", {**without_png, PNG: b"\xff\xd8\xff\xe0 JPEG data" * 2000}, {pairplot}, "is not a PNG")
 
         # Summaries grouped without as_index=False keep their keys when saved with the index: full marks.
         exams = EXAMS
@@ -599,6 +693,7 @@ def run() -> None:
             "median report pivot: one row per site": (PIVOT, pivot + "All,1.5,12.0,5.5,3.0\n"),
             "median report pivot: median reports": (PIVOT, edit(pivot, "Valley", "CT", "2.5")),
             "median report pivot: empty cell stays empty": (PIVOT, edit(pivot, "Valley", "MRI", "0.0")),
+            "pairplot: saved chart": (PNG, b"not a png"),
         }
         assert sorted(mistakes) == sorted(NAMES)
         for number, (name, (path, text)) in enumerate(mistakes.items()):
@@ -625,7 +720,10 @@ def run() -> None:
             shutil.copytree(HANDOUT, target, ignore=shutil.ignore_patterns("__pycache__", ".pytest_cache", ".venv", ".checks"))
             if name == "correct":
                 for path, text in correct.items():
-                    (target / path).write_text(text, encoding="utf-8")
+                    if isinstance(text, bytes):
+                        (target / path).write_bytes(text)
+                    else:
+                        (target / path).write_text(text, encoding="utf-8")
             finished = subprocess.run(
                 [sys.executable, "-B", "-m", "pytest", "-q", "-p", "no:cacheprovider", ".github/test/test_assignment.py"],
                 cwd=target, capture_output=True, text=True, check=False,
@@ -639,7 +737,8 @@ def run() -> None:
     print(
         "Assignment 08 checks: the data, the frozen values, README checkpoints, contract, and numbering, and the "
         "handout's byte-identical checks agree; empty and scaffold earn 0; correct, plain-string, observed=False, "
-        "alternative, with-index, index-key, semicolon- and tab-separated submissions earn 100; each of the "
+        "alternative, with-index, index-key, semicolon- and tab-separated submissions earn 100, as do the seaborn, "
+        "Altair HTML, and Altair JSON pairplot routes; each of the "
         f"{len(NAMES)} single mistakes, each plausible mistake, and each missing file costs only its own checks; "
         "feedback and pytest pass."
     )

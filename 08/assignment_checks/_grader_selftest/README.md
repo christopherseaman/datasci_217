@@ -33,8 +33,15 @@ that:
   over every priority, `nsmallest`, other CTs, STAT exams under 8 hours) costs
   only its rows check, since its other values checks have nothing to compare;
   a share column mixing shares and percents costs its shares check;
+- the pairplot earns its check from a seaborn PNG, an Altair web page, or a
+  Vega-Lite JSON file, alone or together (a broken second file beside a good
+  one costs nothing), and costs only that check when none is saved, the JSON
+  does not parse, the page embeds no spec, the PNG is blank or not a PNG, or
+  the spec repeats fewer than three numeric columns; the self-test builds these
+  files with the standard library, and scratch completions check real seaborn
+  and Altair output;
 - an empty directory and the untouched handout score 0;
-- each of 30 single mistakes, one per check, costs exactly that check; a
+- each of 31 single mistakes, one per check, costs exactly that check; a
   missing file costs only its own artifact's checks and is never told to take
   another required file's name; a file holding only the optional Eastport row
   earns no value checks;

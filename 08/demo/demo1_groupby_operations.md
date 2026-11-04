@@ -29,8 +29,8 @@ jupyter:
 Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas, pyarrow (for Parquet), and dowhy (for the data generator) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 dowhy==0.14
+# Installs the course's pandas, pyarrow (for Parquet), dowhy (for the data generator), and altair in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 dowhy==0.14 altair==5.5.0
 ```
 
 This supplied cell downloads `generate_data.py` when it is missing, runs `generate_data.build()` to write the tables into `data/` if they are not there yet (about 30 seconds), then loads the visit extract.
@@ -124,6 +124,45 @@ plt.show()
 ```
 
 Expect correlations of -0.50 between wait and satisfaction, 0.20 between age and wait, and -0.10 between age and satisfaction. The age histogram has two humps, children and adults over 50. Children cluster at short waits, which points to departments (Pediatrics) rather than age. Ratings fall as waits grow, the question the board asks in step 12.
+
+The analytics team wants the same view on the operations dashboard, where a clinic manager can hover over a point to read its age, wait, and rating. Altair draws it as a repeated scatter and saves two files: a web page that opens in any browser, and the Vega-Lite specification the dashboard loads.
+
+```python
+import altair as alt
+
+Path("output").mkdir(exist_ok=True)
+# alt.selection_interval(): drag a box; resolve="global" shares one box across every panel
+brush = alt.selection_interval(resolve="global")
+pairs = alt.Chart(sample).mark_point(size=10, opacity=0.4).encode(
+    alt.X(alt.repeat("column"), type="quantitative"),
+    alt.Y(alt.repeat("row"), type="quantitative"),
+    color=alt.condition(brush, alt.value("steelblue"), alt.value("lightgray")),
+    tooltip=cols,
+).add_params(brush).properties(width=150, height=150).repeat(row=cols, column=cols)
+pairs.save("output/visits_pairplot.html")
+pairs.save("output/visits_pairplot.json")
+pairs
+```
+
+Expect a 3 by 3 grid of the same 2,000 visits, with the same clouds as the seaborn pairplot. The diagonal panels plot each column against itself, so they are straight lines where seaborn drew histograms. The grid is live in Jupyter, VS Code, and Colab because `pairs` is the cell's last line. Hovering over a point shows its three values. Drag a box in any panel, for example long waits in the wait-by-satisfaction panel: the same visits stay blue in every other panel and the rest turn gray, so you can see where the long waits fall on age and rating. Double-click to clear the box. The saved HTML page behaves the same way. The sample stays at 2,000 rows because Altair refuses more than 5,000 by default (`MaxRowsError`).
+
+Look inside the two saved files.
+
+```python
+import json
+
+html = Path("output/visits_pairplot.html").read_text()
+for line in html.splitlines():
+    if "<script" in line or "vegaEmbed(" in line:
+        print(line.strip())
+
+spec = json.loads(Path("output/visits_pairplot.json").read_text())
+print(sorted(spec))
+print(spec["repeat"])
+print(len(next(iter(spec["datasets"].values()))), "rows embedded")
+```
+
+Expect three `<script>` tags that load `vega@5`, `vega-lite@5.20.1`, and `vega-embed@6` from `cdn.jsdelivr.net`, then the page's own `<script>` and its `vegaEmbed("#vis", spec, embedOpt)` call, which draws the chart in the `#vis` box. The page needs internet access to fetch those three libraries. The JSON's top-level keys are `$schema`, `config`, `datasets`, `repeat`, and `spec`: `repeat` lists the three columns for the rows and the columns, `spec` is the one scatter Vega-Lite repeats, and `datasets` holds the 2,000 rows. Each file is about 105 KB.
 
 **What the pass decides:** score clinics on the share of waits over 30 minutes rather than the mean, which the tail inflates; keep the missing waits out of that share; and break clinics down by department.
 
