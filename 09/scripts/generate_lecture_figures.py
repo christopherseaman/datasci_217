@@ -507,7 +507,7 @@ def resample_bins_2h():
 
 
 def daily_reading_counts():
-    """Resampling with Different Aggregations: Demo 2's readings per day, short on January 5."""
+    """Basic Resampling: Demo 2's readings per day, short on January 5."""
     counts = demo2_monitor()["heart_rate"].resample("D").count()
     assert len(counts) == 28 and (counts == 24).sum() == 27 and counts["2024-01-05"] == 14
 

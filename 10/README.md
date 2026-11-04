@@ -40,7 +40,7 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 # What Is a Model?
 
 - **Model**: a simplified mathematical description of how an outcome, such as systolic blood pressure (SBP), relates to other variables, such as age and BMI.
-- Like Lecture 08's `groupby('clinic')['wait_min'].mean()`, it estimates an average outcome, but for any combination of inputs.
+- Like `groupby('clinic')['wait_min'].mean()`, it estimates an average outcome, but for any combination of inputs.
 - The question it serves decides how to judge it:
 
 | Question | Example | Judge it by |
@@ -53,18 +53,9 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 ## The Modeling Landscape
 
 - More flexible models fit more complex patterns but can also **overfit**: fit the noise in the training rows, so predictions for new patients get worse.
-- Shortlist libraries by the question, then compare candidates on held-out rows from the workflow you intend to use.
+- Shortlist libraries by the question (statsmodels for inference, scikit-learn for prediction, XGBoost and Keras for flexible models), then compare candidates on held-out rows from the workflow you intend to use.
 
 ![The usual rule of thumb, not a measured ranking: flexible models such as neural networks and boosted ensembles sit high on predictive power and low on interpretability, linear regression the reverse.](media/interpretability_tradeoff.webp)
-
-### Reference Card: Which Library for Which Question
-
-| Library | Start here when | Key features |
-| --- | --- | --- |
-| **statsmodels** | You need to quantify a relationship and its uncertainty | Statistical inference, model diagnostics |
-| **scikit-learn** | Tabular data and you need predictions | One fit/predict pattern, preprocessing, many models |
-| **XGBoost** | Candidate for tabular prediction | Gradient-boosted trees, feature-importance summaries |
-| **TensorFlow/Keras** | Candidate for images, text, audio, or learned representations | Neural-network layers and training loops |
 
 ### Reference Card: Which Model for Which Outcome
 
@@ -111,7 +102,7 @@ Array:   sm.OLS(clinic['sbp'], sm.add_constant(clinic[['age', 'bmi']]))  interce
 | `smf.ols('sbp ~ age + bmi', data=df)` | Build a formula-based OLS model from DataFrame columns (`import statsmodels.formula.api as smf`). | Unfitted model |
 | `sm.OLS(y, sm.add_constant(X))` | Build an array-based OLS model; `sm.add_constant(X)` adds the intercept column (`import statsmodels.api as sm`). | Unfitted model |
 | `'sbp ~ ' + ' + '.join(predictors)` | Build a formula string from a list of column names. | `'sbp ~ age + bmi'` |
-| `C(column)` in a formula | Treat a column as categorical: each level except the reference gets a coefficient, compared with the reference. Like Lecture 05's `drop_first=True`: the dropped level is the reference, since all-level 0/1 columns would duplicate the intercept. | Extra coefficient rows |
+| `C(column)` in a formula | Treat a column as categorical: each level except the reference gets a coefficient, compared with the reference. Like `pd.get_dummies(drop_first=True)`: the dropped level is the reference, since all-level 0/1 columns would duplicate the intercept. | Extra coefficient rows |
 | `np.log(age)`, `I(bmi ** 2)`, `age:bmi`, `age * bmi` in a formula | Transform a column inside the formula; `I()` makes `**` ordinary arithmetic. `a:b` adds only the interaction (product) term, so one feature's slope can depend on the other; `a * b` is shorthand for `a + b + a:b`. | Extra coefficient rows named after each term |
 | `model.fit()` | Estimate the coefficients. | Results object |
 | `results.summary()` | Print coefficients, uncertainty, fit statistics, and diagnostics. | Formatted text table |
@@ -321,7 +312,7 @@ Keep a candidate feature only if it is known by prediction time: `candidates['re
 | Expression | Purpose & arguments | Typical output |
 | --- | --- | --- |
 | `df['timestamp'].dt.hour` | Hour of day from a datetime column; `.dt.dayofyear` for the yearly cycle in the last row. | Integer Series |
-| `np.sin(2 * np.pi * df['hour'] / 24)` | The hour's height on the clock face; `np.pi` is the constant π, and `np.sin()` works column-wise like Lecture 03's `np.sqrt()`. | Float Series, -1 to 1 |
+| `np.sin(2 * np.pi * df['hour'] / 24)` | The hour's height on the clock face; `np.pi` is the constant π, and `np.sin()` works column-wise like `np.sqrt()`. | Float Series, -1 to 1 |
 | `np.cos(2 * np.pi * df['hour'] / 24)` | Its side-to-side position. Pair it with the sine: either column alone gives two different hours the same value. | Float Series, -1 to 1 |
 | `2 * np.pi * (df['dayofyear'] - 1) / 366` | Yearly cycle: subtract 1 because `dayofyear` starts at 1, then divide by the cycle length (7 for `.dt.dayofweek`, which starts at 0). A fixed 366 leaves a small gap from December 31 to January 1 in non-leap years. | Float Series |
 

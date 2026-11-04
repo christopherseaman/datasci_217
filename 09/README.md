@@ -25,7 +25,7 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 	# This Lecture
 	## Covers
 	- **Dated data**: timestamps, periods, panels, Python `datetime`, a pandas DatetimeIndex, frequency grids, and calendar slicing.
-	- **Review: tmux and SSH**: Lecture 08's long-job sessions, remote shells, file copies, and keys.
+	- **Review: tmux and SSH**: long-job sessions, remote shells, file copies, and keys.
 	- **Resampling and rolling windows**: daily or hourly summaries, bin edges, upsampling, per-patient grids, gap runs, count and time windows, and EWM.
 	- **Time series visualization**: EDA steps for a series (spacing, profiles, autocorrelation), then raw readings with a smoother, gaps that break the line, and seasonal bars.
 	- **Clocks and honest history**: UTC conversion, clock-change nights, grouped lags, past-only windows, and availability at prediction time.
@@ -38,20 +38,9 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 	- Build previous-reading and past-only rolling-mean features per patient with `groupby()`, `shift()`, and `rolling(..., closed='left')`, keeping later rows out.
 </callout>
 
-# Terminal Sessions with tmux (Review from Lecture 08)
+# Review: tmux and SSH
 
-- **Terminal multiplexer**: a program such as `tmux` that runs shells inside a **session** that keeps going on its own. You **detach** from it, close the terminal, and **attach** again later to find the job still running.
-- It works on your laptop or on a server: locally it keeps a long job going after you close the terminal window, and over SSH it survives a dropped connection. A session does not survive a restart of the machine it runs on.
-- `screen` is an older alternative; use whichever the machine provides.
-
-```text
-terminal (laptop, or over ssh) ──> tmux session "analysis"   (keeps running after you detach)
-                                     └─ python3 analysis.py
-```
-
-![A tmux session named analysis running analysis.py at step 10 of 120; the green status bar shows the session name, analysis, and the window 0:python3](media/tmux_session.png)
-
-## Sessions, Windows, and Panes
+## Terminal Sessions with tmux
 
 ### Reference Card: tmux Commands
 
@@ -72,7 +61,7 @@ Every shortcut starts with the **prefix**, `Ctrl+b`: press it, release, then pre
 
 ### Code Snippet: Keep an Analysis Running
 
-In a project folder whose environment you built with `uv venv --seed` and `uv sync` (Lecture 03), on your laptop or after `ssh`:
+In a project folder with a `uv` environment, on your laptop or after `ssh`:
 
 ```bash
 tmux new -s analysis
@@ -87,30 +76,7 @@ tmux ls
 tmux attach -t analysis
 ```
 
-# Remote Computing with SSH (Review from Lecture 08)
-
-- **SSH** (Secure Shell): opens an encrypted terminal on another computer, a **server** or **host**, so you can run analyses too large or too long for a laptop.
-- **Protected health information** (PHI), records that can identify a person, often may not leave an approved secure server, so you bring your code to the data and take back only permitted results.
-
-![ssh opens a shell on the server, scp copies data.csv up and analysis.csv back, and patient records (PHI) stay on the server](media/ssh_laptop_server.png)
-
-## Connect and Copy Files
-
-The server's operator supplies its hostname, your account, and how to log in. Once connected, shell commands (`pwd`, `ls`, `cd`, `python3`) run on the server, and the prompt shows where you are; `exit` returns to your laptop:
-
-```text
-you@laptop:~$ ssh jdoe@analysis.example.org
-The authenticity of host 'analysis.example.org' can't be established.
-ED25519 key fingerprint is SHA256:...
-Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
-jdoe@analysis:~$ hostname
-analysis
-jdoe@analysis:~$ exit
-you@laptop:~$
-```
-
-- **Host key fingerprint**: the code shown on your first connection that identifies the server. Type `yes` only if it matches the fingerprint the administrator published; SSH remembers the server after that.
-- A password prompt shows nothing as you type; that is normal.
+## Remote Computing with SSH
 
 ### Reference Card: Connect and Copy
 
@@ -123,25 +89,6 @@ you@laptop:~$
 | `scp user@host:path local` | Copy a remote file back | Local file |
 | `gh codespace ssh --config >> ~/.ssh/config` | Write an SSH entry for each of your GitHub Codespaces, a cloud machine you can practice on | Plain `ssh` and `scp` reach the codespace by the name it prints |
 
-### Code Snippet: Upload a File and Download a Result
-
-Run these from your laptop's prompt, not inside an `ssh` session. The first copies `data.csv` into the server's existing `~/data/` folder; the second copies `analysis.csv` into your current local folder:
-
-```bash
-scp data.csv jdoe@analysis.example.org:~/data/
-scp jdoe@analysis.example.org:~/results/analysis.csv ./
-```
-
-## SSH Keys
-
-- **SSH key pair**: what most servers use instead of a password. `ssh-keygen` creates the **public key**, `~/.ssh/id_ed25519.pub`, a padlock you install on every server you use, and the **private key**, `~/.ssh/id_ed25519`, the only key that opens it.
-- **SSH agent**: a background program on your laptop (macOS runs one for you) that keeps an unlocked private key in memory, so `ssh` and `scp` stop asking for the passphrase.
-
-<callout icon="⚠️" color="yellow_bg">
-	## Never share your private key
-	Never email, upload, or commit `~/.ssh/id_ed25519`: anyone holding it can log in as you. Only the `.pub` file goes to servers.
-</callout>
-
 ### Reference Card: SSH Keys
 
 | Command | Purpose and key arguments | Result |
@@ -150,18 +97,6 @@ scp jdoe@analysis.example.org:~/results/analysis.csv ./
 | `ssh-keygen -t ed25519 -f path` | Save the pair at `path` instead of the default, such as a practice key that must not replace your real one | `path` and `path.pub` |
 | `ssh-copy-id user@host` | Install the public key where supported | Passwordless key login |
 | `ssh-add` | Unlock your private key once per login session; the SSH agent keeps it unlocked | Later `ssh` and `scp` stop asking for the passphrase |
-
-### Code Snippet: Create a Key Pair
-
-Run this once on your laptop, then install only the public half using the server's instructions or `ssh-copy-id`:
-
-```bash
-ssh-keygen -t ed25519 -C "your_email@example.com"
-```
-
-- Press Enter for the default location, and set a passphrase that protects the private key file.
-- `ssh-add` asks for the passphrase once, and the agent keeps the key unlocked until you log out. If `ssh-add` cannot connect to your authentication agent (common in WSL), skip it and type the passphrase when asked.
-- `Overwrite (y/n)?` means a key already exists: answer `n` and keep using it, because replacing it breaks access to servers that trust its public half.
 
 # Understanding Time Series Data
 
@@ -192,7 +127,7 @@ _Some time series are as regular as a Swiss watch; others are as unpredictable a
 ## Single Series and Panels
 
 - **Single series**: one history, such as one patient's weight.
-- **Panel**: one history per **entity** (a patient, sensor, or site) stacked in one table with an entity column such as `patient_id`; most calculations run inside each entity's history with Lecture 08's `groupby()`.
+- **Panel**: one history per **entity** (a patient, sensor, or site) stacked in one table with an entity column such as `patient_id`; most calculations run inside each entity's history with `groupby()`.
 - **Grain**: what one row represents, stated before computing anything: "one heart-rate reading for one patient at one time."
 
 ![A panel: three patients' charted heart rates on November 3, 2024, one line per patient_id; P01 rises from 88 to 118 bpm, P02 stays near 70, and P03 falls from 104 to 92.](media/icu_panel_hr_utc.png)
@@ -234,7 +169,7 @@ December 25, 2023 at 02:30 PM
 
 ## pandas DatetimeIndex
 
-For a whole column, use Lecture 05's `pd.to_datetime()`: its `datetime64` values sort by time rather than character by character, and invalid text becomes `NaT` with `errors='coerce'`.
+For a whole column, use `pd.to_datetime()`: its `datetime64` values sort by time rather than character by character, and invalid text becomes `NaT` with `errors='coerce'`.
 
 ![Four weights from 81.9 to 83.4 kg: as text, '3/9/2024' sorts last and the dates sit evenly spaced; after `pd.to_datetime()`, March 9 comes first and March 12 to 20 spans 8 days.](media/text_vs_datetime_axis.png)
 
@@ -323,7 +258,7 @@ DatetimeIndex(['2024-01-01 08:00:00', '2024-01-01 09:00:00',
 # Time Series Indexing and Selection
 
 - **Time series selection**: picking rows by when they were recorded, such as a whole month or a date range. A sorted DatetimeIndex makes each one a short expression.
-- **Partial-string indexing**: on a DatetimeIndex, Lecture 04's `.loc` accepts partial dates; `'2024-03'` selects every row in March 2024.
+- **Partial-string indexing**: on a DatetimeIndex, `.loc` accepts partial dates; `'2024-03'` selects every row in March 2024.
 
 ## Basic Time Series Selection
 
@@ -332,7 +267,7 @@ DatetimeIndex(['2024-01-01 08:00:00', '2024-01-01 09:00:00',
 ### Reference Card: Calendar Selection
 
 - `df.loc['2024-03']`: Every row in March 2024; `'2024'` selects the whole year
-- `df.loc['2024-03-01':'2024-03-07']`: A date range, both endpoints included, as with Lecture 04's label slices
+- `df.loc['2024-03-01':'2024-03-07']`: A date range, both endpoints included, as with label slices
 - `df.loc['2024-03-01 08:00']`: One timestamp
 - `ts['2024-03']`: The same shortcut on a Series; on a DataFrame `df['2024-03']` looks for a _column_ and raises `KeyError`, so use `.loc`
 
@@ -364,36 +299,35 @@ Freq: D, Name: value, dtype: int64
 
 ## Basic Resampling
 
-`resample()` works like Lecture 08's `groupby()`: it splits rows into time bins and needs an aggregation such as `.mean()` to combine each bin into one row.
+`resample()` works like `groupby()`: it splits rows into time bins and needs an aggregation such as `.mean()` to combine each bin into one row. Any aggregation that works after `groupby()` works after `resample()`, including several at once and named aggregation: a maximum heart rate flags a crisis, and a reading count shows whether the monitor stayed connected.
 
-### Reference Card: Resampling Frequencies
+![`resample('D').count()` on an hourly monitor, January 1 to 28, 2024: 24 readings on 27 days and 14 on January 5, when it was unplugged for 10 hours.](media/daily_reading_counts.png)
+
+### Reference Card: Resampling Aggregations
 
 - `ts.resample('h').mean()`: Hourly means; each row is labeled with the start of its hour
-- `ts.resample('D').mean()`: Daily means, labeled with the date
+- `ts.resample('D').mean()`: Daily means, labeled with the date; also `.sum()`, `.max()`, `.min()`, `.std()`
 - `ts.resample('W').mean()`: Weekly means, labeled with the Sunday that ends each week
 - `ts.resample('ME').mean()`: Monthly means, labeled with the month's last day
-- `df.resample('ME').mean()`: One summary per column; a text column raises `TypeError`, so select numeric columns first or use `.agg()` per column
+- `ts.resample('D').count()`: Non-missing readings per bin; `0` marks a bin with no data
+- `ts.resample('D').agg(['mean', 'std', 'min', 'max'])`: Multiple aggregations
+- `df.resample('W').agg({'temperature': ['mean', 'std'], 'heart_rate': 'mean'})`: Different summaries for different columns; `df.resample('ME').mean()` on a table with a text column raises `TypeError`
 
-### Code Snippet: Basic Resampling
+### Code Snippet: Weekly Summaries
 
-`day_num` is a Series named `value` holding 1 to 30 on January 1 to 30, 2023.
+`daily` has eight rows, January 1 to 8, 2023, indexed by date: `temperature` (°F) 98.6, 98.4, 98.8, 99.6, 100.2, 99.1, 98.5, 98.4 and `heart_rate` (bpm) 72, 74, 76, 80, 82, 76, 72, 71.
 
 ```python
-display(day_num.resample('W').mean())
-display(day_num.resample('ME').mean())   # all 30 days fall in January
+display(daily.resample('W').agg({'temperature': ['mean', 'max'], 'heart_rate': ['mean', 'count']}).round(1))
 ```
 
-```text
-2023-01-01     1.0
-2023-01-08     5.0
-2023-01-15    12.0
-2023-01-22    19.0
-2023-01-29    26.0
-2023-02-05    30.0
-Freq: W-SUN, Name: value, dtype: float64
-2023-01-31    15.5
-Freq: ME, Name: value, dtype: float64
-```
+|  | temperature |  | heart_rate |  |
+| --- | --- | --- | --- | --- |
+|  | mean | max | mean | count |
+| 2023-01-01 | 98.6 | 98.6 | 72.0 | 1 |
+| 2023-01-08 | 99.0 | 100.2 | 75.9 | 7 |
+
+The `count` column shows that the first weekly mean describes one day and the second seven.
 
 ## How Resampling Draws Bins
 
@@ -432,38 +366,9 @@ display(readings.resample('2h').agg(['mean', 'count']))
 
 - **Grouped resampling**: binning each patient's readings separately, so no bin averages one patient with another.
 
-## Resampling with Different Aggregations
-
-Any aggregation that works after `groupby()` works after `resample()`, including several at once and Lecture 08's named aggregation: a maximum heart rate flags a crisis, and a reading count shows whether the monitor stayed connected.
-
-![`resample('D').count()` on an hourly monitor, January 1 to 28, 2024: 24 readings on 27 days and 14 on January 5, when it was unplugged for 10 hours.](media/daily_reading_counts.png)
-
-### Reference Card: Resampling Aggregations
-
-- `ts.resample('D').mean()`, `.sum()`, `.max()`, `.min()`, `.std()`: One summary value per bin
-- `ts.resample('D').count()`: Non-missing readings per bin; `0` marks a bin with no data
-- `ts.resample('D').agg(['mean', 'std', 'min', 'max'])`: Multiple aggregations
-- `df.resample('W').agg({'temperature': ['mean', 'std'], 'heart_rate': 'mean'})`: Different summaries for different columns
-
-### Code Snippet: Resampling Aggregations
-
-`daily` has eight rows, January 1 to 8, 2023, indexed by date: `temperature` (°F) 98.6, 98.4, 98.8, 99.6, 100.2, 99.1, 98.5, 98.4 and `heart_rate` (bpm) 72, 74, 76, 80, 82, 76, 72, 71.
-
-```python
-display(daily.resample('W').agg({'temperature': ['mean', 'max'], 'heart_rate': ['mean', 'count']}).round(1))
-```
-
-|  | temperature |  | heart_rate |  |
-| --- | --- | --- | --- | --- |
-|  | mean | max | mean | count |
-| 2023-01-01 | 98.6 | 98.6 | 72.0 | 1 |
-| 2023-01-08 | 99.0 | 100.2 | 75.9 | 7 |
-
-The `count` column shows that the first weekly mean describes one day and the second seven.
-
 ## Upsampling: Filling a Finer Grid
 
-`asfreq()` lays a series onto a regular grid without combining observations: values exactly on the grid are kept, and the other slots become `NaN`. Leave the new slots missing, or fill them with Lecture 05's `ffill()` or `interpolate()`.
+`asfreq()` lays a series onto a regular grid without combining observations: values exactly on the grid are kept, and the other slots become `NaN`. Leave the new slots missing, or fill them with `ffill()` or `interpolate()`.
 
 ![Six temperatures charted every 4 hours on January 15, 2024, on an hourly grid: `asfreq()` leaves 15 of 21 slots NaN, `ffill(limit=2)` leaves 5, and `interpolate()` fills all 21 with straight lines.](media/charted_temp_upsampling.png)
 
@@ -498,7 +403,7 @@ display(pd.DataFrame({
 
 ## Resampling Each Patient Separately
 
-Resample inside each patient's group (Lecture 08's split-apply-combine); the whole table mixes patients in each bin.
+Resample inside each patient's group (split-apply-combine); the whole table mixes patients in each bin.
 
 ![Two-hour bins on March 1, 2024: P1's means are 73.5 and 80.0 bpm and P2's 90.0 and 94.0; the whole-table means, 79.0 and 87.0, fall between the patients and describe neither.](media/per_patient_bins.png)
 
@@ -508,28 +413,9 @@ Resample inside each patient's group (Lecture 08's split-apply-combine); the who
 - `df.set_index('recorded_at').groupby('patient_id')[['heart_rate', 'source_row']].resample('h').asfreq()`: Each patient's hourly grid from their first reading's hour to their last; empty hours become `NaN`, and readings off the hour are dropped.
 - `df['recorded_at'].eq(df['recorded_at'].dt.floor('h')).all()`: `True` only if every reading sits exactly on the hour; check this before `asfreq()`.
 - `df['source_row'] = 1` before `asfreq()`: Grid-created rows get `NaN` in `source_row`, so `grid['source_row'].isna()` tells them apart from real readings with a missing value.
-- `df.set_index('recorded_at').groupby('patient_id').resample('2h').agg(mean_hr=('heart_rate', 'mean'), n_rows=('source_row', 'count'))`: Named summaries in Lecture 08's `(column, function)` form; `count()` skips missing values, so count `source_row` to include readings with a missing heart rate.
+- `df.set_index('recorded_at').groupby('patient_id').resample('2h').agg(mean_hr=('heart_rate', 'mean'), n_rows=('source_row', 'count'))`: Named summaries in `(column, function)` form; `count()` skips missing values, so count `source_row` to include readings with a missing heart rate.
 - `.reset_index()`: Turn the MultiIndex back into ordinary `patient_id` and `recorded_at` columns.
 - `df.duplicated(['patient_id', 'recorded_at']).sum()`: Count repeated patient and timestamp keys; `0` means `asfreq()` can place one row in each slot. `df.groupby(['patient_id', 'recorded_at'], as_index=False)['heart_rate'].mean()` keeps one row per key.
-
-### Code Snippet: Two-Hour Summaries per Patient
-
-`vitals` has `patient_id`, datetime `recorded_at`, and `heart_rate` columns: P1 has 72, 75, and 80 bpm at 08:00, 09:00, and 10:00 on March 1, 2024; P2 has 90 and 94 at 09:00 and 10:00.
-
-```python
-per_patient = (
-    vitals.set_index('recorded_at').groupby('patient_id')['heart_rate']
-    .resample('2h').agg(['mean', 'count']).reset_index()
-)
-display(per_patient)
-```
-
-|  | patient_id | recorded_at | mean | count |
-| --- | --- | --- | --- | --- |
-| 0 | P1 | 2024-03-01 08:00:00 | 73.5 | 2 |
-| 1 | P1 | 2024-03-01 10:00:00 | 80.0 | 1 |
-| 2 | P2 | 2024-03-01 08:00:00 | 90.0 | 1 |
-| 3 | P2 | 2024-03-01 10:00:00 | 94.0 | 1 |
 
 ### Code Snippet: Hourly Grid per Patient
 
@@ -562,7 +448,7 @@ True
 
 P1's three `NaN` rows look alike; only the flags show that the grid created 09:00 and 10:00, while 11:00 is a real reading with no heart rate.
 
-### Gap Runs
+## Gap Runs
 
 A **gap run** is a stretch of consecutive grid hours with no reading, such as a monitor unplugged for three hours. With `source_observed` `True` for real readings (the opposite of `grid_created`), a running count of readings stays flat through each run, so its hours share a number:
 
@@ -618,7 +504,7 @@ A patient with no gaps has no rows in `runs`; report 0 runs for them rather than
 - `ts.rolling('2h', closed='left').mean()`: Time window that excludes the current row (a past-only window)
 - `ts.rolling(window=7, min_periods=3).mean()`: Start once the window holds 3 readings instead of waiting for all 7
 - `ts.rolling(window=7, center=True).mean()`: A **centered window**: 3 rows before, the current row, and 3 after, so each value uses later readings; suits describing a finished series
-- `ax.fill_between(ts.index, mean - std, mean + std, alpha=0.2)`: Shade the band in the figure above on a Lecture 07 `Axes`; `alpha` keeps the lines visible through it
+- `ax.fill_between(ts.index, mean - std, mean + std, alpha=0.2)`: Shade the band in the figure above on an `Axes`; `alpha` keeps the lines visible through it
 
 ### Code Snippet: Count Window vs Time Window
 
@@ -877,20 +763,11 @@ display(weight)
 
 ## Grouped Lags and Past-Only Windows
 
-In a panel, a plain `shift(1)` runs down the whole stacked column (`wrong_previous`); grouping by `patient_id` first keeps each shift inside one patient's history (`previous_hr`):
-
-| | patient_id | recorded_at | heart_rate | wrong_previous | previous_hr |
-| --- | --- | --- | --- | --- | --- |
-| 0 | P1 | 2024-03-01 08:00:00 | 72 | NaN | NaN |
-| 1 | P1 | 2024-03-01 09:00:00 | 80 | 72.0 | 72.0 |
-| 2 | P1 | 2024-03-01 11:30:00 | 95 | 80.0 | 80.0 |
-| 3 | P2 | 2024-03-01 09:00:00 | 88 | 95.0 | NaN |
-| 4 | P2 | 2024-03-01 10:00:00 | 86 | 88.0 | 88.0 |
-| 5 | P2 | 2024-03-01 11:00:00 | 84 | 86.0 | 86.0 |
+In a panel, a plain `shift(1)` runs down the whole stacked column, so P2's first "previous" heart rate is P1's 95; grouping by `patient_id` first keeps each shift inside one patient's history.
 
 ![Six readings on March 1, 2024: grouped `shift(1)` (green) stays inside each patient, plain `shift(1)` hands P1's 11:30 reading of 95 to P2's first row, and `rolling('2h', closed='left')` at P1's 11:30 finds no reading from 09:30, so NaN.](media/grouped_shift_leak.png)
 
-Row 3 is the leak: P2's "previous" heart rate is P1's 95. Sort by patient and time first: `shift()` reads row order, so on unsorted rows a patient's "previous" reading can be a later one.
+Sort by patient and time first: `shift()` reads row order, so on unsorted rows a patient's "previous" reading can be a later one.
 
 ### Reference Card: Past-Only Panel Features
 
@@ -903,23 +780,13 @@ Row 3 is the leak: P2's "previous" heart rate is P1's 95. Sort by patient and ti
 | Mean of previous n readings | `df.groupby('patient_id')['heart_rate'].transform(lambda s: s.shift(1).rolling(n, min_periods=1).mean())` | Excludes the current row; aligned to the original rows |
 | Mean over previous 2 hours | `df.set_index('recorded_at').groupby('patient_id')['heart_rate'].rolling('2h', closed='left').mean()` | `closed='left'` excludes the current time; `reset_index()`, then `merge(..., validate='one_to_one')` it back |
 
-### Code Snippet: Grouped Lag
+### Code Snippet: Grouped Past-Only Features
 
-`vitals` has the six readings above, with datetime `recorded_at` values.
+`vitals` has the six readings in the figure above, with datetime `recorded_at` values.
 
 ```python
 vitals = vitals.sort_values(['patient_id', 'recorded_at'])
-vitals['wrong_previous'] = vitals['heart_rate'].shift(1)
 vitals['previous_hr'] = vitals.groupby('patient_id')['heart_rate'].shift(1)
-display(vitals)  # the table above
-```
-
-### Code Snippet: Grouped Past-Only Windows
-
-Keep the three original columns.
-
-```python
-vitals = vitals[['patient_id', 'recorded_at', 'heart_rate']].copy()
 vitals['mean_prev_2'] = vitals.groupby('patient_id')['heart_rate'].transform(
     lambda s: s.shift(1).rolling(2, min_periods=1).mean()
 )
@@ -931,14 +798,14 @@ vitals = vitals.merge(prev_2h, on=['patient_id', 'recorded_at'], validate='one_t
 display(vitals)
 ```
 
-|  | patient_id | recorded_at | heart_rate | mean_prev_2 | mean_prev_2h |
-| --- | --- | --- | --- | --- | --- |
-| 0 | P1 | 2024-03-01 08:00:00 | 72 | NaN | NaN |
-| 1 | P1 | 2024-03-01 09:00:00 | 80 | 72.0 | 72.0 |
-| 2 | P1 | 2024-03-01 11:30:00 | 95 | 76.0 | NaN |
-| 3 | P2 | 2024-03-01 09:00:00 | 88 | NaN | NaN |
-| 4 | P2 | 2024-03-01 10:00:00 | 86 | 88.0 | 88.0 |
-| 5 | P2 | 2024-03-01 11:00:00 | 84 | 87.0 | 87.0 |
+|  | patient_id | recorded_at | heart_rate | previous_hr | mean_prev_2 | mean_prev_2h |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 | P1 | 2024-03-01 08:00:00 | 72 | NaN | NaN | NaN |
+| 1 | P1 | 2024-03-01 09:00:00 | 80 | 72.0 | 72.0 | 72.0 |
+| 2 | P1 | 2024-03-01 11:30:00 | 95 | 80.0 | 76.0 | NaN |
+| 3 | P2 | 2024-03-01 09:00:00 | 88 | NaN | NaN | NaN |
+| 4 | P2 | 2024-03-01 10:00:00 | 86 | 88.0 | 88.0 | 88.0 |
+| 5 | P2 | 2024-03-01 11:00:00 | 84 | 86.0 | 87.0 | 87.0 |
 
 At P1's 11:30 reading, the previous two readings average 76, but no reading falls in the two hours before, so the elapsed-time mean is `NaN`.
 
@@ -955,7 +822,7 @@ At P1's 11:30 reading, the previous two readings average 76, but no reading fall
 ### Reference Card: Availability and Chronological Blocks
 
 - `labs['resulted_at'] <= prediction_time`: `True` where the value was known at prediction time.
-- `np.where(df['recorded_at'] < cutoff, 'earlier', 'later_holdout')`: Label rows before the cutoff `earlier` (to build a method) and the rest `later_holdout` (to test it); `np.where` is from Lecture 03.
+- `np.where(df['recorded_at'] < cutoff, 'earlier', 'later_holdout')`: Label rows before the cutoff `earlier` (to build a method) and the rest `later_holdout` (to test it); `<` puts a reading exactly at the cutoff, such as P2's 11:00 in the figure above, in the holdout.
 
 ### Code Snippet: Recorded Is Not Available
 
@@ -973,25 +840,6 @@ display(labs)
 | 0 | lactate | 2024-03-01 08:00:00 | 2024-03-01 08:45:00 | True | 0.75 |
 | 1 | creatinine | 2024-03-01 09:30:00 | 2024-03-01 11:15:00 | False | 1.75 |
 | 2 | troponin | 2024-03-01 10:30:00 | 2024-03-01 10:50:00 | True | 0.33 |
-
-### Code Snippet: Chronological Holdout
-
-```python
-cutoff = pd.Timestamp('2024-03-01 11:00')
-vitals['block'] = np.where(vitals['recorded_at'] < cutoff, 'earlier', 'later_holdout')
-display(vitals[['patient_id', 'recorded_at', 'block']])
-```
-
-|  | patient_id | recorded_at | block |
-| --- | --- | --- | --- |
-| 0 | P1 | 2024-03-01 08:00:00 | earlier |
-| 1 | P1 | 2024-03-01 09:00:00 | earlier |
-| 2 | P1 | 2024-03-01 11:30:00 | later_holdout |
-| 3 | P2 | 2024-03-01 09:00:00 | earlier |
-| 4 | P2 | 2024-03-01 10:00:00 | earlier |
-| 5 | P2 | 2024-03-01 11:00:00 | later_holdout |
-
-P2's 11:00 reading falls in the holdout, because `<` keeps the cutoff itself out of `earlier`.
 
 A chronological split permits earlier history from the same patient on both sides; it tests later readings, not performance on entirely unseen patients.
 

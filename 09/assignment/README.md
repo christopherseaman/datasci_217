@@ -62,7 +62,7 @@ assignment/
 This step saves nothing. In the Task 1.1 cell, `vitals` starts as a copy of the feed:
 
 1. Overwrite `recorded_at` with aware UTC datetimes: `pd.to_datetime()` with `utc=True`, which reads the trailing `Z` (Lecture 09's "Time Zones" card).
-2. Sort by episode, then time, and reset the index, as Lecture 09's "Grouped Lag" snippet does. Every later shift and rolling window reads the rows in this order.
+2. Sort by episode, then time, and reset the index, as Lecture 09's "Grouped Past-Only Features" snippet does. Every later shift and rolling window reads the rows in this order.
     - Expect: `recorded_at dtype: datetime64[us, UTC]`, the first reading at `2026-01-05 16:11:00+00:00`, and `no heart rate: 5780`.
 
 ### 1.2 Count each day's readings
@@ -146,7 +146,7 @@ The lab system writes New York wall-clock text. On the spring-forward night, Mar
 
 ### 3.2 Build past-only features at the prediction time
 
-Each feature must use only hours that had ended by the prediction time. `hourly`'s row labeled 14:00 holds the readings from 14:00 to 14:59, which a score running at 14:00 has not seen yet, so every feature starts with a grouped `shift(1)`. Lecture 09's "Grouped Past-Only Windows" snippet and Demo 3's steps 3 to 5 build features the same way. In the Task 3.2 cell:
+Each feature must use only hours that had ended by the prediction time. `hourly`'s row labeled 14:00 holds the readings from 14:00 to 14:59, which a score running at 14:00 has not seen yet, so every feature starts with a grouped `shift(1)`. Lecture 09's "Grouped Past-Only Features" snippet and Demo 3's steps 3 to 5 build features the same way. In the Task 3.2 cell:
 
 1. Build `scored` from `episodes`' `episode_id`, `admitted_at`, and `outcome`, and add `prediction_time` as defined above Task 3.1.
 2. `features` starts as `hourly`'s `episode_id`, `recorded_at`, and `heart_rate`. Within each episode, add:
@@ -164,7 +164,7 @@ Each feature must use only hours that had ended by the prediction time. `hourly`
 
 ### 3.3 Summarize a chronological holdout
 
-The team picked the flag `mean_prev_6h >= FLAG_BPM` (100 bpm) while looking at the winter's episodes. A chronological holdout tests it on later ones, the way it would meet next month's patients (Lecture 09's "Chronological Holdout" snippet and Demo 3's step 6). In the Task 3.3 cell, `blocks` starts as a copy of `score_features`:
+The team picked the flag `mean_prev_6h >= FLAG_BPM` (100 bpm) while looking at the winter's episodes. A chronological holdout tests it on later ones, the way it would meet next month's patients (Lecture 09's "Availability and Chronological Blocks" card and Demo 3's step 6). In the Task 3.3 cell, `blocks` starts as a copy of `score_features`:
 
 1. Add `block`: `earlier` where `prediction_time` is before `HOLDOUT_FROM` (`2026-03-01 00:00` UTC, `<`) and `later_holdout` otherwise, with `np.where()`.
 2. Add three Boolean columns: `escalated` (`outcome` is `escalated`), `flagged` (`mean_prev_6h` is at least `FLAG_BPM`), and `flagged_escalation` (both, with `&`).
