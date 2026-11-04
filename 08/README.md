@@ -63,7 +63,7 @@ _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is wha
 | 1. Question and grain | What is the question, and what does one row represent? | `df.head()`; compare `df['id'].nunique()` with `len(df)` |
 | 2. Structure | Which columns, types, counts, and ranges? | `df.info()`, `df.describe()` |
 | 3. Missing values | How much is missing, overall and by group? | `df.isna().mean()`, `df['x'].isna().groupby(df['g']).mean()` |
-| 4. Distributions and outliers | What shape, and which values are extreme? | `sns.histplot(data=df, x='x')`, `sns.boxplot(data=df, x='g', y='x')`; the IQR rule (Lecture 05) flags values above `q3 + 1.5 * (q3 - q1)` or below `q1 - 1.5 * (q3 - q1)` |
+| 4. Distributions and outliers | What shape, and which values are extreme? | Histogram and box plot (`sns.histplot`, `sns.boxplot`, Lecture 07); the IQR fence (Lecture 05) |
 | 5. Relationships | Which columns move together, and how? | `df[cols].corr()`, `sns.pairplot(df[cols].sample(2000), corner=True)` |
 
 `visits` in these snippets is Demo 0's visit log: 1.2 million synthetic visits, one row per visit.
@@ -99,7 +99,7 @@ A **pairplot** draws a scatter plot for every pair of numeric columns, with each
 
 ![Pairplot of 2,000 sampled visits with r on each panel: age has two humps (children and older adults), waits have a long right tail, and satisfaction falls as waits grow (r = -0.48).](media/visits_pairplot.png)
 
-- **Correlation (r)**: how closely two columns follow a straight line, from -1 (one falls as the other rises) through 0 (no straight-line pattern) to 1; `.corr()` computes it for every pair.
+- **r**: Lecture 04's correlation, from -1 through 0 to 1; `.corr()` gives every pair.
 - **r squared**: the share of one column's variation a straight line on the other accounts for; it drops the sign, so wait and satisfaction's r of -0.48 becomes 0.23.
 
 Each r uses only the rows where both columns are recorded: wait and satisfaction, -0.48, from 665 of the 2,000 sampled visits (most visits have no survey); age and wait, 0.20, from 1,936. The cluster of short waits under age 18 hints that department, not age, drives the wait, a question for `groupby`.
@@ -138,8 +138,7 @@ A repeated chart has no per-panel hook like seaborn's `map_lower`, and Altair's 
 - `.repeat(row=cols, column=cols)`: Draw the chart once per pair of columns in `cols`.
 - `brush = alt.selection_interval(resolve='global')`, `.add_params(brush)`, `color=alt.condition(brush, alt.value('steelblue'), alt.value('lightgray'))`: Drag a box in any panel to keep the selected points colored in every panel; double-click clears it.
 - `df.corr().rename_axis(index='row', columns='column').stack().reset_index(name='r')`: The correlation table in long form, one row per pair, ready for `mark_rect()` (colored cells) layered with `mark_text()` (the r labels) using `+`; `chart | heatmap` places two charts side by side.
-- `chart.save('pairplot.html')`: A web page whose script tags load `vega`, `vega-lite`, and `vega-embed` from a CDN and call `vegaEmbed()` to draw the chart; opening it needs internet access.
-- `chart.save('pairplot.json')` / `chart.to_json()`: The Vega-Lite specification with the rows embedded; top-level keys `$schema`, `config`, `datasets`, `repeat`, and `spec`.
+- `chart.save('pairplot.html')` / `chart.save('pairplot.json')` (Lecture 07): A web page that draws the chart in a browser, or the Vega-Lite specification with the rows embedded.
 - **Choosing**: seaborn for a static image in a report, slide, or PDF; Altair for a web page or dashboard where readers hover for tooltips.
 
 ### Code Snippet: Pairplot and Correlation Heatmap in Altair
@@ -276,78 +275,21 @@ Grouped by treatment alone, New loses (0.5 against 0.7); within each severity le
 
 # Pivot Tables and Cross-Tabulations
 
-- **Pivot table**: summarizes one column by two keys at once, one down the rows and one across the columns, such as mean wait by clinic and visit type.
-    - Same call as Lecture 06's `df.pivot_table(...)`, used here to summarize rather than reshape.
-    - Equal to the two-key `groupby(...).mean().unstack()` in a single call.
-    - The shape of most handed-off reports: departments down the side, clinics or months across.
-- **Cross-tabulation** (crosstab): the special case that counts the rows in each combination.
+- **Pivot table** (Lecture 06's `pivot_table`): the two-key `groupby(...).mean().unstack()` in one call, and the shape of most handed-off reports, departments down the side and clinics across. A **crosstab** counts the rows in each combination.
+- **Margins** (`margins=True`) add a `Total` row and column computed from the underlying rows. Use them for totals; never average a row of cell means by hand, because each cell covers a different number of visits.
+- `fill_value=0` belongs only in counts and sums, where an absent cell truly is 0; a mean with no rows stays `NaN`.
 
 ![A pivot table as a heatmap: median wait (minutes) for 1.2 million synthetic 2025 visits, 7 departments by 8 clinics; Orthopedics is slowest at every clinic that runs it, Bayview's Orthopedics cell is darkest at 36, and blank cells are departments a clinic does not run](media/pivot_heatmap.png)
-
-```text
-LONG: one row per visit                    PIVOT TABLE: mean wait_min, one row per clinic
-clinic  visit_type  wait_min               visit_type  Follow-up   New
-North   New         12                     clinic
-North   Follow-up   15  ┐ mean → 10.5      East              9.0   NaN   ← no East new-patient visits
-North   Follow-up    6  ┘                  North            10.5  12.0
-South   New         20  ┐ mean → 25.0      South             NaN  25.0
-South   New         30  ┘
-East    Follow-up    9
-```
-
-![The greatest research skill you can have is being a nosy bitch who wants to find out: a pivot table is how you find out](media/research.png)
 
 ## Pivot Table Review
 
 ### Reference Card: Pivot Tables and Crosstabs
 
-| Call | Purpose and key arguments | Output |
-| :--- | :--- | :--- |
-| `pd.pivot_table(df, values=..., index=..., columns=..., aggfunc='mean')` | Group by the `index` and `columns` keys and summarize `values` in each cell; `aggfunc` picks the summary (`'mean'`, `'sum'`, `'count'`, ...). Unlike `pivot()` (Lecture 06), repeated key pairs are summarized, not an error | Wide table; absent combinations are `NaN` |
-| `pd.pivot_table(..., aggfunc=['sum', 'mean'])` | Several summaries at once; `result['sum']` selects one | Two-level column labels |
-| `pd.pivot_table(..., sort=True)` | Order the rows and columns by key (the default); `sort=False` leaves both in first-appearance order | Predictable row and column order |
-| `pd.crosstab(df['a'], df['b'])` | Count rows for each combination of two columns; pass a list such as `[df['a'], df['c']]` for two-level rows | Counts; absent combinations are 0 |
-| `pd.crosstab(df['a'], df['b'], normalize='index')` | Shares instead of counts: `'index'` makes each row sum to 1, `'columns'` each column, `'all'` the whole table | Proportions from 0 to 1 |
-| `pd.crosstab(df['a'], df['b'], values=df['v'], aggfunc='mean')` | Summarize a third column instead of counting, like `pivot_table` | Summary table; absent combinations are `NaN` |
+- `pd.pivot_table(df, values=..., index=..., columns=..., aggfunc='mean')`: One summary per cell; `aggfunc=['sum', 'mean']` gives several; absent cells are `NaN`.
+- `margins=True, margins_name='Total'`, `fill_value=0`: Totals computed from the rows; zeros for absent count or sum cells. `pd.crosstab()` takes the same options.
+- `pd.crosstab(df['a'], df['b'])`: Counts per combination; `normalize='index'` turns each row into shares that sum to 1, and `values=df['v'], aggfunc='mean'` summarizes a third column.
 
-## Totals and Absent Cells
-
-**Margins** are a total row and column that `pivot_table` computes from the underlying rows. Use them for a report's totals, and never average a row of cell means by hand: each cell mean covers a different number of visits. North's `Total` is 11.0, the mean of its three waits; averaging its two cell means (10.5 and 12.0) gives 11.25, because it weights one new-patient visit as heavily as two follow-ups.
-
-```text
-pivot_table(..., aggfunc='mean', margins=True, margins_name='Total')
-visit_type  Follow-up   New   Total
-North            10.5  12.0    11.0   ← mean of 12, 15, 6; not (10.5 + 12.0) / 2 = 11.25
-Total            10.0  20.7    15.3   ← mean of all six visits (East and South rows not shown)
-```
-
-### Reference Card: Pivot Table Totals and Fills
-
-| Option | Purpose and key arguments | Output effect |
-| :--- | :--- | :--- |
-| `margins=True, margins_name='Total'` | Add margins; `margins_name` labels them (default `All`); `pd.crosstab()` takes the same two options | Extra `Total` row and column |
-| `fill_value=0` | Replace absent cells with 0, only for counts and sums | No-`NaN` cells |
-
-### Code Snippet: Totals Where Zero Is Real
-
-```python
-total_wait = pd.pivot_table(visits, values='wait_min', index='clinic',
-                            columns='visit_type', aggfunc='sum',
-                            fill_value=0, margins=True, margins_name='Total')
-display(total_wait)
-```
-
-| clinic | Follow-up | New | Total |
-| --- | --- | --- | --- |
-| East | 9 | 0 | 9 |
-| North | 21 | 12 | 33 |
-| South | 0 | 50 | 50 |
-| Total | 30 | 62 | 92 |
-
-<callout icon="⚠️" color="yellow_bg">
-	## `fill_value=0` only where zero is real
-	Here, East had no new-patient visits, so its total wait is 0. A mean stays `NaN` when there are no rows or when every measurement is missing; neither means a zero-minute wait. Fill only when zero is the correct answer.
-</callout>
+![The greatest research skill you can have is being a nosy bitch who wants to find out: a pivot table is how you find out](media/research.png)
 
 # LIVE DEMO!
 
@@ -362,16 +304,10 @@ A clinic report should list every clinic, even one with no visits yet, and count
 
 ## Missing Keys and Unused Categories
 
-| What the April visit log held | The default summary | What a handed-off report should show |
-| --- | --- | --- |
-| North 3, South 2, East 1 visits | three rows, alphabetical | three rows, in your reporting order |
-| West opened in March, no visits yet | no West row at all | `West 0` |
-| One visit with no clinic recorded | dropped before the split, uncounted | a `NaN` row you can see and explain |
-
 ### Reference Card: Group Coverage Options
 
 - `df.groupby('key', dropna=False)`: Keep rows with a missing key as a `NaN` group, listed last. The default, `dropna=True`, leaves them out.
-- `pd.Categorical(values, categories=[...], ordered=True)`: Declare the allowed values and their reporting order; with the default `sort=True`, groups follow this order, not alphabetical order. `ordered=True` records that the order is meaningful. Prints `Categories (4, str): ['North' < 'South' < 'East' < 'West']` under the values.
+- `pd.Categorical(values, categories=[...], ordered=True)` (Lecture 05): Sets the allowed clinics and their reporting order; groups follow it, not alphabetical order.
 - `df.groupby('key', observed=False)`: For a categorical key, list every defined category; an unused one shows 0 for counts and sums and `NaN` for means. The pandas 3 default, `observed=True`, lists only categories present.
 - `pd.pivot_table(..., observed=False, dropna=False)`: The same two choices for a pivot table's rows and columns.
 
@@ -409,13 +345,6 @@ Aggregation returns one row per group. Three other methods also run on each grou
 - `transform` returns one value for every original row, so a group statistic can sit beside each visit.
 - `filter` returns the original rows of the groups that pass a test.
 - `apply` returns whatever your function returns for each group, such as each clinic's top two rows.
-
-| Operation | Question it answers (clinic visits) | Rows returned | Grain of the result |
-| --- | --- | --- | --- |
-| `agg` | What is the mean wait at each clinic? | 3 | One row per clinic |
-| `transform` | How does each visit compare with its clinic's mean? | 6, same index as `visits` | One row per visit |
-| `filter` | Which visits belong to clinics with at least two visits? | 5 (East dropped) | One row per visit |
-| `apply` | Which two visits (the whole rows) had the longest waits at each clinic? | Depends on the function (5 here) | Depends on the function (up to two visits per clinic here) |
 
 ![Four result shapes from the six visits grouped by clinic: agg returns 3 rows, transform 6 rows carrying 11, 11, 11, 25, 25, 9, filter 5 rows with East dropped, and apply with nlargest(2) 5 rows indexed by clinic](media/result_shapes.png)
 
@@ -553,38 +482,27 @@ display(top2[['patient_id', 'wait_min']])
 - **Performance optimization**: making an analysis run faster or use less memory, which matters once a summary that takes a second on a class example takes minutes on a year of hospital lab results.
 - One `.agg()` call computing several summaries beats calling `groupby()` again for each summary, because every new `groupby()` call redoes the split.
 - Built-in aggregations named by string (`'mean'`, `'std'`, `transform('mean')`) run as fast compiled code; a Python `lambda` or `apply` runs once per group. On 118,645 A1c results from 90,178 patients, a lambda was about 1,400 times slower for a standard deviation and thousands of times slower for a transform.
-- A repeated text key stored as `category` (Lecture 05) uses far less memory.
+- Measure before optimizing: `%timeit` (Lecture 04) times a line, and `memory_usage(deep=True)` with `astype('category')` (Lecture 05) shrinks a repeated text key.
 
 ![Measured on 118,645 A1c results and the 2,000,000-row lab table: one agg beats four groupby calls 3.4 to 1, the built-in std beats a lambda about 1,400 to 1, and category keys halve the table's memory](media/perf_combined.png)
 
 ## Measuring Speed and Memory
 
-### Reference Card: Measure Before Optimizing
+### Code Snippet: Time One Split Against Four
 
-- `%timeit expression`: Time one line in a notebook by running it many times; output looks like `48 ms ± 581 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)`.
-- `df.memory_usage(deep=True)`: Bytes used by each column, counting the text inside it; shows which column to shrink.
-- `df['key'].astype('category')`: Store a repeated text key as a few labels plus a small code per row; same groups, less memory.
-- `grouped['col'].agg(['mean', 'std', 'count'])`: Several summaries from one split instead of one `groupby()` per summary.
-
-### Code Snippet: Time One Split and Shrink a Text Key
-
-`labs` holds 2,000,000 synthetic lab results (`patient_id`, `clinic`, `test_name`, `result`) from eight clinics, and `a1c` holds its 118,645 A1c results with a value, from 90,178 patients; timings depend on the machine.
+`a1c` holds 118,645 synthetic A1c results from 90,178 patients; timings depend on the machine.
 
 ```python
 %timeit [a1c.groupby('patient_id')['result'].agg(f) for f in ['count', 'mean', 'std', 'max']]
 %timeit a1c.groupby('patient_id')['result'].agg(['count', 'mean', 'std', 'max'])
-print(labs['clinic'].memory_usage(deep=True) / 1e6)
-print(labs['clinic'].astype('category').memory_usage(deep=True) / 1e6)
 ```
 
 ```text
 165 ms ± 580 μs per loop (mean ± std. dev. of 7 runs, 2 loops each)
 48.8 ms ± 760 μs per loop (mean ± std. dev. of 7 runs, 5 loops each)
-30.427492
-2.000258
 ```
 
-One split is about 3.4 times faster than four. The text `clinic` column takes 30.4 MB; as a category, 2.0 MB.
+One split is about 3.4 times faster than four, because each `groupby()` call redoes the split.
 
 ![xkcd 1319: Automation. Making code faster is work too, so measure first and spend the effort only where the time goes](media/xkcd_1319.png)
 

@@ -874,7 +874,7 @@ Sunset           2      13.5          0.00
 
 # Measure, Then Optimize
 
-Measure first, with the tools from the lecture's Measure Before Optimizing card, and change only the step where the time or memory goes.
+Measure first, with the tools from the lecture's Performance Optimization section, and change only the step where the time or memory goes.
 
 ## Timing and Memory Tools
 
