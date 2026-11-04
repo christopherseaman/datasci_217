@@ -63,14 +63,14 @@ _"Aggregation" comes from the Latin "aggregare," to add to a flock, which is wha
 | 1. Question and grain | What is the question, and what does one row represent? | `df.head()`; compare `df['id'].nunique()` with `len(df)` |
 | 2. Structure | Which columns, types, counts, and ranges? | `df.info()`, `df.describe()` |
 | 3. Missing values | How much is missing, overall and by group? | `df.isna().mean()`, `df['x'].isna().groupby(df['g']).mean()` |
-| 4. Distributions and outliers | What shape, and which values are extreme? | Histogram and box plot (`sns.histplot`, `sns.boxplot`, Lecture 07); the IQR fence (Lecture 05) |
+| 4. Distributions and outliers | What shape, and which values are extreme? | Histogram and box plot (`sns.histplot`, `sns.boxplot`); the IQR fence |
 | 5. Relationships | Which columns move together, and how? | `df[cols].corr()`, `sns.pairplot(df[cols].sample(2000), corner=True)` |
 
 `visits` in these snippets is Demo 0's visit log: 1.2 million synthetic visits, one row per visit.
 
 ![Waits per visit: a peak near 10 to 15 minutes, a long right tail past the 48.5-minute IQR fence, and Orthopedics slowest by department.](media/wait_distribution.png)
 
-The IQR fence (Lecture 05) sits at 48.5 minutes; 47,266 visits (3.9%) wait longer. The longest wait is 240 minutes, plausible for a clinic, so these stay in the data and pull each mean above its median.
+The IQR fence sits at 48.5 minutes; 47,266 visits (3.9%) wait longer. The longest wait is 240 minutes, plausible for a clinic, so these stay in the data and pull each mean above its median.
 
 ### Code Snippet: Missing Waits by Clinic
 
@@ -99,7 +99,7 @@ A **pairplot** draws a scatter plot for every pair of numeric columns, with each
 
 ![Pairplot of 2,000 sampled visits with r on each panel: age has two humps (children and older adults), waits have a long right tail, and satisfaction falls as waits grow (r = -0.48).](media/visits_pairplot.png)
 
-- **r**: Lecture 04's correlation, from -1 through 0 to 1; `.corr()` gives every pair.
+- **r**: correlation, from -1 through 0 to 1; `.corr()` gives every pair.
 - **r squared**: the share of one column's variation a straight line on the other accounts for; it drops the sign, so wait and satisfaction's r of -0.48 becomes 0.23.
 
 Each r uses only the rows where both columns are recorded: wait and satisfaction, -0.48, from 665 of the 2,000 sampled visits (most visits have no survey); age and wait, 0.20, from 1,936. The cluster of short waits under age 18 hints that department, not age, drives the wait, a question for `groupby`.
@@ -126,7 +126,7 @@ grid.map_lower(show_r)
 
 ## Pairwise Plots in Altair
 
-Altair (Lecture 07) builds a pairplot as a **repeated chart**: one scatter specification that Vega-Lite draws once for every row and column pair. Altair refuses data over 5,000 rows by default (`MaxRowsError`), one more reason to sample first.
+Altair builds a pairplot as a **repeated chart**: one scatter specification that Vega-Lite draws once for every row and column pair. Altair refuses data over 5,000 rows by default (`MaxRowsError`), one more reason to sample first.
 
 A repeated chart has no per-panel hook like seaborn's `map_lower`, and Altair's `transform_regression(..., params=True)`, which reports `rSquared`, rejects `alt.repeat()` fields. Show r instead as a **correlation heatmap** beside the scatter: one colored, labeled cell per pair of columns.
 
@@ -138,7 +138,7 @@ A repeated chart has no per-panel hook like seaborn's `map_lower`, and Altair's 
 - `.repeat(row=cols, column=cols)`: Draw the chart once per pair of columns in `cols`.
 - `brush = alt.selection_interval(resolve='global')`, `.add_params(brush)`, `color=alt.condition(brush, alt.value('steelblue'), alt.value('lightgray'))`: Drag a box in any panel to keep the selected points colored in every panel; double-click clears it.
 - `df.corr().rename_axis(index='row', columns='column').stack().reset_index(name='r')`: The correlation table in long form, one row per pair, ready for `mark_rect()` (colored cells) layered with `mark_text()` (the r labels) using `+`; `chart | heatmap` places two charts side by side.
-- `chart.save('pairplot.html')` / `chart.save('pairplot.json')` (Lecture 07): A web page that draws the chart in a browser, or the Vega-Lite specification with the rows embedded.
+- `chart.save('pairplot.html')` / `chart.save('pairplot.json')`: A web page that draws the chart in a browser, or the Vega-Lite specification with the rows embedded.
 - **Choosing**: seaborn for a static image in a report, slide, or PDF; Altair for a web page or dashboard where readers hover for tooltips.
 
 ### Code Snippet: Pairplot and Correlation Heatmap in Altair
@@ -169,7 +169,7 @@ labels = base.mark_text(fontSize=14).encode(alt.Text('r:Q', format='.2f'))
 - **Split**: sort rows into **groups** by a **grouping key**, a column whose values decide which group each row joins (here, `clinic`).
 - **Apply**: run a calculation on each group separately (here, the mean of `wait_min`).
 - **Combine**: collect the per-group results into a new table.
-- Grouping usually changes the **grain**, what one row represents (Lectures 06 and 07), so name it before and after.
+- Grouping usually changes the **grain**, what one row represents, so name it before and after.
 - **Where it comes up**: a monthly clinic report (visits and mean wait per clinic), a lab audit (tests per patient), and model features such as each patient's visit count from an encounter log.
 
 ![Split-apply-combine on the six visits: split by clinic into North (12, 15, 6), South (20, 30), and East (9), apply the mean, and combine into East 9.0, North 11.0, South 25.0](media/split_apply_combine.png)
@@ -225,7 +225,7 @@ display(summary)
 
 North had three visits (`size`) from two patients (`nunique`: P01 came twice), and only two of those visits have a satisfaction score (`count` skips `NaN`).
 
-A list of keys, `visits.groupby(['clinic', 'visit_type'])`, gives one group per observed pair, with one index level per key (Lecture 06's MultiIndex); `.unstack()` turns the inner key into columns, and a pair with no rows becomes `NaN`, not 0.
+A list of keys, `visits.groupby(['clinic', 'visit_type'])`, gives one group per observed pair, with one index level per key (a MultiIndex); `.unstack()` turns the inner key into columns, and a pair with no rows becomes `NaN`, not 0.
 
 ![xkcd 2533: Slope Hypothesis Testing. Measuring the same people again adds rows, not people, which is why size and nunique answer different questions](media/xkcd_2533.png)
 
@@ -275,7 +275,7 @@ Grouped by treatment alone, New loses (0.5 against 0.7); within each severity le
 
 # Pivot Tables and Cross-Tabulations
 
-- **Pivot table** (Lecture 06's `pivot_table`): the two-key `groupby(...).mean().unstack()` in one call, and the shape of most handed-off reports, departments down the side and clinics across. A **crosstab** counts the rows in each combination.
+- **Pivot table** (`pivot_table`): the two-key `groupby(...).mean().unstack()` in one call, and the shape of most handed-off reports, departments down the side and clinics across. A **crosstab** counts the rows in each combination.
 - **Margins** (`margins=True`) add a `Total` row and column computed from the underlying rows. Use them for totals; never average a row of cell means by hand, because each cell covers a different number of visits.
 - `fill_value=0` belongs only in counts and sums, where an absent cell truly is 0; a mean with no rows stays `NaN`.
 
@@ -300,14 +300,14 @@ Grouped by treatment alone, New loses (0.5 against 0.7); within each severity le
 A clinic report should list every clinic, even one with no visits yet, and count every visit, even one with no clinic recorded. Two `groupby` defaults break both rules without a warning:
 
 - Rows with a missing key are dropped before the split, so a visit with no clinic recorded goes uncounted.
-- A categorical key (Lecture 05) lists only the categories that occur, so a new clinic with no visits has no row.
+- A categorical key lists only the categories that occur, so a new clinic with no visits has no row.
 
 ## Missing Keys and Unused Categories
 
 ### Reference Card: Group Coverage Options
 
 - `df.groupby('key', dropna=False)`: Keep rows with a missing key as a `NaN` group, listed last. The default, `dropna=True`, leaves them out.
-- `pd.Categorical(values, categories=[...], ordered=True)` (Lecture 05): Sets the allowed clinics and their reporting order; groups follow it, not alphabetical order.
+- `pd.Categorical(values, categories=[...], ordered=True)`: Sets the allowed clinics and their reporting order; groups follow it, not alphabetical order.
 - `df.groupby('key', observed=False)`: For a categorical key, list every defined category; an unused one shows 0 for counts and sums and `NaN` for means. The pandas 3 default, `observed=True`, lists only categories present.
 - `pd.pivot_table(..., observed=False, dropna=False)`: The same two choices for a pivot table's rows and columns.
 
@@ -398,7 +398,7 @@ East's one visit sits exactly at its clinic's mean: it is easy to be average whe
 ## Filter Operations
 
 - **filter**: runs a test on each whole group and keeps every original row of the groups that pass. Rows are kept or dropped, never changed.
-- A boolean mask such as `visits[visits['wait_min'] > 10]` (Lecture 04) tests each row; `filter` tests each group.
+- A boolean mask such as `visits[visits['wait_min'] > 10]` tests each row; `filter` tests each group.
 - **Where it comes up**: public reports of patient data often hide any group with 10 or fewer patients (the CMS cell-size rule), and `filter(lambda g: g['patient_id'].nunique() >= 11)` drops those groups before the report is built.
 
 ![A row mask with wait_min > 10 keeps 4 visits, dropping North's 6-minute and East's 9-minute visits; filter with a clinic mean above 10 keeps all 5 North and South visits and drops East, whose mean is 9](media/filter_vs_mask.png)
@@ -482,27 +482,38 @@ display(top2[['patient_id', 'wait_min']])
 - **Performance optimization**: making an analysis run faster or use less memory, which matters once a summary that takes a second on a class example takes minutes on a year of hospital lab results.
 - One `.agg()` call computing several summaries beats calling `groupby()` again for each summary, because every new `groupby()` call redoes the split.
 - Built-in aggregations named by string (`'mean'`, `'std'`, `transform('mean')`) run as fast compiled code; a Python `lambda` or `apply` runs once per group. On 118,645 A1c results from 90,178 patients, a lambda was about 1,400 times slower for a standard deviation and thousands of times slower for a transform.
-- Measure before optimizing: `%timeit` (Lecture 04) times a line, and `memory_usage(deep=True)` with `astype('category')` (Lecture 05) shrinks a repeated text key.
+- A repeated text key stored as `category` uses far less memory.
 
 ![Measured on 118,645 A1c results and the 2,000,000-row lab table: one agg beats four groupby calls 3.4 to 1, the built-in std beats a lambda about 1,400 to 1, and category keys halve the table's memory](media/perf_combined.png)
 
 ## Measuring Speed and Memory
 
-### Code Snippet: Time One Split Against Four
+### Reference Card: Measure Before Optimizing
 
-`a1c` holds 118,645 synthetic A1c results from 90,178 patients; timings depend on the machine.
+- `%timeit expression`: Time one line in a notebook by running it many times; output looks like `48 ms ± 581 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)`.
+- `df.memory_usage(deep=True)`: Bytes used by each column, counting the text inside it; shows which column to shrink.
+- `df['key'].astype('category')`: Store a repeated text key as a few labels plus a small code per row; same groups, less memory.
+- `grouped['col'].agg(['mean', 'std', 'count'])`: Several summaries from one split instead of one `groupby()` per summary.
+
+### Code Snippet: Time One Split and Shrink a Text Key
+
+`labs` holds 2,000,000 synthetic lab results (`patient_id`, `clinic`, `test_name`, `result`) from eight clinics, and `a1c` holds its 118,645 A1c results with a value, from 90,178 patients; timings depend on the machine.
 
 ```python
 %timeit [a1c.groupby('patient_id')['result'].agg(f) for f in ['count', 'mean', 'std', 'max']]
 %timeit a1c.groupby('patient_id')['result'].agg(['count', 'mean', 'std', 'max'])
+print(labs['clinic'].memory_usage(deep=True) / 1e6)
+print(labs['clinic'].astype('category').memory_usage(deep=True) / 1e6)
 ```
 
 ```text
 165 ms ± 580 μs per loop (mean ± std. dev. of 7 runs, 2 loops each)
 48.8 ms ± 760 μs per loop (mean ± std. dev. of 7 runs, 5 loops each)
+30.427492
+2.000258
 ```
 
-One split is about 3.4 times faster than four, because each `groupby()` call redoes the split.
+One split is about 3.4 times faster than four. The text `clinic` column takes 30.4 MB; as a category, 2.0 MB.
 
 ![xkcd 1319: Automation. Making code faster is work too, so measure first and spend the effort only where the time goes](media/xkcd_1319.png)
 
@@ -540,7 +551,7 @@ Every shortcut starts with the **prefix**, `Ctrl+b`: press it, release, then pre
 
 ### Code Snippet: Keep an Analysis Running
 
-In a project folder whose environment you built with `uv venv --seed` and `uv sync` (Lecture 03), on your laptop or after `ssh`:
+In a project folder whose environment you built with `uv venv --seed` and `uv sync`, on your laptop or after `ssh`:
 
 ```bash
 tmux new -s analysis
