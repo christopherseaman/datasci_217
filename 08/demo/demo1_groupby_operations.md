@@ -74,7 +74,7 @@ visits.info()
 display(visits.describe().round(1))
 ```
 
-Expect three visits, one row each, then 1,200,000 rows and as many visit IDs, so the grain is one row per visit; a patient seen ten times has ten rows. Then 193,034 distinct patients and months `2025-01` to `2025-12`. `info()` lists ten columns: `clinic` has 1,197,017 non-null values, `wait_min` 1,171,036, and `satisfaction` 432,710 (surveys returned, 1 to 5). `describe()` shows ages from 0 to 94 and waits from 1 to 240 minutes, with a median wait of 17.0 and a mean of 20.5.
+Expect three visits, one row each, then 1,200,000 rows and as many visit IDs, so the grain is one row per visit; a patient seen ten times has ten rows. Then 193,034 distinct patients and months `2025-01` to `2025-12`. `info()` lists ten columns: `clinic` has 1,197,017 non-null values, `wait_min` 1,171,036, and `satisfaction` 420,456 (surveys returned, 1 to 5). `describe()` shows ages from 0 to 94 and waits from 1 to 240 minutes, with a median wait of 17.0 and a mean of 20.5.
 
 #### Missing values, overall and by clinic
 
@@ -123,7 +123,7 @@ sns.pairplot(sample, corner=True, plot_kws={"s": 8, "alpha": 0.4})
 plt.show()
 ```
 
-Expect correlations of -0.46 between wait and satisfaction, 0.20 between age and wait, and -0.06 between age and satisfaction. The age histogram has two humps, children and adults over 50. Children cluster at short waits, which points to departments (Pediatrics) rather than age. Ratings fall as waits grow, the question the board asks in step 12.
+Expect correlations of -0.50 between wait and satisfaction, 0.20 between age and wait, and -0.10 between age and satisfaction. The age histogram has two humps, children and adults over 50. Children cluster at short waits, which points to departments (Pediatrics) rather than age. Ratings fall as waits grow, the question the board asks in step 12.
 
 **What the pass decides:** score clinics on the share of waits over 30 minutes rather than the mean, which the tail inflates; keep the missing waits out of that share; and break clinics down by department.
 
@@ -402,4 +402,4 @@ display(wait_and_rating.round(2))
 print(wait_and_rating.columns.tolist())
 ```
 
-Expect Mission with the longest mean wait (23.42 minutes) and the lowest satisfaction (3.82), and Ridgecrest with the shortest wait (13.29) and the highest satisfaction (4.19). The dictionary result has two-level column labels, such as `('wait_min', 'median')`; `wait_and_rating["satisfaction"]` selects one column's pair. The `count` column shows how many surveys stand behind each mean, from 12,609 at Ridgecrest to 92,504 at Mission.
+Expect Mission with the longest mean wait (23.42 minutes) and the lowest satisfaction (3.81), and Ridgecrest with the shortest wait (13.29) and the highest satisfaction (4.19). The dictionary result has two-level column labels, such as `('wait_min', 'median')`; `wait_and_rating["satisfaction"]` selects one column's pair. The `count` column shows how many surveys stand behind each mean, from 12,280 at Ridgecrest to 89,951 at Mission.

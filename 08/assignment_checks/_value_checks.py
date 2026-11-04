@@ -2,7 +2,7 @@
 
 The course keeps these checks in 08/assignment_checks/, which the assignment
 workflow downloads on every push, and the handout ships a byte-identical copy
-so a local run reports exactly what GitHub will. They read the six CSV files a
+so a local run reports exactly what GitHub will. They read the seven CSV files a
 submission saves in output/ and compare them with values frozen below from the
 supplied data/imaging_exams.parquet. scripts/build_assignment08_data.py writes
 the data and that block together, so the two always agree.
@@ -19,7 +19,9 @@ its columns check. So is a pivot saved with the extra header line a list for
 values= or aggfunc= adds. A mistake is charged once: a value column the file
 does not hold costs only its columns check, and so does one saved under
 another name with the right values. One renamed with wrong values also costs
-its values check.
+its values check. A selection of exams that holds none of the expected exams
+costs only its rows check: its other values checks have nothing to compare.
+A share column is read in one unit, all shares or all percents.
 
 Nothing here imports, runs, or inspects student code.
 """
@@ -1558,6 +1560,15 @@ SLOWEST_STAT_REPORTS = {
 }
 # END GENERATED
 
+# Task 1.1: the share of each modality's exams with no report_hr and no dose_msv. Frozen by hand from
+# data/imaging_exams.parquet; the self-test recomputes it from the data.
+MISSING_BY_MODALITY = {
+    'CT': (0.003867610519900614, 0.0),
+    'MRI': (0.00535453943008615, 1.0),
+    'Ultrasound': (0.004148208844390956, 1.0),
+    'X-ray': (0.003993024727613792, 0.0),
+}
+
 # Task 2.2 lists STAT exams that waited more than this many hours from order to scan.
 DELAYED_STAT_HOURS = 8
 # Task 2.3 keeps every CT of a patient whose CT doses in 2025 add up to at least this many mSv.
@@ -1568,6 +1579,8 @@ SLOWEST_PER_SITE = 3
 
 # Means may be saved with every digit or rounded to one or two decimals.
 TOLERANCE = 0.06
+# Shares may be saved with every digit or rounded to three decimals, or as percents (0.39 for 0.0039).
+SHARE_TOLERANCE = 0.0006
 # Ways pandas and people write an empty cell.
 MISSING_SPELLINGS = frozenset({"", "nan", "na", "n/a", "none", "null", "<na>", "nat"})
 
@@ -1580,7 +1593,8 @@ class Artifact:
     expected value of every other column; None means an empty cell. `optional`
     holds rows that may appear but need not, checked like the others when they do.
     `across` names the pivot's columns= key for a pivot table, whose value
-    columns are that key's labels.
+    columns are that key's labels. `shares` marks values that are shares of
+    exams, read as a share or as a percent.
     """
 
     path: str
@@ -1590,6 +1604,7 @@ class Artifact:
     rows: dict[tuple[str, ...], dict[str, object]]
     optional: dict[tuple[str, ...], dict[str, object]] = field(default_factory=dict)
     across: str = ""
+    shares: bool = False
 
     def expected(self, key: tuple[str, ...]) -> dict[str, object]:
         return self.rows[key] if key in self.rows else self.optional[key]
@@ -1643,9 +1658,19 @@ def _pair(key: tuple[str, str]) -> dict[str, object]:
     return dict(zip(PAIR_COLUMNS, SITE_MODALITY.get(key, (0, None, None))))
 
 
+MISSING_COLUMNS = ("report_hr", "dose_msv")
+MISSING_TABLE = Artifact(
+    path="output/missing_by_modality.csv",
+    task="Task 1.1",
+    columns=("modality", *MISSING_COLUMNS),
+    key=("modality",),
+    rows={(modality,): dict(zip(MISSING_COLUMNS, shares)) for modality, shares in MISSING_BY_MODALITY.items()},
+    shares=True,
+)
+
 SITE_SUMMARY_TABLE = Artifact(
     path="output/site_summary.csv",
-    task="Task 1.2",
+    task="Task 1.3",
     columns=("site", *SUMMARY_COLUMNS),
     key=("site",),
     rows={(site,): dict(zip(SUMMARY_COLUMNS, SITE_SUMMARY[site])) for site in OBSERVED},
@@ -1698,7 +1723,7 @@ REPORT_PIVOT = Artifact(
     across="modality",
 )
 
-ARTIFACTS = (SITE_SUMMARY_TABLE, SITE_MODALITY_TABLE, DELAYED_STAT_TABLE, CT_DOSE_TABLE, SLOWEST_TABLE, REPORT_PIVOT)
+ARTIFACTS = (MISSING_TABLE, SITE_SUMMARY_TABLE, SITE_MODALITY_TABLE, DELAYED_STAT_TABLE, CT_DOSE_TABLE, SLOWEST_TABLE, REPORT_PIVOT)
 
 # The student's own earlier artifact a later one copies values from, and for each copied column its column there.
 # A values check with earlier=True accepts the copied value, and a misnamed column is placed by it, so an earlier
@@ -1754,6 +1779,42 @@ def _matches(cell: str, expected: object) -> bool:
         number = _number(text)
         return number is not None and abs(number - expected) <= TOLERANCE
     return text.casefold() == str(expected).casefold()
+
+
+def _value_matches(artifact: Artifact, cell: str, expected: object, percent: bool | None = None) -> bool:
+    """`_matches`, except that a share is compared closely, read as a percent when `percent` is True.
+
+    `percent` None accepts either unit, for matching a single row to its key.
+    """
+    if artifact.shares and isinstance(expected, (int, float)):
+        number = _number(cell)
+        if number is None:
+            return False
+        readings = (number, number / 100) if percent is None else (number / 100 if percent else number,)
+        return min(abs(reading - expected) for reading in readings) <= SHARE_TOLERANCE
+    return _matches(cell, expected)
+
+
+def _percent_column(artifact: Artifact, grouped, column: str, saved: str) -> bool:
+    """True when a share column matches more cells read as percents, so one column cannot mix the two units."""
+    if not artifact.shares:
+        return False
+    misses = {False: 0, True: 0}
+    for key, rows in grouped.items():
+        expected = artifact.expected(key)[column]
+        if not isinstance(expected, (int, float)):
+            continue
+        for row in rows:
+            for percent in misses:
+                misses[percent] += not _value_matches(artifact, row[saved], expected, percent)
+    return misses[True] < misses[False]
+
+
+def _show_value(artifact: Artifact, value: object) -> str:
+    """`_show`, with four decimals for a share so 0.0039 does not read as 0."""
+    if artifact.shares and isinstance(value, float):
+        return f"{value:.4f}"
+    return _show(value)
 
 
 def _show(value: object) -> str:
@@ -2031,7 +2092,7 @@ def _holds(grouped, artifact: Artifact, saved: str, column: str, earlier, found)
         expected = artifact.expected(key)[column]
         for row in rows:
             cell = row[saved]
-            if not (_matches(cell, expected) or _copies_earlier(cell, earlier, artifact, key, column, row, found)):
+            if not (_value_matches(artifact, cell, expected) or _copies_earlier(cell, earlier, artifact, key, column, row, found)):
                 return False
             filled = filled or expected is not None
     return filled
@@ -2153,8 +2214,16 @@ def _group(table: Table, artifact: Artifact, found: dict[str, str]):
                 for position, column in enumerate(artifact.key)
                 if column in found
             )
-            and all(_matches(row[found[column]], expected[column]) for column in values)
+            and all(_value_matches(artifact, row[found[column]], expected[column]) for column in values)
         ]
+        if len(candidates) > 1:
+            # Values within tolerance of two keys, such as two close shares: keep the one key they match most closely.
+            def distance(key):
+                return sum(abs(_number(row[found[column]]) - everyone[key][column]) for column in values
+                           if isinstance(everyone[key][column], (int, float)) and _number(row[found[column]]) is not None)
+            closest = min(distance(key) for key in candidates)
+            nearest = [key for key in candidates if distance(key) == closest]
+            candidates = nearest if len(nearest) == 1 else candidates
         if len(candidates) == 1:
             grouped.setdefault(candidates[0], []).append(row)
         elif not candidates or any(key in artifact.rows for key in candidates):
@@ -2251,11 +2320,6 @@ def rows_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
     def check(root: Path) -> None:
         table = read_table(root, artifact)
         found = _resolve(table, artifact, root)
-        _assert(
-            not any(found.get(column) in table.conflicting_columns for column in artifact.key),
-            f"{artifact.path} has repeated key headers with conflicting labels; expected one key value per "
-            f"row. Remove the extra key column and save {artifact.task}'s table again.",
-        )
         first_key = found.get(artifact.key[0])
         notes = _margins_note(artifact, [row[first_key] for row in table.rows] if first_key else [])
         if notes and any(column in MARGIN_NAMES for column in table.columns):
@@ -2264,6 +2328,14 @@ def rows_check(artifact: Artifact, hint: str) -> Callable[[Path], None]:
         grouped, unknown = _group(table, artifact, found)
         missing = [key for key in artifact.rows if key not in grouped]
         repeated = [key for key, rows in grouped.items() if len(rows) > 1]
+        # A repeated key header costs points only when the first one's labels do not give one row per key. A second
+        # copy that holds other cells, such as isna() run over the key column too (all 0), is set aside.
+        _assert(
+            not (any(found.get(column) in table.conflicting_columns for column in artifact.key)
+                 and (missing or repeated or unknown)),
+            f"{artifact.path} has repeated key headers with conflicting labels; expected one key value per "
+            f"row. Remove the extra key column and save {artifact.task}'s table again.",
+        )
         problems = []
         if missing:
             problems.append(f"is missing {_some([_key_name(key) for key in missing])}")
@@ -2289,6 +2361,7 @@ def values_check(
     also: Callable[[dict[str, str], dict[str, str]], tuple[float, str] | None] | None = None,
     cause: Callable[[Table, dict[str, str]], str] | None = None,
     earlier: bool = False,
+    selection: bool = False,
 ) -> Callable[[Path], None]:
     """Every saved row for an expected key holds the expected values in `columns`.
 
@@ -2305,7 +2378,11 @@ def values_check(
     matches it passes too, so a mistake in the other column costs only that
     column's check. `earlier` accepts values copied from the student's own
     earlier artifact (EARLIER), so that an earlier mistake costs points only
-    once. `cause(table, found)` names a likely cause, or returns "".
+    once. `selection` marks a values check on a list of selected exams: a file
+    that holds none of the expected exams passes it, since the rows check
+    already charges that selection. A share column is compared in one unit,
+    shares or percents, whichever matches more of its cells.
+    `cause(table, found)` names a likely cause, or returns "".
     """
 
     def compared(expected: object) -> bool:
@@ -2327,6 +2404,9 @@ def values_check(
             holds = ", ".join(held[:3]) + f" and {len(held) - 3} more"
         else:
             holds = _join(held) or "no data rows"
+        if selection and not any(key in artifact.rows for key in grouped):
+            # Charged once: the rows check already charges a selection that holds none of the expected exams.
+            return
         _assert(
             any(key in artifact.rows for key in grouped),
             f"{artifact.path} has no row for any of {_expected_keys([_key_name(key) for key in artifact.rows])} (it holds "
@@ -2334,6 +2414,7 @@ def values_check(
             f"{artifact.task}.",
         )
         saved_earlier = _earlier(root, artifact) if earlier else None
+        units = {column: _percent_column(artifact, grouped, column, found[column]) for column in present}
         wrong = []
         for key, rows in grouped.items():
             expected_row = artifact.expected(key)
@@ -2349,14 +2430,14 @@ def values_check(
                         continue
                     if also and derived is None and "peer_median_wait_hr" in found and _number(row[found["peer_median_wait_hr"]]) is None and _matches(cell, None):
                         continue
-                    if _matches(cell, expected) or (derived is not None and _matches(cell, derived[0])):
+                    if _value_matches(artifact, cell, expected, units[column]) or (derived is not None and _matches(cell, derived[0])):
                         continue
                     given.add(_given(cell))
                     if derived is not None and not _matches(_show(derived[0]), expected):
                         implied.add(f"{_show(derived[0])}, {derived[1]}")
                 if given:
                     wrong.append(
-                        f"{_key_name(key)} has {column} {_join(sorted(given))}, expected {_show(expected)}"
+                        f"{_key_name(key)} has {column} {_join(sorted(given))}, expected {_show_value(artifact, expected)}"
                         + (f" (or {_join(sorted(implied))})" if implied else "")
                     )
         # A column left out is charged once, by the columns check. One renamed with values that match nothing stays
@@ -2368,7 +2449,7 @@ def values_check(
             if column not in found and first is not None:
                 wrong.append(
                     f"no saved column holds {column}: {table.header(spare)} does not match it (expected {column} "
-                    f"{_show(artifact.rows[first][column])} for {_key_name(first)}, for example)"
+                    f"{_show_value(artifact, artifact.rows[first][column])} for {_key_name(first)}, for example)"
                 )
         note = cause(table, found) if cause else ""
         message = f"{artifact.path}: " + _listed(wrong) + "."
@@ -2411,7 +2492,30 @@ def _when_peer_medians_blank(note: str) -> Callable[[Table, dict[str, str]], str
 ORIGINAL = "Each row keeps the exam's own values from data/imaging_exams.parquet unchanged."
 
 CHECKS = (
-    # Task 1.2: output/site_summary.csv
+    # Task 1.1: output/missing_by_modality.csv
+    Check(
+        "missing by modality: columns",
+        columns_check(
+            MISSING_TABLE,
+            "Select report_hr and dose_msv, mark the blanks with isna(), and save with the index so modality is "
+            "the first column.",
+        ),
+    ),
+    Check(
+        "missing by modality: one row per modality",
+        rows_check(MISSING_TABLE, "Group the blank marks by modality: one row per modality."),
+    ),
+    Check(
+        "missing by modality: shares",
+        values_check(
+            MISSING_TABLE,
+            MISSING_COLUMNS,
+            "Each value is the share of that modality's exams with the cell blank: the mean of isna(), unrounded "
+            "or to at least three decimals. dose_msv is 1 for MRI and Ultrasound, which use no radiation, and 0 "
+            "for CT and X-ray.",
+        ),
+    ),
+    # Task 1.3: output/site_summary.csv
     Check(
         "site summary: columns",
         columns_check(
@@ -2511,7 +2615,7 @@ CHECKS = (
     ),
     Check(
         "delayed STAT exams: original exam values",
-        values_check(DELAYED_STAT_TABLE, ("site", "modality", "wait_hr"), ORIGINAL),
+        values_check(DELAYED_STAT_TABLE, ("site", "modality", "wait_hr"), ORIGINAL, selection=True),
     ),
     Check(
         "delayed STAT exams: peer_median_wait_hr values",
@@ -2520,6 +2624,7 @@ CHECKS = (
             ("peer_median_wait_hr",),
             'peer_median_wait_hr is the transform("median") of wait_hr within each site and modality, over all the '
             f"STAT exams, computed before keeping the ones over {DELAYED_STAT_HOURS} hours.",
+            selection=True,
             cause=_when_peer_medians_blank(
                 "Every peer_median_wait_hr is blank, as happens when the column is assigned from .median(): that "
                 "summary is labeled by site and modality, not by row, so it lines up with no row (Lecture 08's "
@@ -2534,6 +2639,7 @@ CHECKS = (
             ("wait_vs_peer_hr",),
             "wait_vs_peer_hr is wait_hr minus peer_median_wait_hr, so every delayed exam is positive.",
             also=_saved_wait_vs_peer,
+            selection=True,
             cause=_when_peer_medians_blank(
                 "Every peer_median_wait_hr is blank, so wait_hr minus peer_median_wait_hr is blank too; fix "
                 "peer_median_wait_hr first."
@@ -2556,7 +2662,7 @@ CHECKS = (
     ),
     Check(
         "CT dose review: original exam values",
-        values_check(CT_DOSE_TABLE, ("patient_id", "dose_msv"), ORIGINAL),
+        values_check(CT_DOSE_TABLE, ("patient_id", "dose_msv"), ORIGINAL, selection=True),
     ),
     # Task 2.4: output/slowest_stat_reports.csv
     Check(
@@ -2576,7 +2682,7 @@ CHECKS = (
     ),
     Check(
         "slowest STAT reports: original exam values",
-        values_check(SLOWEST_TABLE, SLOWEST_COLUMNS, ORIGINAL),
+        values_check(SLOWEST_TABLE, SLOWEST_COLUMNS, ORIGINAL, selection=True),
     ),
     # Task 3.1: output/median_report_pivot.csv
     Check(

@@ -21,7 +21,7 @@ formula's argument names. An arrow means "is an input to":
     first visit of the year, first visit at a clinic opened in 2025 -> visit type
     department, clinic, provider, visit type, weekday, season -> wait
     visit type, kiosk outage -> wait not recorded
-    age, deprivation, wait -> survey returned; wait, provider -> satisfaction score
+    clinic -> survey returned; wait, provider -> satisfaction score
 
 Confounding comes from these edges, not from patches. Parkside opened in July, so most of its
 visits are first visits there and new-patient visits, and it runs Orthopedics, which Marina does
@@ -78,6 +78,8 @@ CLINIC_DEPRIVATION = np.array([5.5, 4.0, 4.0, 7.5, 7.0, 2.5, 4.5, 6.5])
 # Log-scale wait shift per clinic: Mission is short-staffed, Ridgecrest is small and quiet,
 # and Parkside is new and fully staffed, about 10% faster than Marina.
 CLINIC_WAIT_LOG = np.array([0.20, 0.04, 0.00, 0.06, 0.08, -0.05, -0.15, -0.30])
+# Share of post-visit surveys returned at each clinic.
+SURVEY_RETURN = np.array([0.34, 0.36, 0.37, 0.33, 0.33, 0.38, 0.36, 0.35])
 PARKSIDE_OPENS = pd.Timestamp('2025-07-07')
 BAYVIEW_LOSS = pd.Timestamp('2025-09-01')
 
@@ -288,9 +290,9 @@ MODEL = {
                       + WAIT_LOG_SD[department.astype(int)] * wait_luck, 0.02),
     # Check-in kiosks miss some waits, more often for new patients filling in paper forms.
     'wait_lost': chance(lambda new_patient, kiosk_down: np.where(kiosk_down == 1, 0.6, 0.015 + 0.015 * new_patient)),
-    # About one survey in three comes back: older patients return more, deprived areas and long waits fewer.
-    'returned': chance(lambda age, deprivation, wait:
-                       logistic(-0.75 + 0.018 * (age - 45) - 0.08 * (deprivation - 5) - 0.01 * (wait - 20))),
+    # About one survey in three comes back, 33% to 38% by clinic. The return does not depend on the wait,
+    # the provider, or the patient, so respondents' mean ratings within a clinic match all visits'.
+    'returned': chance(lambda clinic: SURVEY_RETURN[clinic.astype(int)]),
     'satisfaction': chance(lambda wait, provider_manner: binned_normal(4.55 - 0.03 * wait + provider_manner, 0.7,
                                                                        np.arange(1, 6)), classes=np.arange(1, 6)),
 }
@@ -541,6 +543,8 @@ def check(clinics, visits, labs):
     assert visits.loc[visits['clinic'] == 'Parkside', 'visit_month'].min() == '2025-07'
     assert visits['wait_min'].dropna().between(0, 240).all()
     assert 0.2 <= visits['satisfaction'].notna().mean() <= 0.4
+    returned = visits['satisfaction'].notna()
+    assert abs(returned[visits['wait_min'] < 15].mean() - returned[visits['wait_min'] > 60].mean()) < 0.02
     per_patient = visits['patient_id'].value_counts()
     assert per_patient.max() >= 40 and (per_patient == 1).mean() >= 0.2
     combo = visits.groupby(['clinic', 'department']).size()

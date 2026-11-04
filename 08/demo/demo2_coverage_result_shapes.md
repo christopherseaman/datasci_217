@@ -203,7 +203,7 @@ cells = respondents.groupby(["clinic", "department"], observed=True).agg(
 display(cells[cells["patients"] < 11])
 ```
 
-Expect one cell, Ridgecrest Cardiology: 27 surveys from only 10 patients, because its outreach clinic sees the same regulars every month.
+Expect one cell, Ridgecrest Cardiology: 22 surveys from only 10 patients, because its outreach clinic sees the same regulars every month.
 
 A size rule is the obvious draft, but it counts surveys. `filter` keeps every row of the groups that pass a test, so the test decides what is published: counting rows would publish that cell; counting distinct patients hides it.
 
@@ -220,7 +220,7 @@ public = pd.pivot_table(patients_rule, values="satisfaction", index="department"
 display(public.round(2))
 ```
 
-Expect 114,135 respondents. The row rule keeps 113,837, every respondent with a clinic (the 298 with no clinic have no group), and the patient rule keeps 27 fewer, 113,810. In the public table, Ridgecrest's Cardiology cell is `NaN` (suppressed), beside the cells for departments Ridgecrest does not run.
+Expect 110,746 respondents. The row rule keeps 110,458, every respondent with a clinic (the 288 with no clinic have no group), and the patient rule keeps 22 fewer, 110,436. In the public table, Ridgecrest's Cardiology cell is `NaN` (suppressed), beside the cells for departments Ridgecrest does not run.
 
 ```python
 fig, ax = plt.subplots(figsize=(10, 4.5))
@@ -231,7 +231,7 @@ ax.set(title="Mean satisfaction (1 to 5), Q4 2025, groups of 11+ patients", xlab
 plt.show()
 ```
 
-Expect Ridgecrest's Cardiology cell labeled `suppressed` and its three other blank cells, the departments it does not run, left empty. Scores follow waits: the Behavioral Health row, the shortest wait, is the greenest at every clinic but Ridgecrest, where Pediatrics edges it (4.35 against 4.28), and Bayview's Orthopedics, the longest wait, is the reddest cell (2.73).
+Expect Ridgecrest's Cardiology cell labeled `suppressed` and its three other blank cells, the departments it does not run, left empty. Scores follow waits: the Behavioral Health row, the shortest wait, is the greenest at every clinic but Ridgecrest, where Pediatrics edges it (4.37 against 4.26), and Bayview's Orthopedics, the longest wait, is the reddest cell (2.59).
 
 **What we tell Dr. Whitfield:** the table is ready to publish with one cell suppressed, Ridgecrest Cardiology (10 patients).
 

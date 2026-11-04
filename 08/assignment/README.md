@@ -2,7 +2,7 @@
 
 ## Overview
 
-Summarize a year of imaging exams by site and modality, flag delayed STAT exams against their peers, build a CT radiation-dose review list, pull each site's slowest STAT reports, and pivot report times, saving each result for the checks.
+Explore a year of imaging exams, summarize them by site and modality, flag delayed STAT exams against their peers, build a CT radiation-dose review list, pull each site's slowest STAT reports, and pivot report times, saving each result for the checks.
 
 `data/imaging_exams.parquet` is a synthetic export from a regional imaging network: 540,228 exams in 2025, one row per exam, at three hospitals (Downtown, Harbor, Northgate) and five outpatient imaging centers; Valley, a rural center, also runs a small ED. A ninth site, Eastport, opens in 2026 and has no exams yet. Valley has no MRI scanner.
 
@@ -51,7 +51,8 @@ assignment/
 ├── grading.py, _value_checks.py  # supplied: the checks themselves; keep unchanged
 ├── test_assignment.py, .github/  # supplied: run the checks on GitHub; keep unchanged
 └── output/
-    ├── site_summary.csv           # you generate in Task 1.2
+    ├── missing_by_modality.csv    # you generate in Task 1.1
+    ├── site_summary.csv           # you generate in Task 1.3
     ├── site_modality_summary.csv  # you generate in Task 2.1
     ├── delayed_stat_exams.csv     # you generate in Task 2.2
     ├── ct_dose_review.csv         # you generate in Task 2.3
@@ -59,11 +60,28 @@ assignment/
     └── median_report_pivot.csv    # you generate in Task 3.1
 ```
 
-## Task 1: Summarize each site
+## Task 1: Explore the log and summarize each site
 
-The exam log has one row per exam. Every answer in Task 1 has one row per site: grouping changes the grain, as Lecture 08's "The Split-Apply-Combine Paradigm" section shows.
+### 1.1 Explore the exam log
 
-### 1.1 Put the sites in reporting order
+Before grouping, walk the log through the steps of EDA in Lecture 08's "The Steps of EDA" card. Demo 1's step 1 runs the same pass on a visit log. In the Task 1.1 cell:
+
+1. Check the grain: compare the number of distinct `exam_id` values with the number of rows, then count the distinct patients.
+    - Expect: `rows: 540228`, `distinct exams: 540228`, and `patients: 210000`. One row is one exam, and most patients have several.
+2. Check the structure with `info()` and `describe()`.
+    - Expect: 15 columns. Only `dose_msv` (347,619 non-null) and `report_hr` (537,966 non-null) have blanks.
+3. Build `missing_by_modality`: for each modality, the share of exams with no `report_hr` and the share with no `dose_msv`. Lecture 08's "Missing Waits by Clinic" snippet does this for one column and one grouping key; select both columns at once.
+    - Expect: four rows, one per modality. `dose_msv` is 1.0 for MRI and Ultrasound and 0.0 for CT and X-ray: those blanks are by design, since MRI and ultrasound use no radiation. `report_hr` is about 0.004 for every modality: unsigned reports are rare and spread evenly.
+4. Save it to `MISSING_PATH` with its index: the modalities are the index, and saving writes them as the first column. Leave the shares unrounded or round them to three decimals.
+5. Find the IQR fence for `wait_hr` (Lecture 05) and count the waits above it, as Demo 1's step 1 does for its waits.
+    - Expect: quartiles of 1.5 and 96.1 hours, an upper fence of about 238 hours (printed as 237.99999999999997), and 55,401 waits above it. Nearly all of them are routine exams, three in four of them MRIs. They are real waits for a scanner slot, not entry errors, so they stay; this long tail is why Task 2.1 uses medians.
+
+> **Checkpoint: `output/missing_by_modality.csv`**
+> The header line `modality,report_hr,dose_msv`, then four rows, CT to X-ray. MRI reads `MRI,0.00535...,1.0`: about one MRI in 190 has no signed report, and none has a dose.
+
+### 1.2 Put the sites in reporting order
+
+The exam log has one row per exam. Every answer in the rest of Task 1 has one row per site: grouping changes the grain, as Lecture 08's "The Split-Apply-Combine Paradigm" section shows.
 
 This step saves nothing. The network's board lists sites in the order of `SITE_ORDER`, hospitals first, and wants to see that Eastport has no exams yet.
 
@@ -74,9 +92,9 @@ This step saves nothing. The network's board lists sites in the order of `SITE_O
 
 The rest of the assignment groups with `observed=True`, which lists the eight sites with exams, still in this order.
 
-### 1.2 Count exams, reports, and patients, and total the scanner time
+### 1.3 Count exams, reports, and patients, and total the scanner time
 
-The operations director wants one row per site. In the Task 1.2 cell:
+The operations director wants one row per site. In the Task 1.3 cell:
 
 1. Build `site_summary` from one `groupby()` on `site` with named aggregation, keeping `site` as a column, as Lecture 08's "Count and Summarize Each Clinic" snippet does. Its reference card lists the functions. The five new columns:
     - `exam_count`: every exam at the site.

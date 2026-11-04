@@ -12,8 +12,10 @@ omitted value column and renamed columns with the right values cost only the
 columns check, and a missing file costs only its own artifact's checks. The
 plausible mistakes (a peer median over every priority, `>=` for `>`, a dose
 filter over every modality, top reports over every priority, a row mask in
-place of filter, `fill_value=0`, swapped pivot axes, margins, list arguments)
-each cost only their own checks, with messages naming the cause. It also
+place of filter, `fill_value=0`, swapped pivot axes, margins, list arguments,
+missing counts or rounded shares in place of shares) each cost only their own
+checks, with messages naming the cause. A list of exams that holds none of the
+expected exams costs only its rows check. It also
 confirms that the frozen values in `_value_checks.py` match
 `08/assignment/data/imaging_exams.parquet` and the generator, that the README's
 checkpoints and the completion contract agree with the checks and the README
@@ -58,9 +60,10 @@ from grading import POINTS, grade_submission  # noqa: E402
 NAMES = [check.name for check in value_checks.CHECKS]
 POINTS_BY_NAME = dict(zip(NAMES, POINTS, strict=True))
 ARTIFACTS = {artifact.path: artifact for artifact in value_checks.ARTIFACTS}
+MISSING = "output/missing_by_modality.csv"
 SUMMARY, PAIRS, DELAYED = "output/site_summary.csv", "output/site_modality_summary.csv", "output/delayed_stat_exams.csv"
 DOSE, SLOWEST, PIVOT = "output/ct_dose_review.csv", "output/slowest_stat_reports.csv", "output/median_report_pivot.csv"
-PREFIX = {SUMMARY: "site summary:", PAIRS: "site and modality:", DELAYED: "delayed STAT exams:",
+PREFIX = {MISSING: "missing by modality:", SUMMARY: "site summary:", PAIRS: "site and modality:", DELAYED: "delayed STAT exams:",
           DOSE: "CT dose review:", SLOWEST: "slowest STAT reports:", PIVOT: "median report pivot:"}
 DELAYED_COLUMNS = ["exam_id", "site", "modality", "wait_hr", "peer_median_wait_hr", "wait_vs_peer_hr"]
 EXAMS = pd.read_parquet(HANDOUT / "data" / "imaging_exams.parquet")
@@ -69,6 +72,11 @@ EXAMS = pd.read_parquet(HANDOUT / "data" / "imaging_exams.parquet")
 def solve(categorical: bool = True, observed: bool = True, use_filter: bool = False) -> dict[str, pd.DataFrame]:
     """Answer the assignment with the lecture's pandas calls; returns {artifact path: frame to save}."""
     exams = EXAMS.copy()
+    assert exams["exam_id"].nunique() == len(exams) == 540228 and exams["patient_id"].nunique() == 210000
+    missing = exams[["report_hr", "dose_msv"]].isna().groupby(exams["modality"]).mean()
+    q1, q3 = exams["wait_hr"].quantile([0.25, 0.75])
+    upper = q3 + 1.5 * (q3 - q1)
+    assert (q1, q3, round(upper, 1), int((exams["wait_hr"] > upper).sum())) == (1.5, 96.1, 238.0, 55401)
     if categorical:
         exams["site"] = pd.Categorical(exams["site"], categories=list(value_checks.SITE_ORDER), ordered=True)
         per_site = exams.groupby("site", observed=False).size()
@@ -103,13 +111,17 @@ def solve(categorical: bool = True, observed: bool = True, use_filter: bool = Fa
         assert pivot.equals(twin) and int(pivot.isna().sum().sum()) == 1
     assert pd.crosstab(exams["site"], exams["modality"]).loc["Valley", "MRI"] == 0
 
-    return {SUMMARY: site_summary, PAIRS: site_modality, DELAYED: delayed,
+    return {MISSING: missing, SUMMARY: site_summary, PAIRS: site_modality, DELAYED: delayed,
             DOSE: dose[["exam_id", "patient_id", "dose_msv"]], SLOWEST: slowest, PIVOT: pivot}
 
 
+# Saved with their index, as the README says: the modalities and the sites are the index.
+WITH_INDEX = (MISSING, PIVOT)
+
+
 def as_files(frames: dict[str, pd.DataFrame]) -> dict[str, str]:
-    """The way the README saves each frame: index=False, except the pivot, which keeps its site index."""
-    return {path: frame.to_csv() if path == PIVOT else frame.to_csv(index=False) for path, frame in frames.items()}
+    """The way the README saves each frame: index=False, except the two that keep their index."""
+    return {path: frame.to_csv() if path in WITH_INDEX else frame.to_csv(index=False) for path, frame in frames.items()}
 
 
 def failing(result: dict) -> set[str]:
@@ -157,6 +169,10 @@ def check_supplied_data() -> None:
     assert EXAMS.equals(generator.build()), "data/imaging_exams.parquet differs from build_assignment08_data.build()"
     for name, value in generator.expected(EXAMS).items():
         assert getattr(value_checks, name) == value, f"{name} in _value_checks.py differs from the data; rerun the build"
+    missing = EXAMS[["report_hr", "dose_msv"]].isna().groupby(EXAMS["modality"]).mean()
+    assert value_checks.MISSING_BY_MODALITY == {
+        modality: (row.report_hr, row.dose_msv) for modality, row in missing.iterrows()
+    }, "MISSING_BY_MODALITY in _value_checks.py differs from the data"
     assert value_checks.UNUSED == ("Eastport",)
     notebook = json.loads((HANDOUT / "assignment.ipynb").read_text(encoding="utf-8"))
     source = "\n".join("".join(cell["source"]) for cell in notebook["cells"])
@@ -178,7 +194,7 @@ def check_readme() -> None:
     for path, name, _ in contract:
         assert name.strip().startswith(PREFIX[path]), (path, name)
     first = value_checks.CHECKS[0].name
-    assert f"[FIX ]  0/{POINTS[0]}  {first}\n         {value_checks._missing(HANDOUT, value_checks.SITE_SUMMARY_TABLE)}" in checks_md
+    assert f"[FIX ]  0/{POINTS[0]}  {first}\n         {value_checks._missing(HANDOUT, value_checks.ARTIFACTS[0])}" in checks_md
     last = value_checks.CHECKS[-1].name
     assert f"[PASS]  {POINTS[-1]}/{POINTS[-1]}  {last}\n\nScore: 100/100" in checks_md
     for count in (len(value_checks.SITE_MODALITY), len(value_checks.DELAYED_STAT)):
@@ -234,6 +250,10 @@ def alternative() -> dict[str, str | bytes]:
     """
     frames = solve(observed=False)
 
+    # Percents to one decimal, modalities in upper case, rows reversed.
+    missing = (frames[MISSING] * 100).round(1).iloc[::-1]
+    missing.index = missing.index.str.upper()
+
     summary = frames[SUMMARY]
     summary = summary[list(reversed(summary.columns))].copy()
     summary["site"] = summary["site"].astype(str).str.upper()
@@ -253,6 +273,7 @@ def alternative() -> dict[str, str | bytes]:
     pivot = frames[PIVOT][["X-ray", "Ultrasound", "MRI", "CT"]].round(1).reset_index().rename(columns={"site": "SITE"})
 
     return {
+        MISSING: missing.to_csv(),
         # Columns reversed, upper-case site names, one decimal, CRLF, and UTF-16, as Windows PowerShell 5.1 writes.
         SUMMARY: codecs.BOM_UTF16_LE + summary.to_csv(index=False, lineterminator="\r\n").encode("utf-16-le"),
         # A leading row-number column, a BOM, every cell quoted, NaN for the empty medians, rows reversed.
@@ -330,7 +351,7 @@ def run() -> None:
         shutil.copytree(HANDOUT, scaffold, ignore=shutil.ignore_patterns("__pycache__", ".pytest_cache", ".venv", ".checks"))
         result = graded(scaffold)
         assert result["score"] == 0 and failing(result) == set(NAMES)
-        assert detail(result, NAMES[0]).startswith("output/site_summary.csv is missing"), detail(result, NAMES[0])
+        assert detail(result, NAMES[0]).startswith("output/missing_by_modality.csv is missing"), detail(result, NAMES[0])
 
         root = submission("correct", correct)
         result = graded(root)
@@ -363,7 +384,7 @@ def run() -> None:
 
         # Cells separated by semicolons, with a European spreadsheet's decimal commas, or by tabs: full marks.
         def separated(sep: str, decimal: str = ".") -> dict[str, str]:
-            return {path: frame.to_csv(index=path == PIVOT, sep=sep, decimal=decimal) for path, frame in frames.items()}
+            return {path: frame.to_csv(index=path in WITH_INDEX, sep=sep, decimal=decimal) for path, frame in frames.items()}
 
         semicolons = separated(";", ",")
         assert any(re.search(r";-?\d+,\d", text) for text in semicolons.values())
@@ -391,7 +412,9 @@ def run() -> None:
         lost[SUMMARY] = pd.read_csv(io.StringIO(index_files[SUMMARY]), index_col=0).to_csv(index=False)
         lost[PAIRS] = pd.read_csv(io.StringIO(index_files[PAIRS]), index_col=[0, 1]).to_csv(index=False)
         lost[PIVOT] = frames[PIVOT].to_csv(index=False)
-        only("lost-keys", lost, {"site summary: columns", "site and modality: columns", "median report pivot: columns"},
+        lost[MISSING] = frames[MISSING].to_csv(index=False)
+        only("lost-keys", lost, {"site summary: columns", "site and modality: columns", "median report pivot: columns",
+                                 "missing by modality: columns"},
              "is missing site", check="site summary: columns")
 
         # An omitted value column costs only its columns check; two renamed with the right values the same.
@@ -414,7 +437,7 @@ def run() -> None:
              {"delayed STAT exams: columns"}, "is missing site")
 
         # Plausible mistakes, each charged once with a message that names the cause. A selection that shares no row
-        # with the expected one leaves the values check nothing to compare, so it costs that check too.
+        # with the expected one costs only its rows check: its other values checks have nothing to compare.
         stat = EXAMS[EXAMS["priority"] == "STAT"].copy()
         all_priorities = EXAMS.groupby(["site", "modality"])["wait_hr"].transform("median")
         stat["peer_median_wait_hr"] = all_priorities[stat.index]
@@ -445,23 +468,50 @@ def run() -> None:
         only("dose-over-every-modality", changed(DOSE, every_modality[["exam_id", "patient_id", "dose_msv"]].to_csv(index=False)),
              {"CT dose review: whole patients kept"}, "also has a row for", "grouping every modality")
         ct = EXAMS[EXAMS["modality"] == "CT"]
-        result = graded(submission("dose-row-mask", changed(DOSE, ct[ct["dose_msv"] >= 100][
-            ["exam_id", "patient_id", "dose_msv"]].to_csv(index=False))), both_clis=False)
-        assert failing(result) == {"CT dose review: whole patients kept", "CT dose review: original exam values"}
-        assert "A row mask" in detail(result, "CT dose review: whole patients kept")
+        only("dose-row-mask", changed(DOSE, ct[ct["dose_msv"] >= 100][["exam_id", "patient_id", "dose_msv"]].to_csv(
+            index=False)), {"CT dose review: whole patients kept"}, "A row mask")
+        other_cts = ct[~ct["exam_id"].isin(frames[DOSE]["exam_id"])].head(50)
+        only("dose-no-expected-exam", changed(DOSE, other_cts[["exam_id", "patient_id", "dose_msv"]].to_csv(index=False)),
+             {"CT dose review: whole patients kept"})
+        other_stat = stat[stat["wait_hr"] <= 8].head(20)[DELAYED_COLUMNS]
+        only("delayed-no-expected-exam", changed(DELAYED, other_stat.to_csv(index=False)),
+             {"delayed STAT exams: one row per delayed exam"})
+        only("delayed-header-only", changed(DELAYED, ",".join(DELAYED_COLUMNS) + "\n"),
+             {"delayed STAT exams: one row per delayed exam"})
         only("dose-all-columns", changed(DOSE, EXAMS.loc[frames[DOSE].index].to_csv(index=False)),
              {"CT dose review: columns"}, "also has")
 
         every_priority = EXAMS.groupby("site").apply(lambda g: g.nlargest(3, "report_hr"), include_groups=False)
         only("slowest-every-priority", changed(SLOWEST, every_priority.reset_index(level="site")[
             ["exam_id", "site", "modality", "report_hr"]].to_csv(index=False)),
-            {"slowest STAT reports: three per site", "slowest STAT reports: original exam values"}, "keep the STAT exams",
-            check="slowest STAT reports: three per site")
+            {"slowest STAT reports: three per site"}, "keep the STAT exams")
         smallest = stat.groupby("site").apply(lambda g: g.nsmallest(3, "report_hr"), include_groups=False)
         only("slowest-nsmallest", changed(SLOWEST, smallest.reset_index(level="site")[
             ["exam_id", "site", "modality", "report_hr"]].to_csv(index=False)),
-            {"slowest STAT reports: three per site", "slowest STAT reports: original exam values"}, "largest report_hr",
-            check="slowest STAT reports: three per site")
+            {"slowest STAT reports: three per site"}, "largest report_hr")
+
+        eda = EXAMS[["report_hr", "dose_msv"]].isna()
+        only("missing-counts", changed(MISSING, eda.groupby(EXAMS["modality"]).sum().to_csv()),
+             {"missing by modality: shares"})
+        only("missing-round-2", changed(MISSING, frames[MISSING].round(2).to_csv()),
+             {"missing by modality: shares"}, "CT has report_hr 0.0, expected 0.0039")
+        # One column holds one unit: MRI as a share beside Ultrasound as a percent is a mistake.
+        mixed = frames[MISSING].copy()
+        mixed.loc["Ultrasound", "dose_msv"] = 100
+        only("missing-mixed-units", changed(MISSING, mixed.to_csv()), {"missing by modality: shares"},
+             "Ultrasound has dose_msv 100")
+        percents = frames[MISSING] * 100
+        percents.loc["CT", "dose_msv"] = 0.05
+        assert graded(submission("missing-percent-near-0", changed(MISSING, percents.to_csv())), both_clis=False)["score"] == 100
+        only("missing-by-site", changed(MISSING, eda.groupby(EXAMS["site"]).mean().to_csv()),
+             set(artifact_checks(MISSING)))
+        only("missing-every-column", changed(MISSING, EXAMS.isna().groupby(EXAMS["modality"]).mean().to_csv()),
+             {"missing by modality: columns"}, "also has")
+        # isna() run over the modality column too repeats its header with 0s; the first copy's labels still match.
+        with_key = EXAMS[["modality", "report_hr", "dose_msv"]].isna().groupby(EXAMS["modality"]).mean()
+        assert graded(submission("missing-repeated-key", changed(MISSING, with_key.to_csv())), both_clis=False)["score"] == 100
+        only("missing-shares-of-present", changed(MISSING, EXAMS[["report_hr", "dose_msv"]].notna().groupby(
+            EXAMS["modality"]).mean().to_csv()), {"missing by modality: shares"})
 
         only("pivot-fill-0", changed(PIVOT, pd.pivot_table(EXAMS, values="report_hr", index="site", columns="modality",
                                                          aggfunc="median", fill_value=0).to_csv()),
@@ -516,7 +566,11 @@ def run() -> None:
         # One mistake costs exactly its own check.
         delayed, dose, slowest = correct[DELAYED], correct[DOSE], correct[SLOWEST]
         first_dose = dose.splitlines()[1].split(",")[0]
+        missing = correct[MISSING]
         mistakes = {
+            "missing by modality: columns": (MISSING, missing.replace("dose_msv", "dose", 1)),
+            "missing by modality: one row per modality": (MISSING, drop_last_row(missing)),
+            "missing by modality: shares": (MISSING, edit(missing, "CT", "dose_msv", "0.25")),
             "site summary: columns": (SUMMARY, summary.replace("patient_count", "patients", 1)),
             "site summary: one row per site": (SUMMARY, drop_last_row(summary)),
             "site summary: exam_count values": (SUMMARY, edit(summary, "Valley", "exam_count", "25383")),

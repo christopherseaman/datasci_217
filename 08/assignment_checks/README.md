@@ -1,6 +1,6 @@
 # Assignment 08 checks (course-owned)
 
-These are the checks that decide the Assignment 08 grade. They read the six
+These are the checks that decide the Assignment 08 grade. They read the seven
 CSV files a submission saves in `output/` and compare them with values frozen
 from the supplied exam log, `data/imaging_exams.parquet`.
 `08/assignment/.github/workflows/tests.yml` downloads them on every student

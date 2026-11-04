@@ -13,7 +13,7 @@ that:
   MultiIndex included), one grouped without `as_index=False` and saved with its
   index, and one written differently: columns and rows in another order, CRLF,
   a byte-order mark, UTF-16, quoted or padded cells, labels and headers in
-  another letter case, rounded means and medians, `NaN` for an empty cell, the
+  another letter case, rounded means and medians, missing shares as percents, `NaN` for an empty cell, the
   flat `sort_values()` and `head()` route for Task 2.4, and every file
   separated by semicolons (with decimal commas) or by tabs, where one wrong
   value still costs only its own check;
@@ -27,12 +27,14 @@ that:
   exams, or assigned from `.median()`; `>= 8` for `> 8`; a dose filter grouped
   over every modality; every column saved from the filter; `fill_value=0`,
   `aggfunc="mean"`, swapped axes, `margins=True`, and list arguments in the
-  pivot; `.dropna()` on the pivot. A selection that shares no row with the
-  expected one (the per-scan row mask, the top reports over every priority,
-  `nsmallest`) also costs that artifact's values check, which has nothing to
-  compare;
+  pivot; `.dropna()` on the pivot; counts, shares rounded to two decimals,
+  shares of filled cells, or a grouping by site in Task 1.1. A selection that
+  shares no row with the expected one (the per-scan row mask, the top reports
+  over every priority, `nsmallest`, other CTs, STAT exams under 8 hours) costs
+  only its rows check, since its other values checks have nothing to compare;
+  a share column mixing shares and percents costs its shares check;
 - an empty directory and the untouched handout score 0;
-- each of 27 single mistakes, one per check, costs exactly that check; a
+- each of 30 single mistakes, one per check, costs exactly that check; a
   missing file costs only its own artifact's checks and is never told to take
   another required file's name; a file holding only the optional Eastport row
   earns no value checks;
