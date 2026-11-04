@@ -28,15 +28,15 @@ Riverside Health's Chief Nursing Officer, Dr. Ana Reyes, leads a winter program 
 Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas and pyarrow (for Parquet) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
+# Installs the course's pandas, pyarrow (for Parquet), and dowhy (for generate_data.py) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 dowhy==0.14
 ```
 
 ## Core walkthrough
 
 ### 1. The extract arrives as text
 
-This supplied cell downloads `generate_data.py` when the folder lacks it (`urlretrieve(url, path)` saves the file at a web address to `path`), runs its `build()` when a table in `data/` is missing, and reads the ED table. `build()` writes all seven Lecture 09 tables in about 20 seconds, once. It uses a fixed seed, so your values match the ones below.
+This supplied cell downloads `generate_data.py` when the folder lacks it (`urlretrieve(url, path)` saves the file at a web address to `path`), runs its `build()` when a table in `data/` is missing, and reads the ED table. `build()` writes all seven Lecture 09 tables in about 25 seconds, once. It uses a fixed seed, so your values match the ones below.
 
 ```python
 from datetime import datetime, timedelta
@@ -90,7 +90,7 @@ display(ed.loc[ed['arrival'].isna(), 'arrival_time'].value_counts())
 display(ed.groupby('disposition')['departure_time'].apply(lambda s: s.isna().mean()).round(3))
 ```
 
-Expect `150` arrivals that failed and `7701` departures, all of them already missing in the text. The failures are five codes, 30 rows each: an empty string, `UNKNOWN`, two dates that do not exist (`2023-02-29`, in a non-leap year, and `2024-06-31`), and the hour `24:10`. 150 of 627,505 rows is too few to change any monthly share, so drop them and report the count. The missing departures are not random: `0.462` of patients who left without being seen have none, against `0.003` of discharged patients, because nobody checks out a patient who walked out.
+Expect `150` arrivals that failed and `7676` departures, all of them already missing in the text. The failures are five codes, 30 rows each: an empty string, `UNKNOWN`, two dates that do not exist (`2023-02-29`, in a non-leap year, and `2024-06-31`), and the hour `24:10`. 150 of 627,505 rows is too few to change any monthly share, so drop them and report the count. The missing departures are not random: `0.450` of patients who left without being seen have none, against `0.003` of discharged patients, because nobody checks out a patient who walked out.
 
 ### 4. Do admitted patients really wait longest?
 
@@ -110,7 +110,7 @@ display(valid.groupby('disposition').agg(visits=('los_hours', 'size'),
 display(valid.loc[valid['stay'].dt.days >= 1, 'disposition'].value_counts())
 ```
 
-Expect `75` departures before arrival, from `-18.9` to `-22.1` hours in the first three: each departure was typed with the previous day's date, so they leave the summary. Admitted patients have the longest median stay, `6.88` hours, and `0.89` of them stay over 4 hours. Discharged patients have a median of `2.83` hours, with `0.26` over 4 hours. Of the `1010` stays of a whole day or more, `1001` are admitted patients.
+Expect `75` departures before arrival, from `-14.0` to `-20.3` hours in the first three: each departure was typed with the previous day's date, so they leave the summary. Admitted patients have the longest median stay, `6.85` hours, and `0.89` of them stay over 4 hours. Discharged patients have a median of `2.83` hours, with `0.26` over 4 hours. Of the `984` stays of a whole day or more, `974` are admitted patients.
 
 Draw each disposition's stays against the 4-hour target. Stays over 24 hours are drawn at 24.
 
@@ -159,7 +159,7 @@ weeks = pd.DataFrame({
 display(weeks)
 ```
 
-Expect `Sorted? True` and `January 2024 visits: 30495`. Every site saw more visits in the flu-peak week of January 1 to 7, 2024 than in July 8 to 14 (Central `2898` against `2476`, Eastside `1556` against `1255`). Both slice endpoints are included, so each week holds 7 full days. The `datetime` values from step 2 work as endpoints too: the report window runs from December 10 to the end of the data on December 31 (Central `7545` visits).
+Expect `Sorted? True` and `January 2024 visits: 30493`. Every site saw more visits in the flu-peak week of January 1 to 7, 2024 than in July 8 to 14 (Central `2899` against `2476`, Eastside `1556` against `1255`). Both slice endpoints are included, so each week holds 7 full days. The `datetime` values from step 2 work as endpoints too: the report window runs from December 10 to the end of the data on December 31 (Central `7546` visits).
 
 ### 6. Did every ED send data every day?
 
@@ -200,7 +200,7 @@ ax.set(title='Share of ED visits over 4 hours, by month of arrival', xlabel='Mon
 plt.show()
 ```
 
-Expect the three worst months to be `2023-12-31` (`0.454`), `2024-01-31` (`0.450`), and `2023-01-31` (`0.416`), and the best near `0.38` (`2024-11-30`, `0.380`). The line sits near 0.39 most of the year and jumps in December 2023 and January 2024, the flu peak.
+Expect the three worst months to be `2023-12-31` (`0.443`), `2024-01-31` (`0.435`), and `2023-01-31` (`0.409`), and the best near `0.38` (`2024-11-30`, `0.380`). The line sits near 0.39 most of the year and jumps in December 2023 and January 2024, the flu peak.
 
 Split by disposition to check that admitted patients drive the winter rise.
 
@@ -212,9 +212,9 @@ by_disposition = pd.DataFrame({
 display(by_disposition.loc['2023-11':'2024-02', ['admitted', 'discharged']].round(3))
 ```
 
-Expect admitted patients to rise from `0.888` over 4 hours in November 2023 to `0.961` in January 2024, and discharged patients from `0.260` to `0.301`. Every patient waits longer in a crowded ED; admitted patients also wait for inpatient beds, which fill in flu season.
+Expect admitted patients to rise from `0.886` over 4 hours in November 2023 to `0.962` in January 2024, and discharged patients from `0.259` to `0.292`. Every patient waits longer in a crowded ED; admitted patients also wait for inpatient beds, which fill in flu season.
 
-**What we tell Dr. Reyes:** fund the surge team from mid-December through January; that is when the share over 4 hours rises from about 0.39 to 0.45, and almost every admitted patient misses the target.
+**What we tell Dr. Reyes:** fund the surge team from mid-December through January; that is when the share over 4 hours rises from about 0.39 to 0.44, and almost every admitted patient misses the target.
 
 ### 8. Which hours does the surge team cover, and why does the 08:00 count not match?
 
@@ -274,7 +274,7 @@ display(arrived.groupby(night.map({True: 'night 23:00-06:59', False: 'day 07:00-
     esi_1_or_2=('esi', lambda s: (s <= 2).mean())).round(3))
 ```
 
-Expect `533054` day arrivals and `94301` at night. At night `0.202` arrive by ambulance and `0.198` are triaged ESI 1 or 2, against `0.142` and `0.139` by day: fewer patients come in overnight, and more of them are very sick.
+Expect `533041` day arrivals and `94314` at night. At night `0.200` arrive by ambulance and `0.198` are triaged ESI 1 or 2, against `0.139` and `0.138` by day: fewer patients come in overnight, and more of them are very sick.
 
 ### 2. Staffing wants the three busiest clock hours as file keys
 
@@ -286,7 +286,7 @@ display(busiest)
 print(busiest.index.strftime('%Y%m%d%H').tolist())
 ```
 
-Expect two clock hours at the January 2024 flu peak, `2024-01-07 12:00` (`90` arrivals) and `2024-01-08 12:00` (`87`), then `2024-09-23 16:00` (`85`). Their keys print as `['2024010712', '2024010812', '2024092316']`.
+Expect three clock hours at the January 2024 flu peak: `2024-01-07 12:00` (`90` arrivals), `2024-01-08 12:00` (`86`), and `2024-01-15 20:00` (`85`). Their keys print as `['2024010712', '2024010812', '2024011520']`.
 
 ### 3. Finance wants weekly volume and the weekend share
 
@@ -300,7 +300,7 @@ weekend = by_time.index.dayofweek >= 5
 print('Mean visits per day:', round(weekly.sum() / 731), ' Weekend share of visits:', round(weekend.mean(), 3))
 ```
 
-Expect the first two labels, `Sun 2023-01-01` and `Sun 2023-01-08`: the first bin holds only January 1, a Sunday. The three busiest weeks end `2024-01-07` (`7454` visits), `2023-12-31` (`7367`), and `2024-01-14` (`7187`). `Mean visits per day: 858`, and weekends hold `0.272` of visits, a little less than their 2 days in 7 (`0.286`).
+Expect the first two labels, `Sun 2023-01-01` and `Sun 2023-01-08`: the first bin holds only January 1, a Sunday. The three busiest weeks end `2024-01-07` (`7455` visits), `2023-12-31` (`7369`), and `2024-01-14` (`7185`). `Mean visits per day: 858`, and weekends hold `0.272` of visits, a little less than their 2 days in 7 (`0.286`).
 
 ### 4. A colleague's March query raises `KeyError`
 
@@ -315,7 +315,7 @@ except KeyError as error:
 print(by_time.loc['2024-03'].shape)
 ```
 
-Expect `(5,)`: the five weeks ending on a Sunday in March 2024. Then `KeyError: '2024-03'`, then the fix with `.loc`: `(25665, 12)`, every March 2024 visit.
+Expect `(5,)`: the five weeks ending on a Sunday in March 2024. Then `KeyError: '2024-03'`, then the fix with `.loc`: `(25663, 12)`, every March 2024 visit.
 
 ### 5. Care management wants an outreach calendar for frequent visitors
 
@@ -330,7 +330,7 @@ display(pd.date_range('2025-01-01', periods=3, freq='MS'))
 display(pd.date_range('2025-01-01', periods=3, freq='ME'))
 ```
 
-Expect `Patients: 192210  Frequent visitors: 12627` and a share of `0.208`: about 7% of 2024's patients make a fifth of its visits. Then the four Mondays January 6 to 27, the month starts January 1, February 1, and March 1, and the month ends January 31, February 28, and March 31.
+Expect `Patients: 194311  Frequent visitors: 12248` and a share of `0.199`: about 6% of 2024's patients make a fifth of its visits. Then the four Mondays January 6 to 27, the month starts January 1, February 1, and March 1, and the month ends January 31, February 28, and March 31.
 
 An older script used `'M'` for month end, which now fails. This intentional error shows the message.
 
@@ -355,7 +355,7 @@ except TypeError as error:
 display(valid_by_time[['los_hours', 'age']].resample('ME').mean().loc['2024-01':'2024-03'].round(2))
 ```
 
-Expect `TypeError: dtype 'str' does not support operation 'mean'`, then three month-end rows. January 2024 has the longest mean stay (`4.99` hours, against `4.21` in February and `4.08` in March); the mean age barely moves (`46.66` to `45.39`).
+Expect `TypeError: dtype 'str' does not support operation 'mean'`, then three month-end rows. January 2024 has the longest mean stay (`4.88` hours, against `4.17` in February and `4.06` in March); the mean age barely moves (`44.85` to `45.27`).
 
 ### 7. The committee chair asks whether every winter rises
 
@@ -366,7 +366,7 @@ by_month_year = valid.groupby([valid['arrival'].dt.month, valid['arrival'].dt.ye
 display(by_month_year.loc[[11, 12, 1, 2]].round(3))
 ```
 
-Expect four month rows and a column per year. December rises in both years (`0.454` in 2023, `0.411` in 2024) from November's `0.394` and `0.380`, and January rises in both (`0.416` in 2023, `0.450` in 2024). February is back near `0.39`.
+Expect four month rows and a column per year. December rises in both years (`0.443` in 2023, `0.407` in 2024) from November's `0.394` and `0.380`, and January rises in both (`0.409` in 2023, `0.435` in 2024). February is back near `0.39`.
 
 ### 8. The flu team asks whether both seasons peaked on the same date
 

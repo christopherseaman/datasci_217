@@ -234,7 +234,7 @@ Grouped by treatment alone, New loses (0.5 against 0.7); within each severity le
 - **Pivot table**: summarizes one column by two keys at once, one down the rows and one across the columns, such as mean wait by clinic and visit type. It is the two-key `groupby(...).mean().unstack()` in a single call, and the shape of most handed-off reports: departments down the side, clinics or months across.
 - **Cross-tabulation** (crosstab): the special case that counts the rows in each combination.
 
-![A pivot table as a heatmap: median wait (minutes) for 1.2 million synthetic 2025 visits, 7 departments by 8 clinics; Orthopedics is slowest everywhere, Bayview's Orthopedics cell is darkest at 37, and blank cells are departments a clinic does not run](media/pivot_heatmap.png)
+![A pivot table as a heatmap: median wait (minutes) for 1.2 million synthetic 2025 visits, 7 departments by 8 clinics; Orthopedics is slowest everywhere, Bayview's Orthopedics cell is darkest at 38, and blank cells are departments a clinic does not run](media/pivot_heatmap.png)
 
 ```text
 LONG: one row per visit                    PIVOT TABLE: mean wait_min, one row per clinic
@@ -621,10 +621,10 @@ The same five visits, in overall wait order with the original flat index. `head`
 
 - **Performance optimization**: making an analysis run faster or use less memory, which matters once a summary that takes a second on a class example takes minutes on a year of hospital lab results.
 - One `.agg()` call computing several summaries beats calling `groupby()` again for each summary, because every new `groupby()` call redoes the split.
-- Built-in aggregations named by string (`'mean'`, `'std'`, `transform('mean')`) run as fast compiled code; a Python `lambda` or `apply` runs once per group. On 118,032 A1c results from 90,281 patients, a lambda was about 1,500 times slower for a standard deviation and 5,000 times slower for a transform.
+- Built-in aggregations named by string (`'mean'`, `'std'`, `transform('mean')`) run as fast compiled code; a Python `lambda` or `apply` runs once per group. On 118,645 A1c results from 90,178 patients, a lambda was about 1,400 times slower for a standard deviation and 4,500 times slower for a transform.
 - A repeated text key stored as `category` (Lecture 05) uses far less memory.
 
-![Measured on 118,032 A1c results and the 2,000,000-row lab table: one agg beats four groupby calls 3.5 to 1, the built-in std beats a lambda about 1,500 to 1, and category keys halve the table's memory](media/perf_combined.png)
+![Measured on 118,645 A1c results and the 2,000,000-row lab table: one agg beats four groupby calls 3.4 to 1, the built-in std beats a lambda about 1,400 to 1, and category keys halve the table's memory](media/perf_combined.png)
 
 ## Measuring Speed and Memory
 
@@ -637,7 +637,7 @@ The same five visits, in overall wait order with the original flat index. `head`
 
 ### Code Snippet: Time One Split and Shrink a Text Key
 
-`labs` holds 2,000,000 synthetic lab results (`patient_id`, `clinic`, `test_name`, `result`) from eight clinics, and `a1c` holds its 118,032 A1c results from 90,281 patients; timings depend on the machine.
+`labs` holds 2,000,000 synthetic lab results (`patient_id`, `clinic`, `test_name`, `result`) from eight clinics, and `a1c` holds its 118,645 A1c results from 90,178 patients; timings depend on the machine.
 
 ```python
 %timeit [a1c.groupby('patient_id')['result'].agg(f) for f in ['mean', 'std', 'count']]
@@ -647,13 +647,13 @@ print(labs['clinic'].astype('category').memory_usage(deep=True) / 1e6)
 ```
 
 ```text
-132 ms ± 1.38 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
-48 ms ± 581 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)
-30.437234
+128 ms ± 1.29 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+47.5 ms ± 332 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+30.427492
 2.000258
 ```
 
-One split is about 2.8 times faster than three. The text `clinic` column takes 30.4 MB; as a category, 2.0 MB.
+One split is about 2.7 times faster than three. The text `clinic` column takes 30.4 MB; as a category, 2.0 MB.
 
 ![xkcd 1319: Automation. Making code faster is work too, so measure first and spend the effort only where the time goes](media/xkcd_1319.png)
 

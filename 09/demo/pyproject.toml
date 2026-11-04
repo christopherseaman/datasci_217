@@ -11,4 +11,5 @@ dependencies = [
     "jupytext==1.18.1",
     "ipykernel==6.29.5",
     "pyarrow==25.0.0",
+    "dowhy==0.14",
 ]

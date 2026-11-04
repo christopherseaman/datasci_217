@@ -14,4 +14,7 @@ dependencies = [
     "jupyterlab==4.4.10",
     "jupytext==1.18.1",
     "ipykernel==6.29.5",
+    "dowhy==0.14",
+    "networkx==3.7",
+    "scipy==1.18.1",
 ]

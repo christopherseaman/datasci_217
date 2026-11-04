@@ -8,45 +8,55 @@ build() writes seven Parquet tables under data/:
 - encounters, ward_vitals, labs: 2024 ward encounters at three hospitals in three time zones,
   vitals on each hospital's wall clock and lab times in UTC (Demo 3).
 
-Columns are generated in this causal order (an arrow means "is an input to"):
+Each table's people and visits come from a causal graph declared once below (the *_EDGES strings; an
+arrow means "is an input to"). Every node has a formula plus noise, run by dowhy.gcm as a structural
+causal model, so confounding such as "sicker patients get a lactate and also go to the ICU" comes from
+the edges. Four graphs:
 
-    ED
-    site catchment -> age, sex, deprivation (area index 1-10) -> insurance, smoking
-    age, deprivation, smoking -> chronic conditions (count, COPD) -> how often a person visits
-    hour of day, weekday, flu season, site -> arrivals per hour -> crowding (arrivals in the last 6 hours)
-    flu season, COPD, age -> respiratory complaint
-    age, conditions, hour -> ambulance arrival
-    age, conditions, ambulance, respiratory -> acuity -> triage level (ESI 1 to 5)
-    crowding, ESI, site -> wait for a provider -> left without being seen (LWBS)
-    ESI, age, conditions, site -> admitted -> boarding time (longer in flu season and on weekends)
-    ESI, wait, boarding -> length of stay; LWBS -> departure often never recorded
-    crowding -> triage level left blank; plus typed dates, a feed outage, and impossible text dates
+    ED_POPULATION_EDGES   catchment residents: site -> age, deprivation -> smoking, conditions, COPD,
+                          insurance -> how often each resident visits
+    ED_VISIT_EDGES        visits: flu season, crowding, night, the patient -> respiratory complaint,
+                          ambulance, triage level (ESI) -> wait -> left without being seen (LWBS)
+                          -> disposition -> length of stay; LWBS -> departure never recorded
+    STAY_EDGES            step-down stays: age, severity -> COPD, beta-blocker, AF, deterioration,
+                          fever, baseline heart rate and SpO2
+    WARD_EDGES            ward encounters: flu season -> diagnosis -> severity -> ICU transfer, length
+                          of stay, which labs are ordered and their values, baseline vitals
 
-    Step-down unit
-    age -> COPD, heart failure on a beta-blocker, atrial fibrillation; admission severity
-    age, severity, COPD -> deterioration (ICU transfer) -> 6 to 18 hour ramp in HR and SpO2
-    beta-blocker, AF, severity, time of day, fever -> heart rate; COPD, severity -> SpO2
-    severity, daytime -> time off the monitor (imaging, walks, showers)
-    daytime movement -> motion artifact spikes in HR; probe slipping -> false low SpO2, then blanks
-    fever episodes (more with COPD; sepsis before transfer) -> charted temperature and heart rate
-    high temperature -> rechecked and charted twice under the same round time
+Two documented gcm calls do the sampling. gcm.draw_samples draws the step-down stays, whose roots are
+all random. Where a root comes from a calendar process (the hour a visit arrived, how crowded the ED
+was, an admission's flu season) or from the resident a visit belongs to, sample() passes those values
+as observed data, and gcm.interventional_samples with an identity intervention on the roots draws every
+other node from its mechanism.
 
-    Ward
-    season, hour, weekday -> admission time; season -> diagnosis (pneumonia and COPD in winter)
-    age, conditions, diagnosis -> severity at admission
-    severity, site -> ICU transfer and its timing; severity -> length of stay
-    severity, COPD, diagnosis, deterioration ramp -> heart rate and SpO2
-    worry (severity, ramp) -> how often vitals are charted; night round skipped for stable patients
-    severity, diagnosis -> which labs are ordered (sicker patients get lactates) -> lab values
-    test, site, night collection -> lab turnaround; wall-clock typing on clock-change nights
+Readings are expanded from each unit with numpy, because a gcm row is one unit: arrivals per hour and
+crowding (arrivals in the last 6 hours); the 5-minute monitor feed (day-night swing, fever episodes,
+a 6 to 18 hour deterioration ramp, motion artifacts, probe slips, time off the monitor that is longer
+for sicker patients and in the daytime); 4-hourly temperatures (high readings rechecked under the same
+round time; the 04:00 round skipped for stable patients); ward vitals charted more often when a
+patient is sicker or deteriorating; repeat lactates before an ICU transfer, rising from the patient's
+own lactate; lab collection times and turnaround (slower at night).
 
-The seed is fixed, so every run writes the same values. All patients and values are synthetic.
+Small documented post-steps add record-keeping events tied to the calendar or a feed: Eastside's
+9-day feed outage, impossible arrival text, departures typed with the previous day's date, manual
+entries typed in the spring-forward hour, readmissions, and the export's row order.
+
+The seeds are fixed, so every run writes the same bytes. All patients and values are synthetic.
 """
 
+import inspect
+import warnings
 from pathlib import Path
 
+import networkx as nx
 import numpy as np
 import pandas as pd
+from scipy import stats
+
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')  # dowhy 0.14 warns about its own regex strings and, in Jupyter, about tqdm widgets
+    from dowhy import gcm
+    from dowhy.gcm.causal_models import PARENTS_DURING_FIT
 
 SEED = 909
 TEXT_FORMAT = '%Y-%m-%d %H:%M'
@@ -56,6 +66,132 @@ MINUTE_US = 60_000_000
 
 def logistic(x):
     return 1 / (1 + np.exp(-x))
+
+
+# ---------------------------------------------------------------- gcm plumbing
+
+class Formula(gcm.PredictionModel):
+    """The f in an additive noise model Y = f(parents) + N, written as a function of named parents."""
+
+    def __init__(self, fn, parents):
+        self.fn, self.parents = fn, parents
+
+    def fit(self, X, Y):
+        pass  # the formula is declared, not learned
+
+    def predict(self, X):
+        return np.asarray(self.fn(**dict(zip(self.parents, X.T.astype(float)))), dtype=float).reshape(-1, 1)
+
+    def clone(self):
+        return self
+
+
+class Probabilities(gcm.ClassificationModel):
+    """Class probabilities as a function of named parents, for gcm.ClassifierFCM."""
+
+    def __init__(self, fn, parents, classes):
+        self.fn, self.parents, self._classes = fn, parents, list(classes)
+
+    def fit(self, X, Y):
+        pass
+
+    def predict_probabilities(self, X):
+        p = np.asarray(self.fn(**dict(zip(self.parents, X.T.astype(float)))), dtype=float)
+        return np.column_stack([1 - p, p]) if p.ndim == 1 else p
+
+    def predict(self, X):
+        return np.array(self._classes)[self.predict_probabilities(X).argmax(1)]
+
+    @property
+    def classes(self):
+        return self._classes
+
+    def clone(self):
+        return self
+
+
+def mechanism(fn, make):
+    """A node's formula (kept for the parent check in causal_model) and how to build its gcm mechanism."""
+    make.fn = fn
+    return make
+
+
+def normal(fn, sd):
+    """Y = fn(parents) + Normal(0, sd)."""
+    return mechanism(fn, lambda parents: gcm.AdditiveNoiseModel(
+        Formula(fn, parents), gcm.ScipyDistribution(stats.norm, loc=0, scale=sd)))
+
+
+def additive(fn, distribution, **parameters):
+    """Y = fn(parents) + noise from any scipy distribution."""
+    return mechanism(fn, lambda parents: gcm.AdditiveNoiseModel(
+        Formula(fn, parents), gcm.ScipyDistribution(distribution, **parameters)))
+
+
+def bernoulli(fn):
+    """Y is 1 with probability fn(parents), else 0."""
+    return mechanism(fn, lambda parents: gcm.ClassifierFCM(Probabilities(fn, parents, [0, 1])))
+
+
+def categorical(fn, classes):
+    """Y is one of classes, with fn(parents) returning one probability column per class."""
+    return mechanism(fn, lambda parents: gcm.ClassifierFCM(Probabilities(fn, parents, classes)))
+
+
+def root(distribution, **parameters):
+    """A root node drawn from a scipy distribution."""
+    return mechanism(None, lambda parents: gcm.ScipyDistribution(distribution, **parameters))
+
+
+def poisson_probs(mean, top):
+    """Poisson probabilities for 0 to top, with the tail folded into top."""
+    p = stats.poisson.pmf(np.arange(top + 1)[None, :], np.asarray(mean)[:, None])
+    p[:, -1] += 1 - p.sum(1)
+    return p
+
+
+def graph(edges):
+    """A DiGraph from lines such as 'age, smoker -> copd'."""
+    g = nx.DiGraph()
+    for line in edges.strip().splitlines():
+        sources, target = line.split('->')
+        g.add_node(target.strip())
+        g.add_edges_from((s.strip(), target.strip()) for s in sources.split(','))
+    return g
+
+
+def causal_model(edges, mechanisms, given=()):
+    """A gcm.StructuralCausalModel whose formulas take exactly each node's parents in the graph."""
+    g = graph(edges)
+    g.add_nodes_from(mechanisms)
+    scm = gcm.StructuralCausalModel(g)
+    for node in g.nodes:
+        parents = sorted(g.predecessors(node))  # gcm passes parents in sorted order
+        if node in given:  # observed values replace this root; gcm only needs a placeholder mechanism
+            assert not parents, f'{node} is given but has parents'
+            scm.set_causal_mechanism(node, gcm.EmpiricalDistribution())
+        else:
+            make = mechanisms[node]
+            inputs = set(inspect.signature(make.fn).parameters) if make.fn else set()
+            assert inputs == set(parents), f'{node}: formula inputs {sorted(inputs)} differ from its graph parents {parents}'
+            scm.set_causal_mechanism(node, make(parents))
+        # The formulas are declared, not fitted, so record each node's parents as gcm.fit and
+        # gcm.create_causal_model_from_equations do; gcm checks this before it samples.
+        scm.graph.nodes[node][PARENTS_DURING_FIT] = parents
+    return scm
+
+
+def sample(scm, seed, n=None, given=None):
+    """gcm.draw_samples when every root is random; with given, those roots are fixed and the rest is drawn."""
+    gcm.util.general.set_random_seed(seed)
+    if given is None:
+        return gcm.draw_samples(scm, n)
+    data = given.reset_index(drop=True).copy()
+    roots = [v for v in scm.graph.nodes if scm.graph.in_degree(v) == 0]
+    for node in roots:
+        if node not in data:
+            data[node] = scm.causal_mechanism(node).draw_samples(len(data)).reshape(-1)
+    return gcm.interventional_samples(scm, {node: (lambda x: x) for node in roots}, observed_data=data)
 
 
 def patient_ids(rng, n):
@@ -74,18 +210,24 @@ def flu_intensity(times):
 
 # ---------------------------------------------------------------- ED visits (Demos 1 and 3)
 
-ED_SITES = {'Central': 330, 'Northside': 240, 'Eastside': 170, 'Harbor': 100}  # mean visits per day
-ED_DEPRIVATION = {'Central': 6.5, 'Northside': 3.0, 'Eastside': 7.5, 'Harbor': 5.0}  # catchment mean decile
-ED_AGE_SHIFT = {'Central': 0, 'Northside': 3, 'Eastside': -4, 'Harbor': 8}  # Harbor serves a retirement area
-ED_WAIT_LOG = {'Central': 0.15, 'Northside': -0.10, 'Eastside': 0.25, 'Harbor': -0.20}  # staffing per visit
-ED_ADMIT_LOG = {'Central': 0.10, 'Northside': -0.05, 'Eastside': -0.15, 'Harbor': 0.20}
+ED_SITES = ['Central', 'Northside', 'Eastside', 'Harbor']  # site codes 0 to 3
+ED_PER_DAY = np.array([330, 240, 170, 100])  # mean visits per day
+ED_DEPRIVATION = np.array([6.5, 3.0, 7.5, 5.0])  # catchment mean area deprivation decile
+ED_AGE_SHIFT = np.array([0, 3, -4, 8])  # Harbor serves a retirement area
+ED_WAIT_LOG = np.array([0.15, -0.10, 0.25, -0.20])  # staffing per visit
+ED_ADMIT_LOG = np.array([0.10, -0.05, -0.15, 0.20])
 ED_OUTAGE = ('2024-08-12', '2024-08-21')  # Eastside sent no rows for these 9 days (end excluded)
 # Relative arrivals by hour of day: quiet before dawn, busiest late morning to evening
 # (US EDs see about 4 to 5 times as many arrivals at 11:00 as at 04:00).
 ED_HOURLY = np.array([0.55, 0.45, 0.38, 0.33, 0.30, 0.32, 0.45, 0.70, 0.98, 1.22, 1.38, 1.45,
                       1.42, 1.38, 1.35, 1.33, 1.32, 1.34, 1.36, 1.30, 1.18, 1.02, 0.85, 0.68])
 ED_WEEKDAY = np.array([1.12, 1.03, 1.00, 0.98, 0.97, 0.93, 0.97])  # Monday first
-ESI_P = [0.008, 0.14, 0.44, 0.33, 0.082]  # national triage mix, ESI 1 to 5
+# Cut points on the acuity scale that give the national triage mix (ESI 1 to 5: 0.8%, 14%, 44%, 33%, 8%).
+ESI_CUTS = np.array([3.88, 1.79, 0.04, -1.39])
+ESI_WAIT = np.array([0, 0.02, 0.35, 1.0, 1.25, 1.3])  # door-to-provider wait multiplier by ESI
+ESI_ADMIT_LOG = np.array([0, 1.6, 0.0, -1.7, -3.6, -4.8])
+ESI_TREAT_H = np.array([0, 4.0, 3.6, 3.0, 1.5, 1.0])  # median treatment hours by ESI
+DISPOSITIONS = ['discharged', 'admitted', 'transferred', 'left without being seen']  # codes 0 to 3
 BAD_ARRIVALS = ['', 'UNKNOWN', '2023-02-29 08:15', '2024-06-31 14:40', '2024-11-05 24:10']
 BAD_EACH = 30  # each bad pattern appears this many times
 # Catchment residents per ED visit, and the gamma shape of how often each visits. Together they give about 1.6
@@ -94,27 +236,100 @@ BAD_EACH = 30  # each bad pattern appears this many times
 ED_CATCHMENT = 2.0
 ED_FRAILTY_SHAPE = 0.25
 
-
-def build_ed_population(rng, site, n):
-    """One site's catchment: who lives there, how sick they are, and how often they use the ED."""
-    age = np.clip(1 + 92 * rng.beta(1.5, 2.0, n) + ED_AGE_SHIFT[site], 0, 99).round()
-    deprivation = np.clip(rng.normal(ED_DEPRIVATION[site], 1.8, n), 1, 10).round()
-    adult = age >= 18
-    smoker = adult & (rng.random(n) < logistic(-1.7 + 0.22 * (deprivation - 5)))  # about 14%, more where deprived
-    conditions = np.minimum(rng.poisson(np.exp(-2.4 + 0.035 * age + 0.07 * (deprivation - 5) + 0.3 * smoker)), 7)
-    copd = adult & (rng.random(n) < logistic(-6.0 + 0.055 * age + 1.5 * smoker))  # about 6% of adults
-    medicare = (age >= 65) & (rng.random(n) < 0.93)
-    medicaid = ~medicare & (rng.random(n) < logistic(-1.8 + 0.45 * (deprivation - 5) + 1.0 * (age < 18)))
-    uninsured = ~medicare & ~medicaid & (rng.random(n) < 0.12)
-    insurance = np.select([medicare, medicaid, uninsured], ['Medicare', 'Medicaid', 'uninsured'], 'commercial')
-    # Gamma frailty gives the long tail of frequent visitors seen in every ED.
-    propensity = rng.gamma(ED_FRAILTY_SHAPE, 1, n) * np.exp(0.22 * conditions + 0.06 * (deprivation - 5)
-                                                + 0.35 * (insurance == 'uninsured') + 0.6 * copd)
-    return pd.DataFrame({'patient_id': patient_ids(rng, n), 'age': age, 'conditions': conditions,
-                         'copd': copd, 'propensity': propensity})
+ED_POPULATION_EDGES = """
+site -> age
+site -> deprivation
+age, deprivation -> smoker
+age, deprivation, smoker -> conditions
+age, smoker -> copd
+age, deprivation -> insurance
+conditions, copd, deprivation, insurance -> log_propensity
+"""
 
 
-def build_ed_visits(rng):
+def _insurance(age, deprivation):
+    medicare = (age >= 65) * 0.93
+    medicaid = (1 - medicare) * logistic(-1.8 + 0.45 * (deprivation - 5) + 1.0 * (age < 18))
+    uninsured = (1 - medicare - medicaid) * 0.12
+    return np.column_stack([medicare, medicaid, uninsured, 1 - medicare - medicaid - uninsured])
+
+
+ED_POPULATION = {
+    # Age 0 to 93 from a right-skewed beta, shifted by catchment; deprivation decile around the catchment mean.
+    'age': additive(lambda site: 1 + ED_AGE_SHIFT[site.astype(int)], stats.beta, a=1.5, b=2.0, scale=92),
+    'deprivation': normal(lambda site: ED_DEPRIVATION[site.astype(int)], 1.8),
+    'smoker': bernoulli(lambda age, deprivation: (age >= 18) * logistic(-1.7 + 0.22 * (deprivation - 5))),  # about 14%
+    # Chronic conditions: about 3.5% more per year of age, more where deprived and among smokers.
+    'conditions': categorical(lambda age, deprivation, smoker: poisson_probs(
+        np.exp(-2.4 + 0.035 * age + 0.07 * (deprivation - 5) + 0.3 * smoker), 7), range(8)),
+    'copd': bernoulli(lambda age, smoker: (age >= 18) * logistic(-6.0 + 0.055 * age + 1.5 * smoker)),  # about 6% of adults
+    'insurance': categorical(_insurance, range(4)),  # Medicare, Medicaid, uninsured, commercial
+    # How often a resident visits: gamma frailty (the log of a gamma variable is loggamma) times exp(risk),
+    # which gives the long tail of frequent visitors seen in every ED.
+    'log_propensity': additive(lambda conditions, copd, deprivation, insurance: 0.22 * conditions + 0.06 * (deprivation - 5)
+                               + 0.35 * (insurance == 2) + 0.6 * copd, stats.loggamma, c=ED_FRAILTY_SHAPE),
+}
+
+ED_VISIT_EDGES = """
+age, copd, flu -> respiratory
+age, conditions, night -> ambulance
+age, ambulance, conditions, copd, night, respiratory -> esi
+crowd, esi, site -> log_wait
+age, esi, log_wait -> lwbs
+age, conditions, esi, lwbs, respiratory, site -> disposition
+age, esi -> log_treat
+flu, weekend -> log_board
+disposition, log_board, log_treat, log_wait -> los_hours
+disposition -> departure_recorded
+crowd -> esi_recorded
+"""
+
+
+def _esi(age, ambulance, conditions, copd, night, respiratory):
+    # Latent acuity: older, sicker, by ambulance, COPD with a respiratory complaint, and at night.
+    acuity = (0.022 * (age - 45) + 0.22 * conditions + 1.0 * ambulance + 0.5 * respiratory * copd + 0.25 * night)
+    at_least = stats.norm.cdf(acuity[:, None] - ESI_CUTS[None, :])  # P(ESI 1), P(ESI 1 or 2), ...
+    return np.diff(np.column_stack([np.zeros(len(acuity)), at_least, np.ones(len(acuity))]), axis=1)
+
+
+def _disposition(age, conditions, esi, lwbs, respiratory, site):
+    p_admit = logistic(ESI_ADMIT_LOG[esi.astype(int)] + 0.022 * (age - 45) + 0.18 * conditions
+                       + 0.4 * respiratory * (age >= 65) + ED_ADMIT_LOG[site.astype(int)])
+    p_transfer = np.minimum(0.02 * (esi <= 3), 1 - p_admit)
+    seen = 1 - lwbs
+    return np.column_stack([seen * (1 - p_admit - p_transfer), seen * p_admit, seen * p_transfer, lwbs])
+
+
+def _los_hours(disposition, log_board, log_treat, log_wait):
+    wait_h = np.exp(log_wait) / 60
+    stay = wait_h + np.exp(log_treat) + (disposition == 1) * np.exp(log_board) + (disposition == 2) * 1.5
+    return np.where(disposition == 3, 0.75 * wait_h, stay)  # LWBS patients leave partway through the wait
+
+
+ED_VISIT = {
+    # About 7% of visits are respiratory, up to about 30% at the flu peak; more with COPD, over 65, and under 5.
+    'respiratory': bernoulli(lambda age, copd, flu: logistic(-2.75 + 1.9 * flu + 1.3 * copd + 0.5 * (age >= 65) + 0.4 * (age < 5))),
+    # About 15% arrive by ambulance, more often older, sicker, and at night.
+    'ambulance': bernoulli(lambda age, conditions, night: logistic(-2.3 + 0.03 * (age - 45) + 0.25 * conditions + 0.5 * night)),
+    'esi': categorical(_esi, [1, 2, 3, 4, 5]),
+    # Door-to-provider wait in minutes: median about 25, rising with crowding (exponent 1.5), noise sd 0.7 on the log scale.
+    'log_wait': normal(lambda crowd, esi, site: np.log(24) + 1.5 * np.log(crowd) + np.log(ESI_WAIT[esi.astype(int)])
+                       + ED_WAIT_LOG[site.astype(int)], 0.7),
+    # Leaving without being seen: odds triple per tripling of the wait; ESI 1 and 2 are seen at once.
+    'lwbs': bernoulli(lambda age, esi, log_wait: (esi >= 3) * logistic(-4.6 + 1.1 * (log_wait - np.log(30))
+                                                                        + 0.35 * (esi - 3) - 0.01 * (age - 45))),
+    'disposition': categorical(_disposition, range(4)),
+    'log_treat': normal(lambda age, esi: np.log(ESI_TREAT_H[esi.astype(int)]) + np.log(np.clip(1 + 0.004 * (age - 45), 0.8, None)), 0.5),
+    # Admitted patients wait for an inpatient bed ("boarding"): median about 2 hours, more than doubling at the flu peak.
+    'log_board': normal(lambda flu, weekend: np.log(2.0) + np.log(1 + 1.4 * flu) + np.log(1.2) * weekend, 0.8),
+    'los_hours': normal(_los_hours, 0.1),
+    'departure_recorded': bernoulli(lambda disposition: np.where(disposition == 3, 0.55, 0.997)),  # nobody checks out a walkout
+    'esi_recorded': bernoulli(lambda crowd: 1 - 0.002 - 0.02 * np.clip(crowd - 1.2, 0, 1)),  # skipped when crowded
+}
+
+
+def ed_arrivals(rng):
+    """Visits per hour for each site, and how crowded the ED was when each visit arrived."""
     hours = pd.date_range('2023-01-01', '2024-12-31 23:00', freq='h')
     flu_h = flu_intensity(hours)
     doy = hours.dayofyear.to_numpy()
@@ -122,101 +337,102 @@ def build_ed_visits(rng):
     shape = ED_HOURLY[hours.hour] / ED_HOURLY.mean() * ED_WEEKDAY[hours.dayofweek] * season
     day_of = ((hours - hours[0]) // pd.Timedelta(days=1)).to_numpy()
     starts = hours.as_unit('us').asi8
-
     parts = []
-    for site, per_day in ED_SITES.items():
+    for code, per_day in enumerate(ED_PER_DAY):
         day_effect = rng.gamma(250, 1 / 250, day_of.max() + 1)  # day-to-day spread beyond Poisson, about 6%
         counts = rng.poisson(per_day / 24 * shape * day_effect[day_of])
         recent = np.convolve(counts, np.ones(6))[:len(counts)]  # arrivals in this hour and the 5 before
-        crowd = recent / recent.mean()
         rows = np.repeat(np.arange(len(hours)), counts)
-        parts.append(pd.DataFrame({
-            'site': site,
-            'arrival_us': starts[rows] + rng.integers(0, 60, len(rows)) * MINUTE_US,
-            'crowd': crowd[rows], 'flu': flu_h[rows],
-        }))
+        parts.append(pd.DataFrame({'site': code, 'arrival_us': starts[rows] + rng.integers(0, 60, len(rows)) * MINUTE_US,
+                                   'crowd': (recent / recent.mean())[rows], 'flu': flu_h[rows]}))
     visits = pd.concat(parts, ignore_index=True)
     visits['arrival'] = pd.to_datetime(visits['arrival_us'], unit='us')
-    outage = (visits['site'] == 'Eastside') & visits['arrival'].between(*ED_OUTAGE, inclusive='left')
-    visits = visits[~outage].sort_values(['site', 'arrival']).reset_index(drop=True)
-    n = len(visits)
+    outage = (visits['site'] == ED_SITES.index('Eastside')) & visits['arrival'].between(*ED_OUTAGE, inclusive='left')
+    return visits[~outage].sort_values(['site', 'arrival']).reset_index(drop=True)
 
-    # Each visit belongs to a resident of the site's catchment, weighted by how often they visit;
-    # respiratory visits in flu season come more often from older adults and people with COPD.
-    hour = visits['arrival'].dt.hour.to_numpy()
-    respiratory = rng.random(n) < 0.07 + 0.22 * visits['flu'].to_numpy()
-    cols = {k: np.empty(n, dtype=object if k == 'patient_id' else float) for k in ['patient_id', 'age', 'conditions', 'copd']}
-    for site in ED_SITES:
-        rows = np.flatnonzero(visits['site'].to_numpy() == site)
-        pop = build_ed_population(rng, site, int(len(rows) * ED_CATCHMENT))
-        weight = pop['propensity'].to_numpy()
-        resp_weight = weight * (1 + 2.5 * pop['copd'] + 0.8 * (pop['age'] >= 65) + 0.6 * (pop['age'] < 5)).to_numpy()
-        pick = np.empty(len(rows), dtype=np.int64)
-        r = respiratory[rows]
-        pick[~r] = rng.choice(len(pop), (~r).sum(), p=weight / weight.sum())
-        pick[r] = rng.choice(len(pop), r.sum(), p=resp_weight / resp_weight.sum())
-        for k in cols:
-            cols[k][rows] = pop[k].to_numpy()[pick]
-    age, conditions, copd = cols['age'], cols['conditions'], cols['copd'].astype(bool)
-    night = (hour < 7) | (hour >= 23)
-    crowd = visits['crowd'].to_numpy()
+
+def build_ed_visits(rng):
+    visits = ed_arrivals(rng)
+    n = len(visits)
     site = visits['site'].to_numpy()
 
-    # About 17% arrive by ambulance, more often older, sicker, and at night.
-    ambulance = rng.random(n) < logistic(-2.3 + 0.03 * (age - 45) + 0.25 * conditions + 0.5 * night)
-    acuity = (0.022 * (age - 45) + 0.22 * conditions + 1.0 * ambulance + 0.5 * (respiratory & copd)
-              + 0.25 * night + rng.normal(0, 1, n))
-    cuts = np.quantile(acuity, 1 - np.cumsum(ESI_P)[:-1])  # the most acute 0.8% are ESI 1, and so on
-    esi = 1 + sum((acuity < c).astype(int) for c in cuts)
+    # Each visit belongs to a resident of its site's catchment, drawn in proportion to how often they visit.
+    population = sample(causal_model(ED_POPULATION_EDGES, ED_POPULATION, given={'site'}), SEED + 11,
+                        given=pd.DataFrame({'site': np.repeat(np.arange(4), (np.bincount(site) * ED_CATCHMENT).astype(int))}))
+    population['patient_id'] = patient_ids(rng, len(population))
+    pick = np.empty(n, dtype=np.int64)
+    for code in range(4):
+        residents = np.flatnonzero(population['site'].to_numpy() == code)
+        weight = np.exp(population['log_propensity'].to_numpy()[residents])
+        rows = np.flatnonzero(site == code)
+        pick[rows] = rng.choice(residents, len(rows), p=weight / weight.sum())
+    patient = population.iloc[pick].reset_index(drop=True)
 
-    # Door-to-provider wait: median about 25 minutes, longer when crowded (exponent about 1.5).
-    wait_min = (24 * crowd ** 1.5 * np.array([0, 0.05, 0.35, 1.0, 1.25, 1.3])[esi]
-                * np.exp(pd.Series(site).map(ED_WAIT_LOG).to_numpy() + rng.normal(0, 0.7, n)))
-    p_lwbs = np.where(esi >= 3, logistic(-4.6 + 1.1 * np.log(wait_min / 30) + 0.35 * (esi - 3) - 0.01 * (age - 45)), 0)
-    lwbs = rng.random(n) < p_lwbs
-    p_admit = logistic(np.array([0, 1.6, 0.0, -1.7, -3.6, -4.8])[esi] + 0.022 * (age - 45) + 0.18 * conditions
-                       + 0.4 * (respiratory & (age >= 65)) + pd.Series(site).map(ED_ADMIT_LOG).to_numpy())
-    u = rng.random(n)
-    admitted = ~lwbs & (u < p_admit)
-    transferred = ~lwbs & ~admitted & (u < p_admit + 0.02 * (esi <= 3))
-    disposition = np.select([lwbs, admitted, transferred],
-                            ['left without being seen', 'admitted', 'transferred'], 'discharged')
+    hour = visits['arrival'].dt.hour.to_numpy()
+    context = pd.DataFrame({'site': site, 'flu': visits['flu'], 'crowd': visits['crowd'],
+                            'night': ((hour < 7) | (hour >= 23)).astype(int),
+                            'weekend': (visits['arrival'].dt.dayofweek.to_numpy() >= 5).astype(int),
+                            'age': patient['age'], 'conditions': patient['conditions'], 'copd': patient['copd']})
+    v = sample(causal_model(ED_VISIT_EDGES, ED_VISIT, given=set(context)), SEED + 12, given=context)
 
-    treat_h = (np.array([0, 4.0, 3.6, 3.0, 1.5, 1.0])[esi] * (1 + 0.004 * (age - 45)).clip(0.8)
-               * np.exp(rng.normal(0, 0.5, n)))
-    weekend = visits['arrival'].dt.dayofweek.to_numpy() >= 5
-    # Admitted patients wait for an inpatient bed ("boarding"): median about 2 hours, doubling at the flu peak.
-    board_h = 2.0 * (1 + 1.4 * visits['flu'].to_numpy()) * np.where(weekend, 1.2, 1.0) * np.exp(rng.normal(0, 0.8, n))
-    los_h = wait_min / 60 + treat_h + np.where(admitted, board_h, 0) + np.where(transferred, 1.5, 0)
-    los_h = np.where(lwbs, wait_min / 60 * rng.uniform(0.5, 1.0, n), los_h)
-    los_min = np.clip(los_h, 0.2, 48) * 60
+    age = np.clip(v['age'].to_numpy(), 0, 99).round()
+    los_min = np.clip(v['los_hours'].to_numpy(), 0.2, 48) * 60
     departure = visits['arrival'] + pd.to_timedelta(los_min.round(), unit='min')
-
     arrival_text = visits['arrival'].dt.strftime(TEXT_FORMAT).to_numpy(dtype=object)
     departure_text = departure.dt.strftime(TEXT_FORMAT).to_numpy(dtype=object)
-    no_departure = (lwbs & (rng.random(n) < 0.45)) | (rng.random(n) < 0.003)  # LWBS patients are rarely checked out
+    no_departure = v['departure_recorded'].to_numpy() == 0
     departure_text[no_departure] = None
-    typo = rng.choice(np.flatnonzero(~no_departure), 75, replace=False)  # departure typed with the previous day's date
+
+    # Post-steps: departures typed with the previous day's date, and arrival text no parser accepts.
+    typo = rng.choice(np.flatnonzero(~no_departure), 75, replace=False)
     departure_text[typo] = (departure.iloc[typo] - pd.Timedelta(days=1)).dt.strftime(TEXT_FORMAT).to_numpy()
     bad = rng.choice(n, BAD_EACH * len(BAD_ARRIVALS), replace=False)
     arrival_text[bad] = np.repeat(BAD_ARRIVALS, BAD_EACH)
 
-    esi_col = pd.array(esi, dtype='Int64')
-    esi_col[rng.random(n) < 0.002 + 0.02 * np.clip(crowd - 1.2, 0, 1)] = pd.NA  # skipped when the ED is crowded
+    esi = pd.array(v['esi'].to_numpy().astype(int), dtype='Int64')
+    esi[v['esi_recorded'].to_numpy() == 0] = pd.NA
     return pd.DataFrame({
         'visit_id': [f'V{i:08d}' for i in range(1, n + 1)],
-        'site': site,
-        'patient_id': cols['patient_id'],
+        'site': np.array(ED_SITES)[site],
+        'patient_id': patient['patient_id'].to_numpy(),
         'age': age.astype(int),
-        'arrival_mode': np.where(ambulance, 'ambulance', 'walk-in'),
+        'arrival_mode': np.where(v['ambulance'].to_numpy() == 1, 'ambulance', 'walk-in'),
         'arrival_time': pd.array(arrival_text, dtype='str'),
         'departure_time': pd.array(departure_text, dtype='str'),
-        'esi': esi_col,
-        'disposition': disposition,
+        'esi': esi,
+        'disposition': np.array(DISPOSITIONS)[v['disposition'].to_numpy().astype(int)],
     })
 
 
 # ---------------------------------------------------------------- Step-down unit (Demo 2)
+
+STAY_EDGES = """
+age -> copd
+age -> beta_blocker
+age -> afib
+severity -> log_los_min
+age, copd, severity -> deteriorate
+copd -> fever_episode
+beta_blocker, severity -> hr_base
+copd, severity -> spo2_base
+"""
+
+STAY = {
+    'age': root(stats.norm, loc=68, scale=13),
+    'severity': root(stats.norm, loc=0, scale=1),  # admission severity, in standard deviations
+    'copd': bernoulli(lambda age: logistic(-3.2 + 0.035 * (age - 40))),  # about 20% on a step-down unit
+    'beta_blocker': bernoulli(lambda age: logistic(-1.6 + 0.04 * (age - 60))),  # heart failure or rate control
+    'afib': bernoulli(lambda age: logistic(-3.0 + 0.06 * (age - 60))),
+    # Length of stay: lognormal, median about 2.5 days, longer for sicker patients.
+    'log_los_min': normal(lambda severity: np.log(60 * 60) + 0.15 * severity, 0.55),
+    # About 6% are transferred to the ICU; odds roughly double per SD of admission severity.
+    'deteriorate': bernoulli(lambda age, copd, severity: logistic(-3.4 + 0.85 * severity + 0.02 * (age - 68) + 0.4 * copd)),
+    'fever_episode': bernoulli(lambda copd: np.where(copd == 1, 0.20, 0.12)),
+    # Resting heart rate: 9 bpm lower on a beta-blocker, 3 bpm higher per SD of severity.
+    'hr_base': normal(lambda beta_blocker, severity: 84 - 9 * beta_blocker + 3 * severity, 10),
+    'spo2_base': normal(lambda copd, severity: 96.5 - 2.5 * copd - 0.5 * severity, 1.0),
+}
+
 
 def smooth_noise(rng, n, sd, width=6):
     """Slowly varying noise: a moving average of white noise, rescaled to standard deviation sd."""
@@ -226,18 +442,19 @@ def smooth_noise(rng, n, sd, width=6):
 
 def build_step_down(rng):
     start, end = pd.Timestamp('2024-01-01'), pd.Timestamp('2024-03-31 23:55')
-    stays = []
+    pool = sample(causal_model(STAY_EDGES, STAY), SEED + 21, n=1200)  # more patients than the beds can take
+    los_min = np.clip(np.exp(pool['log_los_min'].to_numpy()), 8 * 60, 14 * 24 * 60).astype(int)
+    stays, k = [], 0
     for bed in range(1, 25):
         admit = start + pd.Timedelta(minutes=int(rng.integers(0, 12 * 60)))
         while admit < end:
-            severity = rng.normal(0, 1)
-            # Length of stay: lognormal, median about 2.5 days, longer for sicker patients.
-            los_min = int(np.clip(60 * 60 * np.exp(0.15 * severity + rng.normal(0, 0.55)), 8 * 60, 14 * 24 * 60))
-            stays.append({'bed': f'4W-{bed:02d}', 'admitted_at': admit,
-                          'left_at': min(admit + pd.Timedelta(minutes=los_min), end), 'severity': severity})
-            admit = admit + pd.Timedelta(minutes=los_min) + pd.Timedelta(
+            stays.append({'bed': f'4W-{bed:02d}', 'admitted_at': admit, 'pool_row': k,
+                          'left_at': min(admit + pd.Timedelta(minutes=int(los_min[k])), end)})
+            admit = admit + pd.Timedelta(minutes=int(los_min[k])) + pd.Timedelta(
                 minutes=int(np.clip(240 * np.exp(rng.normal(0, 0.7)), 45, 2880)))  # bed cleaned and refilled
+            k += 1
     stays = pd.DataFrame(stays).sort_values('admitted_at').reset_index(drop=True)
+    p = pool.iloc[stays['pool_row']].reset_index(drop=True)
     n = len(stays)
     stays.insert(0, 'stay_id', [f'S{i:04d}' for i in range(1, n + 1)])
     ids = patient_ids(rng, n)
@@ -245,14 +462,11 @@ def build_step_down(rng):
     readmit = readmit[readmit > 20]
     ids[readmit] = [ids[rng.integers(0, i - 5)] for i in readmit]  # same patient as an earlier stay
     stays.insert(1, 'patient_id', ids)
-    age = np.clip(rng.normal(68, 13, n), 25, 97).round()
-    copd = rng.random(n) < logistic(-3.2 + 0.035 * (age - 40))  # about 20% on a step-down unit
-    beta_blocker = rng.random(n) < logistic(-1.6 + 0.04 * (age - 60))  # heart failure or rate control
-    afib = rng.random(n) < logistic(-3.0 + 0.06 * (age - 60))
-    severity = stays['severity'].to_numpy()
-    # About 6% are transferred to the ICU; odds roughly double per SD of admission severity.
-    deteriorate = (rng.random(n) < logistic(-3.4 + 0.85 * severity + 0.02 * (age - 68) + 0.4 * copd)) & (stays['left_at'] < end)
-    stays['age'] = age.astype(int)
+    severity, copd = p['severity'].to_numpy(), p['copd'].to_numpy() == 1
+    afib, fever_episode = p['afib'].to_numpy() == 1, p['fever_episode'].to_numpy() == 1
+    hr_base, spo2_base = p['hr_base'].to_numpy(), p['spo2_base'].to_numpy()
+    deteriorate = (p['deteriorate'].to_numpy() == 1) & (stays['left_at'] < end).to_numpy()  # still on unit at the archive end
+    stays['age'] = np.clip(p['age'].to_numpy(), 25, 97).round().astype(int)
     stays['outcome'] = np.where(deteriorate, 'ICU transfer',
                                 np.where(stays['left_at'] >= end, 'still on unit', 'discharged'))
 
@@ -266,24 +480,23 @@ def build_step_down(rng):
         hours_to_end = ((row.left_at - times) / pd.Timedelta(hours=1)).to_numpy()
         hours_in = ((times - row.admitted_at) / pd.Timedelta(hours=1)).to_numpy()
 
-        # Fever episodes on the 5-minute grid: 12% of stays (20% with COPD), plus sepsis before a transfer.
+        # A fever episode rises and falls over about 3 hours; sepsis adds fever before a transfer.
         fever = np.zeros(m)
-        if rng.random() < (0.20 if copd[i] else 0.12) and m > 200:
+        if fever_episode[i] and m > 200:
             onset, length = rng.integers(0, m - 100), rng.integers(100, 600)
             bump = np.zeros(m)
             bump[onset:onset + length] = rng.uniform(1.8, 3.0)
-            fever = np.convolve(bump, np.ones(36) / 36, mode='same')  # rises and falls over about 3 hours
+            fever = np.convolve(bump, np.ones(36) / 36, mode='same')
         ramp = np.zeros(m)
         if det:
             ramp = np.clip(1 - hours_to_end / rng.uniform(6, 18), 0, 1)
             fever = fever + rng.uniform(0.5, 2.2) * ramp
 
-        # Heart rate: about 4.5 bpm per degree F of fever; 6 bpm day-night swing with a trough near 04:00.
-        hr = (np.clip(rng.normal(84, 10), 58, 115) - 9 * beta_blocker[i] + 3 * severity[i]
-              + 6 * np.cos(2 * np.pi * (clock - 16) / 24) + 4.5 * fever
+        # Heart rate: about 4.5 bpm per degree F of fever; 6 bpm day-night swing with a trough near 04:00;
+        # AF doubles the slow wander.
+        hr = (hr_base[i] + 6 * np.cos(2 * np.pi * (clock - 16) / 24) + 4.5 * fever
               + smooth_noise(rng, m, 7.0 if afib[i] else 3.5) - 0.03 * hours_in.clip(0, 96))
-        spo2 = (np.clip(rng.normal(96.5, 1.0), 93, 99) - 2.5 * copd[i] - 0.5 * severity[i]
-                + smooth_noise(rng, m, 0.8))
+        spo2 = spo2_base[i] + smooth_noise(rng, m, 0.8)
         if det:
             hr = hr + rng.uniform(22, 38) * ramp
             spo2 = spo2 - rng.uniform(3, 6) * (1.3 if copd[i] else 1.0) * ramp
@@ -337,17 +550,73 @@ def build_step_down(rng):
 
 # ---------------------------------------------------------------- Ward encounters (Demo 3)
 
-WARD_SITES = {'New York': 'America/New_York', 'Chicago': 'America/Chicago', 'Phoenix': 'America/Phoenix'}
+WARD_SITES = {'New York': 'America/New_York', 'Chicago': 'America/Chicago', 'Phoenix': 'America/Phoenix'}  # codes 0 to 2
 WARD_ENCOUNTERS = {'New York': 4200, 'Chicago': 3300, 'Phoenix': 2500}
-WARD_TRANSFER_LOG = {'New York': 0.10, 'Chicago': 0.0, 'Phoenix': -0.15}  # ICU bed policy differs by hospital
+WARD_TRANSFER_LOG = np.array([0.10, 0.0, -0.15])  # ICU bed policy differs by hospital
 LAB_SLOWER = {'New York': 1.0, 'Chicago': 1.1, 'Phoenix': 1.25}  # Phoenix sends chemistry to a central lab
 STANDARD_OFFSET_H = {'New York': -5, 'Chicago': -6, 'Phoenix': -7}
-DIAGNOSES = ['pneumonia', 'sepsis', 'heart failure', 'COPD', 'GI bleed', 'other']
+DIAGNOSES = ['pneumonia', 'sepsis', 'heart failure', 'COPD', 'GI bleed', 'other']  # codes 0 to 5
+DX_P = np.array([0.12, 0.08, 0.12, 0.07, 0.06, 0.55])
 DX_SEVERITY = np.array([0.4, 0.9, 0.3, 0.3, 0.2, -0.2])
 # Hospital admissions by hour of day: most come up from the ED in the afternoon and evening.
 ADMIT_HOURLY = np.array([0.6, 0.5, 0.4, 0.35, 0.3, 0.3, 0.35, 0.5, 0.7, 0.9, 1.1, 1.3,
                          1.45, 1.55, 1.6, 1.6, 1.55, 1.5, 1.45, 1.4, 1.3, 1.1, 0.9, 0.75])
 SPRING_FORWARD_ENTRIES = 4  # manual chart entries typed at 02:xx on March 10, 2024, a time that never happened
+
+WARD_EDGES = """
+age -> conditions
+flu -> diagnosis
+diagnosis -> copd
+age, conditions, diagnosis -> severity
+severity, site -> deteriorate
+severity -> log_los_h
+deteriorate, log_los_h, transfer_h -> stay_h
+diagnosis, severity -> lactate_ordered
+diagnosis, severity -> log_lactate
+diagnosis -> troponin_ordered
+diagnosis, severity -> log_troponin
+deteriorate, diagnosis -> culture_ordered
+age, conditions -> log_creatinine
+diagnosis, severity -> hr_base
+copd, diagnosis, severity -> spo2_base
+"""
+
+
+def _diagnosis(flu):
+    w = np.tile(DX_P, (len(flu), 1))
+    w[:, 0] *= 1 + 1.2 * flu  # pneumonia and COPD exacerbations rise in flu season
+    w[:, 3] *= 1 + 1.0 * flu
+    return w / w.sum(1, keepdims=True)
+
+
+WARD = {
+    'age': root(stats.norm, loc=66, scale=16),
+    # Hours from admission to an ICU transfer: 4 hours to about a week, most in the first 3 days.
+    'transfer_h': root(stats.gamma, a=1.3, loc=4, scale=40),
+    'conditions': categorical(lambda age: poisson_probs(np.exp(-0.9 + 0.025 * age), 8), range(9)),
+    'diagnosis': categorical(_diagnosis, range(6)),
+    'copd': bernoulli(lambda diagnosis: np.where(diagnosis == 3, 1.0, 0.10)),
+    'severity': normal(lambda age, conditions, diagnosis: DX_SEVERITY[diagnosis.astype(int)] + 0.02 * (age - 66)
+                       + 0.15 * (conditions - 2), 1.0),
+    # About 6% go to the ICU; odds rise about 2.6-fold per unit of severity, which no single vital captures.
+    'deteriorate': bernoulli(lambda severity, site: logistic(-3.6 + 0.95 * severity + WARD_TRANSFER_LOG[site.astype(int)])),
+    'log_los_h': normal(lambda severity: np.log(80) + 0.18 * severity, 0.65),  # median about 3.3 days
+    # A transfer ends the ward stay; otherwise the stay runs 10 hours to 21 days. Noise is under a minute.
+    'stay_h': additive(lambda deteriorate, log_los_h, transfer_h: np.where(
+        deteriorate == 1, np.minimum(transfer_h, 21 * 24), np.clip(np.exp(log_los_h), 10, 21 * 24)),
+        stats.uniform, loc=0, scale=1 / 60),
+    # Confounding by indication: lactate is drawn for patients who look sick or septic.
+    'lactate_ordered': bernoulli(lambda diagnosis, severity: logistic(-1.3 + 1.0 * severity + 2.2 * (diagnosis == 1) + 0.6 * (diagnosis == 0))),
+    'log_lactate': normal(lambda diagnosis, severity: np.log(1.3) + 0.22 * severity + 0.3 * (diagnosis == 1), 0.35),  # mmol/L
+    'troponin_ordered': bernoulli(lambda diagnosis: np.where(diagnosis == 2, 0.6, 0.2)),
+    'log_troponin': normal(lambda diagnosis, severity: np.log(8) + 0.4 * (diagnosis == 2) + 0.2 * severity, 0.9),  # ng/L
+    'culture_ordered': bernoulli(lambda deteriorate, diagnosis: np.select(
+        [diagnosis == 1, diagnosis == 0], [0.95, 0.6], 0.1 + 0.3 * deteriorate)),
+    'log_creatinine': normal(lambda age, conditions: np.log(0.95) + 0.008 * (age - 66) + 0.05 * conditions, 0.25),  # mg/dL
+    # Ward heart rate: 5 bpm per unit of severity, 6 bpm higher with an infection.
+    'hr_base': normal(lambda diagnosis, severity: 80 + 5 * severity + 6 * np.isin(diagnosis, [0, 1]), 9),
+    'spo2_base': normal(lambda copd, diagnosis, severity: 96.5 - 0.8 * severity - 2.5 * copd - 1.0 * (diagnosis == 0), 1.0),
+}
 
 
 def build_ward(rng):
@@ -356,12 +625,12 @@ def build_ward(rng):
     flu_d = flu_intensity(days)
     day_w = (1 + 0.25 * flu_d) * np.where(days.dayofweek >= 5, 0.85, 1.0)
     enc_parts = []
-    for site, n in WARD_ENCOUNTERS.items():
+    for code, (site, n) in enumerate(WARD_ENCOUNTERS.items()):
         d = rng.choice(len(days), n, p=day_w / day_w.sum())
         h = rng.choice(24, n, p=ADMIT_HOURLY / ADMIT_HOURLY.sum())
         local = days[d] + pd.to_timedelta(h * 60 + rng.integers(0, 60, n), unit='min')
         admitted = local.tz_localize(WARD_SITES[site], ambiguous=True, nonexistent='shift_forward').tz_convert('UTC')
-        enc_parts.append(pd.DataFrame({'site': site, 'admitted_at': admitted, 'flu': flu_d[d]}))
+        enc_parts.append(pd.DataFrame({'site': site, 'site_code': code, 'admitted_at': admitted, 'flu': flu_d[d]}))
     enc = pd.concat(enc_parts, ignore_index=True).sort_values('admitted_at').reset_index(drop=True)
     n = len(enc)
     enc.insert(0, 'encounter_id', [f'E{i:05d}' for i in range(1, n + 1)])
@@ -371,26 +640,15 @@ def build_ward(rng):
     ids[readmit] = [ids[rng.integers(max(0, i - 3000), i - 10)] for i in readmit]
     enc.insert(1, 'patient_id', ids)
 
-    age = np.clip(rng.normal(66, 16, n), 18, 99).round()
-    conditions = np.minimum(rng.poisson(np.exp(-0.9 + 0.025 * age)), 8)
-    flu = enc['flu'].to_numpy()
-    dx_p = np.array([0.12, 0.08, 0.12, 0.07, 0.06, 0.55])
-    dx_w = np.tile(dx_p, (n, 1))
-    dx_w[:, 0] *= 1 + 1.2 * flu  # pneumonia and COPD exacerbations rise in flu season
-    dx_w[:, 3] *= 1 + 1.0 * flu
-    dx = (rng.random(n)[:, None] > np.cumsum(dx_w / dx_w.sum(1, keepdims=True), axis=1)).sum(1)
-    copd = (dx == 3) | (rng.random(n) < 0.10)
-    severity = DX_SEVERITY[dx] + 0.02 * (age - 66) + 0.15 * (conditions - 2) + rng.normal(0, 1, n)
+    w = sample(causal_model(WARD_EDGES, WARD, given={'site', 'flu'}), SEED + 31,
+               given=pd.DataFrame({'site': enc['site_code'], 'flu': enc['flu']}))
+    age, conditions = w['age'].to_numpy(), w['conditions'].to_numpy()
+    dx, severity = w['diagnosis'].to_numpy().astype(int), w['severity'].to_numpy()
+    copd, deteriorate = w['copd'].to_numpy() == 1, w['deteriorate'].to_numpy() == 1
     site = enc['site'].to_numpy()
-    # About 6% go to the ICU; odds rise about 2.5-fold per unit of severity, which no single vital captures.
-    deteriorate = rng.random(n) < logistic(-3.6 + 0.95 * severity + pd.Series(site).map(WARD_TRANSFER_LOG).to_numpy())
-    los_h = np.clip(80 * np.exp(0.18 * severity + rng.normal(0, 0.65, n)), 10, 21 * 24)
-    # Transfers come 4 hours to about a week in, most in the first 3 days.
-    transfer_h = 4 + rng.gamma(1.3, 40, n)
-    los_h = np.where(deteriorate, np.minimum(transfer_h, 21 * 24), los_h)
-    enc['left_at'] = (enc['admitted_at'] + pd.to_timedelta((los_h * 60).round(), unit='min')).dt.floor('min')
+    enc['left_at'] = (enc['admitted_at'] + pd.to_timedelta((w['stay_h'].to_numpy() * 60).round(), unit='min')).dt.floor('min')
     enc['outcome'] = np.where(deteriorate, 'ICU transfer', 'discharged')
-    enc['age'] = age.astype(int)
+    enc['age'] = np.clip(age, 18, 99).round().astype(int)
     enc['diagnosis'] = np.array(DIAGNOSES)[dx]
 
     rounds_by_site = {}
@@ -399,6 +657,7 @@ def build_ward(rng):
         utc = local_rounds.tz_localize(zone, ambiguous=True, nonexistent='shift_forward').tz_convert('UTC')
         rounds_by_site[s] = (utc.as_unit('us').asi8, local_rounds.hour.to_numpy())
 
+    hr_base, spo2_base = w['hr_base'].to_numpy(), w['spo2_base'].to_numpy()
     enc_rows, time_parts, hr_parts, spo2_parts = [], [], [], []
     for i, row in enumerate(enc.itertuples()):
         det, s_i = deteriorate[i], severity[i]
@@ -420,12 +679,9 @@ def build_ward(rng):
         m = len(times)
         hours_to_end = (b - times) / HOUR_US
         ramp = np.clip(1 - hours_to_end / ramp_h, 0, 1) if det else np.zeros(m)
-        infection = dx[i] in (0, 1)
-        hr = (np.clip(rng.normal(80, 9), 55, 115) + 5 * s_i + 6 * infection
-              - 2.5 * np.minimum((times - a) / (24 * HOUR_US), 4)  # settles as treatment works
+        hr = (hr_base[i] - 2.5 * np.minimum((times - a) / (24 * HOUR_US), 4)  # settles as treatment works
               + rng.normal(0, 6, m) + rng.uniform(20, 35) * ramp)
-        spo2 = (np.clip(rng.normal(96.5, 1.0), 93, 99) - 0.8 * s_i - 2.5 * copd[i] - 1.0 * (dx[i] == 0)
-                + rng.normal(0, 1, m) - rng.uniform(3, 6) * ramp)
+        spo2 = spo2_base[i] + rng.normal(0, 1, m) - rng.uniform(3, 6) * ramp
         hr = hr.round()
         hr[rng.random(m) < 0.015] = np.nan
         enc_rows.append(np.full(m, i))
@@ -457,31 +713,35 @@ def build_ward(rng):
               [['encounter_id', 'patient_id', 'site', 'recorded_local', 'heart_rate', 'spo2']]
               .reset_index(drop=True))
 
+    # Which labs each encounter had come from the graph; their collection times come from the stay.
+    lactate_ordered, troponin_ordered = w['lactate_ordered'].to_numpy() == 1, w['troponin_ordered'].to_numpy() == 1
+    culture_ordered = w['culture_ordered'].to_numpy() == 1
+    lactate, troponin = np.exp(w['log_lactate'].to_numpy()), np.exp(w['log_troponin'].to_numpy())
+    creatinine = np.exp(w['log_creatinine'].to_numpy())
     lab_rows = []
     for i, row in enumerate(enc.itertuples()):
-        det, s_i, d = deteriorate[i], severity[i], dx[i]
+        det, s_i = deteriorate[i], severity[i]
         a, b = row.admitted_at.value // 1000, row.left_at.value // 1000  # microseconds
 
         def add(test, t, value):
             lab_rows.append((row.encounter_id, row.site, test, t, value))
         first = a + int(rng.uniform(0.3, 2.0) * HOUR_US)
-        # Confounding by indication: lactate is drawn for patients who look sick or septic.
-        if rng.random() < logistic(-1.3 + 1.0 * s_i + 2.2 * (d == 1) + 0.6 * (d == 0)):
-            add('lactate', first, rng.lognormal(np.log(1.3) + 0.22 * s_i + 0.3 * (d == 1), 0.35))
-        if rng.random() < (0.6 if d == 2 else 0.2):
-            add('troponin', first, rng.lognormal(np.log(8) + 0.4 * (d == 2) + 0.2 * s_i, 0.9))
-            add('troponin', first + 3 * HOUR_US, rng.lognormal(np.log(9) + 0.4 * (d == 2) + 0.2 * s_i, 0.9))
-        if rng.random() < (0.95 if d == 1 else 0.6 if d == 0 else 0.1 + 0.3 * det):
+        if lactate_ordered[i]:
+            add('lactate', first, lactate[i])
+        if troponin_ordered[i]:
+            add('troponin', first, troponin[i])
+            add('troponin', first + 3 * HOUR_US, troponin[i] * np.exp(rng.normal(0.1, 0.3)))  # 3-hour repeat
+        if culture_ordered[i]:
             add('blood culture', first + int(0.2 * HOUR_US), np.nan)
-        base_cr = rng.lognormal(np.log(0.95) + 0.008 * (age[i] - 66) + 0.1 * conditions[i] / 2, 0.25)
         t = first
         while t < b:
-            add('creatinine', t, base_cr * np.exp(0.08 * s_i + rng.normal(0, 0.08)))
+            add('creatinine', t, creatinine[i] * np.exp(0.08 * s_i + rng.normal(0, 0.08)))
             t += 24 * HOUR_US + int(rng.normal(0, 1.5) * HOUR_US)
-        if det:
+        if det:  # repeat lactates as the patient deteriorates
             t = b - int(rng.uniform(4, 12) * HOUR_US)
             while t < b:
-                add('lactate', t, rng.lognormal(np.log(2.8) + 0.15 * s_i, 0.3))
+                rise = 1 - (b - t) / (12 * HOUR_US)  # 0 twelve hours before transfer, 1 at transfer
+                add('lactate', t, lactate[i] * np.exp(rng.uniform(0.4, 1.0) * rise + rng.normal(0, 0.15)))
                 t += int(rng.uniform(2, 6) * HOUR_US)
     labs = pd.DataFrame(lab_rows, columns=['encounter_id', 'site', 'test', 'collected_us', 'value'])
     local_hour = ((labs['collected_us'] // HOUR_US) + labs['site'].map(STANDARD_OFFSET_H)) % 24
@@ -514,6 +774,8 @@ def check(t):
     assert by_hour[11] > 3.5 * by_hour[4]
     share = ed['disposition'].value_counts(normalize=True)
     assert 0.13 <= share['admitted'] <= 0.22 and 0.01 <= share['left without being seen'] <= 0.05
+    esi_share = ed['esi'].value_counts(normalize=True)
+    assert 0.003 <= esi_share[1] <= 0.015 and 0.38 <= esi_share[3] <= 0.50  # national triage mix
 
     stays, tele = t['stays'], t['telemetry']
     assert 600 <= len(stays) <= 900 and stays['stay_id'].is_unique
@@ -542,7 +804,7 @@ def check(t):
 
 def build(data_dir='data'):
     """Write the seven tables as Parquet under data_dir and return their paths."""
-    # One random stream per builder, so a change to one extract leaves the others unchanged.
+    # One numpy stream per builder and one gcm seed per graph, so a change to one extract leaves the others unchanged.
     tables = {'ed_visits': build_ed_visits(np.random.default_rng([SEED, 1]))}
     tables['stays'], tables['telemetry'], tables['charted_temps'] = build_step_down(np.random.default_rng([SEED, 2]))
     tables['encounters'], tables['ward_vitals'], tables['labs'] = build_ward(np.random.default_rng([SEED, 3]))

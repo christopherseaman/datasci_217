@@ -24,15 +24,15 @@ Phase 3 of Dr. Reyes's winter program: Demo 2 showed that a patient can go hours
 Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas and pyarrow (for Parquet) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
+# Installs the course's pandas, pyarrow (for Parquet), and dowhy (for generate_data.py) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 dowhy==0.14
 ```
 
 ## Core walkthrough
 
 ### 1. Load the three hospitals' extracts
 
-This supplied cell downloads `generate_data.py` when the folder lacks it (`urlretrieve(url, path)` saves the file at a web address to `path`), runs its `build()` when a table in `data/` is missing (about 20 seconds, once), and reads three tables. The seed is fixed, so your values match the ones below.
+This supplied cell downloads `generate_data.py` when the folder lacks it (`urlretrieve(url, path)` saves the file at a web address to `path`), runs its `build()` when a table in `data/` is missing (about 25 seconds, once), and reads three tables. The seed is fixed, so your values match the ones below.
 
 ```python
 from pathlib import Path
@@ -59,7 +59,7 @@ display(vitals.head(3))
 display(labs.head(3))
 ```
 
-Expect `(10000, 8) (270306, 6) (57934, 5)`: 10,000 ward encounters in 2024, their charted heart rate and SpO2, and their lab orders. Each encounter has the patient's `age` and admitting `diagnosis`. `admitted_at` and `left_at` are already aware UTC datetimes (`datetime64[us, UTC]`). `recorded_local` is text on each hospital's wall clock, in no particular row order. The lab times are text ending in `Z`, which means UTC.
+Expect `(10000, 8) (267392, 6) (57397, 5)`: 10,000 ward encounters in 2024, their charted heart rate and SpO2, and their lab orders. Each encounter has the patient's `age` and admitting `diagnosis`. `admitted_at` and `left_at` are already aware UTC datetimes (`datetime64[us, UTC]`). `recorded_local` is text on each hospital's wall clock, in no particular row order. The lab times are text ending in `Z`, which means UTC.
 
 ### 2. Three hospitals chart on three wall clocks
 
@@ -80,7 +80,7 @@ except ValueError as error:
     print('ValueError:', error)
 ```
 
-Expect `Zone: None`: the parsed text is naive. Converting it raises `TypeError: Cannot convert tz-naive timestamps, use tz_localize to localize`, because pandas cannot move a time to UTC without knowing its starting zone. Localizing first raises `ValueError: Cannot infer dst time from 2024-11-03 01:52:00, try using the 'ambiguous' argument`. That clock time happened twice, and the text does not say which. The fix sets these readings aside as `NaT`, along with any time that never happened, then converts to UTC. Each site is one piece, and `pd.concat()` (Lecture 06) stacks them.
+Expect `Zone: None`: the parsed text is naive. Converting it raises `TypeError: Cannot convert tz-naive timestamps, use tz_localize to localize`, because pandas cannot move a time to UTC without knowing its starting zone. Localizing first raises `ValueError: Cannot infer dst time from 2024-11-03 01:30:00, try using the 'ambiguous' argument`. That clock time happened twice, and the text does not say which. The fix sets these readings aside as `NaT`, along with any time that never happened, then converts to UTC. Each site is one piece, and `pd.concat()` (Lecture 06) stacks them.
 
 ```python
 pieces = []
@@ -102,19 +102,19 @@ vitals = (localized.dropna(subset=['recorded_at'])
 print(vitals.shape, vitals['recorded_at'].dt.tz, encounters['admitted_at'].dt.tz)
 ```
 
-Expect `16` readings set aside: `12` in Chicago and `4` in New York, none in Phoenix, because Arizona does not change its clocks. The table lists `4` readings typed by hand at `2024-03-10 02:30` to `02:59`, an hour that never happened on the spring-forward night, and `12` charted between `2024-11-03 01:01` and `01:55`, the hour that happened twice. `vitals` keeps `(270290, 7)` rows, sorted by encounter and then time, and prints `UTC UTC`: the readings and the admission times now share one zone.
+Expect `13` readings set aside: `8` in New York and `5` in Chicago, none in Phoenix, because Arizona does not change its clocks. The table lists `4` readings typed by hand at `2024-03-10 02:41` to `02:55`, an hour that never happened on the spring-forward night, and `9` charted between `2024-11-03 01:12` and `01:59`, the hour that happened twice. `vitals` keeps `(267379, 7)` rows, sorted by encounter and then time, and prints `UTC UTC`: the readings and the admission times now share one zone.
 
-**What we tell Dr. Kim:** 16 of 270,306 readings are set aside because their wall-clock time names no single instant; the table notes the count.
+**What we tell Dr. Kim:** 13 of 267,392 readings are set aside because their wall-clock time names no single instant; the table notes the count.
 
-One Chicago patient, encounter `E08290`, was charted through that night.
+One Chicago patient, encounter `E08393`, was charted through that night.
 
 ```python
-night = localized[(localized['encounter_id'] == 'E08290')
+night = localized[(localized['encounter_id'] == 'E08393')
                   & localized['recorded_local'].between('2024-11-02 23:00', '2024-11-03 03:59')]
 display(night.sort_values('recorded_local')[['recorded_local', 'recorded_at', 'heart_rate']])
 ```
 
-Expect six rows. `00:51` becomes `05:51:00+00:00` and `03:56` becomes `09:56:00+00:00`: on the wall clock they look about 3 hours apart, but 4 hours passed. The `01:24` and `01:55` rows show `NaT`.
+Expect four rows. `00:21` becomes `05:21:00+00:00` and `03:41` becomes `09:41:00+00:00`: on the wall clock they look 3 hours 20 minutes apart, but 4 hours 20 minutes passed. The `01:15` and `01:28` rows show `NaT`.
 
 Plot the wall clock against UTC. The dotted lines show daylight time (UTC minus 5 hours) and standard time (UTC minus 6 hours). Each set-aside reading could sit on either line, so it gets an x-mark on both.
 
@@ -136,13 +136,13 @@ for offset in (5, 6):
 ax.axhspan(pd.Timestamp('2024-11-03 01:00'), pd.Timestamp('2024-11-03 02:00'), color='#D55E00', alpha=0.1)
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 ax.yaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-ax.set(title='Encounter E08290: the night Chicago fell back', xlabel='Time (UTC)', ylabel='Wall clock (Chicago)')
+ax.set(title='Encounter E08393: the night Chicago fell back', xlabel='Time (UTC)', ylabel='Wall clock (Chicago)')
 ax.legend(loc='upper left')
 ax.grid(alpha=0.3)
 plt.show()
 ```
 
-Expect the three readings before `01:00` on the dotted daylight line and the `03:56` reading on the dashed standard line. The shaded band, `01:00` to `02:00` on the wall clock, crosses both lines, so those clock times map to two instants an hour apart: `01:24` could be `06:24` or `07:24` UTC.
+Expect the `00:21` reading on the dotted daylight line and the `03:41` reading on the dashed standard line. The shaded band, `01:00` to `02:00` on the wall clock, crosses both lines, so those clock times map to two instants an hour apart: `01:15` could be `06:15` or `07:15` UTC.
 
 ### 3. The first feature draft hands one patient's heart rate to the next
 
@@ -154,7 +154,7 @@ leaked = vitals['heart_rate'].shift(1)[first_row].notna().sum()
 print('First rows:', first_row.sum(), ' given another encounter\'s heart rate:', leaked)
 ```
 
-Expect `First rows: 10000  given another encounter's heart rate: 9866`. Grouping by `encounter_id` keeps every feature inside one stay, and each feature reads only earlier rows: `shift(1)` and `diff()` the previous reading, `shift(1)` before `rolling(3)` the three before, and `rolling('8h', closed='left')` the 8 hours before, without the current time.
+Expect `First rows: 10000  given another encounter's heart rate: 9861`. Grouping by `encounter_id` keeps every feature inside one stay, and each feature reads only earlier rows: `shift(1)` and `diff()` the previous reading, `shift(1)` before `rolling(3)` the three before, and `rolling('8h', closed='left')` the 8 hours before, without the current time.
 
 ```python
 by_encounter = vitals.groupby('encounter_id')['heart_rate']
@@ -174,7 +174,7 @@ display(vitals.loc[vitals['encounter_id'] == 'E00002',
                    ['recorded_at', 'heart_rate', 'previous_hr', 'hr_change', 'mean_prev_3', 'mean_prev_8h']].head(5))
 ```
 
-Expect `(270290, 11)`: the merge matched one feature row to each reading. In `E00002`'s first five readings, `previous_hr` and `hr_change` start as `NaN`. At `02:00` on January 2, `mean_prev_3` is `61.333333` (the 52, 62, and 70 readings, back to 14:02 the day before) but `mean_prev_8h` is `70.0`: only the 19:12 reading falls in the 8 hours before. The grouped rolling step takes a few seconds on 270,290 rows.
+Expect `(267379, 11)`: the merge matched one feature row to each reading. In `E00002`'s first five readings, `previous_hr` and `hr_change` start as `NaN`. At `02:21` on January 2, `mean_prev_3` is `77.333333` (the 80, 74, and 78 readings, back to 17:59 the day before) but `mean_prev_8h` is `76.0`: only the 22:06 and 00:41 readings fall in the 8 hours before. The grouped rolling step takes a few seconds on 267,379 rows.
 
 Plot the first 12 readings. At each reading's time, the gray step and the colored markers come only from the black dots to their left.
 
@@ -191,7 +191,7 @@ ax.grid(alpha=0.3)
 plt.show()
 ```
 
-Expect the gray step to carry each black dot forward to the next reading time. At `02:00` on January 2 the blue square sits at `61.3`, the mean of the three dots before it, and the orange triangle sits at `70`, the only dot in the 8 hours before. No marker uses the dot directly above it.
+Expect the gray step to carry each black dot forward to the next reading time. At `02:21` on January 2 the blue square sits at `77.3`, the mean of the three dots before it, and the orange triangle sits at `76`, the mean of the two dots in the 8 hours before. No marker uses the dot directly above it.
 
 ### 4. Which labs had the score seen at hour 24?
 
@@ -204,7 +204,7 @@ print('Cohort:', len(cohort), 'of', len(encounters))
 display(cohort['outcome'].value_counts())
 ```
 
-Expect `Cohort: 9549 of 10000`, with `390` ICU transfers. `127` of the 517 transfers happened in the first 24 hours, before the score would run.
+Expect `Cohort: 9511 of 10000`, with `360` ICU transfers. `120` of the 480 transfers happened in the first 24 hours, before the score would run.
 
 A lab result can feed the score only if it was reported by the prediction time, whenever its sample was drawn. `pd.to_datetime(..., utc=True)` reads the lab system's UTC text; a blank `resulted_at` (cancelled or never resulted) becomes `NaT`.
 
@@ -227,9 +227,9 @@ ax.set(title='Labs drawn before the prediction time', xlabel='Lab orders', ylabe
 plt.show()
 ```
 
-Expect median turnarounds of `0.67` hours for lactate, `1.15` for troponin, `1.80` for creatinine, and `45.23` for a blood culture. Among labs drawn by the prediction time, `not yet reported` counts `2136` blood cultures, `1949` creatinines, `49` lactates, and `56` troponins. In the chart, almost the whole blood-culture bar is orange (a culture takes about two days), and about a sixth of the creatinine bar.
+Expect median turnarounds of `0.65` hours for lactate, `1.15` for troponin, `1.78` for creatinine, and `45.38` for a blood culture. Among labs drawn by the prediction time, `not yet reported` counts `2114` blood cultures, `2010` creatinines, `48` lactates, and `51` troponins. In the chart, almost the whole blood-culture bar is orange (a culture takes about two days), and about a sixth of the creatinine bar.
 
-**What we tell Dr. Kim:** blood cultures cannot feed a day-1 score, since almost none are back by hour 24. Lactate, troponin, and most creatinines can. Filtering on `collected_at` would have let 4,190 unreported results into the training table, and the score would test better than it can perform in the pilot.
+**What we tell Dr. Kim:** blood cultures cannot feed a day-1 score, since almost none are back by hour 24. Lactate, troponin, and most creatinines can. Filtering on `collected_at` would have let 4,087 unreported results into the training table, and the score would test better than it can perform in the pilot.
 
 ### 5. One row per encounter at hour 24
 
@@ -253,7 +253,7 @@ print(features.shape)
 display(features.head(3).round({'mean_prev_3': 1, 'mean_prev_8h': 1}))
 ```
 
-Expect `(9549, 12)`: one row per encounter. A missing `last_lactate` means no lactate had been reported by the prediction time, not a normal result.
+Expect `(9511, 12)`: one row per encounter. A missing `last_lactate` means no lactate had been reported by the prediction time, not a normal result.
 
 A first look at signal: the ICU-transfer rate by lactate group. `np.select()` (Lecture 03) names each group; a missing lactate matches neither condition, so it gets the default.
 
@@ -263,9 +263,9 @@ features['lactate_group'] = np.select([features['last_lactate'] > 2, features['l
 display(features.groupby('lactate_group')['icu_transfer'].agg(['count', 'mean']).round(3))
 ```
 
-Expect transfer rates of `0.052` (`2005` encounters) with a lactate of 2 mmol/L or less, `0.131` (`1074`) over 2, and `0.022` (`6470`) with none reported.
+Expect transfer rates of `0.057` (`2076` encounters) with a lactate of 2 mmol/L or less, `0.115` (`1070`) over 2, and `0.019` (`6365`) with none reported.
 
-**What we tell Dr. Kim:** a lactate over 2 mmol/L by hour 24 goes with 2.5 times the transfer rate of a lower one. Whether a lactate was ordered at all carries signal too, because a clinician orders one when worried, so the table keeps `none reported` as its own group.
+**What we tell Dr. Kim:** a lactate over 2 mmol/L by hour 24 goes with 2 times the transfer rate of a lower one. Whether a lactate was ordered at all carries signal too, because a clinician orders one when worried, so the table keeps `none reported` as its own group.
 
 ### 6. Hold back the last quarter, the way the pilot will meet patients
 
@@ -288,28 +288,28 @@ in_both = features.groupby('patient_id')['block'].nunique()
 print('Patients in both blocks:', (in_both == 2).sum(), 'of', len(in_both))
 ```
 
-Expect `7109` earlier encounters (`292` transfers) and `2440` in the holdout (`98`), both near a `0.040` transfer rate. `133` of 8,556 patients were readmitted across the cutoff and appear in both blocks.
+Expect `7089` earlier encounters (`268` transfers) and `2422` in the holdout (`92`), both at a `0.038` transfer rate. `136` of 8,513 patients were readmitted across the cutoff and appear in both blocks.
 
-**What we tell Dr. Kim:** the table is ready, with 7,109 encounters to build on and 2,440 later ones to test on. The holdout tests later encounters; 133 of its patients also appear in the earlier block.
+**What we tell Dr. Kim:** the table is ready, with 7,089 encounters to build on and 2,422 later ones to test on. The holdout tests later encounters; 136 of its patients also appear in the earlier block.
 
 ### 7. Show the decision meeting one transfer
 
-Dr. Kim wants one slide of what the score is meant to catch. `E05701`, a New York patient admitted with a GI bleed, was transferred on July 29. Draw its readings, a 4-hour rolling mean, and a dashed line at 100 bpm, the usual threshold for tachycardia (a fast heart rate). The axis label names the zone.
+Dr. Kim wants one slide of what the score is meant to catch. `E09294`, an 82-year-old New York patient with an admitting diagnosis coded `other`, was transferred on December 12 (UTC). Draw its readings, a 4-hour rolling mean, and a dashed line at 100 bpm, the usual threshold for tachycardia (a fast heart rate). The axis label names the zone.
 
 ```python
-one = vitals[vitals['encounter_id'] == 'E05701'].set_index('recorded_at')['heart_rate']
+one = vitals[vitals['encounter_id'] == 'E09294'].set_index('recorded_at')['heart_rate']
 fig, ax = plt.subplots(figsize=(10, 4))
 ax.plot(one.index, one, 'o', color='gray', markersize=4, label='Charted heart rate')
 ax.plot(one.index, one.rolling('4h').mean(), color='#0072B2', linewidth=2, label='4-hour rolling mean')
 ax.axhline(100, color='#D55E00', linestyle='--', label='Tachycardia (100 bpm)')
-ax.set(title='Encounter E05701: heart rate before ICU transfer', xlabel='Time (UTC)', ylabel='Heart rate (bpm)')
+ax.set(title='Encounter E09294: heart rate before ICU transfer', xlabel='Time (UTC)', ylabel='Heart rate (bpm)')
 ax.legend(loc='upper left')
 ax.grid(alpha=0.3)
 plt.show()
-display(encounters.loc[encounters['encounter_id'] == 'E05701', ['site', 'diagnosis', 'admitted_at', 'left_at', 'outcome']])
+display(encounters.loc[encounters['encounter_id'] == 'E09294', ['site', 'diagnosis', 'admitted_at', 'left_at', 'outcome']])
 ```
 
-Expect readings every 4 hours between about 75 and 100 bpm for four days, then hourly checks on July 29 as the rolling mean crosses the dashed line and climbs to about 115 bpm before the transfer at `23:54` UTC.
+Expect readings every 4 hours between about 75 and 100 bpm for four days, then hourly checks on December 11 as the rolling mean crosses the dashed line and climbs to about 115 bpm before the transfer at `01:03` UTC on December 12.
 
 ## Independent practice
 
@@ -333,7 +333,7 @@ for day in ['2024-03-10', '2024-11-03', '2024-11-04']:
     print(day, len(hours), 'hours')
 ```
 
-Expect the columns to disagree every day, because a New York day starts 4 or 5 hours after a UTC day: `406` and `412` on November 1, `372` and `347` on November 2. November 3 differs most, `337` readings on the New York day against `298` on the UTC day: the shifted start accounts for most of the gap, and that local day also held one extra hour. The second table lines up each New York day with the day before by date: `shift(1, freq='D')` moves the labels a day later, so November 1 has no `yesterday` and a November 6 row holds November 5's `341`. The `date_range` lines print `23`, `25`, and `24` hours: a local daily count on March 10 covers one hour less.
+Expect the columns to disagree every day, because a New York day starts 4 or 5 hours after a UTC day: `314` and `331` on November 1, `333` and `315` on November 2. November 3 differs most, `306` readings on the New York day against `281` on the UTC day: the shifted start accounts for most of the gap, and that local day also held one extra hour. The second table lines up each New York day with the day before by date: `shift(1, freq='D')` moves the labels a day later, so November 1 has no `yesterday` and a November 6 row holds November 5's `332`. The `date_range` lines print `23`, `25`, and `24` hours: a local daily count on March 10 covers one hour less.
 
 ### 2. A reviewer proposes the next heart rate as a feature
 
@@ -349,7 +349,7 @@ print('Feature rows:', len(check), ' next reading after the prediction time:', (
 print('Median hours after the prediction time:', round(hours_late.median(), 1))
 ```
 
-Expect `Feature rows: 9549  next reading after the prediction time: 9428` and a median of `1.9` hours. The other 121 encounters had no later reading. Every feature row is the last reading before the score runs, so a lead or a centered window there reads a value nobody had yet. Use `shift(-1)` only to build a target, never a feature.
+Expect `Feature rows: 9511  next reading after the prediction time: 9387` and a median of `2.0` hours. The other 124 encounters had no later reading. Every feature row is the last reading before the score runs, so a lead or a centered window there reads a value nobody had yet. Use `shift(-1)` only to build a target, never a feature.
 
 ### 3. Phoenix asks why its offset never changes
 

@@ -25,8 +25,8 @@ jupyter:
 Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas and pyarrow (for Parquet) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
+# Installs the course's pandas, pyarrow (for Parquet), and dowhy (for the data generator) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 dowhy==0.14
 ```
 
 This supplied cell downloads `generate_data.py` and `build_features.py` when they are missing, runs `generate_data.build()` to write the tables into `data/` if they are not there yet (about 30 seconds), then loads the lab results.
@@ -63,7 +63,7 @@ print(f"Patients: {labs['patient_id'].nunique():,}")
 print(f"No result (cancelled samples): {labs['result'].isna().sum():,}")
 ```
 
-Expect five results with patient, clinic, collection time, test, result, and unit, then four tests from Creatinine (887,471 results) and Glucose (887,362), drawn together as one panel, down to LDL (106,462), then 189,607 patients and 10,941 results with no value. One row per result, so one blood draw can fill several rows.
+Expect five results with patient, clinic, collection time, test, result, and unit, then four tests from Glucose (887,885 results) and Creatinine (887,656), drawn together as one panel, down to LDL (105,134), then 188,757 patients and 10,890 results with no value. One row per result, so one blood draw can fill several rows.
 
 ### 2. Can the extreme results be trusted?
 
@@ -75,7 +75,7 @@ top2_raw = glucose.groupby("clinic").apply(lambda g: g.nlargest(2, "result"), in
 display(top2_raw[["patient_id", "collected_at", "result"]])
 ```
 
-Expect 16 rows, two per clinic, indexed by clinic and then each result's original row number. The other clinics' highest results are 385 to 654 mg/dL, emergencies worth a call, but Excelsior's two are `9999.0`: no blood holds that much glucose. Parkside's two belong to one patient, P113888, 9 days apart. 9999 is the code one Excelsior analyzer writes for a failed run, so it is not a result.
+Expect 16 rows, two per clinic, indexed by clinic and then each result's original row number. The other clinics' highest results are 442 to 740 mg/dL, emergencies worth a call, but Excelsior's two are `9999.0`: no blood holds that much glucose. At five clinics both belong to one patient, such as P118809 at Bayview, 3 months apart. 9999 is the code one Excelsior analyzer writes for a failed run, so it is not a result.
 
 Mark the error codes as missing (Lecture 05) for the whole extract, then repeat the review. The nightly job will run this check every night, so also try the `apply`-free version: sort once, then keep the first two rows of each clinic.
 
@@ -90,7 +90,7 @@ display(top2_sorted[["clinic", "patient_id", "result"]].sort_values("clinic"))
 print("Same rows both ways?", sorted(top2.reset_index()["level_1"]) == sorted(top2_sorted.index))
 ```
 
-Expect `Error codes: 23`, then 16 rows with a flat index; Excelsior's highest is now a real result, 564.0 mg/dL. Then `True`: both ways keep the same rows, so the nightly check can use the faster sort-and-`head` version.
+Expect `Error codes: 23`, then 16 rows with a flat index; Excelsior's highest is now a real result, 538.0 mg/dL. Then `True`: both ways keep the same rows, so the nightly check can use the faster sort-and-`head` version.
 
 Plot the two reviews side by side, one dot per result.
 
@@ -106,7 +106,7 @@ axes[1].set(title="After marking 9999 as missing", xlabel="Glucose (mg/dL)")
 plt.show()
 ```
 
-Expect the left panel's dots bunched under 700 at the left edge, except Excelsior's dot alone at 9999 (its two results are identical, so they overlap). On the right the x-axis runs from about 380 to 660, and every clinic's two dots sit between 385 and 654 mg/dL.
+Expect the left panel's dots bunched under 700 at the left edge, except Excelsior's dot alone at 9999 (its two results are identical, so they overlap). On the right the x-axis runs from about 440 to 750, and every clinic's two dots sit between 442 and 740 mg/dL.
 
 ### 3. How many patients would the pilot take on?
 
@@ -120,7 +120,7 @@ print(f"A1c results: {len(a1c):,}  patients: {a1c['patient_id'].nunique():,}  la
 print(f"Latest A1c of 9% or more: {(latest['result'] >= 9).mean():.1%}")
 ```
 
-Expect five latest rows (patients whose only A1c was drawn on January 2), then 118,032 A1c results from 90,281 patients and exactly one latest row per patient. 1.9% of patients have a latest A1c of 9% or more, poorly controlled diabetes; most of the others had one yearly screening test.
+Expect five latest rows (patients whose only A1c was drawn on January 2), then 118,645 A1c results from 90,178 patients and exactly one latest row per patient. 2.0% of patients have a latest A1c of 9% or more, poorly controlled diabetes; most of the others had one yearly screening test.
 
 The red lines mark the diabetes cutoff (6.5%) and poor control (9%); `ax.axvline(x)` draws a vertical line at `x`.
 
@@ -132,7 +132,7 @@ ax.set(title="Latest A1c per patient, 2025", xlabel="A1c (%)", ylabel="Patients"
 plt.show()
 ```
 
-Expect a tall peak near 5.3%, below the diabetes cutoff at 6.5%, and a second, lower hump near 7.5% from patients with diabetes. The thin tail past the 9% line is the 1.9%.
+Expect a tall peak near 5.3%, below the diabetes cutoff at 6.5%, and a second, lower hump near 7.5% from patients with diabetes. The thin tail past the 9% line is the 2.0%.
 
 Now the pilot's own count: patients whose latest A1c is 9% or more at the two pilot clinics.
 
@@ -142,9 +142,9 @@ display(pilot["clinic"].value_counts())
 print(f"Pilot patients: {len(pilot):,}, about {len(pilot) / 4:.0f} per care manager")
 ```
 
-Expect 381 patients at Bayview and 278 at Excelsior, 659 in all, about 165 per care manager.
+Expect 378 patients at Bayview and 290 at Excelsior, 668 in all, about 167 per care manager.
 
-**What we tell Ms. Okafor:** 659 patients qualify. At her target caseload of 150, four care managers cover 600, so either the pilot adds a fifth care manager or it starts with the 600 highest latest A1c values.
+**What we tell Ms. Okafor:** 668 patients qualify. At her target caseload of 150, four care managers cover 600, so either the pilot adds a fifth care manager or it starts with the 600 highest latest A1c values.
 
 ### 4. The draft feature build splits the table four times
 
@@ -170,7 +170,7 @@ Expect `True`.
 %timeit one_agg(a1c)
 ```
 
-Expect two lines such as `176 ms ± 799 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)` and `50.7 ms ± 120 μs per loop (...)`. The one `.agg()` is about 3.5 times faster, because every `groupby()` call splits the 118,032 rows again. Timings depend on the computer, so compare the ratio, not the milliseconds. The rewrite gives the same numbers in under a third of the time.
+Expect two lines such as `175 ms ± 1.52 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)` and `50.8 ms ± 356 μs per loop (...)`. The one `.agg()` is about 3.5 times faster, because every `groupby()` call splits the 118,645 rows again. Timings depend on the computer, so compare the ratio, not the milliseconds. The rewrite gives the same numbers in under a third of the time.
 
 ### 5. The draft's spread column uses a lambda
 
@@ -190,7 +190,7 @@ The lambda runs as Python once per patient, so one run takes seconds; `-n 1 -r 3
 %timeit -n 1 -r 3 by_patient.agg(lambda s: s.std())
 ```
 
-Expect about 3 ms against about 4 s: the lambda is over 1,000 times slower, because it runs once for each of 90,281 patients while `"std"` is one compiled loop over all of them. The build uses `"std"`.
+Expect about 3 ms against about 4 s: the lambda is over 1,000 times slower, because it runs once for each of 90,178 patients while `"std"` is one compiled loop over all of them. The build uses `"std"`.
 
 ### 6. The server team asks how much memory the job needs
 
@@ -212,7 +212,7 @@ same = compact.groupby("test_name", observed=True)["result"].mean().equals(labs.
 print("Same test means?", same)
 ```
 
-Expect the `clinic`, `test_name`, and `unit` bars to shrink from 25 to 32 MB each to 2.0 MB each (one small code per row plus a few labels), while `patient_id` and the number columns stay the same. The total falls from 150 MB to 68 MB, and the test means are unchanged (`True`). `patient_id` stays text: with 189,607 distinct values, it is not a repeated key.
+Expect the `clinic`, `test_name`, and `unit` bars to shrink from 25 to 32 MB each to 2.0 MB each (one small code per row plus a few labels), while `patient_id` and the number columns stay the same. The total falls from 150 MB to 68 MB, and the test means are unchanged (`True`). `patient_id` stays text: with 188,757 distinct values, it is not a repeated key.
 
 **What we tell the server team:** the job holds about 150 MB as loaded and 68 MB once it converts the three repeated text keys to `category`.
 
@@ -311,7 +311,7 @@ source .venv/bin/activate
 time python3 build_features.py
 ```
 
-Expect a status bar across the bottom with `[features]` at its left, then `month 1 of 12: 8,627 patients`, and a new line every 10 seconds.
+Expect a status bar across the bottom with `[features]` at its left, then `month 1 of 12: 8,605 patients`, and a new line every 10 seconds.
 
 Press `Ctrl+b`, let go, then press `d`.
 
@@ -330,7 +330,7 @@ tmux ls
 tmux attach -t features
 ```
 
-Expect the session still listed, and after you attach, more month lines than when you left: the job kept running with no window showing it. It ends with `month 12 of 12: 90,281 patients` and `done: wrote 659 patients to output/pilot_list.csv`, and `time` reports about two minutes: bash prints a line such as `real 2m1.9s`, and zsh (the macOS default) ends its line with `2:01.93 total`.
+Expect the session still listed, and after you attach, more month lines than when you left: the job kept running with no window showing it. It ends with `month 12 of 12: 90,178 patients` and `done: wrote 668 patients to output/pilot_list.csv`, and `time` reports about two minutes: bash prints a line such as `real 2m1.9s`, and zsh (the macOS default) ends its line with `2:01.93 total`.
 
 End the session and check the result:
 
@@ -364,7 +364,7 @@ print(f"Patients with two results: {len(change):,}")
 print(f"Improved by 0.5 points or more: {(change['change'] <= -0.5).mean():.1%}")
 ```
 
-Expect a two-level index (patient, then original row number) with up to two rows per patient, oldest first; P000021 went from 8.2 to 7.3, P000025 rose from 7.5 to 8.0, and P000035 has only one result. 14,878 patients with a latest A1c of 6.5% or more have two results, and 10.7% of them improved by half a point or more between their last two tests.
+Expect a two-level index (patient, then original row number) with up to two rows per patient, oldest first; P000028 went from 7.3 to 7.1, P000039 from 8.7 to 8.4, and P000002 and P000013 have only one result. 15,716 patients with a latest A1c of 6.5% or more have two results, and 8.7% of them improved by half a point or more between their last two tests.
 
 ### 10. A reviewer wants each result beside the patient's own mean
 
@@ -379,7 +379,7 @@ print("Same index as a1c?", centered_fast.index.equals(a1c.index))
 
 Expect a difference near `4e-15` and `True`.
 
-The lambda takes more than 10 seconds on all 90,281 patients, so `-r 1` times one run.
+The lambda takes more than 10 seconds on all 90,178 patients, so `-r 1` times one run.
 
 ```python
 %timeit a1c["result"] - by_patient.transform("mean")
@@ -406,7 +406,7 @@ display(clinic_summary.round(3))
 print("Same medians as agg('median')?", clinic_summary["median"].equals(a1c.groupby("clinic")["result"].median()))
 ```
 
-Expect one row per clinic (the function returns one `Series` per group), medians from 5.6% (Marina) to 6.4% (Bayview), 2.4% to 5.3% of results at 9% or more, and `True`. Bayview and Excelsior, in the most deprived neighborhoods, have the highest medians and shares; Marina, in the least deprived, the lowest, which supports the board's choice of pilot clinics. `results` shows `.0` because a `Series` holding a share stores every value as a float.
+Expect one row per clinic (the function returns one `Series` per group), medians from 5.6% (Marina) to 6.7% (Bayview), 2.8% to 5.1% of results at 9% or more, and `True`. Bayview and Excelsior, in the most deprived neighborhoods, have the highest medians (6.7% and 6.5%) and, with Ridgecrest, the highest shares; Marina, in the least deprived, is lowest on both, which supports the board's choice of pilot clinics. `results` shows `.0` because a `Series` holding a share stores every value as a float.
 
 ### 12. Do category keys also speed up the build?
 

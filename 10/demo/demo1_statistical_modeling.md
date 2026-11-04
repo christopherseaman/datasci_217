@@ -24,18 +24,18 @@ Cedar Valley Health's director of care management, Dr. Leah Kim, runs the nurses
 - **Demo 2, the weekly call list**: a forecast of next week's blood pressure, and the 100 patients the nurses call each Monday.
 - **Demo 3, the post-discharge call list**: which discharged patients the transitional-care nurses call in their first two days home.
 
-**This phase's ask.** By October 20, Dr. Kim needs two things. First, a committee member proposes enrolling primary-care patients by BMI; she needs to know how much higher systolic blood pressure (SBP) runs per unit of BMI among patients of the same age and sex, and how sure we are. The data is 520,000 primary-care visits by 160,000 patients. Second, the program wants a forecast of each patient's SBP for the coming week, printed on the Monday 08:00 call list. Before any model, the team must define the rows, the target, the features known at 08:00, and a split that tests the forecast the way Monday runs it. The data is 590,000 home cuff readings. All patients and values are synthetic.
+**This phase's ask.** By October 20, Dr. Kim needs two things. First, a committee member proposes enrolling primary-care patients by BMI; she needs to know how much higher systolic blood pressure (SBP) runs per unit of BMI among patients of the same age and sex, and how sure we are. The data is 525,000 primary-care visits by 160,000 patients. Second, the program wants a forecast of each patient's SBP for the coming week, printed on the Monday 08:00 call list. Before any model, the team must define the rows, the target, the features known at 08:00, and a split that tests the forecast the way Monday runs it. The data is 580,000 home cuff readings. All patients and values are synthetic.
 
 Run the cells from top to bottom.
 
 ```python
-# Installs the course's pandas and pyarrow (for Parquet) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0
+# Installs the course's pandas, pyarrow (for Parquet), and dowhy (the data generator's causal model) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 dowhy==0.14
 ```
 
 ## Core walkthrough
 
-### 1. The extract reports an SBP of 1790 mmHg
+### 1. The extract reports an SBP of 1630 mmHg
 
 This supplied cell downloads `generate_data.py` when the folder lacks it (`urlretrieve(url, path)` saves the file at a web address to `path`), runs its `build()` when a table in `data/` is missing, and reads the visits table. `build()` writes four tables in under a minute with a fixed seed, so your values match the ones below. `describe()` is the first check before trusting any number from the extract.
 
@@ -63,11 +63,11 @@ display(visits.head())
 display(visits[["age", "bmi", "sbp", "dbp"]].describe().round(1))
 ```
 
-Expect `(522338, 15) visits from 160000 patients`, then five visits from January 1, 2024. The summary shows three problems before any model runs:
+Expect `(524823, 15) visits from 160000 patients`, then five visits from January 1, 2024. The summary shows three problems before any model runs:
 
-- **Missing BMI**: `bmi` has 486,015 values, not 522,338.
-- **A dropped decimal point**: the maximum BMI is 484.0, which is 48.4 typed as 484.
-- **Swapped fields**: the maximum SBP is 1790 mmHg and the minimum 40, so some SBP and DBP values were typed into each other's boxes.
+- **Missing BMI**: `bmi` has 488,167 values, not 524,823.
+- **A dropped decimal point**: the maximum BMI is 499.0, which is 49.9 typed as 499.
+- **Swapped fields**: the maximum SBP is 1630 mmHg and the minimum 45, so some SBP and DBP values were typed into each other's boxes.
 
 ### 2. Some visits arrived twice, and some fields are swapped
 
@@ -97,9 +97,9 @@ display(pd.Series({
 }, name="rows"))
 ```
 
-Expect 2,599 double-fed copies, 160,000 first visits, 474 implausible SBP values and 167 implausible BMIs, a cohort of 159,360 patients, and 10,873 of them missing BMI.
+Expect 2,611 double-fed copies, 160,000 first visits, 501 implausible SBP values and 155 implausible BMIs, a cohort of 159,345 patients, and 11,126 of them missing BMI.
 
-### 3. 10,873 patients drop out of the fit without a warning
+### 3. 11,126 patients drop out of the fit without a warning
 
 `smf.ols()` with the formula `sbp ~ age + bmi + C(sex)` answers "SBP by BMI at the same age and sex". `C(sex)` makes sex categorical; `F` is the reference level, so the `C(sex)[T.M]` coefficient compares men with women of the same age and BMI. The committee will ask for other adjustment sets, so the formula is built from a list of terms that later cells extend. `results.nobs` is the check before trusting the fit: how many rows it actually used.
 
@@ -117,7 +117,7 @@ print("share missing BMI, age 80 and over:", round(missing[cohort["age"] >= 80].
       " under 80:", round(missing[cohort["age"] < 80].mean(), 3))
 ```
 
-Expect the formula `sbp ~ age + bmi + C(sex)`, then `rows used: 148487 of 159360`: `statsmodels` silently dropped the 10,873 patients with no BMI. Expect R-squared 0.13: age, BMI, and sex explain a modest share of SBP, which also depends on medication, activity, and a patient's own baseline. The missing BMIs are not spread evenly: Marina is missing 19.7%, every other clinic 5.3% to 7.3%, and patients 80 and over 10.6% against 6.7% for younger ones. The estimates describe patients with a recorded BMI, so Marina's patients and the oldest patients count less than their share.
+Expect the formula `sbp ~ age + bmi + C(sex)`, then `rows used: 148219 of 159345`: `statsmodels` silently dropped the 11,126 patients with no BMI. Expect R-squared 0.13: age, BMI, and sex explain a modest share of SBP, which also depends on medication, activity, and a patient's own baseline. The missing BMIs are not spread evenly: Marina is missing 19.9%, every other clinic 5.3% to 7.8%, and patients 80 and over 11.1% against 6.8% for younger ones. The estimates describe patients with a recorded BMI, so Marina's patients and the oldest patients count less than their share.
 
 ### 4. How much higher does SBP run per BMI unit?
 
@@ -137,17 +137,17 @@ Expect:
 
 |  | coef | ci_lower | ci_upper | p_value |
 | --- | --- | --- | --- | --- |
-| Intercept | 82.793 | 82.292 | 83.293 | 0.0 |
-| C(sex)[T.M] | 4.077 | 3.920 | 4.235 | 0.0 |
-| age | 0.206 | 0.201 | 0.211 | 0.0 |
-| bmi | 0.864 | 0.849 | 0.880 | 0.0 |
+| Intercept | 83.468 | 82.971 | 83.965 | 0.0 |
+| C(sex)[T.M] | 3.898 | 3.740 | 4.056 | 0.0 |
+| age | 0.203 | 0.198 | 0.208 | 0.0 |
+| bmi | 0.844 | 0.829 | 0.859 | 0.0 |
 
-- **bmi, 0.86**: among patients of the same age and sex, each extra kg/m² goes with about 0.86 mmHg higher SBP (95% CI 0.85 to 0.88). Ten BMI units, say 25 against 35, is about 9 mmHg.
-- **age, 0.21**: about 2.1 mmHg per decade, holding BMI and sex fixed. Older patients are treated more often, and treatment lowers their readings, so this slope is flatter than the rise in untreated pressure with age.
-- **p-values of 0.0**: with 148,487 rows, almost any nonzero association has a tiny p-value. The useful numbers are the size of the coefficient and the width of its interval.
-- **Association**: these are observational records. The coefficient does not say that losing weight lowers SBP by 0.86 mmHg per unit; that needs causal evidence.
+- **bmi, 0.84**: among patients of the same age and sex, each extra kg/m² goes with about 0.84 mmHg higher SBP (95% CI 0.83 to 0.86). Ten BMI units, say 25 against 35, is about 8 mmHg.
+- **age, 0.20**: about 2.0 mmHg per decade, holding BMI and sex fixed. Older patients are treated more often, and treatment lowers their readings, so this slope is flatter than the rise in untreated pressure with age.
+- **p-values of 0.0**: with 148,219 rows, almost any nonzero association has a tiny p-value. The useful numbers are the size of the coefficient and the width of its interval.
+- **Association**: these are observational records. The coefficient does not say that losing weight lowers SBP by 0.84 mmHg per unit; that needs causal evidence.
 
-**What we tell Dr. Kim**: at the same age and sex, patients with a BMI of 35 run about 9 mmHg higher than patients with a BMI of 25 (95% CI 8.5 to 8.8 mmHg per 10 units), measured on patients with a recorded BMI. That supports BMI as one enrollment criterion. It does not show that weight loss alone would lower their pressure by that much.
+**What we tell Dr. Kim**: at the same age and sex, patients with a BMI of 35 run about 8 mmHg higher than patients with a BMI of 25 (95% CI 8.3 to 8.6 mmHg per 10 units), measured on patients with a recorded BMI. That supports BMI as one enrollment criterion. It does not show that weight loss alone would lower their pressure by that much.
 
 ### 5. What does the model say about one referred patient?
 
@@ -158,7 +158,7 @@ new_patient = pd.DataFrame({"age": [55], "bmi": [30.0], "sex": ["F"]})
 display(results.get_prediction(new_patient).summary_frame(alpha=0.05).round(1))
 ```
 
-Expect a fitted 120.0 mmHg, a mean-response interval of 119.9 to 120.1, and a prediction interval of 89.8 to 150.2. The 148,487 rows pin down the _average_ for patients like her to within a fraction of a mmHg, but _her_ SBP could sit anywhere in a 60 mmHg range. More rows shrink the first interval, not the second.
+Expect a fitted 120.0 mmHg, a mean-response interval of 119.9 to 120.1, and a prediction interval of 89.8 to 150.2. The 148,219 rows pin down the _average_ for patients like her to within a fraction of a mmHg, but _her_ SBP could sit anywhere in a 60 mmHg range. More rows shrink the first interval, not the second.
 
 The slide version draws both intervals for every BMI from 18 to 45 at age 55, over a sample of real women aged 50 to 60.
 
@@ -204,7 +204,7 @@ bands = pd.cut(diagnostics["fitted"], [0, 110, 120, 130, 140, 200])
 display(diagnostics.groupby(bands, observed=True)["residual"].agg(["mean", "std", "size"]).round(2))
 ```
 
-Expect a cloud centered on the dashed zero line, a little wider on the right, and a saved `residuals_vs_fitted.png`. Among 5,000 points a widening (a **funnel**) is hard to judge by eye, so the table puts numbers on it: the bands' mean residuals stay within 1 mmHg of 0, but the standard deviation grows from 13.1 mmHg in the lowest band to about 17 in the top two. The spread is not constant (older patients' readings vary more from visit to visit), so the default standard errors and intervals above are approximate. The prediction interval in step 5 is too wide for young patients and too narrow for old ones; the slide says so in a footnote.
+Expect a cloud centered on the dashed zero line, a little wider on the right, and a saved `residuals_vs_fitted.png`. Among 5,000 points a widening (a **funnel**) is hard to judge by eye, so the table puts numbers on it: the bands' mean residuals stay within 1 mmHg of 0, but the standard deviation grows from 13.3 mmHg in the lowest band to about 17.5 in the top two. The spread is not constant (older patients' readings vary more from visit to visit), so the default standard errors and intervals above are approximate. The prediction interval in step 5 is too wide for young patients and too narrow for old ones; the slide says so in a footnote.
 
 The step 5 prediction interval also assumes normally distributed residuals. A Q-Q plot checks that: `sm.qqplot` sorts the sampled residuals and plots them against the quantiles a normal distribution would give.
 
@@ -216,7 +216,7 @@ plt.show()
 plt.close(fig)
 ```
 
-Expect the points to follow the red line from about -50 to +55 mmHg, with a few points at the top right a little above it: the residuals are close to normal, with a slightly long upper tail. The funnel above, not the shape, is what makes the step 5 interval approximate.
+Expect the points to follow the red line from about -50 to +40 mmHg, with the top few dozen points, up to +68, a little above it: the residuals are close to normal, with a slightly long upper tail. The funnel above, not the shape, is what makes the step 5 interval approximate.
 
 ### 7. What exactly does the Monday list predict?
 
@@ -259,7 +259,7 @@ print("patient-weeks with a target:", len(weekly))
 display(weekly.head(3))
 ```
 
-Expect 587,139 raw readings and 580,698 clean ones: 552,512 scheduled (mean 142.6 mmHg) and 28,186 symptom readings (mean 156.2, taken when the patient felt unwell, so they run high). The weekly table has 140,399 patient-weeks with a target. In the first rows, patient RP00001's `sbp_next_week` is the next row's `sbp_week` (147.2, then 151.7), and each label arrives when the target week's last reading uploads (April 6, 13, and 18).
+Expect 581,784 raw readings and 575,462 clean ones: 547,688 scheduled (mean 143.0 mmHg) and 27,774 symptom readings (mean 156.2, taken when the patient felt unwell, so they run high). The weekly table has 138,802 patient-weeks with a target. In the first rows, patient RP00001's `sbp_next_week` is the next row's `sbp_week` (160.0, then 150.8), and each label arrives when the target week's last reading uploads (March 16, 23, and 29).
 
 Before building on the table, check one patient by eye: every scheduled reading as a dot, each week's mean as a black line across that week, and the target the row carries as a red dashed line across the following week. `ax.hlines(y, xmin, xmax)` draws one horizontal segment per value.
 
@@ -281,7 +281,7 @@ plt.show()
 plt.close(fig)
 ```
 
-Expect dots scattered up to about 10 mmHg either side of each black line. Each red dashed target sits exactly on the next week's black line: the row for one week carries the following week's mean as its label.
+Expect dots scattered up to about 12 mmHg either side of each black line. Each red dashed target sits exactly on the next week's black line: the row for one week carries the following week's mean as its label.
 
 ### 8. Which columns exist at Monday 08:00?
 
@@ -318,9 +318,9 @@ print(night_patient, "plain mean hour:", round(night["hour"].mean(), 1),
       " mean hour_sin:", round(night["hour_sin"].mean(), 2), " mean hour_cos:", round(night["hour_cos"].mean(), 2))
 ```
 
-Expect the daily rhythm in the means: 145.8 mmHg at 7:00, 136.2 at 19:00, and 138.4 at midnight. For RP04850, who measures around midnight, the plain mean hour is 12.3, a time the patient never measures; the mean sine and cosine are -0.05 and 0.95, just before midnight on the clock face.
+Expect the daily rhythm in the means: 146.2 mmHg at 7:00, 135.9 at 19:00, and 138.4 at midnight. For RP03030, who measures around midnight, the plain mean hour is 11.2, a time the patient never measures; the mean sine and cosine are 0.03 and 0.95, just after midnight on the clock face.
 
-Put RP04850's readings on the clock face beside the daily rhythm.
+Put RP03030's readings on the clock face beside the daily rhythm.
 
 ```python
 fig, (left, right) = plt.subplots(1, 2, figsize=(10, 4))
@@ -329,7 +329,7 @@ left.set(xlabel="Hour of reading", ylabel="Mean SBP (mmHg)", title="Morning read
 
 angle = np.linspace(0, 2 * np.pi, 100)
 right.plot(np.sin(angle), np.cos(angle), color="lightgray")
-right.scatter(night["hour_sin"], night["hour_cos"], s=12, alpha=0.4, label="RP04850's readings")
+right.scatter(night["hour_sin"], night["hour_cos"], s=12, alpha=0.4, label=f"{night_patient}'s readings")
 right.scatter(night["hour_sin"].mean(), night["hour_cos"].mean(), s=120, marker="*", color="red",
               label="mean of sin and cos")
 plain = night["hour"].mean()
@@ -344,7 +344,7 @@ plt.show()
 plt.close(fig)
 ```
 
-Expect the left curve to peak near 146 mmHg at 07:00 and bottom out near 136 at 20:00. On the right, RP04850's dots cluster at the top of the circle around 00:00. The red star (mean sine and cosine) sits with them; the black X (plain mean hour, 12.3) sits at the bottom near 12:00, where the patient never measures. The forecast gets `hour_sin` and `hour_cos`, not the plain hour.
+Expect the left curve to peak near 146 mmHg at 07:00 and bottom out near 136 at 19:00 and 20:00. On the right, RP03030's dots cluster at the top of the circle around 00:00. The red star (mean sine and cosine) sits with them; the black X (plain mean hour, 11.2) sits at the bottom near 12:00, where the patient never measures. The forecast gets `hour_sin` and `hour_cos`, not the plain hour.
 
 ### 9. Test the forecast the way Monday runs it
 
@@ -367,7 +367,7 @@ display(pd.DataFrame({
 print("first validation run:", first_valid_run)
 ```
 
-Expect 68,634 training, 37,980 validation, and 33,785 test rows with non-overlapping target weeks. The first validation run is Monday, June 2, 2025, at 08:00, when the forecast for the week of June 2 is made. 68,324 training labels had arrived by then; the 310 left out are from the last training week (May 26), whose phones synced after the run.
+Expect 67,881 training, 37,578 validation, and 33,343 test rows with non-overlapping target weeks. The first validation run is Monday, June 2, 2025, at 08:00, when the forecast for the week of June 2 is made. 67,577 training labels had arrived by then; the 304 left out are from the last training week (May 26), whose phones synced after the run.
 
 Count rows per target week and color each by its role, the chart that shows the committee how the forecast was tested.
 
@@ -387,9 +387,9 @@ plt.show()
 plt.close(ax.figure)
 ```
 
-Expect blue training bars growing from January as patients enroll, a thin red cap on the week of May 26 (the 310 late labels), then orange validation weeks in June and July and green test weeks from August. No target week has two colors except May 26.
+Expect blue training bars growing from January as patients enroll, a thin red cap on the week of May 26 (the 304 late labels), then orange validation weeks in June and July and green test weeks from August. No target week has two colors except May 26.
 
-**What we tell Dr. Kim**: the forecast table is ready, with 140,399 patient-weeks, a leakage audit for every candidate feature, and a split that replays Monday's run. Demo 2 fits its models on `fit_rows`.
+**What we tell Dr. Kim**: the forecast table is ready, with 138,802 patient-weeks, a leakage audit for every candidate feature, and a split that replays Monday's run. Demo 2 fits its models on `fit_rows`.
 
 ## Independent practice
 
@@ -404,7 +404,7 @@ display(pd.DataFrame({"one_per_patient": results.bse, "every_visit": every_visit
 print("rows used:", int(every_visit.nobs))
 ```
 
-Expect 481,614 rows and standard errors about 45% smaller (BMI's falls from 0.0078 to 0.0043). The data did not get more informative: each patient's visits share that patient's usual blood pressure, and the model counts them as unrelated people. The reply to the committee member: one row per patient, or a model built for repeated visits (the optional extension).
+Expect 483,744 rows and standard errors about 45% smaller (BMI's falls from 0.0077 to 0.0042). The data did not get more informative: each patient's visits share that patient's usual blood pressure, and the model counts them as unrelated people. The reply to the committee member: one row per patient, or a model built for repeated visits (the optional extension).
 
 ### 2. The pharmacy lead asks whether blood-pressure medication "raises" SBP
 
@@ -416,7 +416,7 @@ display(with_med.params.round(2).rename("coef"))
 display(cohort.groupby("on_bp_med")[["sbp", "age", "bmi"]].mean().round(1))
 ```
 
-Expect `C(on_bp_med)[T.True]` near +1.1 mmHg: treated patients read _higher_ than untreated patients of the same age, BMI, and sex. The raw means show why: treated patients average 124.1 mmHg against 117.7, and they are 13 years older and 3 BMI units heavier. Medication does not raise blood pressure; clinicians prescribe it to the patients whose pressure was high (**confounding by indication**). The reply: an observational coefficient describes who gets treated as much as what treatment does.
+Expect `C(on_bp_med)[T.True]` near +0.95 mmHg: treated patients read _higher_ than untreated patients of the same age, BMI, and sex. The raw means show why: treated patients average 124.0 mmHg against 117.7, and they are 13 years older and 3 BMI units heavier. Medication does not raise blood pressure; clinicians prescribe it to the patients whose pressure was high (**confounding by indication**). The reply: an observational coefficient describes who gets treated as much as what treatment does.
 
 ### 3. The Bayview clinic manager asks why her clinic reads highest
 
@@ -434,7 +434,7 @@ array_fit = sm.OLS(complete["sbp"], X).fit()
 display(array_fit.params.round(3).rename("coef"))
 ```
 
-Expect all five clinic coefficients below 0, from -3.5 (Excelsior) to -10.2 (Marina): with age, BMI, and sex fixed, Bayview still reads highest. The ADI deciles point to one candidate reason: Bayview's patients come from the most deprived neighborhoods (mean decile 7.9, Marina 2.3). The coefficients say the clinics differ, not why; staff, cuffs, and neighborhoods all vary by clinic. The array fit gives the same numbers as step 4 (`const` 82.793, `age` 0.206, `bmi` 0.864, `male` 4.077).
+Expect all five clinic coefficients below 0, from -4.0 (Excelsior) to -10.5 (Marina): with age, BMI, and sex fixed, Bayview still reads highest. The ADI deciles point to one candidate reason: Bayview's patients come from the most deprived neighborhoods (mean decile 7.9, Marina 2.3). The coefficients say the clinics differ, not why; staff, cuffs, and neighborhoods all vary by clinic. The array fit gives the same numbers as step 4 (`const` 83.468, `age` 0.203, `bmi` 0.844, `male` 3.898).
 
 ### 4. The geriatrician asks whether a straight line understates her patients
 
@@ -455,10 +455,10 @@ interaction = smf.ols("sbp ~ age + bmi * C(sex) + age:bmi", data=cohort).fit()
 display(interaction.params.round(4).rename("coef"))
 ```
 
-Expect the squared term to raise R-squared only slightly (0.1299 to 0.1349) and lower AIC (1233455 to 1232603) and BIC (1233494 to 1232652). The log curve does worse than the straight line (R-squared 0.1242, AIC 1234419): it flattens at older ages, while SBP rises faster there. The curved model predicts higher SBP than the straight line at 30 and 85 and lower at 50: the straight line understates an 85-year-old by about 3.4 mmHg. In the interaction model:
+Expect the squared term to raise R-squared only slightly (0.1266 to 0.1315) and lower AIC (1231538 to 1230694) and BIC (1231578 to 1230743). The log curve does worse than the straight line (R-squared 0.1210, AIC 1232483): it flattens at older ages, while SBP rises faster there. The curved model predicts higher SBP than the straight line at 30 and 85 and lower at 50: the straight line understates an 85-year-old by about 3.4 mmHg. In the interaction model:
 
-- **`bmi:C(sex)[T.M]`, -0.041**: men's BMI slope runs 0.041 mmHg per unit below women's, nearly the same, so one BMI rule serves both.
-- **`age:bmi`, -0.0009**: a woman's BMI slope is 0.931 - 0.0009 × age, about 0.89 mmHg per unit at 40 and 0.85 at 85. BMI matters about as much in the geriatrician's oldest patients.
+- **`bmi:C(sex)[T.M]`, -0.062**: men's BMI slope runs 0.062 mmHg per unit below women's, nearly the same, so one BMI rule serves both.
+- **`age:bmi`, -0.0015**: a woman's BMI slope is 0.952 - 0.0015 × age, about 0.89 mmHg per unit at 40 and 0.82 at 85. BMI matters about 8% less in the geriatrician's oldest patients, too little to change the rule.
 
 ### 5. Dr. Kim asks for a first forecast now
 
@@ -477,7 +477,7 @@ print("average miss (mmHg):", round((valid["sbp_next_week"] - forecast.predict(v
 print("average miss of this week's mean as the forecast:", round((valid["sbp_next_week"] - valid["sbp_week"]).abs().mean(), 2))
 ```
 
-Expect a `sbp_week` coefficient near 0.90: next week's mean moves most of the way toward this week's. About 93% of validation weeks fall inside their intervals, a little short of the nominal 95%, and the average miss is 4.15 mmHg, against 4.28 for simply repeating this week's mean. Demo 2 measures these misses properly and does better.
+Expect a `sbp_week` coefficient near 0.90: next week's mean moves most of the way toward this week's. About 94% of validation weeks fall inside their intervals, a little short of the nominal 95%, and the average miss is 4.11 mmHg, against 4.24 for simply repeating this week's mean. Demo 2 measures these misses properly and does better.
 
 ### 6. A reviewer asks what a retrospective split would have used
 
@@ -491,7 +491,7 @@ delay = late["label_arrival"] - first_valid_run
 print("median delay after the run:", delay.median().round("h"), " longest:", delay.max().round("h"))
 ```
 
-Expect 310 late labels, all from the week of May 26, with a median delay of 1 day 11 hours after the June 2 run and the longest about 5.4 days. A **retrospective** split would fit all 68,634 training rows, including labels that did not exist yet when the first validation forecast was made.
+Expect 304 late labels, all from the week of May 26, with a median delay of 1 day 15 hours after the June 2 run and the longest 5.5 days. A **retrospective** split would fit all 67,881 training rows, including labels that did not exist yet when the first validation forecast was made.
 
 The cuff vendor's next feed will send `upload_time` in UTC. Cedar Valley's clocks run on Central time, so attach `America/Chicago` to the label arrivals, convert them to UTC as the feed will, and recount the late labels against the first run written in local time. A few uploads are stamped inside the hour skipped on March 9 (Lecture 09's spring-forward night); `nonexistent="NaT"` sets them aside instead of raising an error.
 
@@ -503,7 +503,7 @@ print("arrivals in the skipped hour:", arrival_utc.isna().sum(), " run in UTC:",
 print("late labels from UTC arrivals:", (arrival_utc > run_local).sum())
 ```
 
-Expect 12 arrivals in the skipped hour, the run at `2025-06-02 13:00:00+00:00` (Central daylight time is UTC minus 5), and the same 310 late labels: pandas compares the instants, so the UTC feed and the local run time need no further conversion.
+Expect 8 arrivals in the skipped hour, the run at `2025-06-02 13:00:00+00:00` (Central daylight time is UTC minus 5), and the same 304 late labels: pandas compares the instants, so the UTC feed and the local run time need no further conversion.
 
 ### 7. The committee's statistician asks for the full regression table
 
@@ -515,7 +515,7 @@ print("adjusted R-squared:", round(results.rsquared_adj, 4), " AIC:", round(resu
 print("F:", round(results.fvalue), " p:", results.f_pvalue, " residual df:", int(results.df_resid))
 ```
 
-Expect `No. Observations: 148487` in the header, R-squared and adjusted R-squared both 0.130 (adjusted 0.1299: four coefficients barely penalize 148,487 rows), an F-statistic of 7389 with `Prob (F-statistic)` 0.00, and the same coefficients and intervals as step 4 in the middle block. The header rounds AIC to 1.233e+06; the attribute gives 1233455, the value practice 4 compares against. The attributes repeat the header for the statistician's appendix: `fvalue` 7389, `f_pvalue` 0.0, and `df_resid` 148483 (148,487 rows minus 4 coefficients).
+Expect `No. Observations: 148219` in the header, R-squared and adjusted R-squared both 0.127 (adjusted 0.1265: four coefficients barely penalize 148,219 rows), an F-statistic of 7158 with `Prob (F-statistic)` 0.00, and the same coefficients and intervals as step 4 in the middle block. The header rounds AIC to 1.232e+06; the attribute gives 1231538, the value practice 4 compares against. The attributes repeat the header for the statistician's appendix: `fvalue` 7158, `f_pvalue` 0.0, and `df_resid` 148215 (148,219 rows minus 4 coefficients).
 
 ### 8. Dr. Kim asks whether the forecast should know the season
 
@@ -532,7 +532,7 @@ mondays["season_cos"] = np.cos(angle).round(3)
 display(mondays)
 ```
 
-Expect mean SBP to fall from 149.8 mmHg in January to 138.4 in August, then 138.8 in September. That drop mixes summer with the program's own effect (added drugs, Demo 2), and one partial year cannot separate them, so the season columns wait until the data covers a second winter. In the Monday table, the plain `dayofyear` jumps from 363 to 5 across New Year, while `season_sin` moves from -0.069 to 0.069 and `season_cos` stays at 0.998: the two Mondays sit side by side on the circle, as June 2 (0.507, -0.862) sits on the far side.
+Expect mean SBP to fall from 149.8 mmHg in January to 138.6 in August, then 139.2 in September. That drop mixes summer with the program's own effect (added drugs, Demo 2), and one partial year cannot separate them, so the season columns wait until the data covers a second winter. In the Monday table, the plain `dayofyear` jumps from 363 to 5 across New Year, while `season_sin` moves from -0.069 to 0.069 and `season_cos` stays at 0.998: the two Mondays sit side by side on the circle, as June 2 (0.507, -0.862) sits on the far side.
 
 ### 9. The committee's statistician asks whether the funnel makes the BMI interval too narrow
 
@@ -561,7 +561,7 @@ plt.show()
 plt.close(fig)
 ```
 
-Expect a bootstrap interval of 0.851 to 0.879 beside the model's 0.849 to 0.880, and 200 slopes spread from about 0.845 to 0.886, with the blue dashes just inside the red lines. The funnel makes step 5's single-patient interval approximate but barely moves the BMI slope's interval. The reply: the slide's 0.85 to 0.88 holds.
+Expect a bootstrap interval of 0.828 to 0.858 beside the model's 0.829 to 0.859, and 200 slopes spread from about 0.818 to 0.863, with each blue dash within 0.001 of its red line. The funnel makes step 5's single-patient interval approximate but barely moves the BMI slope's interval. The reply: the slide's 0.83 to 0.86 holds.
 
 ## Optional extension: a random intercept per patient
 
@@ -577,4 +577,4 @@ print("visits:", len(marina), "patients:", marina["patient_id"].nunique())
 display(pd.DataFrame({"ols_se": naive.bse, "mixed_se": mixed.bse}).dropna().round(4))
 ```
 
-Expect 24,877 visits from 9,388 patients, and the mixed model's standard errors about 27% larger than plain OLS on the same rows (BMI's 0.0241 against 0.0190): it treats a patient's repeat visits as one patient seen several times.
+Expect 24,900 visits from 9,353 patients, and the mixed model's standard errors about 28% larger than plain OLS on the same rows (BMI's 0.0242 against 0.0188): it treats a patient's repeat visits as one patient seen several times.
