@@ -224,7 +224,7 @@ Organization first, styling last. Fix substance (add the missing explanation, vi
 ### Data and artifacts
 
 - Generated data (05 and 06): the handout ships a seeded stdlib `generate_data.py` and `data_manifest.json`; `data/` is gitignored, and the notebook's first cell builds and verifies it. Several MB, so students must use code; identical bytes on every platform and Python 3.9 to 3.13.
-- Graded outputs are small CSV summaries an analyst would hand over (audits, counts, logs, fixed small extracts), never copies of the cleaned data; a complete `output/` stays well under 200 KB.
+- Graded outputs are small CSV summaries an analyst would hand over (audits, counts, logs, fixed small extracts) and charts; checks grade what an artifact shows, never its file size.
 - Parquet is the default for generated datasets and saved demo tables from Lecture 05 on; graded artifacts stay CSV.
 - Files that do not depend on a validation gate save before its `assert`.
 
