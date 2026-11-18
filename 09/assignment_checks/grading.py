@@ -13,14 +13,15 @@ from _value_checks import run_checks
 
 # One value per check in _value_checks.CHECKS, in the same order: the daily feed
 # (Task 1.2), the episode coverage (Task 2.1), the alert rules (Task 2.2), the
-# lab turnaround (Task 3.1), the score features (Task 3.2), then the holdout
-# summary (Task 3.3).
+# lab turnaround (Task 3.1), the score features and the first-hour features
+# (Task 3.2), then the holdout summary (Task 3.3).
 POINTS = (
     3, 4, 5, 4,
     3, 4, 5, 5,
     3, 3, 5, 5,
-    3, 2, 5, 5,
-    3, 5, 5, 6, 6,
+    3, 2, 4, 4,
+    3, 4, 4, 4, 4,
+    2, 2, 4,
     2, 2, 3, 4,
 )
 

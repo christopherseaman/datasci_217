@@ -301,21 +301,22 @@ visits = pd.DataFrame(rng.poisson([620, 410, 890], size=(24, 3)),
 
 annual = visits.resample('Y-DEC').mean()
 quarterly = annual.resample('Q-DEC', convention='start').ffill()
-print(annual.round(1))
-print(quarterly.head().round(1))
+display(annual.round(1))
+display(quarterly.head().round(1))
 ```
 
-```text
-      Mission  Sunset  Bayview
-2023    615.9   408.8    897.5
-2024    621.8   404.0    880.3
-        Mission  Sunset  Bayview
-2023Q1    615.9   408.8    897.5
-2023Q2    615.9   408.8    897.5
-2023Q3    615.9   408.8    897.5
-2023Q4    615.9   408.8    897.5
-2024Q1    621.8   404.0    880.3
-```
+|  | Mission | Sunset | Bayview |
+| --- | --- | --- | --- |
+| 2023 | 615.9 | 408.8 | 897.5 |
+| 2024 | 621.8 | 404.0 | 880.3 |
+
+|  | Mission | Sunset | Bayview |
+| --- | --- | --- | --- |
+| 2023Q1 | 615.9 | 408.8 | 897.5 |
+| 2023Q2 | 615.9 | 408.8 | 897.5 |
+| 2023Q3 | 615.9 | 408.8 | 897.5 |
+| 2023Q4 | 615.9 | 408.8 | 897.5 |
+| 2024Q1 | 621.8 | 404.0 | 880.3 |
 
 `ffill()` copies the annual mean into each quarter; it does not estimate quarterly volume. A clinic with a winter surge has quarters above and below its annual figure.
 
@@ -349,22 +350,21 @@ import pandas as pd
 rng = np.random.default_rng(42)
 temps = pd.Series(98.6 + np.cumsum(rng.standard_normal(100) * 0.1),
                   index=pd.date_range('2023-01-01', periods=100, freq='D'))
-print(pd.DataFrame({
+display(pd.DataFrame({
     'temperature': temps,
     'expanding_mean': temps.expanding().mean(),
     'rolling_median': temps.rolling(window=5).quantile(0.5),
 }).head(6).round(2))
 ```
 
-```text
-            temperature  expanding_mean  rolling_median
-2023-01-01        98.63           98.63             NaN
-2023-01-02        98.53           98.58             NaN
-2023-01-03        98.60           98.59             NaN
-2023-01-04        98.70           98.61             NaN
-2023-01-05        98.50           98.59           98.60
-2023-01-06        98.37           98.55           98.53
-```
+|  | temperature | expanding_mean | rolling_median |
+| --- | --- | --- | --- |
+| 2023-01-01 | 98.63 | 98.63 | NaN |
+| 2023-01-02 | 98.53 | 98.58 | NaN |
+| 2023-01-03 | 98.60 | 98.59 | NaN |
+| 2023-01-04 | 98.70 | 98.61 | NaN |
+| 2023-01-05 | 98.50 | 98.59 | 98.60 |
+| 2023-01-06 | 98.37 | 98.55 | 98.53 |
 
 # High-Frequency Data Analysis
 
@@ -522,7 +522,7 @@ fig.show()
 
 - **Autocorrelation (ACF)**: correlation between a series and its earlier values at each lag.
 - **Partial autocorrelation (PACF)**: the association at one lag after accounting for the shorter lags. Both plots help describe serial dependence; peaks alone do not identify a reliable forecasting model.
-- Use the regular, nonmissing `ili_visits` series above. Forty PACF lags need more than 80 observations. Its trend can cause high correlations even without useful short-term predictability.
+- Use the regular, nonmissing `ili_visits` series above. Forty PACF lags need at least 80 observations. Its trend can cause high correlations even without useful short-term predictability.
 
 ### Reference Card: ACF and PACF Plots
 
@@ -600,7 +600,7 @@ Freq: 24h, dtype: int64
 ```python
 temps = pd.Series([98.6, 98.9, 99.4, 100.1, 99.8, 99.2, 98.8],
                   index=pd.date_range('2023-01-01', periods=7, freq='D'))
-print(pd.DataFrame({
+display(pd.DataFrame({
     'temperature': temps,
     'rolling_3': temps.rolling(window=3).mean(),
     'early_3': temps.rolling(window=3, min_periods=2).mean(),
@@ -608,16 +608,15 @@ print(pd.DataFrame({
 }).round(2))
 ```
 
-```text
-            temperature  rolling_3  early_3  centered_3
-2023-01-01         98.6        NaN      NaN         NaN
-2023-01-02         98.9        NaN    98.75       98.97
-2023-01-03         99.4      98.97    98.97       99.47
-2023-01-04        100.1      99.47    99.47       99.77
-2023-01-05         99.8      99.77    99.77       99.70
-2023-01-06         99.2      99.70    99.70       99.27
-2023-01-07         98.8      99.27    99.27         NaN
-```
+|  | temperature | rolling_3 | early_3 | centered_3 |
+| --- | --- | --- | --- | --- |
+| 2023-01-01 | 98.6 | NaN | NaN | NaN |
+| 2023-01-02 | 98.9 | NaN | 98.75 | 98.97 |
+| 2023-01-03 | 99.4 | 98.97 | 98.97 | 99.47 |
+| 2023-01-04 | 100.1 | 99.47 | 99.47 | 99.77 |
+| 2023-01-05 | 99.8 | 99.77 | 99.77 | 99.70 |
+| 2023-01-06 | 99.2 | 99.70 | 99.70 | 99.27 |
+| 2023-01-07 | 98.8 | 99.27 | 99.27 | NaN |
 
 The centered mean on January 2 equals the trailing mean on January 3: it already used a reading that had not happened yet.
 
@@ -638,20 +637,19 @@ An **exponentially weighted moving average (EWM)** uses every earlier reading bu
 ```python
 sbp = pd.Series([120, 121, 119, 120, 132, 134, 135],
                 index=pd.date_range('2023-01-01', periods=7, freq='D'))
-print(pd.DataFrame({'sbp': sbp, 'rolling_3': sbp.rolling(3).mean(),
-                    'ewm_3': sbp.ewm(span=3).mean()}).round(1))
+display(pd.DataFrame({'sbp': sbp, 'rolling_3': sbp.rolling(3).mean(),
+                      'ewm_3': sbp.ewm(span=3).mean()}).round(1))
 ```
 
-```text
-            sbp  rolling_3  ewm_3
-2023-01-01  120        NaN  120.0
-2023-01-02  121        NaN  120.7
-2023-01-03  119      120.0  119.7
-2023-01-04  120      120.0  119.9
-2023-01-05  132      123.7  126.1
-2023-01-06  134      128.7  130.1
-2023-01-07  135      133.7  132.6
-```
+|  | sbp | rolling_3 | ewm_3 |
+| --- | --- | --- | --- |
+| 2023-01-01 | 120 | NaN | 120.0 |
+| 2023-01-02 | 121 | NaN | 120.7 |
+| 2023-01-03 | 119 | 120.0 | 119.7 |
+| 2023-01-04 | 120 | 120.0 | 119.9 |
+| 2023-01-05 | 132 | 123.7 | 126.1 |
+| 2023-01-06 | 134 | 128.7 | 130.1 |
+| 2023-01-07 | 135 | 133.7 | 132.6 |
 
 On January 5, when blood pressure jumps, the EWM moves to 126.1 while the 3-reading mean moves only to 123.7.
 
@@ -730,21 +728,20 @@ A **percentage change** divides the difference by the previous value. `pct_chang
 
 ### Code Snippet: Daily Weight Changes
 
-`weight` contains the five daily weights in the main lecture's lag example.
+`weight` holds five daily weights in kg, January 1 to 5, 2023: 70.5, 70.8, 70.2, 71.0, 70.9.
 
 ```python
 weight['pct_change'] = weight['weight'].pct_change()
-print(weight[['weight', 'pct_change']])
+display(weight[['weight', 'pct_change']])
 ```
 
-```text
-            weight  pct_change
-2023-01-01    70.5         NaN
-2023-01-02    70.8    0.004255
-2023-01-03    70.2   -0.008475
-2023-01-04    71.0    0.011396
-2023-01-05    70.9   -0.001408
-```
+|  | weight | pct_change |
+| --- | --- | --- |
+| 2023-01-01 | 70.5 | NaN |
+| 2023-01-02 | 70.8 | 0.004255 |
+| 2023-01-03 | 70.2 | -0.008475 |
+| 2023-01-04 | 71.0 | 0.011396 |
+| 2023-01-05 | 70.9 | -0.001408 |
 
 # Grouped Resampling with Grouper
 

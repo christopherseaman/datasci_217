@@ -444,8 +444,12 @@ def answers(tables: dict[str, pd.DataFrame], hourly_stat: str = "median", day_zo
                                           flagged_escalations=("flagged_escalation", "sum")).reset_index()
     # Lactate results whose time was set aside as NaT are unknown, so the checks skip those episodes' last_lactate.
     unknown = set(labs.loc[(labs["test"] == "Lactate") & labs["resulted_at"].isna(), "episode_id"])
+    # Every episode's block and outcome, so a holdout summary built from extra score_features rows can be followed.
+    all_blocks = scored.assign(block=np.where(scored["prediction_time"] < HOLDOUT_FROM, "earlier", "later_holdout"),
+                               escalated=scored["outcome"] == "escalated")
     return {"daily": daily, "coverage": coverage, "rules": rules, "turnaround": turnaround, "features": features,
-            "blocks": blocks, "holdout": holdout, "unknown_lactate": unknown, "labs": labs}
+            "blocks": blocks, "holdout": holdout, "unknown_lactate": unknown, "labs": labs, "all_blocks": all_blocks,
+            "first_hour": hourly.groupby("episode_id").head(1).set_index("episode_id")["heart_rate"]}
 
 
 def expected(tables: dict[str, pd.DataFrame]) -> dict[str, object]:
@@ -492,6 +496,14 @@ def expected(tables: dict[str, pd.DataFrame]) -> dict[str, object]:
                       _number(utc_features.at[episode, "last_lactate"]))
             for episode in features.index
         },
+        # Block and escalated for the episodes with no hourly row at the prediction time, which a Task 3.2 filter
+        # other than the equality test may save; Task 3.3's own-artifact counts include them.
+        "UNSCORED": {row.episode_id: (row.block, bool(row.escalated)) for row in main["all_blocks"].itertuples()
+                     if row.episode_id not in features.index},
+        # Each episode's first hourly heart rate, as a median and as a mean: what mean_prev_6h holds in the
+        # first-hour file when the window includes its own hour, which Task 3.2's score features check charges.
+        "FIRST_HOUR_HR": {episode: (_number(value), _number(mean["first_hour"].at[episode]))
+                          for episode, value in main["first_hour"].items()},
     }
 
 

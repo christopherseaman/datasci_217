@@ -10,10 +10,13 @@ semicolons or tabs). An empty directory and the untouched handout earn 0, one
 wrong value or one misnamed column costs exactly its own check, an omitted
 value column and renamed columns with the right values cost only the columns
 check, and a missing file costs only its own artifact's checks. The plausible
-mistakes (UTC days, count() for size, hourly means, a leaking window, lab
+mistakes (UTC days, count() for size, hourly means, a leaking window, a shift
+or rolling window run without the groupby, lab
 clocks localized as UTC, episodes with no gap dropped or left blank, lactates
-picked by collection time) each cost only their own check, with messages
-naming the cause. It also confirms that the data and the frozen values in
+picked by collection time, extra score_features rows from a last-row-before
+filter, rule names lost with the index) each cost only their own check, with
+messages naming the cause; a rolling_3h with min_periods=1 fails both count
+checks, the second saying "same cause". It also confirms that the data and the frozen values in
 `_value_checks.py` match `scripts/build_assignment09_data.py`, that the
 README's checkpoints, contract, and numbering agree with the checks and the
 notebook, that the handout ships every file in `CHECKS_FILES` byte for byte and
@@ -59,19 +62,29 @@ POINTS_BY_NAME = dict(zip(NAMES, POINTS, strict=True))
 ARTIFACTS = {artifact.path: artifact for artifact in value_checks.ARTIFACTS}
 DAILY, COVERAGE, RULES = "output/daily_feed.csv", "output/episode_coverage.csv", "output/alert_rules.csv"
 TURNAROUND, FEATURES, HOLDOUT = "output/lab_turnaround.csv", "output/score_features.csv", "output/holdout_summary.csv"
+FIRST_HOUR = "output/first_hour_features.csv"
 PREFIX = {DAILY: "daily feed:", COVERAGE: "episode coverage:", RULES: "alert rules:", TURNAROUND: "lab turnaround:",
-          FEATURES: "score features:", HOLDOUT: "holdout summary:"}
+          FEATURES: "score features:", FIRST_HOUR: "first-hour features:", HOLDOUT: "holdout summary:"}
 TABLES = {name: pd.read_parquet(HANDOUT / "data" / f"{name}.parquet") for name in ("episodes", "vitals", "labs")}
 FEATURE_COLUMNS = ["episode_id", "prev_hour_hr", "mean_prev_6h", "last_lactate"]
 
 
 def solve(hourly_stat: str = "median", day_zone: str = "America/New_York", size: str = "size",
           lab_zone: str = "America/New_York", leak: bool = False, lactate_time: str = "resulted_at",
-          masks: bool = False, hour_count: str = "source_row") -> dict[str, pd.DataFrame]:
+          masks: bool = False, hour_count: str = "source_row", rolling_min: int | None = None,
+          at_or_before: bool = False, ungrouped: str = "", first_row: str = "head") -> dict[str, pd.DataFrame]:
     """Answer the assignment with the README's pandas calls; returns {artifact path: frame to save}.
 
     The options reproduce one slip each; `masks=True` takes another valid route to the Task 3.2 features, and
     `hour_count="heart_rate"` counts Task 2.1's hours from heart rates, which the checks also accept.
+    `rolling_min=1` lets rolling_3h average fewer than three hours, and `at_or_before=True` keeps each episode's
+    last hourly row at or before the prediction time, which adds the episodes that ended earlier.
+    `ungrouped="shift"` runs shift(1) and the rolling window down the whole table, and `ungrouped="rolling"`
+    groups the shift but not the rolling window; both borrow the first hours' features from the episode above.
+    `ungrouped="window"` is a rolling mean with neither the shift nor the groupby.
+    `ungrouped="own_hour"` leaves the shift out of prev_hour_hr, which then holds each hour's own heart rate.
+    `first_row="first"` or `"tail"` saves another row per episode in the first-hour file: first() skips blanks.
+    `first_row="all"` forgets head(1) and saves every hourly row there.
     """
     episodes = TABLES["episodes"]
     vitals = TABLES["vitals"].copy()
@@ -101,7 +114,8 @@ def solve(hourly_stat: str = "median", day_zone: str = "America/New_York", size:
 
     grouped = vitals.set_index("recorded_at").groupby("episode_id")["heart_rate"].resample("h")
     hourly = getattr(grouped, hourly_stat)().reset_index()
-    hourly["rolling_3h"] = hourly.groupby("episode_id")["heart_rate"].transform(lambda s: s.rolling(3).mean())
+    hourly["rolling_3h"] = hourly.groupby("episode_id")["heart_rate"].transform(
+        lambda s: s.rolling(3, min_periods=rolling_min).mean())
     peaks = pd.DataFrame({
         "any_reading": vitals.groupby("episode_id")["heart_rate"].max(),
         "hourly_median": hourly.groupby("episode_id")["heart_rate"].max(),
@@ -123,6 +137,26 @@ def solve(hourly_stat: str = "median", day_zone: str = "America/New_York", size:
 
     scored = episodes[["episode_id", "admitted_at", "outcome"]].copy()
     scored["prediction_time"] = scored["admitted_at"].dt.floor("h") + pd.Timedelta(hours=24)
+    features = hourly[["episode_id", "recorded_at", "heart_rate"]].copy()
+    by_episode = features.groupby("episode_id")["heart_rate"]
+    start = 0 if leak else 1
+    if ungrouped == "shift":
+        features["prev_hour_hr"] = features["heart_rate"].shift(1)
+        features["mean_prev_6h"] = features["heart_rate"].shift(1).rolling(6, min_periods=1).mean()
+    else:
+        features["prev_hour_hr"] = by_episode.shift(1)
+        features["mean_prev_6h"] = by_episode.transform(lambda s: s.shift(start).rolling(6, min_periods=1).mean())
+        if ungrouped == "rolling":
+            features["mean_prev_6h"] = by_episode.shift(1).rolling(6, min_periods=1).mean()
+        if ungrouped == "own_hour":
+            features["prev_hour_hr"] = features["heart_rate"]
+        if ungrouped == "window":
+            features["mean_prev_6h"] = features["heart_rate"].rolling(6, min_periods=1).mean()
+    rows = features.groupby("episode_id")
+    picked = (features if first_row == "all" else rows.first().reset_index() if first_row == "first"
+              else getattr(rows, first_row)(1))
+    first_hours = picked[["episode_id", "prev_hour_hr", "mean_prev_6h"]]
+    assert first_row == "all" or len(first_hours) == len(value_checks.COVERAGE)
     if masks:
         # Another valid route: the hourly rows before each prediction time, picked by time instead of by shift.
         timed = hourly.merge(scored, on="episode_id", validate="many_to_one")
@@ -136,20 +170,17 @@ def solve(hourly_stat: str = "median", day_zone: str = "America/New_York", size:
                           .merge(six.groupby("episode_id")["heart_rate"].mean().rename("mean_prev_6h").reset_index(),
                                  on="episode_id", how="left", validate="one_to_one"))
     else:
-        features = hourly[["episode_id", "recorded_at", "heart_rate"]].copy()
-        by_episode = features.groupby("episode_id")["heart_rate"]
-        features["prev_hour_hr"] = by_episode.shift(1)
-        start = 0 if leak else 1
-        features["mean_prev_6h"] = by_episode.transform(lambda s: s.shift(start).rolling(6, min_periods=1).mean())
         features = features.merge(scored, on="episode_id", validate="many_to_one")
         score_features = features[features["recorded_at"] == features["prediction_time"]]
+        if at_or_before:
+            score_features = features[features["recorded_at"] <= features["prediction_time"]].groupby("episode_id").tail(1)
     lactate = labs[labs["test"] == "Lactate"].merge(scored[["episode_id", "prediction_time"]], on="episode_id",
                                                      validate="many_to_one")
     known = lactate[lactate[lactate_time] <= lactate["prediction_time"]]
     last_lactate = (known.sort_values(lactate_time).groupby("episode_id")["value"].last().rename("last_lactate")
                     .reset_index())
     score_features = score_features.merge(last_lactate, on="episode_id", how="left", validate="one_to_one")
-    assert len(score_features) == len(value_checks.FEATURES)
+    assert len(score_features) == len(value_checks.FEATURES) + at_or_before * len(value_checks.UNSCORED)
 
     blocks = score_features.copy()
     blocks["block"] = np.where(blocks["prediction_time"] < pd.Timestamp("2026-03-01", tz="UTC"), "earlier",
@@ -162,7 +193,7 @@ def solve(hourly_stat: str = "median", day_zone: str = "America/New_York", size:
         flagged_escalations=("flagged_escalation", "sum"))
 
     return {DAILY: daily_feed, COVERAGE: coverage, RULES: alert_rules, TURNAROUND: lab_turnaround,
-            FEATURES: score_features[FEATURE_COLUMNS], HOLDOUT: holdout}
+            FEATURES: score_features[FEATURE_COLUMNS], FIRST_HOUR: first_hours, HOLDOUT: holdout}
 
 
 def as_files(frames: dict[str, pd.DataFrame]) -> dict[str, str]:
@@ -325,6 +356,9 @@ def alternative() -> dict[str, str | bytes]:
         TURNAROUND: "\n".join(line + " " for line in turnaround.to_csv(index=False).splitlines()),
         # Features from time masks, one decimal, NaN for the blanks, a space after every comma.
         FEATURES: features.to_csv(index=False, na_rep="NaN").replace(",", ", "),
+        # Lower-case IDs, NaN for the blanks, columns reversed.
+        FIRST_HOUR: frames[FIRST_HOUR].assign(episode_id=frames[FIRST_HOUR]["episode_id"].str.lower())
+        .iloc[:, ::-1].to_csv(index=False, na_rep="NaN"),
         HOLDOUT: holdout.to_csv(index=False, sep="\t"),
     }
 
@@ -468,9 +502,54 @@ def run() -> None:
         only("hourly-means", files, {"alert rules: episodes_flagged values"}, "hourly means")
         leaked = as_files(solve(leak=True))
         files = dict(correct)
-        files.update({FEATURES: leaked[FEATURES], HOLDOUT: leaked[HOLDOUT]})
-        assert leaked[HOLDOUT] != correct[HOLDOUT]
+        files.update({FEATURES: leaked[FEATURES], FIRST_HOUR: leaked[FIRST_HOUR], HOLDOUT: leaked[HOLDOUT]})
+        assert leaked[HOLDOUT] != correct[HOLDOUT] and leaked[FIRST_HOUR] != correct[FIRST_HOUR]
+        borrowed = "first-hour features: prev_hour_hr and mean_prev_6h values"
+        # The window's own hour also fills the first-hour file with each first hour's own heart rate, which that
+        # file accepts: the leak is charged once, in the score features.
         only("leaking-window", files, {"score features: mean_prev_6h values"}, "never the prediction hour itself")
+        # No shift and no groupby in the rolling mean are two mistakes: the first-hour check names the groupby.
+        both = as_files(solve(ungrouped="window"))
+        files = dict(correct)
+        files.update({FEATURES: both[FEATURES], FIRST_HOUR: both[FIRST_HOUR], HOLDOUT: both[HOLDOUT]})
+        only("leaking-ungrouped-window", files, {"score features: mean_prev_6h values", borrowed},
+             "in mean_prev_6h of the 1,400 first-hour rows", 'without groupby("episode_id")', check=borrowed)
+        # prev_hour_hr with no shift holds each first hour's own heart rate there too: charged once, the same way.
+        unshifted = as_files(solve(ungrouped="own_hour"))
+        assert unshifted[FIRST_HOUR] != correct[FIRST_HOUR] and unshifted[HOLDOUT] == correct[HOLDOUT]
+        files = dict(correct)
+        files.update({FEATURES: unshifted[FEATURES], FIRST_HOUR: unshifted[FIRST_HOUR]})
+        only("unshifted-prev-hour", files, {"score features: prev_hour_hr values"}, "shift(1)")
+        # head(1) forgotten: every hourly row is saved, so the values check claims no cause, grouped or not.
+        for label, ungrouped in (("grouped", ""), ("ungrouped", "shift")):
+            every_row = as_files(solve(ungrouped=ungrouped, first_row="all"))
+            result = only(f"first-hour-all-rows-{label}", changed(FIRST_HOUR, every_row[FIRST_HOUR]),
+                          {"first-hour features: one row per episode", borrowed},
+                          "the grouping cannot be judged yet", 'groupby("episode_id").head(1)', check=borrowed)
+            assert "without groupby" not in detail(result, borrowed) and "Same cause" not in detail(result, borrowed)
+            assert len(detail(result, borrowed)) < 1000, detail(result, borrowed)
+        # The right rows with their blanks filled with 0: the message names the fill, never head(1) or a groupby.
+        result = only("first-hour-zeros", changed(FIRST_HOUR, frames[FIRST_HOUR].fillna(0).to_csv(index=False)),
+                      {borrowed}, "filled with 0")
+        assert "not each episode's first hourly row" not in detail(result, borrowed)
+        # Grouped features, wrong row saved: the message names head(1), never a missing groupby.
+        for pick in ("first", "tail"):
+            wrong_row = as_files(solve(first_row=pick))
+            assert wrong_row[FEATURES] == correct[FEATURES], pick
+            result = only(f"first-hour-{pick}", changed(FIRST_HOUR, wrong_row[FIRST_HOUR]), {borrowed},
+                          "These are not each episode's first hourly row", 'groupby("episode_id").head(1)')
+            assert "without groupby" not in detail(result, borrowed), pick
+        # A shift or rolling window run without the groupby borrows from the episode above. Every scored row sits at
+        # least 21 hours into its episode, so score_features.csv is unchanged; the first-hour file shows the leak.
+        for label, counts, example in (
+                ("shift", "1,395 in prev_hour_hr and 1,399 in mean_prev_6h of the 1,400 first-hour rows",
+                 "H00002 has prev_hour_hr 81.5, expected blank"),
+                ("rolling", "1,395 in mean_prev_6h of the 1,400 first-hour rows", "H00002 has mean_prev_6h 77.5, expected blank")):
+            plain = as_files(solve(ungrouped=label))
+            assert plain[FEATURES] == correct[FEATURES] and plain[HOLDOUT] == correct[HOLDOUT], label
+            assert plain[FIRST_HOUR] != correct[FIRST_HOUR], label
+            only(f"ungrouped-{label}", changed(FIRST_HOUR, plain[FIRST_HOUR]), {borrowed}, counts, example,
+                 'without groupby("episode_id")', "inside one grouped transform()")
         utc_labs = as_files(solve(lab_zone="UTC"))
         files = dict(correct)
         files.update({TURNAROUND: utc_labs[TURNAROUND], FEATURES: utc_labs[FEATURES]})
@@ -481,6 +560,36 @@ def run() -> None:
         inner = frames[COVERAGE][frames[COVERAGE]["gap_runs"] > 0]
         only("no-gap-dropped", changed(COVERAGE, inner.to_csv(index=False)), {"episode coverage: one row per episode"},
              "including those with no gap")
+        # The last hourly row at or before the prediction time saves the 41 episodes that ended first: the rows check
+        # charges them, and the holdout summary built from the same rows follows from the student's own file.
+        extra = as_files(solve(at_or_before=True))
+        files = dict(correct)
+        files.update({FEATURES: extra[FEATURES], HOLDOUT: extra[HOLDOUT]})
+        assert extra[HOLDOUT] != correct[HOLDOUT]
+        only("last-row-before", files, {"score features: one row per scored episode"}, "also has a row for H00010",
+             "prediction time")
+        # rolling(3, min_periods=1) changes both rolling_3h counts: the first failure names the call, the second
+        # says it is the same cause.
+        loose = changed(RULES, as_files(solve(rolling_min=1))[RULES])
+        rule_values = {"alert rules: episodes_flagged values", "alert rules: escalations_flagged values"}
+        only("rolling-min-periods", loose, rule_values, "rolling_3h has episodes_flagged 43, expected 36",
+             "rolling(3).mean()", "default min_periods", check="alert rules: episodes_flagged values")
+        only("rolling-min-periods-again", loose, rule_values, "Same cause as the episodes_flagged check",
+             check="alert rules: escalations_flagged values")
+        # A wrong escalations count on its own is not blamed on rolling_3h.
+        result = only("rolling-escalations-only", changed(RULES, edit(correct[RULES], "rolling_3h", "escalations_flagged", "22")),
+                      {"alert rules: escalations_flagged values"})
+        assert "Same cause" not in detail(result, "alert rules: escalations_flagged values")
+        # flags.sum() keeps the rule names in the index; index=False drops them.
+        only("rule-index-lost", changed(RULES, frames[RULES].drop(columns="rule").to_csv(index=False)),
+             {"alert rules: columns"}, "is missing rule", "reset_index() and rename that column to rule")
+        # Any other columns mistake keeps the general hint.
+        for name, frame in (("rules-value-column-dropped", frames[RULES].drop(columns="escalations_flagged")),
+                            ("rules-extra-column", frames[RULES].assign(note="x")),
+                            ("rules-key-lost-and-extra", frames[RULES].drop(columns="rule").assign(note="x"))):
+            result = only(name, changed(RULES, frame.to_csv(index=False)), {"alert rules: columns"},
+                          "Build the three-row table")
+            assert "reset_index" not in detail(result, "alert rules: columns"), name
         blank = frames[COVERAGE].copy()
         blank.loc[blank["gap_runs"] == 0, ["gap_runs", "longest_gap_h"]] = np.nan
         only("no-gap-blank", changed(COVERAGE, blank.to_csv(index=False)),
@@ -497,7 +606,7 @@ def run() -> None:
 
         # One mistake costs exactly its own check.
         daily, coverage, turnaround = correct[DAILY], correct[COVERAGE], correct[TURNAROUND]
-        features, holdout = correct[FEATURES], correct[HOLDOUT]
+        features, holdout, first_hour = correct[FEATURES], correct[HOLDOUT], correct[FIRST_HOUR]
         feb17 = next(line.split(",")[0] for line in daily.splitlines() if line.startswith("2026-02-17"))
         mistakes = {
             "daily feed: columns": (DAILY, daily.replace("episodes", "patients", 1)),
@@ -524,6 +633,9 @@ def run() -> None:
             "score features: prev_hour_hr values": (FEATURES, edit(features, "H00001", "prev_hour_hr", "77.5")),
             "score features: mean_prev_6h values": (FEATURES, edit(features, "H00001", "mean_prev_6h", "79.0")),
             "score features: last_lactate values": (FEATURES, edit(features, "H00007", "last_lactate", "2.5")),
+            "first-hour features: columns": (FIRST_HOUR, first_hour.replace("mean_prev_6h", "mean_6h", 1)),
+            "first-hour features: one row per episode": (FIRST_HOUR, drop_last_row(first_hour)),
+            borrowed: (FIRST_HOUR, edit(first_hour, "H00002", "prev_hour_hr", "81.5")),
             "holdout summary: columns": (HOLDOUT, holdout.replace("flagged_escalations", "hits", 1)),
             "holdout summary: one row per block": (HOLDOUT, drop_last_row(holdout)),
             "holdout summary: episodes and escalations values": (HOLDOUT, edit(holdout, "earlier", "escalations", "100")),

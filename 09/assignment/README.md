@@ -52,6 +52,7 @@ assignment/
     ├── alert_rules.csv         # you generate in Task 2.2
     ├── lab_turnaround.csv      # you generate in Task 3.1
     ├── score_features.csv      # you generate in Task 3.2
+    ├── first_hour_features.csv # you generate in Task 3.2
     └── holdout_summary.csv     # you generate in Task 3.3
 ```
 
@@ -76,7 +77,7 @@ The program manager wants one row per New York calendar day: how many readings a
 
     Expect `days: 87`, January 5 to April 1.
 3. Select February 14 to 20 from `daily` with a `.loc` date range (Lecture 09's "Calendar Selection" card); the cell adds `per_episode`, readings divided by episodes.
-    - Expect: about 96 readings per episode on most days, but `73.9` on February 17, when the vendor's cloud was down for six hours.
+    - Expect: about 90 to 103 readings per episode on the other days, but `73.9` on February 17, when the vendor's cloud was down for six hours.
 4. Move the dates into a column with `reset_index()`, rename it from `recorded_at` to `date`, and save `daily_feed` to `DAILY_FEED_PATH` with `index=False`.
 
 > **Checkpoint: `output/daily_feed.csv`**
@@ -109,7 +110,7 @@ The clinical lead wants to know which rule should page a nurse when the heart ra
 2. Add `rolling_3h`: within each episode, the mean of the current hour's median and the two before it, from `rolling(3)` inside a grouped `transform()` (Lecture 09's "Past-Only Panel Features" card shows the pattern). With the default `min_periods`, a window with an empty hour is `NaN`, so the rule needs three straight hours.
     - Expect: `hourly: (108293, 4)`.
 3. Build `peaks`, one row per episode and one column per rule, each the episode's highest value: `any_reading` (the raw `heart_rate`), `hourly_median`, and `rolling_3h`. A grouped `max()` gives each one, and `pd.DataFrame()` of a dict of Series lines them up by episode, as Lecture 09's "Upsampling Choices" snippet does. The cell compares it with `ALERT_BPM` (`>=`) to make `flags`, and marks the escalated episodes with `isin()`.
-4. Build `alert_rules`, one row per rule, with the columns `rule`, `episodes_flagged` (the flagged episodes), and `escalations_flagged` (the flagged episodes that escalated), as Lecture 04's `sum()` of a Boolean column counts `True` values. On `flags`, `sum()` counts each column at once, and `flags[escalated]` keeps the escalated episodes' rows.
+4. Build `alert_rules`, one row per rule, with the columns `rule`, `episodes_flagged` (the flagged episodes), and `escalations_flagged` (the flagged episodes that escalated), as Lecture 04's `sum()` of a Boolean column counts `True` values. On `flags`, `sum()` counts each column at once, and `flags[escalated]` keeps the escalated episodes' rows. The rule names land in the index: `reset_index()` and rename that column to `rule`.
     - Expect: `escalated: 179`, and `any_reading` flags 1,211 episodes, 138 of them escalations: almost every patient trips it, so a nurse paged by it learns to ignore it.
 5. Save `alert_rules` to `ALERT_RULES_PATH` with `index=False`.
 
@@ -146,21 +147,26 @@ The lab system writes New York wall-clock text. On the spring-forward night, Mar
 
 ### 3.2 Build past-only features at the prediction time
 
-Each feature must use only hours that had ended by the prediction time. `hourly`'s row labeled 14:00 holds the readings from 14:00 to 14:59, which a score running at 14:00 has not seen yet, so every feature starts with a grouped `shift(1)`. Lecture 09's "Grouped Past-Only Features" snippet and Demo 3's steps 3 to 5 build features the same way. In the Task 3.2 cell:
+Each feature must use only hours that had ended by the prediction time. `hourly`'s row labeled 14:00 holds the readings from 14:00 to 14:59, which a score running at 14:00 has not seen yet, so every feature starts with a grouped `shift(1)`. The grouping matters because `hourly` stacks the episodes one after another: an ungrouped `shift(1)` hands each episode's first hour the last hour of the episode above it. Lecture 09's "Grouped Past-Only Features" snippet and Demo 3's steps 3 to 5 build features the same way. In the Task 3.2 cell:
 
 1. Build `scored` from `episodes`' `episode_id`, `admitted_at`, and `outcome`, and add `prediction_time` as defined above Task 3.1.
 2. `features` starts as `hourly`'s `episode_id`, `recorded_at`, and `heart_rate`. Within each episode, add:
     - `prev_hour_hr`: the previous hour's median, from a grouped `shift(1)`.
     - `mean_prev_6h`: the mean of the six hours before, `shift(1)` then `rolling(6, min_periods=1)` inside a grouped `transform()`. `min_periods=1` keeps the mean when some of those hours are empty.
-3. Merge `scored` onto `features` by `episode_id` (`validate="many_to_one"`), and keep the rows whose `recorded_at` equals their `prediction_time` as `score_features`. An episode that ended, or whose patch went silent for good, before its prediction time has no row then and gets no score.
+3. Check that no feature crosses episodes. Keep each episode's first row of `features` as `first_hours` with `groupby("episode_id").head(1)` (Lecture 08's "Apply Operations" card), and save its `episode_id`, `prev_hour_hr`, and `mean_prev_6h` to `FIRST_HOUR_PATH` with `index=False`. An episode's first hour has no hour before it, so both features are blank there.
+    - Expect: `first hours: 1400  with prev_hour_hr: 0  with mean_prev_6h: 0`, and a table whose two feature columns read `NaN`. Without the grouping the counts are `1395` and `1399`, and `H00002`'s first hour shows `81.5`, the last hour of `H00001`.
+4. Merge `scored` onto `features` by `episode_id` (`validate="many_to_one"`), and keep the rows whose `recorded_at` equals their `prediction_time` as `score_features`. An episode that ended, or whose patch went silent for good, before its prediction time has no row then and gets no score.
     - Expect: `scored: 1359`.
-4. Find each episode's latest lactate known by then: merge the `Lactate` rows of `labs` with `scored`'s `prediction_time`, keep the results with `resulted_at <=` the prediction time, sort by `resulted_at`, and keep each episode's last row with `groupby().tail(1)` (Lecture 08, Demo 3's step 5), its `value` renamed `last_lactate`. A result set aside as `NaT` fails the comparison, so it counts as not known.
+5. Find each episode's latest lactate known by then: merge the `Lactate` rows of `labs` with `scored`'s `prediction_time`, keep the results with `resulted_at <=` the prediction time, sort by `resulted_at`, and keep each episode's last row with `groupby().tail(1)` (Lecture 08, Demo 3's step 5), its `value` renamed `last_lactate`. A result set aside as `NaT` fails the comparison, so it counts as not known.
     - Expect: `lactates: 1253  known: 708 from 618 episodes`.
-5. Left-merge `last_lactate` onto `score_features` (`validate="one_to_one"`): a blank means no lactate had been reported, not a normal result.
-6. Save the columns `episode_id`, `prev_hour_hr`, `mean_prev_6h`, and `last_lactate` to `FEATURES_PATH` with `index=False`.
+6. Left-merge `last_lactate` onto `score_features` (`validate="one_to_one"`): a blank means no lactate had been reported, not a normal result.
+7. Save the columns `episode_id`, `prev_hour_hr`, `mean_prev_6h`, and `last_lactate` to `FEATURES_PATH` with `index=False`.
 
 > **Checkpoint: `output/score_features.csv`**
 > The header line `episode_id,prev_hour_hr,mean_prev_6h,last_lactate`, then 1,359 rows. `H00001`, scored at `2026-01-06 14:00:00+00:00`, reads `H00001,86.5,78.75,` with no lactate yet; `H00007` has a `last_lactate` of `1.71`. `prev_hour_hr` is blank for 82 episodes whose previous hour was a gap.
+
+> **Checkpoint: `output/first_hour_features.csv`**
+> The header line `episode_id,prev_hour_hr,mean_prev_6h`, then 1,400 rows, each an episode ID followed by two blanks, such as `H00002,,`. A number there is another patient's heart rate.
 
 ### 3.3 Summarize a chronological holdout
 

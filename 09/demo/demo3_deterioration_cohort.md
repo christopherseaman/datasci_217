@@ -116,7 +116,7 @@ display(night.sort_values('recorded_local')[['recorded_local', 'recorded_at', 'h
 
 Expect four rows. `00:21` becomes `05:21:00+00:00` and `03:41` becomes `09:41:00+00:00`: on the wall clock they look 3 hours 20 minutes apart, but 4 hours 20 minutes passed. The `01:15` and `01:28` rows show `NaT`.
 
-Plot the wall clock against UTC. The dotted lines show daylight time (UTC minus 5 hours) and standard time (UTC minus 6 hours). Each set-aside reading could sit on either line, so it gets an x-mark on both.
+Plot the wall clock against UTC. The dotted lines show daylight time (UTC minus 5 hours) and standard time (UTC minus 6 hours). Each set-aside reading could sit on either line, so it gets an x-mark on both. `ax.axhspan(low, high)` shades a horizontal band, here the repeated 01:00 hour, and `mdates.DateFormatter('%H:%M')` prints the axis ticks as clock times.
 
 ```python
 import matplotlib.dates as mdates
@@ -176,7 +176,7 @@ display(vitals.loc[vitals['encounter_id'] == 'E00002',
 
 Expect `(267379, 11)`: the merge matched one feature row to each reading. In `E00002`'s first five readings, `previous_hr` and `hr_change` start as `NaN`. At `02:21` on January 2, `mean_prev_3` is `77.333333` (the 80, 74, and 78 readings, back to 17:59 the day before) but `mean_prev_8h` is `76.0`: only the 22:06 and 00:41 readings fall in the 8 hours before. The grouped rolling step takes a few seconds on 267,379 rows.
 
-Plot the first 12 readings. At each reading's time, the gray step and the colored markers come only from the black dots to their left.
+Plot the first 12 readings. At each reading's time, the gray step and the colored markers come only from the black dots to their left. `ax.step()` draws a staircase line in place of sloped segments.
 
 ```python
 first_12 = vitals[vitals['encounter_id'] == 'E00002'].head(12).set_index('recorded_at')
@@ -206,7 +206,7 @@ display(cohort['outcome'].value_counts())
 
 Expect `Cohort: 9511 of 10000`, with `360` ICU transfers. `120` of the 480 transfers happened in the first 24 hours, before the score would run.
 
-A lab result can feed the score only if it was reported by the prediction time, whenever its sample was drawn. `pd.to_datetime(..., utc=True)` reads the lab system's UTC text; a blank `resulted_at` (cancelled or never resulted) becomes `NaT`.
+A lab result can feed the score only if it was reported by the prediction time, whenever its sample was drawn. `pd.to_datetime(..., utc=True)` reads the lab system's UTC text; a blank `resulted_at` (cancelled or never resulted) becomes `NaT`. In the chart, `stacked=True` puts each test's two counts end to end in one bar.
 
 ```python
 labs['collected_at'] = pd.to_datetime(labs['collected_at'], utc=True)
@@ -229,7 +229,7 @@ plt.show()
 
 Expect median turnarounds of `0.65` hours for lactate, `1.15` for troponin, `1.78` for creatinine, and `45.38` for a blood culture. Among labs drawn by the prediction time, `not yet reported` counts `2114` blood cultures, `2010` creatinines, `48` lactates, and `51` troponins. In the chart, almost the whole blood-culture bar is orange (a culture takes about two days), and about a sixth of the creatinine bar.
 
-**What we tell Dr. Kim:** blood cultures cannot feed a day-1 score, since almost none are back by hour 24. Lactate, troponin, and most creatinines can. Filtering on `collected_at` would have let 4,087 unreported results into the training table, and the score would test better than it can perform in the pilot.
+**What we tell Dr. Kim:** blood cultures cannot feed a day-1 score, since almost none are back by hour 24. Lactate, troponin, and most creatinines can. Filtering on `collected_at` would have let 4,223 unreported results into the training table, and the score would test better than it can perform in the pilot.
 
 ### 5. One row per encounter at hour 24
 
@@ -323,7 +323,7 @@ The New York hospital counts its readings per day on its own clock, and its numb
 ny = vitals[vitals['site'] == 'New York'].set_index('recorded_at')['heart_rate'].sort_index()
 utc_days = ny.loc['2024-11-01':'2024-11-05'].resample('D').count()
 local_days = ny.tz_convert('America/New_York').loc['2024-11-01':'2024-11-05'].resample('D').count()
-display(pd.DataFrame({'utc_day': utc_days.to_numpy(), 'new_york_day': local_days.to_numpy()},
+display(pd.DataFrame({'utc_day': utc_days.values, 'new_york_day': local_days.values},
                      index=['Nov 1', 'Nov 2', 'Nov 3', 'Nov 4', 'Nov 5']))
 display(pd.DataFrame({'today': local_days, 'yesterday': local_days.shift(1, freq='D')}))
 

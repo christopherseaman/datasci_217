@@ -19,7 +19,7 @@ All checks passed.
 How the files are read:
 
 - Each check is scored on its own, and a mistake is charged once. A missing column, or one saved under another name with the right values, costs only the columns check; values in the other columns are still checked. An empty table or one with no recognizable rows earns no value points.
-- The checks read only the six CSV files in `output/`, never your notebook, so any way of producing correct files counts.
+- The checks read only the seven CSV files in `output/`, never your notebook, so any way of producing correct files counts.
 - Spacing, line endings, quoting, column order, and row order never cost points, and cells may be separated by commas, semicolons, or tabs.
 - Numbers are compared as numbers (`4`, `4.0`, `4.00`); a mean may be rounded to one decimal, not to a whole number.
 - A date in `daily_feed.csv` may be written with or without its time and offset: `2026-02-17`, `2026-02-17 00:00:00-05:00`, and `02/17/2026` match.
@@ -28,6 +28,7 @@ How the files are read:
 - A leading column of row numbers, which `to_csv()` writes when `index=False` is left out, is ignored.
 - `episode_coverage.csv` also counts when its hours were counted from `heart_rate`, which skips the readings with no heart rate.
 - The heart-rate features in `score_features.csv` also count when built from hourly means, so a mean in place of the median costs points only in Task 2.2. `holdout_summary.csv` also counts when its numbers follow from your own `score_features.csv`, so a mistake there costs points only in Task 3.2.
+- Every scored row sits at least 21 hours into its episode, so features built without the grouping still match in `score_features.csv`. `first_hour_features.csv` is where that mistake shows and where it is charged, once. A `mean_prev_6h` window that includes its own hour, or a `prev_hour_hr` with no `shift(1)`, holds each first hour's own heart rate there, which also counts, so those mistakes cost points only in `score_features.csv`.
 - An episode with a lactate result whose time Task 3.1 set aside as `NaT` has a `last_lactate` that depends on how that time was handled, so its `last_lactate` is not checked.
 
 ## Completion contract
@@ -50,13 +51,16 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | `output/alert_rules.csv` | Each `escalations_flagged` counts the flagged episodes that escalated. | alert rules: escalations_flagged values | 5 |
 | `output/lab_turnaround.csv` | Its columns are the four in the Task 3.1 header line. | lab turnaround: columns | 3 |
 | `output/lab_turnaround.csv` | It holds each of the 5 tests once. | lab turnaround: one row per test | 2 |
-| `output/lab_turnaround.csv` | Each `orders` counts the test's rows and `timed_results` those whose result time was not set aside. | lab turnaround: orders and timed_results values | 5 |
-| `output/lab_turnaround.csv` | Each `median_turnaround_h` is the median hours from collection to result, both in UTC. | lab turnaround: median_turnaround_h values | 5 |
+| `output/lab_turnaround.csv` | Each `orders` counts the test's rows and `timed_results` those whose result time was not set aside. | lab turnaround: orders and timed_results values | 4 |
+| `output/lab_turnaround.csv` | Each `median_turnaround_h` is the median hours from collection to result, both in UTC. | lab turnaround: median_turnaround_h values | 4 |
 | `output/score_features.csv` | Its columns are the four in the Task 3.2 header line. | score features: columns | 3 |
-| `output/score_features.csv` | It holds each of the 1,359 episodes with an hourly row at its prediction time once. | score features: one row per scored episode | 5 |
-| `output/score_features.csv` | Each `prev_hour_hr` is the episode's hourly heart rate in the hour before the prediction time. | score features: prev_hour_hr values | 5 |
-| `output/score_features.csv` | Each `mean_prev_6h` is the mean of the six hours before the prediction time. | score features: mean_prev_6h values | 6 |
-| `output/score_features.csv` | Each `last_lactate` is the latest lactate reported by the prediction time, empty when none was. | score features: last_lactate values | 6 |
+| `output/score_features.csv` | It holds each of the 1,359 episodes with an hourly row at its prediction time once. | score features: one row per scored episode | 4 |
+| `output/score_features.csv` | Each `prev_hour_hr` is the episode's hourly heart rate in the hour before the prediction time. | score features: prev_hour_hr values | 4 |
+| `output/score_features.csv` | Each `mean_prev_6h` is the mean of the six hours before the prediction time. | score features: mean_prev_6h values | 4 |
+| `output/score_features.csv` | Each `last_lactate` is the latest lactate reported by the prediction time, empty when none was. | score features: last_lactate values | 4 |
+| `output/first_hour_features.csv` | Its columns are the three in the Task 3.2 header line. | first-hour features: columns | 2 |
+| `output/first_hour_features.csv` | It holds the first hourly row of each of the 1,400 episodes once. | first-hour features: one row per episode | 2 |
+| `output/first_hour_features.csv` | Every `prev_hour_hr` and `mean_prev_6h` is empty: features built per episode have no earlier hour to read. | first-hour features: prev_hour_hr and mean_prev_6h values | 4 |
 | `output/holdout_summary.csv` | Its columns are the five in the Task 3.3 header line. | holdout summary: columns | 2 |
 | `output/holdout_summary.csv` | It holds `earlier` and `later_holdout` once each. | holdout summary: one row per block | 2 |
 | `output/holdout_summary.csv` | Each block's `episodes` and `escalations` count its scored episodes split at `2026-03-01 00:00` UTC. | holdout summary: episodes and escalations values | 3 |

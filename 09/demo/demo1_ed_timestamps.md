@@ -112,7 +112,7 @@ display(valid.loc[valid['stay'].dt.days >= 1, 'disposition'].value_counts())
 
 Expect `75` departures before arrival, from `-14.0` to `-20.3` hours in the first three: each departure was typed with the previous day's date, so they leave the summary. Admitted patients have the longest median stay, `6.85` hours, and `0.89` of them stay over 4 hours. Discharged patients have a median of `2.83` hours, with `0.26` over 4 hours. Of the `984` stays of a whole day or more, `974` are admitted patients.
 
-Draw each disposition's stays against the 4-hour target. Stays over 24 hours are drawn at 24.
+Draw each disposition's stays against the 4-hour target. Stays over 24 hours are drawn at 24. `ax.axvline(4)` draws a vertical reference line at 4 hours.
 
 ```python
 dispositions = sorted(valid['disposition'].unique())
@@ -139,7 +139,7 @@ arrived = ed.dropna(subset=['arrival'])
 by_time = arrived.set_index('arrival')
 print('Sorted?', by_time.index.is_monotonic_increasing)
 try:
-    by_time.loc['2024-01-08':'2024-01-14']
+    by_time.loc['2024-01-01':'2024-01-07']
 except KeyError as error:
     print('KeyError:', error)
 ```
@@ -235,7 +235,7 @@ plt.show()
 
 Expect `Days: 731` and `Busiest hour: 11 54.0  Quietest hour: 4 11.1`: about five times as many patients arrive late in the morning as before dawn, and the bars stay high from 10:00 through 19:00. The surge team's shifts belong in those hours.
 
-The charge nurses count arrivals in 4-hour blocks and report each block when it ends. Their 08:00 count for Central on March 7, 2024 does not match a plain `resample('4h')`. Their rule puts an arrival at exactly 08:00 in the block that just ended, `04:00 to 08:00`: that is `closed='right', label='right'`.
+The charge nurses count arrivals in 4-hour blocks and report each block when it ends. Their 08:00 count for Central on March 7, 2024 does not match a plain `resample('4h')`. Their rule puts an arrival at exactly 08:00 in the block that just ended, `04:00 to 08:00`: that is `closed='right', label='right'`. For the chart, `set_axis()` swaps the index for the formatted labels.
 
 ```python
 central_day = by_time.loc['2024-03-07']
@@ -378,7 +378,7 @@ peak_days = daily_visits.groupby(daily_visits.index.year).idxmax()
 display(pd.DataFrame({'peak_day': peak_days,
                       'weekday': peak_days.dt.day_name(),
                       'day_of_year': peak_days.dt.dayofyear,
-                      'visits': daily_visits[peak_days].to_numpy()}))
+                      'visits': daily_visits[peak_days].values}))
 ```
 
 Expect `2023-12-25` (`Monday`, day `359`, `1139` visits) and `2024-01-01` (`Monday`, day `1`, `1184` visits). The peaks are one week apart, Christmas and New Year's Day, though their day-of-year numbers are 358 apart: day of year restarts at 1 each January, so compare winter seasons by date.

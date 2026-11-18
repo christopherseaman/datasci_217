@@ -24,8 +24,8 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 <callout icon="🧭" color="blue_bg">
 	# This Lecture
 	## Covers
-	- **Dated data**: timestamps, periods, panels, Python `datetime`, a pandas DatetimeIndex, frequency grids, and calendar slicing.
 	- **Review: tmux and SSH**: long-job sessions, remote shells, file copies, and keys.
+	- **Dated data**: timestamps, periods, panels, Python `datetime`, a pandas DatetimeIndex, frequency grids, and calendar slicing.
 	- **Resampling and rolling windows**: daily or hourly summaries, bin edges, upsampling, per-patient grids, gap runs, count and time windows, and EWM.
 	- **Time series visualization**: EDA steps for a series (spacing, profiles, autocorrelation), then raw readings with a smoother, gaps that break the line, and seasonal bars.
 	- **Clocks and honest history**: UTC conversion, clock-change nights, grouped lags, past-only windows, and availability at prediction time.
@@ -531,7 +531,7 @@ display(compare)
 ## Another Smoother: Exponentially Weighted Means
 
 - **Exponentially weighted moving average (EWM)**: a smoother that gives every earlier reading some weight, shrinking by the same factor at each step back.
-- `ts.ewm(span=7).mean()` returns one smoothed value per row. `span=7` gives the current reading 2/(7+1) = 25% of the weight; a larger `span` decays more slowly.
+- `ts.ewm(span=7).mean()` returns one smoothed value per row. `span=7` gives the current reading about 2/(7+1) = 25% of the weight after two weeks of rows (more before that); a larger `span` decays more slowly.
 - Unlike `rolling(7)`, it has a value from the first row.
 
 ![Weight each day gets in today's smoothed value: `rolling(7).mean()` gives the last 7 days 1/7 each and older days 0; `ewm(span=7).mean()` gives today 0.25 and each earlier day 3/4 of the day after it.](media/window_weights.png)
@@ -649,7 +649,7 @@ plt.show()
 - `ts.index.tz` / `s.dt.tz`: The attached zone; `None` means naive.
 - `ax.set(xlabel='Time (UTC)')`: Name the zone on a plot's time axis.
 - `pd.to_datetime(text, utc=True)`: Parse text with an offset, or known to be UTC, straight to aware UTC values.
-- `pd.Timestamp('2024-03-09 14:00', tz='UTC')`, `pd.Timestamp.now(tz='UTC')`, `pd.date_range(..., tz='UTC')`: Build aware timestamps and ranges directly; `.tz_convert(...)` works on all of them. Comparing or subtracting an aware column and a naive `Timestamp` raises `TypeError`, so give a cutoff the column's `tz`.
+- `pd.Timestamp('2024-03-09 14:00', tz='UTC')`, `pd.Timestamp.now(tz='UTC')`, `pd.date_range(..., tz='UTC')`: Build aware timestamps and ranges directly; `.tz_convert(...)` works on all of them. Comparing or subtracting an aware column and a naive `Timestamp` raises `TypeError`, so give a cutoff a `tz`: the column's, or the local zone for a local-midnight cutoff, as in `df['t_utc'] < pd.Timestamp('2024-01-01', tz='America/New_York')`; pandas compares instants (05:00 UTC here).
 - Zone names: full names from the IANA time-zone database (the standard list of world time zones), such as `'America/New_York'`; `'US/Eastern'` exists only for backward compatibility.
 
 ### Code Snippet: Local Clinic Times to UTC

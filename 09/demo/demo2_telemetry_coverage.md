@@ -180,7 +180,7 @@ temps = temps.groupby(['stay_id', 'charted_at'], as_index=False)['temperature_f'
 print(temps.shape, temps.duplicated(['stay_id', 'charted_at']).sum())
 ```
 
-Expect `(11268, 3) 0`. Now upsample `S0023`'s temperatures to an hourly grid three ways: `asfreq()` leaves the new hours empty, `ffill(limit=2)` carries each round forward for two hours, and `interpolate()` draws a straight line between rounds.
+Expect `(11268, 3) 0`. Now upsample `S0023`'s temperatures to an hourly grid three ways: `asfreq()` leaves the new hours empty, `ffill(limit=2)` carries each round forward for two hours, and `interpolate()` draws a straight line between rounds. In the chart, `drawstyle='steps-post'` holds each value flat until the next one.
 
 ```python
 one_temp = temps[temps['stay_id'] == 'S0023'].set_index('charted_at')['temperature_f']
@@ -396,6 +396,6 @@ axes[1].set(title='Unit heart rate against the same hour the next day', xlabel='
 plt.show()
 ```
 
-Expect `S0023`'s spacing to be `0 days 00:05:00` for `1311` gaps between readings and `7` of 10 minutes, then single breaks from 25 minutes up to `0 days 06:35:00` earlier in the stay, including the `0 days 02:25:00` off the monitor in step 6. The unit series has `2184` hours and `0` missing: some patient is always on the monitor. Monthly means are `83.5`, `81.6`, and `81.9` bpm, so there is no trend. The lowest hour is `3` at `76.3` bpm and the highest is `15` at `88.5`, a 12 bpm daily swing, while the weekday means differ by under 2 bpm (`81.5` to `83.4`). The line climbs from 03:00 to a mid-afternoon peak. Autocorrelation is `0.95` at lag 1, `-0.51` at lag 12 (afternoon against early morning), and `0.88` at lag 24, the tight diagonal in the lag plot.
+Expect `S0023`'s spacing to be `0 days 00:05:00` for `1311` gaps between readings and `7` of 10 minutes, then 11 longer breaks, from 25 minutes up to `0 days 06:35:00` earlier in the stay, including the `0 days 02:25:00` off the monitor in step 6. The unit series has `2184` hours and `0` missing: some patient is always on the monitor. Monthly means are `83.5`, `81.6`, and `81.9` bpm, so there is no trend. The lowest hour is `3` at `76.3` bpm and the highest is `15` at `88.5`, a 12 bpm daily swing, while the weekday means differ by under 2 bpm (`81.5` to `83.4`). The line climbs from 03:00 to a mid-afternoon peak. Autocorrelation is `0.95` at lag 1, `-0.51` at lag 12 (afternoon against early morning), and `0.88` at lag 24, the tight diagonal in the lag plot.
 
 **What we tell the alert team:** the unit's heart rate follows the clock, not the weekday, and swings about 12 bpm each day. A fixed 120 bpm line sits 44 bpm above the 03:00 mean and 32 above the 15:00 mean, so a night-time rise has further to climb before it alerts; the team can weigh an hour-aware threshold.

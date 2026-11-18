@@ -1,6 +1,6 @@
 # Assignment 09 checks (course-owned)
 
-These are the checks that decide the Assignment 09 grade. They read the six
+These are the checks that decide the Assignment 09 grade. They read the seven
 CSV files a submission saves in `output/` and compare them with values frozen
 from the supplied hospital-at-home data, `data/episodes.parquet`,
 `data/vitals.parquet`, and `data/labs.parquet`.
@@ -42,7 +42,9 @@ and GitHub runs agree.
 `09/assignment/data/` from a fixed seed and rewrites the GENERATED block of
 `_value_checks.py` with the values each artifact should hold, plus the values
 three upstream slips produce (hourly means, UTC days, lab clocks localized as
-UTC), which later checks accept so each slip is charged once. It then copies
+UTC), which later checks accept so each slip is charged once. The block also
+freezes `UNSCORED`, the block and outcome of the 41 episodes with no row at
+the prediction time. It then copies
 `_value_checks.py` over its handout twin. Rerun it after any change to the
 generator, and commit the Parquet files and both copies together. The notebook
 downloads the Parquet files from `main` when a student's `data/` lacks them.

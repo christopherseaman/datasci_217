@@ -25,11 +25,23 @@ confirms that:
   cause: UTC days in Task 1.2 (readings only, not episodes); `count()` for
   `size`; hourly means in Task 2.2 (charged once, though Tasks 3.2 and 3.3 are
   built from them); a window that includes the prediction hour (Task 3.3, built
-  from it, still passes); lab clocks localized as UTC (charged in Task 3.1, not
-  in `last_lactate`); lactates picked by collection time; episodes with no gap
-  dropped or left blank;
+  from it, still passes, and so does the first-hour file, which accepts each
+  first hour's own heart rate); a rolling mean with neither the shift nor the
+  `groupby` (the first-hour values check fails too, naming the missing
+  `groupby`); a first-hour file holding every hourly row (the rows check, and
+  the values check saying "Same cause"); a `shift(1)` or rolling window run without the
+  `groupby` (`score_features.csv` is unchanged, so only the first-hour values
+  check fails, naming the missing `groupby`); a first-hour file saved with
+  `first()` or `tail(1)` (only the first-hour values check fails, naming
+  `head(1)`); lab clocks localized as UTC
+  (charged in Task 3.1, not in `last_lactate`); lactates picked by collection time; episodes with no gap
+  dropped or left blank; extra `score_features` rows from a last-row-before
+  filter (rows check only, Task 3.3 follows the student's file); rule names
+  lost with the index (the `reset_index()` hint appears for that mistake
+  alone); `rolling_3h` with `min_periods=1` (two failures, the second saying
+  "same cause");
 - an empty directory and the untouched handout score 0;
-- each of 25 single mistakes, one per check, costs exactly that check; a
+- each of 28 single mistakes, one per check, costs exactly that check; a
   missing file costs only its own artifact's checks and is never told to take
   another required file's name;
 - the checks read only `output/`: poisoned data and code in a submission change
