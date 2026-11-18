@@ -23,7 +23,7 @@ Riverside Health's Chief Nursing Officer, Dr. Ana Reyes, leads a winter program 
 - **Demo 2, monitoring on 4 West**: how much of each step-down stay was actually on the bedside monitor, for the patient-safety review.
 - **Demo 3, an early-warning score**: a day-1 training table from the three ward hospitals, for the decision to pilot a score.
 
-**This phase's ask.** On January 7, 2025, the staffing committee decides whether to fund a winter surge nurse team for admitted patients who wait in the ED for an inpatient bed (**boarding**). Dr. Reyes needs four answers by then: which months the share of visits over 4 hours (the system's target) rises, who drives it, whether every ED's data is complete, and arrival counts in the charge nurses' 4-hour blocks for planning shifts. The data is a two-year visit extract with every timestamp stored as text. All visits and patients are synthetic.
+**This phase's ask.** On January 7, 2025, the staffing committee decides whether to fund a winter surge nurse team for admitted patients who wait in the ED for an inpatient bed (**boarding**). Dr. Reyes needs four answers by then: which months the share of visits over 4 hours (the system's target) rises, whose stays grow in winter, whether every ED's data is complete, and why the charge nurses' 4-hour arrival counts do not match the analysts'. The data is a two-year visit extract with every timestamp stored as text. All visits and patients are synthetic.
 
 Run the cells from top to bottom.
 
@@ -110,9 +110,9 @@ display(valid.groupby('disposition').agg(visits=('los_hours', 'size'),
 display(valid.loc[valid['stay'].dt.days >= 1, 'disposition'].value_counts())
 ```
 
-Expect `75` departures before arrival, from `-14.0` to `-20.3` hours in the first three: each departure was typed with the previous day's date, so they leave the summary. Admitted patients have the longest median stay, `6.85` hours, and `0.89` of them stay over 4 hours. Discharged patients have a median of `2.83` hours, with `0.26` over 4 hours. Of the `984` stays of a whole day or more, `974` are admitted patients.
+Expect `75` departures before arrival, from `-14.0` to `-20.3` hours in the first three: each departure was typed with the previous day's date, so they leave the summary. A missing stay (`NaN`) is not `>= 0` either, so `valid` also leaves out the visits with no arrival or departure time from step 3, and the left-without-being-seen row counts only the `7024` who were checked out. Admitted patients have the longest median stay, `6.85` hours, and `0.89` of them stay over 4 hours. Discharged patients have a median of `2.83` hours, with `0.26` over 4 hours. Of the `984` stays of a whole day or more, `974` are admitted patients.
 
-Draw each disposition's stays against the 4-hour target. Stays over 24 hours are drawn at 24. `ax.axvline(4)` draws a vertical reference line at 4 hours.
+Draw each disposition's stays against the 4-hour target. Stays over 24 hours are drawn at 24. `ax.axvline(4)` draws a vertical reference line at 4 hours. `sharex=True` puts the four panels on one hours axis.
 
 ```python
 dispositions = sorted(valid['disposition'].unique())
@@ -128,7 +128,7 @@ plt.show()
 
 Expect four panels on one hours axis. Most admitted bars sit right of the dashed 4-hour line, peaking near 5 to 6 hours, with a spike at 24 for patients who waited over a day for a bed. Discharged stays peak near 2 to 3 hours, left of the line.
 
-**What we tell Dr. Reyes:** admitted patients are the 4-hour problem; 9 in 10 of them miss the target.
+**What we tell Dr. Reyes:** 9 in 10 admitted patients miss the 4-hour target, against 1 in 4 discharged patients.
 
 ### 5. The flu-week slice raises `KeyError`
 
@@ -202,19 +202,21 @@ plt.show()
 
 Expect the three worst months to be `2023-12-31` (`0.443`), `2024-01-31` (`0.435`), and `2023-01-31` (`0.409`), and the best near `0.38` (`2024-11-30`, `0.380`). The line sits near 0.39 most of the year and jumps in December 2023 and January 2024, the flu peak.
 
-Split by disposition to check that admitted patients drive the winter rise.
+Split by disposition to see whose stays grow in winter. The loop adds one column per disposition to each table: the monthly share over 4 hours, then the monthly median stay in hours.
 
 ```python
-by_disposition = pd.DataFrame({
-    disposition: group['over_4h'].resample('ME').mean()
-    for disposition, group in valid_by_time.groupby('disposition')
-})
+by_disposition = pd.DataFrame()
+median_hours = pd.DataFrame()
+for disposition, group in valid_by_time.groupby('disposition'):
+    by_disposition[disposition] = group['over_4h'].resample('ME').mean()
+    median_hours[disposition] = group['los_hours'].resample('ME').median()
 display(by_disposition.loc['2023-11':'2024-02', ['admitted', 'discharged']].round(3))
+display(median_hours.loc['2023-11':'2024-02', ['admitted', 'discharged']].round(2))
 ```
 
-Expect admitted patients to rise from `0.886` over 4 hours in November 2023 to `0.962` in January 2024, and discharged patients from `0.259` to `0.292`. Every patient waits longer in a crowded ED; admitted patients also wait for inpatient beds, which fill in flu season.
+Expect admitted patients to rise from `0.886` over 4 hours in November 2023 to `0.962` in January 2024, and discharged patients from `0.259` to `0.292`. The admitted share has little room to rise, so the second table shows the change in hours: the median admitted stay grows from `6.87` hours in November 2023 to `9.07` in January 2024, and the discharged median from `2.82` to `2.97`. Every patient waits longer in a crowded ED; admitted patients also wait for inpatient beds, which fill in flu season.
 
-**What we tell Dr. Reyes:** fund the surge team from mid-December through January; that is when the share over 4 hours rises from about 0.39 to 0.44, and almost every admitted patient misses the target.
+**What we tell Dr. Reyes:** fund the surge team for December and January; that is when the share over 4 hours rises from about 0.39 to 0.44, and the median admitted stay grows by about 2 hours.
 
 ### 8. Which hours does the surge team cover, and why does the 08:00 count not match?
 
@@ -233,7 +235,7 @@ ax.set(title='Average ED arrivals by hour of day, all four sites, 2023 to 2024',
 plt.show()
 ```
 
-Expect `Days: 731` and `Busiest hour: 11 54.0  Quietest hour: 4 11.1`: about five times as many patients arrive late in the morning as before dawn, and the bars stay high from 10:00 through 19:00. The surge team's shifts belong in those hours.
+Expect `Days: 731` and `Busiest hour: 11 54.0  Quietest hour: 4 11.1`: about five times as many patients arrive late in the morning as before dawn, and the bars stay high from 10:00 through 19:00. Admitted patients stay a median of `6.85` hours (step 4), so the patients who arrive in those hours wait for beds through the evening and night: the surge team's shifts start in the afternoon and run later than the arrival peak.
 
 The charge nurses count arrivals in 4-hour blocks and report each block when it ends. Their 08:00 count for Central on March 7, 2024 does not match a plain `resample('4h')`. Their rule puts an arrival at exactly 08:00 in the block that just ended, `04:00 to 08:00`: that is `closed='right', label='right'`. For the chart, `set_axis()` swaps the index for the formatted labels.
 
@@ -276,9 +278,9 @@ display(arrived.groupby(night.map({True: 'night 23:00-06:59', False: 'day 07:00-
 
 Expect `533041` day arrivals and `94314` at night. At night `0.200` arrive by ambulance and `0.198` are triaged ESI 1 or 2, against `0.139` and `0.138` by day: fewer patients come in overnight, and more of them are very sick.
 
-### 2. Staffing wants the three busiest clock hours as file keys
+### 2. Staffing wants the three busiest single hours as file keys
 
-`.dt.floor('h')` rounds each arrival down to its hour, so `value_counts()` counts every clock hour of the two years. `.dt.strftime()` writes each hour as a short key for that hour's staffing note.
+`.dt.floor('h')` rounds each arrival down to its hour, so `value_counts()` counts every hour of every day in the two years. `.dt.strftime()` writes each hour as a short key for that hour's staffing note.
 
 ```python
 busiest = arrived['arrival'].dt.floor('h').value_counts().head(3)
@@ -286,7 +288,7 @@ display(busiest)
 print(busiest.index.strftime('%Y%m%d%H').tolist())
 ```
 
-Expect three clock hours at the January 2024 flu peak: `2024-01-07 12:00` (`90` arrivals), `2024-01-08 12:00` (`86`), and `2024-01-15 20:00` (`85`). Their keys print as `['2024010712', '2024010812', '2024011520']`.
+Expect three hours at the January 2024 flu peak: `2024-01-07 12:00` (`90` arrivals), `2024-01-08 12:00` (`86`), and `2024-01-15 20:00` (`85`). Their keys print as `['2024010712', '2024010812', '2024011520']`.
 
 ### 3. Finance wants weekly volume and the weekend share
 
@@ -368,7 +370,7 @@ display(by_month_year.loc[[11, 12, 1, 2]].round(3))
 
 Expect four month rows and a column per year. December rises in both years (`0.443` in 2023, `0.407` in 2024) from November's `0.394` and `0.380`, and January rises in both (`0.409` in 2023, `0.435` in 2024). February is back near `0.39`.
 
-### 8. The flu team asks whether both seasons peaked on the same date
+### 8. The flu team asks for each year's busiest day
 
 `idxmax()` returns the day with the most visits in each year. `.dt.day_name()` spells out its weekday, and `.dt.dayofyear` numbers it from 1 on January 1.
 
@@ -381,7 +383,7 @@ display(pd.DataFrame({'peak_day': peak_days,
                       'visits': daily_visits[peak_days].values}))
 ```
 
-Expect `2023-12-25` (`Monday`, day `359`, `1139` visits) and `2024-01-01` (`Monday`, day `1`, `1184` visits). The peaks are one week apart, Christmas and New Year's Day, though their day-of-year numbers are 358 apart: day of year restarts at 1 each January, so compare winter seasons by date.
+Expect `2023-12-25` (`Monday`, day `359`, `1139` visits) and `2024-01-01` (`Monday`, day `1`, `1184` visits). Both days are Mondays in the same 2023 to 2024 flu season, one week apart: grouping by calendar year splits one winter in two, and the day-of-year numbers (`359` and `1`) hide how close the days are. Compare winter seasons by date.
 
 ## Optional extension: the night shift's share and a feed check
 

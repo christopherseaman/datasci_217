@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Companion visualization script for Lecture 09: Time Series Analysis
-Generates the BONUS figures (types_of_time_series, ewm_comparison) and the
+Generates the BONUS figure ewm_comparison and the
 lecture's two ILI snippet plots (viz_ili_rolling, viz_ili_monthly).
 scripts/generate_lecture_figures.py generates every other lecture figure.
 
@@ -110,8 +110,7 @@ axes[1, 2].tick_params(axis='x', rotation=45)
 axes[1, 2].grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig('media/types_of_time_series.png', dpi=150, bbox_inches='tight')
-print("   ✓ Saved: media/types_of_time_series.png")
+# Not saved: scripts/generate_lecture_figures.py owns types_of_time_series.png. The draws above stay so the later figures keep their random values.
 plt.close()
 
 # ============================================================================
@@ -187,5 +186,5 @@ plt.close()
 print("\n✓ All visualizations generated successfully!")
 print("  Images saved in the 'media/' directory")
 print("\nTo use these in your lecture, reference them in README.md like:")
-print("  ![Types of Time Series](media/types_of_time_series.png)")
+print("  ![EWM comparison](media/ewm_comparison.png)")
 

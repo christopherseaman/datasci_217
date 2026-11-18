@@ -736,11 +736,12 @@ def window_weights():
 
 def shifting_lagging():
     """Shifting and Lagging: Demo 3's home weights, March 6 to 14, with lag, lead, and diff()."""
-    daily = pd.DataFrame({"weight_kg": home_weights()})
+    # slice first, so the edge rows are NaN as the card under the figure says
+    daily = pd.DataFrame({"weight_kg": home_weights()}).loc["2024-03-06":"2024-03-14"]
     daily["lag_1"] = daily["weight_kg"].shift(1)
     daily["lead_1"] = daily["weight_kg"].shift(-1)
     daily["change_1d"] = daily["weight_kg"].diff().round(1)
-    window = daily.loc["2024-03-06":"2024-03-14"]
+    window = daily
     assert daily.loc["2024-03-10", "change_1d"] == 1.3 and daily.loc["2024-03-10", "weight_kg"] == 83.9
     assert (window["change_1d"] > 1.0).sum() == 1
 
@@ -957,12 +958,58 @@ def time_series_eda():
     save(fig, "time_series_eda.png")
 
 
+def types_of_time_series():
+    """BONUS, Patterns in a Time Series: six panels with clinically plausible values."""
+    rng = np.random.default_rng(42)
+    fig, axes = plt.subplots(2, 3, figsize=(13, 7), gridspec_kw={"hspace": 0.6, "wspace": 0.3})
+
+    days = pd.date_range("2023-01-01", periods=30, freq="D")
+    temp = 99.5 + np.cumsum(rng.normal(0, 0.4, 30))
+    assert 97 <= temp.min() and temp.max() <= 103
+    axes[0, 0].plot(days, temp, "o-", color=BLUE, ms=4)
+    axes[0, 0].set(title="Regular (daily fixed intervals)", ylabel="Temperature (°F)")
+
+    visit_days = pd.to_datetime(["2023-01-01", "2023-01-03", "2023-01-07", "2023-01-15", "2023-01-20", "2023-01-28"])
+    axes[0, 1].plot(visit_days, [98.6, 99.2, 98.4, 99.0, 98.8, 98.5], "o--", color=ORANGE, ms=7)
+    axes[0, 1].set(title="Irregular (event-based)", ylabel="Temperature (°F)")
+
+    months = pd.date_range("2020-01-01", periods=36, freq="MS")
+    cases = pd.Series(100 + 20 * np.cos(2 * np.pi * np.arange(36) / 12) + rng.normal(0, 5, 36), index=months)
+    assert cases.groupby(cases.index.year).idxmax().dt.month.isin([12, 1, 2]).all()  # winter peak every year
+    axes[0, 2].plot(months, cases, "o-", color=BLUE, ms=4)
+    axes[0, 2].set(title="Seasonal (repeating patterns)", ylabel="Cases per month")
+
+    year = pd.date_range("2020-01-01", periods=365, freq="D")
+    bp_trend = 120 + np.linspace(0, 10, 365)
+    axes[1, 0].plot(year, bp_trend + rng.normal(0, 2, 365), color=GREY, lw=1)
+    axes[1, 0].plot(year, bp_trend, "--", color=VERMILLION, lw=2, label="Trend")
+    axes[1, 0].set(title="Trending (long-term direction)", ylabel="Blood pressure (mmHg)")
+
+    control_days = pd.date_range("2023-01-01", periods=100, freq="D")
+    axes[1, 1].plot(control_days, 100 + rng.normal(0, 2, 100), "o-", color=GREY, ms=3, lw=1)
+    axes[1, 1].axhline(100, ls="--", color=VERMILLION, lw=2, label="Mean")
+    axes[1, 1].set(title="Stationary (constant properties)", ylabel="Control value")
+
+    visit_trend = np.linspace(100, 120, 365)
+    visits = visit_trend + 10 * np.cos(2 * np.pi * np.arange(365) / 365.25) + rng.normal(0, 3, 365)
+    axes[1, 2].plot(year, visits, color=GREY, lw=1)
+    axes[1, 2].plot(year, visit_trend, "--", color=VERMILLION, lw=2, label="Trend")
+    axes[1, 2].set(title="Combined (trend + seasonal + noise)", ylabel="Visits per day")
+
+    for ax in axes.flat:
+        ax.tick_params(axis="x", rotation=45)
+        if ax.get_legend_handles_labels()[0]:
+            ax.legend(frameon=False)
+    save(fig, "types_of_time_series.png")
+
+
 if __name__ == "__main__":
     MEDIA_DIR.mkdir(exist_ok=True)
     for make in [forms_of_time, regular_irregular, icu_panel_hr_utc, text_vs_datetime_axis, date_range_aliases,
                  two_clinics_utc, clock_changes, time_series_indexing, resampling_example, resample_bins_2h,
                  daily_reading_counts, charted_temp_upsampling, per_patient_bins, gap_run_tiles,
                  daily_hr_rolling_ewm, count_vs_time_window, window_weights, shifting_lagging,
-                 grouped_shift_leak, lab_availability_timeline, ili_outage_gap, time_series_eda]:
+                 grouped_shift_leak, lab_availability_timeline, ili_outage_gap, time_series_eda,
+                 types_of_time_series]:
         if len(sys.argv) == 1 or make.__name__ in sys.argv[1:]:  # optional: name figures to redraw only those
             make()

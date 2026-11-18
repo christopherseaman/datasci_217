@@ -23,6 +23,8 @@ _Periods represent time spans, not specific moments: a fiscal quarter, a billing
 
 A **fiscal year** is an organization's reporting year, which may end outside December. Many US hospitals run July through June: `Y-JUN` names a year by the June it ends in, so fiscal 2025 runs July 2024 through June 2025, and `Q-JUN` makes July to September its Q1. Budget, volume, and quality reports to a hospital board use these labels.
 
+Periods keep the span aliases `'M'`, `'Q-JUN'`, and `'Y-JUN'`. The timestamp aliases `'ME'` (from the lecture), `'QE'`, and `'YE'` raise `ValueError` on a period.
+
 ### Reference Card: Period Creation and Arithmetic
 
 | Function | Description |
@@ -75,7 +77,7 @@ Converting a timestamp to a period keeps the containing span, not the original i
 
 | Function | Description |
 |----------|-------------|
-| `ts.to_period()` | Convert timestamp index to periods |
+| `ts.to_period()` | Convert a regularly spaced timestamp index to periods; irregular spacing raises `ValueError`, so pass a frequency |
 | `ts.to_period('M')` | Convert to monthly periods |
 | `pts.to_timestamp()` | Convert periods back to timestamps |
 | `pts.to_timestamp(how='end')` | Use end of period as timestamp |
@@ -176,11 +178,11 @@ plt.tight_layout()
 plt.show()
 ```
 
-The panels show a rising trend, a winter wave each year, and the remaining noise. A surveillance team reads an outbreak as a run of large positive residuals, since the trend and the usual winter rise are already removed. The default centered trend uses future observations and leaves gaps at the ends; these components describe a completed series, not features available in real time.
+The panels show a rising trend, a winter wave each year, and the remaining noise. A surveillance team reads an outbreak as a run of large positive residuals, but that needs many cycles: with three years, each calendar day's seasonal value averages only two readings, so the seasonal panel is jagged and about half of a surge lands in it instead of the residual. The default centered trend uses future observations and leaves gaps at the ends; these components describe a completed series, not features available in real time.
 
 ## STL Decomposition
 
-**STL** separates seasonality and trend using local smoothing: curves fitted to nearby observations. `robust=True` reduces the influence of extreme values; it does not make the result safe for prediction-time features. Here `period=365` approximates the annual cycle of daily data.
+**STL** separates seasonality and trend using local smoothing: curves fitted to nearby observations. Unlike `seasonal_decompose`, it returns a trend and residual for every row, with no gaps at the ends. `robust=True` reduces the influence of extreme values; it does not make the result safe for prediction-time features. Here `period=365` approximates the annual cycle of daily data.
 
 ### Reference Card: STL Decomposition
 
@@ -208,7 +210,7 @@ _Forecasting uses historical patterns to predict future values. A staffing offic
 
 **ARIMA** combines past values (**autoregression**, `p`), repeated differences to remove changes in level (**integration**, `d`), and past prediction errors (**moving average**, `q`). `order=(1, 1, 1)` is an example, not a rule for every series. Fit on the earlier chronological block and assess forecasts on later observations: below, the model trains on all but the last 30 days of ILI visits and forecasts those 30.
 
-The **augmented Dickey-Fuller (ADF) test** asks whether the series has a unit root, a source of persistent drift. A small p-value rejects that particular explanation; it does not prove every property is stationary or establish forecast accuracy. Use a nonconstant numeric series with no missing values.
+The **augmented Dickey-Fuller (ADF) test** asks whether the series has a unit root, a source of persistent drift. A small p-value rejects that particular explanation; it does not prove every property is stationary or establish forecast accuracy. Use a nonconstant numeric series with no missing values. A **stationary** series keeps the same mean and spread over time. Here the p-value is 0.99 because of the rising trend; `d=1` has ARIMA model the day-to-day differences, whose ADF p-value is below 0.001.
 
 ### Reference Card: ARIMA Models and Stationarity Checks
 
@@ -248,9 +250,11 @@ mae = (test - forecast).abs().mean()  # mean absolute error, visits per day
 
 statsmodels 0.15 prints a `FutureWarning` about `adfuller`'s return type; it does not change `result[0]` or `result[1]`.
 
+The forecast is flat near 205.8 visits because this model has no trend or seasonal term. `forecast_ci` widens from (195.4, 215.8) on day 1 to (192.4, 219.1) on day 30, and `mae` is 4.1 visits per day against 6.0 for repeating the last training value.
+
 ## Exponential Smoothing
 
-These forecasting models extend a smoothed level with a trend (Holt) or trend and seasonality (Holt-Winters). Here `ili_visits` is the daily series from the decomposition example; its annual cycle is approximately 365 observations. A monthly series would use `seasonal_periods=12`. Forecast steps count observations, so 30 steps here means 30 days. The examples use fixed smoothing coefficients of 0.3 (`optimized=False`), chosen for illustration rather than forecast accuracy.
+These forecasting models extend a smoothed level with a trend (Holt) or trend and seasonality (Holt-Winters). Here `train` is the ARIMA card's training block of the daily ILI series; its annual cycle is approximately 365 observations. A monthly series would use `seasonal_periods=12`. Forecast steps count observations, so 30 steps here means 30 days. The examples use fixed smoothing coefficients of 0.3 (`optimized=False`), chosen for illustration rather than forecast accuracy.
 
 ### Reference Card: Exponential Smoothing Variants
 
@@ -258,20 +262,22 @@ These forecasting models extend a smoothed level with a trend (Holt) or trend an
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 # Simple exponential smoothing
-model = ExponentialSmoothing(ili_visits, trend=None, seasonal=None)
+model = ExponentialSmoothing(train, trend=None, seasonal=None)
 fitted = model.fit(smoothing_level=0.3, optimized=False)
 forecast = fitted.forecast(steps=30)
 
 # Holt's method (trend)
-model = ExponentialSmoothing(ili_visits, trend='add', seasonal=None)
+model = ExponentialSmoothing(train, trend='add', seasonal=None)
 fitted = model.fit(smoothing_level=0.3, smoothing_trend=0.3, optimized=False)
 forecast = fitted.forecast(steps=30)
 
 # Holt-Winters (trend + seasonal)
-model = ExponentialSmoothing(ili_visits, trend='add', seasonal='add', seasonal_periods=365)
+model = ExponentialSmoothing(train, trend='add', seasonal='add', seasonal_periods=365)
 fitted = model.fit(smoothing_level=0.3, smoothing_trend=0.3, smoothing_seasonal=0.3, optimized=False)
 forecast = fitted.forecast(steps=30)
 ```
+
+Scored like the ARIMA card, `(test - forecast).abs().mean()` is 3.9 (simple), 5.6 (Holt), and 6.3 (Holt-Winters) visits per day: on three years of noisy daily data the added components do not help.
 
 # Advanced Resampling Operations
 
@@ -287,7 +293,7 @@ _Resampling a period index rolls monthly clinic volumes into years, or spreads a
 | `ts.resample('ME').mean().to_period('M')` | Aggregate monthly, then represent labels as periods |
 | `period_ts.resample('Q-DEC', convention='start')` | Upsample an annual PeriodIndex from the start of each period |
 
-`QE` and `YE` are timestamp offset aliases used with a `DatetimeIndex`. Period frequencies describe spans and retain aliases such as `Q-DEC` and `Y-DEC`; do not substitute timestamp aliases mechanically.
+`QE` and `YE` are timestamp offset aliases used with a `DatetimeIndex`. Period frequencies describe spans and retain aliases such as `M`, `Q-DEC`, and `Y-DEC`; do not substitute timestamp aliases mechanically.
 
 ### Code Snippet: Annual Volume Targets for Three Clinics
 
@@ -522,7 +528,8 @@ fig.show()
 
 - **Autocorrelation (ACF)**: correlation between a series and its earlier values at each lag.
 - **Partial autocorrelation (PACF)**: the association at one lag after accounting for the shorter lags. Both plots help describe serial dependence; peaks alone do not identify a reliable forecasting model.
-- Use the regular, nonmissing `ili_visits` series above. Forty PACF lags need at least 80 observations. Its trend can cause high correlations even without useful short-term predictability.
+- Each ACF bar measures what the lecture's `s.autocorr(lag=k)` measures for one lag `k` (0.86 against 0.96 at lag 40 here, because the bar uses the whole-series mean); bars inside the shaded band are within what chance alone produces.
+- Use the regular, nonmissing `ili_visits` series above. Forty PACF lags need at least 80 observations. Its trend puts every ACF bar after lag 0 between 0.86 and 0.97; plot `ili_visits.diff().dropna()` to see what remains (-0.45 at lag 1, near 0 after).
 
 ### Reference Card: ACF and PACF Plots
 
@@ -624,7 +631,7 @@ The centered mean on January 2 equals the trailing mean on January 3: it already
 
 ## Exponentially Weighted Functions
 
-An **exponentially weighted moving average (EWM)** uses every earlier reading but gives each older one less weight, while a rolling mean weights its window equally and ignores anything older. It reacts faster to a change, such as blood pressure climbing after a new medication, while still smoothing day-to-day noise; `span=7` is comparable to a 7-reading rolling mean.
+`ts.ewm(span=3).mean()` is comparable to a 3-reading rolling mean; the table below shows it reacting sooner to a jump.
 
 ![EWM against a simple moving average: the EWM line responds faster to recent changes.](media/ewm_comparison.png)
 

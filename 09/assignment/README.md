@@ -4,11 +4,11 @@
 
 Audit a wearable heart-rate feed by New York calendar day, measure each episode's monitoring gaps, compare three heart-rate alert rules, put lab times on UTC, build past-only features at a fixed prediction time, and summarize a chronological holdout, saving each result for the checks.
 
-All three files are synthetic and come from one New York health system's **hospital-at-home** program, January 5 to March 27, 2026: patients with an acute illness (pneumonia, a COPD or heart failure flare, cellulitis, a urinary infection) are treated in their own homes instead of a hospital ward. A wearable patch sends a heart rate every 10 minutes, and a visiting nurse draws blood. An **episode** runs from admission to the program until the patient is discharged home or **escalated**, sent back to the hospital because they got worse.
+All three files are synthetic and come from one New York health system's **hospital-at-home** program, with admissions from January 5 to March 27, 2026 and readings until April 1: patients with an acute illness (pneumonia, a COPD or heart failure flare, cellulitis, a urinary infection) are treated in their own homes instead of a hospital ward. A wearable patch sends a heart rate every 10 minutes, and a visiting nurse draws blood. An **episode** runs from admission to the program until the patient is discharged home or **escalated**, sent back to the hospital because they got worse.
 
 - `data/episodes.parquet`: 1,400 episodes, one row each: `episode_id`, `patient_id` (some patients come back), `age`, `sex`, `deprivation_decile` (1 for the least deprived neighborhoods, 10 for the most), `diagnosis`, `admitted_at` and `ended_at` (already aware UTC datetimes), and `outcome`: `discharged home` or `escalated`.
 - `data/vitals.parquet`: 577,935 patch readings: `episode_id`, `recorded_at` as text from the vendor's feed in UTC (the trailing `Z` means UTC), and `heart_rate` in beats per minute (bpm), blank when the patch could not compute one.
-- `data/labs.parquet`: 7,356 blood tests: `episode_id`, `test` (`BMP`, `BNP`, `CBC`, `INR`, or `Lactate`), `collected_at` and `resulted_at` as text on the New York wall clock, and the result `value` (lactate in mmol/L).
+- `data/labs.parquet`: 7,356 blood tests: `episode_id`, `test` (`BMP`, `BNP`, `CBC`, `INR`, or `Lactate`), `collected_at` and `resulted_at` as text on the New York wall clock, and the result `value`: lactate in mmol/L, the BMP's creatinine in mg/dL, the CBC's white cell count in 10^9/L, BNP in pg/mL, and INR as a ratio.
 
 ```text
 episode_id,recorded_at,heart_rate
@@ -63,7 +63,7 @@ assignment/
 This step saves nothing. In the Task 1.1 cell, `vitals` starts as a copy of the feed:
 
 1. Overwrite `recorded_at` with aware UTC datetimes: `pd.to_datetime()` with `utc=True`, which reads the trailing `Z` (Lecture 09's "Time Zones" card).
-2. Sort by episode, then time, and reset the index, as Lecture 09's "Grouped Past-Only Features" snippet does. Every later shift and rolling window reads the rows in this order.
+2. Sort by episode, then time, as Lecture 09's "Grouped Past-Only Features" snippet does, and renumber the rows with `reset_index(drop=True)` (Lecture 04). Every later shift and rolling window reads the rows in this order.
     - Expect: `recorded_at dtype: datetime64[us, UTC]`, the first reading at `2026-01-05 16:11:00+00:00`, and `no heart rate: 5780`.
 
 ### 1.2 Count each day's readings
@@ -109,8 +109,8 @@ The clinical lead wants to know which rule should page a nurse when the heart ra
 1. Build `hourly`: each episode's hourly median heart rate from a grouped `resample("h").median()`, with `reset_index()`. An hour with no reading is `NaN`.
 2. Add `rolling_3h`: within each episode, the mean of the current hour's median and the two before it, from `rolling(3)` inside a grouped `transform()` (Lecture 09's "Past-Only Panel Features" card shows the pattern). With the default `min_periods`, a window with an empty hour is `NaN`, so the rule needs three straight hours.
     - Expect: `hourly: (108293, 4)`.
-3. Build `peaks`, one row per episode and one column per rule, each the episode's highest value: `any_reading` (the raw `heart_rate`), `hourly_median`, and `rolling_3h`. A grouped `max()` gives each one, and `pd.DataFrame()` of a dict of Series lines them up by episode, as Lecture 09's "Upsampling Choices" snippet does. The cell compares it with `ALERT_BPM` (`>=`) to make `flags`, and marks the escalated episodes with `isin()`.
-4. Build `alert_rules`, one row per rule, with the columns `rule`, `episodes_flagged` (the flagged episodes), and `escalations_flagged` (the flagged episodes that escalated), as Lecture 04's `sum()` of a Boolean column counts `True` values. On `flags`, `sum()` counts each column at once, and `flags[escalated]` keeps the escalated episodes' rows. The rule names land in the index: `reset_index()` and rename that column to `rule`.
+3. Build `peaks`, one row per episode and one column per rule, each the episode's highest value: `any_reading` (the raw `heart_rate`), `hourly_median` (`hourly`'s `heart_rate`), and `rolling_3h`. A grouped `max()` gives each one, and `pd.DataFrame()` of a dict of Series lines them up by episode, as Lecture 09's "Upsampling Choices" snippet does. The cell compares it with `ALERT_BPM` (`>=`) to make `flags`, and marks the escalated episodes with `isin()`.
+4. Build `alert_rules`, one row per rule, with the columns `rule`, `episodes_flagged` (the flagged episodes), and `escalations_flagged` (the flagged episodes that escalated), as Lecture 04's `sum()` of a Boolean column counts `True` values. On `flags`, `sum()` counts each column at once, and `flags[escalated]` keeps the escalated episodes' rows. The rule names land in the index: `reset_index()` and rename that column from `index` to `rule`.
     - Expect: `escalated: 179`, and `any_reading` flags 1,211 episodes, 138 of them escalations: almost every patient trips it, so a nurse paged by it learns to ignore it.
 5. Save `alert_rules` to `ALERT_RULES_PATH` with `index=False`.
 
@@ -157,7 +157,7 @@ Each feature must use only hours that had ended by the prediction time. `hourly`
     - Expect: `first hours: 1400  with prev_hour_hr: 0  with mean_prev_6h: 0`, and a table whose two feature columns read `NaN`. Without the grouping the counts are `1395` and `1399`, and `H00002`'s first hour shows `81.5`, the last hour of `H00001`.
 4. Merge `scored` onto `features` by `episode_id` (`validate="many_to_one"`), and keep the rows whose `recorded_at` equals their `prediction_time` as `score_features`. An episode that ended, or whose patch went silent for good, before its prediction time has no row then and gets no score.
     - Expect: `scored: 1359`.
-5. Find each episode's latest lactate known by then: merge the `Lactate` rows of `labs` with `scored`'s `prediction_time`, keep the results with `resulted_at <=` the prediction time, sort by `resulted_at`, and keep each episode's last row with `groupby().tail(1)` (Lecture 08, Demo 3's step 5), its `value` renamed `last_lactate`. A result set aside as `NaT` fails the comparison, so it counts as not known.
+5. Find each episode's latest lactate known by then: merge the `Lactate` rows of `labs` with `scored`'s `prediction_time`, keep the results with `resulted_at <=` the prediction time, sort by `resulted_at`, and keep each episode's last row with `groupby().tail(1)` (Lecture 08, Demo 3's step 5), then only its `episode_id` and `value`, renamed `last_lactate`. A result set aside as `NaT` fails the comparison, so it counts as not known.
     - Expect: `lactates: 1253  known: 708 from 618 episodes`.
 6. Left-merge `last_lactate` onto `score_features` (`validate="one_to_one"`): a blank means no lactate had been reported, not a normal result.
 7. Save the columns `episode_id`, `prev_hour_hr`, `mean_prev_6h`, and `last_lactate` to `FEATURES_PATH` with `index=False`.

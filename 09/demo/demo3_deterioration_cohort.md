@@ -116,7 +116,7 @@ display(night.sort_values('recorded_local')[['recorded_local', 'recorded_at', 'h
 
 Expect four rows. `00:21` becomes `05:21:00+00:00` and `03:41` becomes `09:41:00+00:00`: on the wall clock they look 3 hours 20 minutes apart, but 4 hours 20 minutes passed. The `01:15` and `01:28` rows show `NaT`.
 
-Plot the wall clock against UTC. The dotted lines show daylight time (UTC minus 5 hours) and standard time (UTC minus 6 hours). Each set-aside reading could sit on either line, so it gets an x-mark on both. `ax.axhspan(low, high)` shades a horizontal band, here the repeated 01:00 hour, and `mdates.DateFormatter('%H:%M')` prints the axis ticks as clock times.
+Plot the wall clock against UTC. The dotted lines show daylight time (UTC minus 5 hours) and standard time (UTC minus 6 hours). Each set-aside reading could sit on either line, so it gets an x-mark on both. `tz_localize(None)` drops the zone and keeps the clock reading, so subtracting 5 or 6 hours gives the Chicago wall clock. `ax.axhspan(low, high)` shades a horizontal band, here the repeated 01:00 hour, and `mdates.DateFormatter('%H:%M')` prints the axis ticks as clock times.
 
 ```python
 import matplotlib.dates as mdates
@@ -146,7 +146,7 @@ Expect the `00:21` reading on the dotted daylight line and the `03:41` reading o
 
 ### 3. The first feature draft hands one patient's heart rate to the next
 
-The score's heart-rate features are the previous reading, its change, and recent means. The rows stack 10,000 encounters, and the first draft used a plain `shift(1)`, which runs straight down the column and hands each encounter's first row the previous encounter's last heart rate. Count the damage.
+The score's heart-rate features are the previous reading, its change, and recent means. The rows stack 10,000 encounters, and the first draft used a plain `shift(1)`, which runs straight down the column and hands each encounter's first row the previous encounter's last heart rate. Count the damage: `~vitals['encounter_id'].duplicated()` marks each encounter's first row.
 
 ```python
 first_row = ~vitals['encounter_id'].duplicated()
@@ -154,7 +154,7 @@ leaked = vitals['heart_rate'].shift(1)[first_row].notna().sum()
 print('First rows:', first_row.sum(), ' given another encounter\'s heart rate:', leaked)
 ```
 
-Expect `First rows: 10000  given another encounter's heart rate: 9861`. Grouping by `encounter_id` keeps every feature inside one stay, and each feature reads only earlier rows: `shift(1)` and `diff()` the previous reading, `shift(1)` before `rolling(3)` the three before, and `rolling('8h', closed='left')` the 8 hours before, without the current time.
+Expect `First rows: 10000  given another encounter's heart rate: 9861`. The other 139 got `NaN`: the table's first row has nothing above it, and 138 encounters end on a reading with no heart rate charted. Grouping by `encounter_id` keeps every feature inside one stay, and each feature reads only earlier rows: `shift(1)` and `diff()` the previous reading, `shift(1)` before `rolling(3)` the three before, and `rolling('8h', closed='left')` the 8 hours before, without the current time.
 
 ```python
 by_encounter = vitals.groupby('encounter_id')['heart_rate']
@@ -206,7 +206,7 @@ display(cohort['outcome'].value_counts())
 
 Expect `Cohort: 9511 of 10000`, with `360` ICU transfers. `120` of the 480 transfers happened in the first 24 hours, before the score would run.
 
-A lab result can feed the score only if it was reported by the prediction time, whenever its sample was drawn. `pd.to_datetime(..., utc=True)` reads the lab system's UTC text; a blank `resulted_at` (cancelled or never resulted) becomes `NaT`. In the chart, `stacked=True` puts each test's two counts end to end in one bar.
+A lab result can feed the score only if it was reported by the prediction time, whenever its sample was drawn. `pd.to_datetime(..., utc=True)` reads the lab system's UTC text; a blank `resulted_at` (no report time on file) becomes `NaT`, which fails the `<=` comparison below, so the row counts as not yet reported. In the chart, `stacked=True` puts each test's two counts end to end in one bar.
 
 ```python
 labs['collected_at'] = pd.to_datetime(labs['collected_at'], utc=True)
@@ -224,6 +224,7 @@ display(known)
 fig, ax = plt.subplots(figsize=(8, 3))
 known[['reported by then', 'not yet reported']].plot(kind='barh', stacked=True, ax=ax, color=['#0072B2', '#D55E00'])
 ax.set(title='Labs drawn before the prediction time', xlabel='Lab orders', ylabel='')
+ax.legend(title='')
 plt.show()
 ```
 
@@ -302,6 +303,7 @@ fig, ax = plt.subplots(figsize=(10, 4))
 ax.plot(one.index, one, 'o', color='gray', markersize=4, label='Charted heart rate')
 ax.plot(one.index, one.rolling('4h').mean(), color='#0072B2', linewidth=2, label='4-hour rolling mean')
 ax.axhline(100, color='#D55E00', linestyle='--', label='Tachycardia (100 bpm)')
+ax.axvline(pd.Timestamp('2024-12-08 05:58', tz='UTC'), color='black', linestyle=':', label='Score runs (hour 24)')
 ax.set(title='Encounter E09294: heart rate before ICU transfer', xlabel='Time (UTC)', ylabel='Heart rate (bpm)')
 ax.legend(loc='upper left')
 ax.grid(alpha=0.3)
@@ -309,7 +311,7 @@ plt.show()
 display(encounters.loc[encounters['encounter_id'] == 'E09294', ['site', 'diagnosis', 'admitted_at', 'left_at', 'outcome']])
 ```
 
-Expect readings every 4 hours between about 75 and 100 bpm for four days, then hourly checks on December 11 as the rolling mean crosses the dashed line and climbs to about 115 bpm before the transfer at `01:03` UTC on December 12.
+Expect readings every 4 hours between about 75 and 100 bpm for four days, then hourly checks on December 11 as the rolling mean crosses the dashed line and climbs to about 115 bpm before the transfer at `01:03` UTC on December 12. The dotted line marks hour 24, when the score runs: the heart rate was 92 then, and the rise came more than three days later.
 
 ## Independent practice
 
@@ -333,7 +335,7 @@ for day in ['2024-03-10', '2024-11-03', '2024-11-04']:
     print(day, len(hours), 'hours')
 ```
 
-Expect the columns to disagree every day, because a New York day starts 4 or 5 hours after a UTC day: `314` and `331` on November 1, `333` and `315` on November 2. November 3 differs most, `306` readings on the New York day against `281` on the UTC day: the shifted start accounts for most of the gap, and that local day also held one extra hour. The second table lines up each New York day with the day before by date: `shift(1, freq='D')` moves the labels a day later, so November 1 has no `yesterday` and a November 6 row holds November 5's `332`. The `date_range` lines print `23`, `25`, and `24` hours: a local daily count on March 10 covers one hour less.
+Expect the columns to disagree every day, because a New York day starts 4 or 5 hours after a UTC day: `314` and `331` on November 1, `333` and `315` on November 2. November 3 differs most, `306` readings on the New York day against `281` on the UTC day: that local day ran 25 hours. Step 2 set aside every reading charted in its repeated 01:00 hour, so that hour holds none in either column. The extra hour is the day's last, 23:00 to midnight, which ends at 05:00 UTC on November 4. The table does not print it: `ny.loc['2024-11-04 04:00':'2024-11-04 04:59'].count()` gives 27 readings, and without them the New York day would hold 279, 2 fewer than the UTC day. The second table lines up each New York day with the day before by date: `shift(1, freq='D')` moves the labels a day later, so November 1 has no `yesterday` and a November 6 row holds November 5's `332`. The `date_range` lines print `23`, `25`, and `24` hours: a local daily count on March 10 covers one hour less.
 
 ### 2. A reviewer proposes the next heart rate as a feature
 
@@ -364,13 +366,13 @@ for zone in ZONES.values():
 
 Expect New York at `-0500` in January and `-0400` in July, Chicago at `-0600` and `-0500`, and Phoenix at `-0700` both times.
 
-### 4. Dr. Kim asks how old the newest training row will be when the pilot starts
+### 4. Dr. Kim asks how old the newest training row is today
 
-`pd.Timestamp.now(tz='UTC')` reads the current time as an aware UTC timestamp, so it can be subtracted from the aware `prediction_time` column; a naive `pd.Timestamp.now()` would raise the `TypeError` from step 6.
+`pd.Timestamp.now(tz='UTC')` reads the current time as an aware UTC timestamp, so it can be subtracted from the aware `prediction_time` column; a naive `pd.Timestamp.now()` would raise a `TypeError`, as in step 6.
 
 ```python
 now = pd.Timestamp.now(tz='UTC')
 print(now.tz, (now - features['prediction_time'].max()).days, 'days since the newest prediction time')
 ```
 
-Expect `UTC` and a day count that depends on today's date: `670` on November 3, 2026, one more for each later day. The newest prediction time is `2025-01-02 05:06` UTC, so the pilot would start on data close to two years old.
+Expect `UTC` and a day count that depends on today's date: `670` on November 3, 2026, one more for each later day. The newest prediction time is `2025-01-02 05:06` UTC, so a pilot starting today would build on data close to two years old.
