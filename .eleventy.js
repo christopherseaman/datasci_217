@@ -32,7 +32,7 @@ function renderedSourceLink(url, sourcePath) {
   if (excludedContent.test(repositoryPath)) {
     return `${repositoryUrl}/blob/main/${repositoryPath}${suffix}`;
   }
-  const coursePages = { "index.md": "", "references.md": "references/", "shell_workout.md": "shell-workout/", "wsl_troubleshooting.md": "wsl-troubleshooting/" };
+  const coursePages = { "index.md": "", "references.md": "references/", "shell_workout.md": "shell-workout/", "wsl_troubleshooting.md": "wsl-troubleshooting/", "tmux_ssh_cheat_sheet.md": "tmux-ssh-cheat-sheet/" };
   let pagePath = coursePages[repositoryPath] ?? repositoryPath.replace(/\/README\.md$/i, "/");
   pagePath = pagePath.replace(/\/BONUS\.md$/i, "/bonus/");
   const outputPath = pagePath === repositoryPath ? repositoryPath : pagePath;

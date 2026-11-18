@@ -38,6 +38,8 @@ DataSci 217 is a practical introduction to the tools and reasoning used in Pytho
 
 [WSL Troubleshooting](wsl_troubleshooting.md)
 
+[tmux and SSH Cheat Sheet](tmux_ssh_cheat_sheet.md)
+
 # Course Format
 
 - **Lectures** explain concepts and are presentation materials, not notebooks intended to be executed from top to bottom.
