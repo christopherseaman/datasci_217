@@ -323,8 +323,6 @@ Expect `All on the hour: True`, and fewer `04:00` rounds (`1566`) than any other
 
 ### 4. A reviewer asks whether a centered window flags `S0023` sooner
 
-Prerequisite: BONUS.md, Window Alignment Example, for `center=True`. Nothing in the core route or the assignment needs this.
-
 A centered window looks forward as well as back, which suits a retrospective chart review but not an alert. `min_periods` lets a trailing window start before it is full.
 
 ```python

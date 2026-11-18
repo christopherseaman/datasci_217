@@ -24,7 +24,7 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 <callout icon="🧭" color="blue_bg">
 	# This Lecture
 	## Covers
-	- **Dated data**: timestamps, panels, Python `datetime`, the DatetimeIndex, and calendar slicing.
+	- **Dated data**: timestamps, panels, trend and seasonality, Python `datetime`, the DatetimeIndex, and calendar slicing.
 	- **Resampling and rolling windows**: time bins, missing readings, per-patient grids, gap runs, and count and time windows.
 	- **Time series visualization**: spacing and profile checks, a smoother over raw readings, and line breaks at gaps.
 	- **Clocks and honest history**: UTC conversion, clock changes, past-only windows, and availability at prediction time.
@@ -70,6 +70,26 @@ _Some time series are as regular as a Swiss watch; others are as unpredictable a
 - **Grain**: what one row represents, stated before computing anything: "one heart-rate reading for one patient at one time."
 
 ![A panel: three patients' charted heart rates on November 3, 2024, one line per patient_id; P01 rises from 88 to 118 bpm, P02 stays near 70, and P03 falls from 104 to 92.](media/icu_panel_hr_utc.png)
+
+## Trend, Seasonality, and Noise
+
+- **Trend**: the slow drift in a series' level, such as clinic visits rising over a year.
+- **Seasonality**: a cycle that repeats on the calendar, such as winter flu waves or Monday peaks.
+- **Noise**: the reading-to-reading scatter that remains.
+
+![A year of daily clinic visits is the sum of a trend rising from 100 to 120, a seasonal cycle of plus or minus 10 that peaks in January, and noise of a few visits a day.](media/series_components.png)
+
+### Reference Card: Time Series Questions
+
+| Question | Tool |
+| --- | --- |
+| When was each reading taken? | `pd.to_datetime()` and a DatetimeIndex |
+| What happened in March? | `.loc['2024-03']` |
+| What is the hourly or daily summary, and which bins are empty? | `resample()`, `asfreq()` |
+| What is the level under the noise? | `rolling()` |
+| Is there a trend, a cycle, or a gap? | A line plot |
+| Which event came first across sites? | `tz_localize()`, `tz_convert('UTC')` |
+| What did the chart show before this moment? | `groupby().shift()` and past-only windows |
 
 # Date and Time Data Types
 
@@ -157,6 +177,38 @@ Index([8, 20, 8], dtype='int32', name='recorded_at')
 
 ![xkcd 2867: DateTime. T2 minus T1 looks like simple subtraction until time zones and clock changes, later in this lecture, get involved.](media/xkcd_2867.png)
 
+## Selecting Rows by Date
+
+- **Time series selection**: picking rows by recording time, such as a whole month or a date range, on a sorted DatetimeIndex.
+- **Partial-string indexing**: `.loc` on a DatetimeIndex accepts partial dates such as `'2024-03'`.
+
+![Hourly heart rate, January 1 to 28, 2024: a `.loc` date range from January 15 to 17 selects all 72 hours of the three fever days, and `.loc` on January 5 selects that day's 14 rows, none from 08:00 to 17:00.](media/time_series_indexing.png)
+
+### Reference Card: Calendar Selection
+
+- `df.loc['2024-03']`: Every row in March 2024; `'2024'` selects the whole year
+- `df.loc['2024-03-01':'2024-03-07']`: A date range, both endpoints included, like label slices
+- `df.loc['2024-03-01 08:00']`: One timestamp
+- `ts['2024-03']`: The same shortcut on a Series; `df['2024-03']` on a DataFrame looks for a _column_ and raises `KeyError`
+
+### Code Snippet: Calendar Selection
+
+`study_day`, a Series named `value`, numbers the dates of January and February 2024 from 1.
+
+```python
+print(study_day.loc['2024-02'].shape)  # leap year: 29 days
+display(study_day.loc['2024-01-30':'2024-02-02'])
+```
+
+```text
+(29,)
+2024-01-30    30
+2024-01-31    31
+2024-02-01    32
+2024-02-02    33
+Freq: D, Name: value, dtype: int64
+```
+
 # Date Ranges and Frequencies
 
 - **Frequency**: the repeating rule of a regular series, such as daily or hourly.
@@ -189,40 +241,6 @@ print(pd.date_range('2024-01-01 08:00', periods=3, freq='h'))
 DatetimeIndex(['2024-01-01 08:00:00', '2024-01-01 09:00:00',
                '2024-01-01 10:00:00'],
               dtype='datetime64[us]', freq='h')
-```
-
-# Time Series Indexing and Selection
-
-- **Time series selection**: picking rows by recording time, such as a whole month or a date range, on a sorted DatetimeIndex.
-- **Partial-string indexing**: `.loc` on a DatetimeIndex accepts partial dates such as `'2024-03'`.
-
-## Basic Time Series Selection
-
-![Hourly heart rate, January 1 to 28, 2024: a `.loc` date range from January 15 to 17 selects all 72 hours of the three fever days, and `.loc` on January 5 selects that day's 14 rows, none from 08:00 to 17:00.](media/time_series_indexing.png)
-
-### Reference Card: Calendar Selection
-
-- `df.loc['2024-03']`: Every row in March 2024; `'2024'` selects the whole year
-- `df.loc['2024-03-01':'2024-03-07']`: A date range, both endpoints included, like label slices
-- `df.loc['2024-03-01 08:00']`: One timestamp
-- `ts['2024-03']`: The same shortcut on a Series; `df['2024-03']` on a DataFrame looks for a _column_ and raises `KeyError`
-
-### Code Snippet: Calendar Selection
-
-`study_day`, a Series named `value`, numbers the dates of January and February 2024 from 1.
-
-```python
-print(study_day.loc['2024-02'].shape)  # leap year: 29 days
-display(study_day.loc['2024-01-30':'2024-02-02'])
-```
-
-```text
-(29,)
-2024-01-30    30
-2024-01-31    31
-2024-02-01    32
-2024-02-02    33
-Freq: D, Name: value, dtype: int64
 ```
 
 # Resampling and Frequency Conversion
@@ -479,14 +497,14 @@ A patient with no gaps has no rows in `runs`; report 0 runs for them.
 
 # Rolling Window Operations
 
-- **Rolling window**: a fixed-size frame that slides along a series and computes a statistic at every row, such as the mean of the last seven daily blood pressures.
+- **Rolling window**: a fixed-size frame that slides along a series and computes a statistic at every row, such as the mean of the last seven daily blood pressures; averaging smooths the noise so the trend shows.
 - `resample('W').mean()` returns one row per week; `rolling(7).mean()` returns one row per original reading.
 
 ![xkcd 605: Extrapolating. Two readings make a line, not a trend; a rolling mean over several readings is steadier than any single change.](media/xkcd_605.png)
 
 ## Basic Rolling Operations
 
-![Daily mean heart rate (gray dots) and a 7-day rolling mean (blue) with its ±1 SD band: the January 15 to 17 fever lifts the rolling mean to 84.7 bpm on January 17, and it stays near there through January 21, then falls as the fever days leave the window from January 22 to 24.](media/daily_hr_rolling.png)
+![Daily mean heart rate (gray dots), its 7-day rolling mean (blue) with a ±1 SD band, and a 7-day centered mean (dashed): after the January 15 to 17 fever the rolling mean stays near 84.7 bpm from January 17 to 21, while the centered mean is that high from January 14 to 18, around the fever and one day before it starts.](media/daily_hr_rolling.png)
 
 ### Reference Card: Rolling Windows
 
@@ -495,6 +513,7 @@ A patient with no gaps has no rows in `runs`; report 0 runs for them.
 - `ts.rolling('7D').mean()`: A **time window**: the readings in the 7 days ending at each row, for irregular data such as clinic visits; needs a sorted DatetimeIndex; starts at one nonmissing reading
 - `ts.rolling('2h', closed='left').mean()`: A past-only time window: at 11:00 it covers 09:00 up to but excluding 11:00
 - `ts.rolling(window=7, min_periods=3).mean()`: Start once the window holds 3 readings, not all 7
+- `ts.rolling(window=7, center=True).mean()`: A **centered window**: 3 rows before, the current row, and 3 after; the mean lines up with the event, but it reads later rows, so it describes a finished series and never feeds an alert
 - `ax.fill_between(ts.index, mean - std, mean + std, alpha=0.2)`: Shade the figure's band on an `Axes`; `alpha` keeps the lines visible
 
 ### Code Snippet: Count Window vs Time Window

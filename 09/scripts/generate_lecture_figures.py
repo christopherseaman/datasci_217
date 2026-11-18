@@ -152,6 +152,28 @@ def ed_arrivals():
 # ---------------------------------------------------------------- block 1
 
 
+def series_components():
+    """Trend, Seasonality, and Noise: a year of daily clinic visits as the sum of three parts."""
+    days = pd.date_range("2023-01-01", "2023-12-31", freq="D")
+    n = np.arange(len(days))
+    trend = 100 + 20 * n / (len(days) - 1)
+    season = 10 * np.cos(2 * np.pi * (n - 20) / 365)  # winter peak in late January
+    noise = np.random.default_rng(9).normal(0, 3, len(days))
+    fig, axes = plt.subplots(1, 4, figsize=(12, 2.8), gridspec_kw={"width_ratios": [2.2, 1, 1, 1]})
+    parts = [("Daily clinic visits", trend + season + noise, GREY), ("= trend", trend, VERMILLION),
+             ("+ seasonality", season, BLUE), ("+ noise", noise, GREY)]
+    for ax, (title, values, color) in zip(axes, parts):
+        ax.plot(days, values, color=color, lw=1 if color == GREY else 2)
+        ax.set_title(title)
+        ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=[1, 7]))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
+    axes[0].plot(days, trend, "--", color=VERMILLION, lw=2)
+    axes[0].set_ylabel("Visits per day")
+    for ax in axes[2:]:
+        ax.set_ylim(-13, 13)
+    save(fig, "series_components.png")
+
+
 def forms_of_time():
     """Forms of Time: a timestamp, a period, and elapsed time on one admission."""
     admitted = pd.Timestamp("2024-02-29 20:15")
@@ -668,8 +690,12 @@ def daily_hr_rolling_ewm():
     ax.set(ylabel="Heart rate (bpm)", xlabel="Date, January 2024", xlim=(xd[0] - 0.7, xd[-1] + 0.7))
     ax.xaxis.set_major_locator(mdates.DayLocator(bymonthday=[1, 8, 15, 22, 28]))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %-d"))
+    centered = daily_hr.rolling(7, center=True).mean()
+    assert centered.idxmax() == pd.Timestamp("2024-01-14") and round(centered["2024-01-18"], 1) == 84.4  # plateau Jan 14 to 18
+    center_line, = ax.plot(xd, centered, "--", color=VERMILLION, lw=2, label="7-day centered mean")
     ax.legend(loc="upper left", frameon=False)
     fig.savefig(MEDIA_DIR / "daily_hr_rolling.png", dpi=150, bbox_inches="tight", facecolor="white")
+    center_line.remove()
 
     ax.plot(xd, ewm, "--", color=ORANGE, lw=2.2, label="EWM, span 7")
     ax.plot(xp, ewm[peak], "o", color=INK, ms=4, zorder=4)
@@ -1016,7 +1042,7 @@ def types_of_time_series():
 
 if __name__ == "__main__":
     MEDIA_DIR.mkdir(exist_ok=True)
-    for make in [forms_of_time, regular_irregular, icu_panel_hr_utc, text_vs_datetime_axis, date_range_aliases,
+    for make in [series_components, forms_of_time, regular_irregular, icu_panel_hr_utc, text_vs_datetime_axis, date_range_aliases,
                  two_clinics_utc, clock_changes, time_series_indexing, resampling_example, resample_bins_2h,
                  daily_reading_counts, charted_temp_upsampling, per_patient_bins, gap_run_tiles,
                  daily_hr_rolling_ewm, count_vs_time_window, window_weights, shifting_lagging,
