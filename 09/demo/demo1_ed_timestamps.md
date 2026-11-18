@@ -29,7 +29,7 @@ Run the cells from top to bottom.
 
 ```python
 # Installs the course's pandas, pyarrow (for Parquet), and dowhy (for generate_data.py) in Colab (uv sync already did locally); if Colab asks, restart and rerun from the top
-%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 dowhy==0.14
+%pip install -q --no-warn-conflicts pandas==3.0.5 pyarrow==25.0.0 seaborn==0.13.2 dowhy==0.14
 ```
 
 ## Core walkthrough
@@ -45,6 +45,7 @@ from urllib.request import urlretrieve
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 
 REPO_RAW = 'https://raw.githubusercontent.com/christopherseaman/datasci_217/main/09/demo'
 if not Path('generate_data.py').exists():
@@ -216,6 +217,19 @@ display(median_hours.loc['2023-11':'2024-02', ['admitted', 'discharged']].round(
 
 Expect admitted patients to rise from `0.886` over 4 hours in November 2023 to `0.962` in January 2024, and discharged patients from `0.259` to `0.292`. The admitted share has little room to rise, so the second table shows the change in hours: the median admitted stay grows from `6.87` hours in November 2023 to `9.07` in January 2024, and the discharged median from `2.82` to `2.97`. Every patient waits longer in a crowded ED; admitted patients also wait for inpatient beds, which fill in flu season.
 
+The table shows four months. Draw all 24 with one line per disposition: `melt()` (Lecture 06) turns the wide `median_hours` table into one row per month and disposition, the long form `hue=` needs.
+
+```python
+long = median_hours.reset_index().melt(id_vars='arrival', var_name='disposition', value_name='los_hours')
+fig, ax = plt.subplots(figsize=(10, 3.5))
+sns.lineplot(data=long, x='arrival', y='los_hours', hue='disposition', marker='o', ax=ax)
+ax.set(title='Median ED stay by month of arrival and disposition', xlabel='Month', ylabel='Median stay (hours)', ylim=(0, 11))
+ax.legend(title='Disposition', loc='upper left', bbox_to_anchor=(1, 1), frameon=False)
+plt.show()
+```
+
+Expect four lines over 24 months. The admitted line sits near 6.5 hours from February to October 2023 and March to October 2024, climbs from `6.87` in November 2023 to `8.85` in December and `9.07` in January 2024, and is back at `6.98` in February. It is also raised in January 2023 (`7.63`) and December 2024 (`7.35`), the edges of the other two winters. The discharged line stays between `2.75` and `3.00` hours, the left-without-being-seen line rises from about `1.0` to `1.23`, and the transferred line (`5.03` to `5.61`) shows no winter rise.
+
 **What we tell Dr. Reyes:** fund the surge team for December and January; that is when the share over 4 hours rises from about 0.39 to 0.44, and the median admitted stay grows by about 2 hours.
 
 ### 8. Which hours does the surge team cover, and why does the 08:00 count not match?
@@ -236,6 +250,18 @@ plt.show()
 ```
 
 Expect `Days: 731` and `Busiest hour: 11 54.0  Quietest hour: 4 11.1`: about five times as many patients arrive late in the morning as before dawn, and the bars stay high from 10:00 through 19:00. Admitted patients stay a median of `6.85` hours (step 4), so the patients who arrive in those hours wait for beds through the evening and night: the surge team's shifts start in the afternoon and run later than the arrival peak.
+
+The bars average all seven weekdays together. Split them: `.dt.dayofweek` numbers each arrival's weekday from 0 (Monday), `unstack()` (Lecture 08) moves the hours into columns, and 731 days hold about `n_days / 7` of each weekday.
+
+```python
+by_weekday = arrived.groupby([arrived['arrival'].dt.dayofweek, arrived['arrival'].dt.hour]).size().unstack() / (n_days / 7)
+fig, ax = plt.subplots(figsize=(10, 3.5))
+sns.heatmap(by_weekday, cmap='Blues', ax=ax)
+ax.set(title='Average ED arrivals per hour, by weekday and hour', xlabel='Hour of arrival', ylabel='Weekday (0 = Monday)')
+plt.show()
+```
+
+Expect 7 rows and 24 columns. The darkest cell is weekday `0`, hour `11`: Mondays at 11:00 average about `61.7` arrivals, against about `50.0` on Saturdays (weekday `5`) at the same hour. The lightest is Saturday at 04:00 (`10.3`). Every row darkens at 09:00 and fades after 20:00, so the surge team's shift hours can be the same all week, and Monday needs the most cover.
 
 The charge nurses count arrivals in 4-hour blocks and report each block when it ends. Their 08:00 count for Central on March 7, 2024 does not match a plain `resample('4h')`. Their rule puts an arrival at exactly 08:00 in the block that just ended, `04:00 to 08:00`: that is `closed='right', label='right'`. For the chart, `set_axis()` swaps the index for the formatted labels.
 
