@@ -20,6 +20,7 @@ How the files are read:
 
 - Each check is scored on its own, so one mistake costs only that check's points.
 - A mistake that reaches several checks, such as a formula without `age` or `bmi`, a wrong availability rule carried into the models, a split on `visit_time`, skipping the fit-row cut, or RMSE without its square root in Tasks 3.1 and 3.2, costs points once, at the first check that finds it. So do rows saved under each other's labels.
+- When a later check of the same file is wrong in the same rows for a reason the checks do not recognize, it prints `PASS` with a line naming the first check: `Likely the same cause as ...`. Fix the first check and run the checks again; a second mistake in those rows then shows its own message.
 - A missing column, or one saved under another name with the right values, costs only the columns check; values in the other columns are still checked. An empty table or one with no recognizable rows earns no value points.
 - Spacing, line endings, quoting, column order, and row order never cost points, and cells may be separated by commas, semicolons, or tabs.
 - Numbers are compared as numbers, so `2`, `2.0`, and `2.00` are the same value. Any number may be rounded to one or two decimals, as `9.0` or `9.01` for an MAE of 9.0105. Accuracy, precision, recall, and R² may also be written as percents, as `35.7%` for 0.357.
@@ -49,7 +50,7 @@ Grading totals 100 points and reads these files relative to the assignment root.
 | `output/residual_bands.csv` | Each `patients` counts the band's residuals, leaving out patients with no BMI. | residual bands: patients values | 2 |
 | `output/residual_bands.csv` | Each `mean_residual` is the band's mean residual. | residual bands: mean_residual values | 3 |
 | `output/residual_bands.csv` | Each `sd_residual` is the standard deviation of the band's residuals. | residual bands: sd_residual values | 2 |
-| `output/residuals_vs_fitted.png` | It is a PNG image. | residual plot: PNG image | 5 |
+| `output/residuals_vs_fitted.png` | It is a PNG image that is not blank. | residual plot: PNG image | 5 |
 | `output/availability_decisions.csv` | Its columns are those in the Task 2.1 header line; `becomes_known` is optional. | availability: columns | 2 |
 | `output/availability_decisions.csv` | It holds each of the nine candidates once. | availability: one row per candidate | 2 |
 | `output/availability_decisions.csv` | Each `hours_after_visit` matches `data/feature_candidates.parquet`. | availability: hours_after_visit values | 1 |

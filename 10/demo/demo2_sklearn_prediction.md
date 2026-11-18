@@ -122,7 +122,7 @@ print("fit rows:", len(fit_rows), " validation rows:", len(valid), " test rows:"
 display(fit_rows[features].isna().sum().loc[lambda counts: counts > 0].rename("missing"))
 ```
 
-Expect `fit rows: 67577  validation rows: 37578  test rows: 33343`, the same split as Demo 1. One feature has gaps: `bmi`, missing for patients whose enrollment form left it blank (4,351 fit rows).
+Expect `fit rows: 67577  validation rows: 37578  test rows: 33343`, the same split as Demo 1. One feature has gaps: `bmi`, missing for patients whose enrollment form left it blank (4,351 fit rows); `.loc[lambda counts: counts > 0]` keeps the entries above 0.
 
 ### 2. What do the nurses' current rules score?
 

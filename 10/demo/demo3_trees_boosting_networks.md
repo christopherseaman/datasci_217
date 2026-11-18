@@ -193,7 +193,7 @@ compare("logistic regression", logistic.predict_proba(X_valid)[:, 1])
 show()
 ```
 
-Expect accuracy at 0.5 of 0.842, barely above the no-model 0.837, but at the 10% budget a recall of 0.287 and precision of 0.466: 2,187 of the 7,631 readmitted patients get a call, 658 more than today's rule and almost three times the random list's 801.
+Expect accuracy at 0.5 of 0.842, barely above the no-model 0.837, but at the 10% budget a recall of 0.287 and precision of 0.466: 2,187 of the 7,631 readmitted patients get a call, 656 more than today's rule and almost three times the random list's 801.
 
 ### 5. Do combinations of risk factors reach more patients?
 
@@ -307,7 +307,7 @@ plt.close(ax.figure)
 
 Expect, at the 10% budget, recall from 0.287 (logistic regression) to 0.302 (XGBoost), with the network (0.290) and the forest (0.298) between, and today's rule at 0.201. AUC tells the same story over the whole ranking: 0.751 to 0.765 for the four families against 0.651 for the rule. Every model's accuracy at 0.5 sits between 0.841 and 0.845. The bar chart puts the four families within 120 calls of each other (2,187 to 2,304), all of them 656 to 773 above today's rule's 1,531 and near three times the random list's 801: having a model matters far more than which family. XGBoost calls 117 more readmitted patients in six months than logistic regression. Trees find combinations of columns and thresholds within a column by splitting; logistic regression gives each column one straight-line slope unless someone writes the combination as a column. Practice 6 tests whether the gap comes from combinations.
 
-The frozen choice is XGBoost with its validation-chosen 305 rounds: the most readmitted patients called among the four families, and seconds to train. Refit it on every training and validation discharge whose label had arrived by the first test discharge, then score the test rows once at the 10% budget, beside today's rule on the same rows.
+The frozen choice is XGBoost with its validation-chosen 229 rounds (best round 228 plus one): the most readmitted patients called among the four families, and seconds to train. Refit it on every training and validation discharge whose label had arrived by the first test discharge, then score the test rows once at the 10% budget, beside today's rule on the same rows.
 
 ```python
 train_valid = pd.concat([train, valid])
@@ -326,7 +326,7 @@ show(["XGBoost", "XGBoost on test (frozen)", "today's rule on test"])
 
 Expect 179,532 final fit rows, 5,859 test readmissions, and a test AUC of 0.756 (validation 0.765) with recall 0.303 and precision 0.472, close to validation's 0.302 and 0.491. Today's rule on the test discharges reaches an AUC of 0.649, a recall of 0.199, and precision of 0.311: 1,167 of the 5,859 readmitted patients, against XGBoost's 1,773.
 
-**What we tell Dr. Kim**: on January to May 2025, discharges no choice was tuned on, the XGBoost list reaches 608 more readmitted patients than today's rule for the same 10% of calls. The four model families differ far less than any of them differs from the rule, so logistic regression stays a fallback if the committee wants coefficients it can read.
+**What we tell Dr. Kim**: on January to May 2025, discharges no choice was tuned on, the XGBoost list reaches 606 more readmitted patients than today's rule for the same 10% of calls. The four model families differ far less than any of them differs from the rule, so logistic regression stays a fallback if the committee wants coefficients it can read.
 
 ## Independent practice
 

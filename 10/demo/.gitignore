@@ -1,2 +1,3 @@
 data/
 residuals_vs_fitted.png
+rpm_forecast.joblib

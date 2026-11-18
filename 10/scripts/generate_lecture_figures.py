@@ -933,7 +933,8 @@ def keras_dropout_curves():
 def model_comparison():
     """Validation accuracy for every candidate on the same 114 biopsies."""
     d = biopsy_models()
-    names = list(d["accuracy"])
+    # The dropout/L2 network is BONUS material; keras_dropout_curves() still reads its fit.
+    names = [n for n in d["accuracy"] if "dropout" not in n]
     fig, ax = plt.subplots(figsize=(8.5, 4.2))
     for i, name in enumerate(names):
         acc = d["accuracy"][name]

@@ -33,6 +33,16 @@ submissions in ignored `scratch/a10_selftest/` and confirms that:
   validation rows, test metrics scored on the validation rows, mean errors
   with the sign flipped, `>` for `>=` in the LACE rules, and precision and
   recall with their arguments swapped;
+- a mistake no slip names costs one check per file: persistence metrics
+  wrong in all three columns, or fit rows cut with `<`, fail the first values
+  check, and the later ones keep their points and say
+  `Likely the same cause as ...` with their own hint, also when the rows hold
+  a second mistake (counts 100 short and times saved as dates);
+  wrong cells in different rows stay two mistakes;
+- keeping `a1c_result` alone fails the availability check without the
+  no-audit cause; clinic errors 0.01 mmHg off, as mean imputation leaves them,
+  pass; a PNG of one color fails as blank under every row filter, and one
+  with a single dark pixel passes;
 - a missing file costs only its own artifact's checks;
 - the README's checkpoint header lines, the notebook's, and the CHECKS.md
   contract agree with the checks and `POINTS`; the README's row counts and

@@ -27,11 +27,14 @@ The new patient's intervals and the availability decisions also accept values
 calculated correctly from the student's earlier saved artifacts. A recognized
 common slip that reaches several checks, such as a leaky feature carried from
 Task 2.1 into Tasks 3.1 and 3.2, is charged once, by the first affected check,
-and so are rows whose values all sit under each other's labels. Duplicate
-headers cost the columns check; every stored copy is considered rather than
-silently discarding a column. A value column the file does not hold costs only
-its columns check, and so does one saved under another name with the right
-values. One renamed with wrong values also costs its values check.
+and so are rows whose values all sit under each other's labels. A later
+values check of the same file that fails on the same rows for no recognized
+slip says "likely the same cause", names the first one, and keeps its points
+and its hint. Duplicate headers cost the columns check; every stored copy is
+considered rather than silently discarding a column. A value column the file
+does not hold costs only its columns check, and so does one saved under
+another name with the right values. One renamed with wrong values also costs
+its values check.
 
 Nothing here imports, runs, or inspects student code.
 """
@@ -377,6 +380,15 @@ AVAILABILITY_SLIPS = tuple(
                         if rule(hours) != (hours <= 0)}, charge=name)
     for name, rule in FEATURE_RULES.items()
 )
+# The right table: a feature-rule slip seen only in the models then comes from a feature list typed by hand.
+AUDITED = Slip("", {(feature,): {"available": Flag(hours <= 0)} for feature, hours in CANDIDATE_HOURS.items()})
+# The rows a wrong feature list changes in each model file, keyed as a message starts; None is every row.
+FEATURE_ROWS = {
+    "output/validation_metrics.csv:": frozenset({("linear_pipeline",)}),
+    "output/test_metrics.csv:": None,
+    "output/clinic_test_errors.csv:": None,
+}
+FEATURE_CHECK = "availability: available values"
 SPLIT_SLIPS = tuple(_slip(name, "split", CAUSES[name]) for name in (
     "split_on_visit_time", "ranges_from_visit_time", "fit_not_trimmed"))
 UPSTREAM = ("features_strict_zero", "features_equals_zero", "features_no_audit", "split_on_visit_time",
@@ -487,7 +499,8 @@ CLINIC_ERRORS = Artifact(
     columns=("clinic", "test_visits", "mae", "mean_error"),
     key=("clinic",),
     rows=CLINIC_TEST_VALUES,
-    tolerance=FINE,
+    # mae and mean_error are mmHg, so median and mean imputation, 0.01 mmHg apart, both pass.
+    tolerance=MMHG,
 )
 
 READMISSION = Artifact(
@@ -1121,6 +1134,10 @@ def _cause(misses: list[tuple[tuple, str, str]], artifact: Artifact, slips: tupl
 
 # Rows whose values all belong under other labels: one mistake, charged by the artifact's first values check.
 RELABELED = "check the labels each row is saved under"
+# A later values check wrong in the same rows for no named cause: reported, and charged by the first check alone.
+SAME_CAUSE = "same cause as"
+# Names of the checks run_checks() reported that way: grading reads these, never the message, which quotes cells.
+SHARED: set[str] = set()
 # A column left out beside a spare column that matches nothing is a second mistake, so its values check still fails.
 ABSENT = "no saved column holds"
 
@@ -1249,6 +1266,11 @@ def values_check(
         # counts every patient in its bands, as "size" does, and only the coefficients tell the two apart.
         named = tuple(slip for slip in slips if slip.charge not in FORMULA_CHARGES or any(
             _holds(root, COEFFICIENTS, formula) for formula in FORMULA_SLIPS if formula.charge == slip.charge))
+        # A feature rule is named only when the availability table shows all of it, or shows the right features (a
+        # list typed by hand): keeping a1c_result alone is not "no audit", here or in the models fitted with it.
+        named = tuple(slip for slip in named if slip.charge not in FEATURE_RULES or any(
+            _holds(root, AVAILABILITY, rule) for rule in (*AVAILABILITY_SLIPS, AUDITED)
+            if rule.charge in (slip.charge, "")))
         wrong = []
         misses = []
         for key, rows in grouped.items():
@@ -1281,14 +1303,63 @@ def values_check(
                    if wrong else "")
                 + f" Fix it in {artifact.task}: {hint}",
             )
-        _assert(
-            not wrong,
-            f"{artifact.path}: " + _listed(wrong) + "."
-            + (_relabeled(grouped, artifact, found) or _cause(misses, artifact, named))
-            + f" Fix it in {artifact.task}: {hint}",
-        )
+        if wrong:
+            error = AssertionError(
+                f"{artifact.path}: " + _listed(wrong) + "."
+                + (_relabeled(grouped, artifact, found) or _cause(misses, artifact, named))
+                + f" Fix it in {artifact.task}: {hint}"
+            )
+            # run_checks() reads these: a later check wrong in the same rows for no named cause says "same cause".
+            error.found = f"{artifact.path}: {_listed(wrong)}."
+            error.keys = frozenset(key for key, _, _ in misses)
+            error.hint = f"fix it in {artifact.task}: {hint}"
+            raise error
 
     return check
+
+
+# Adam7 interlacing stores seven smaller images, each with its own filtered rows.
+ADAM7 = ((0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4), (0, 2, 2, 4), (1, 0, 2, 2), (0, 1, 1, 2))
+
+
+def _png_blank(data: bytes) -> bool:
+    """Whether a complete PNG shows one color only: every pixel equals the first.
+
+    Each stored row is compared with what its PNG row filter (None, Sub, Up, Average, or Paeth) writes for a
+    row of that color under a row of that color. Filtering is reversible, so the row matches only when it
+    is that color throughout, and nothing is unfiltered byte by byte.
+    """
+    header = data[16:29]
+    width, height = int.from_bytes(header[:4], "big"), int.from_bytes(header[4:8], "big")
+    unit = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}[header[9]] * header[8] // 8
+    if not unit:
+        # shortcut: an image under 8 bits a pixel is never called blank; test it if such files turn up.
+        return False
+    position, compressed = 8, []
+    while position < len(data):
+        size = int.from_bytes(data[position:position + 4], "big")
+        if data[position + 4:position + 8] == b"IDAT":
+            compressed.append(data[position + 8:position + 8 + size])
+        position += 12 + size
+    pixels = zlib.decompress(b"".join(compressed))
+    first, zero = pixels[1:1 + unit], bytes(unit)
+    half = bytes(byte - byte // 2 for byte in first)
+    position = 0
+    for x, y, dx, dy in ADAM7 if header[12] else ((0, 0, 1, 1),):
+        across, down = max(0, (width - x + dx - 1) // dx), max(0, (height - y + dy - 1) // dy)
+        if not across or not down:
+            continue
+        rest = across - 1
+        # A one-color row as each filter type 0 to 4 stores it: first in its image, then under a row like it.
+        top = (first * across, first + zero * rest, first * across, first + half * rest, first + zero * rest)
+        below = (first * across, first + zero * rest, zero * across, half + zero * rest, zero * across)
+        stride = 1 + across * unit
+        for row in range(down):
+            start = position + row * stride
+            if pixels[start + 1:start + stride] != (below if row else top)[pixels[start]]:
+                return False
+        position += down * stride
+    return True
 
 
 def _png_complete(data: bytes) -> bool:
@@ -1337,9 +1408,7 @@ def _png_complete(data: bytes) -> bool:
             return False
     except zlib.error:
         return False
-    # Adam7 interlacing stores seven smaller images, each with its own filtered rows.
-    passes = ((0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4),
-              (0, 2, 2, 4), (1, 0, 2, 2), (0, 1, 1, 2)) if interlace else ((0, 0, 1, 1),)
+    passes = ADAM7 if interlace else ((0, 0, 1, 1),)
     position = 0
     for x, y, dx, dy in passes:
         across, down = max(0, (width - x + dx - 1) // dx), max(0, (height - y + dy - 1) // dy)
@@ -1354,7 +1423,7 @@ def _png_complete(data: bytes) -> bool:
 
 
 def png_check(root: Path) -> None:
-    """The residual plot is saved as a PNG image."""
+    """The residual plot is saved as a PNG image that is not blank."""
     path = _artifact_path(root, RESIDUAL_PLOT)
     _assert(path is not None, _missing(root, RESIDUAL_PLOT, "Task 1.3"))
     data = path.read_bytes()
@@ -1363,6 +1432,11 @@ def png_check(root: Path) -> None:
         _png_complete(data),
         f"{RESIDUAL_PLOT} is not a complete PNG image (its first bytes are {start!r}); in Task 1.3 save the figure with "
         f'fig.savefig(RESIDUAL_PLOT_PATH), keeping the .png ending so matplotlib writes a PNG.',
+    )
+    _assert(
+        not _png_blank(data),
+        f"{RESIDUAL_PLOT} is a blank PNG image: every pixel is one color, expected the scatter of Task 1.3 step 5. "
+        "Save the figure that holds the scatter, and save it before plt.show(), which leaves an empty figure behind.",
     )
 
 
@@ -1664,9 +1738,13 @@ def run_checks(root: Path) -> list[tuple[str, str | None]]:
     """Return one (check name, problem or None) pair per check; every check runs."""
     _REPORTED_OUTSIDE.clear()
     _CHARGED.clear()
+    SHARED.clear()
     results = []
     charged = _CHARGED
     slips = SLIPS
+    # (file, check name, wrong row keys) of each values check that failed for no named cause.
+    unnamed: list[tuple[str, str, frozenset]] = []
+    features = False
     for check in CHECKS:
         try:
             check.action(Path(root))
@@ -1676,6 +1754,25 @@ def run_checks(root: Path) -> list[tuple[str, str | None]]:
             mistake = slip and (slip.charge or slip.cause)
             if not mistake and RELABELED in message:
                 mistake = message.split()[0].rstrip(":") + RELABELED
+            keys = getattr(error, "keys", None)
+            if not mistake and keys:
+                # One unnamed mistake, such as a wrong prediction, makes every metric of its rows wrong: the first
+                # check's hint diagnoses it. The rows may also hold a second mistake, so the later hint stays.
+                path = message.split()[0]
+                first = next((name for where, name, rows in unnamed if where == path and keys <= rows), None)
+                # A feature rule no slip names changes every model: the availability check alone is charged.
+                if (not first and features and path in FEATURE_ROWS
+                        and (FEATURE_ROWS[path] is None or keys <= FEATURE_ROWS[path])):
+                    first = FEATURE_CHECK
+                if first:
+                    SHARED.add(check.name)
+                    message = (
+                        f'{error.found} Likely the {SAME_CAUSE} "{first}", so it costs no points here; fix that '
+                        f"check first and run the checks again. If this line stays, {error.hint}"
+                    )
+                else:
+                    unnamed.append((path, check.name, keys))
+                    features = features or check.name == FEATURE_CHECK
             if mistake and mistake in charged and ABSENT not in message:
                 results.append((check.name, None))
             else:

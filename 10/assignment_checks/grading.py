@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from _value_checks import run_checks
+from _value_checks import SHARED, run_checks
 
 
 # One value per check in _value_checks.CHECKS, in the same order: the coefficient
@@ -42,7 +42,8 @@ def grade_submission(submission_dir: Path) -> dict:
         )
     tests = []
     for (name, detail), max_score in zip(diagnostics, POINTS):
-        passed = detail is None
+        # A check that only repeats an earlier check's mistake keeps its points and still says what it found.
+        passed = detail is None or name in SHARED
         tests.append({"test-name": name, "passed": passed, "score": max_score if passed else 0,
                       "max-score": max_score, "detail": detail or ""})
     return {"schema": "datasci217/grading-result/v1", "score": sum(test["score"] for test in tests),

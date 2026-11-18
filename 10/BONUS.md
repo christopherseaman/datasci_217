@@ -123,7 +123,7 @@ search.fit(X_train, y_train)
 print(search.best_params_, round(search.best_score_, 3))  # {'max_depth': 3, 'min_samples_leaf': 4} 0.74
 ```
 
-The grid fit 18 settings and the random search 20; both land at a cross-validated AUC of 0.74. Shallow trees win because the cohort's risk is a smooth function of three columns.
+The grid fit 18 settings and the random search 20; both land at a cross-validated AUC of 0.74. Shallow trees win because the cohort's risk depends on only three columns, with one step at an A1c of 7%.
 
 ## Bayesian Optimization
 
@@ -336,7 +336,7 @@ Name: exp(coef), dtype: float64
 
 A **generalized additive model** adds smooth curves for individual features instead of requiring every relationship to be a straight line. The example lets SBP bend with age and with activity; interactions require additional terms such as `te(0, 1)`.
 
-This optional example requires `pygam`, which is not part of Lecture 10's recorded core environment. Add it to the demo folder's environment with `uv add pygam` (Lecture 03), or run `%pip install pygam` in Colab, before running the example.
+This optional example requires `pygam`, which is not part of Lecture 10's recorded core environment. pygam 0.12.0 needs scipy below 1.17 and the demo pins scipy 1.18.1, so the snippet below runs only in a separate environment with `pygam==0.12.0`, `scipy<1.17`, `pandas==3.0.5`, `scikit-learn`, and `matplotlib`, or after `%pip install pygam` in Colab.
 
 ### Reference Card: GAM Tools
 
@@ -707,13 +707,12 @@ with mlflow.start_run(run_name='rf_leaf20'):
     mlflow.sklearn.log_model(model, name='model', input_example=X_train.head(3),
                              skops_trusted_types=['sklearn.tree._tree.Tree'])
 
-print(mlflow.search_runs()[['tags.mlflow.runName', 'params.min_samples_leaf', 'metrics.cv_auc']].round(3))
+display(mlflow.search_runs()[['tags.mlflow.runName', 'params.min_samples_leaf', 'metrics.cv_auc']].round(3))
 ```
 
-```text
-  tags.mlflow.runName params.min_samples_leaf  metrics.cv_auc
-0           rf_leaf20                      20           0.729
-```
+|  | tags.mlflow.runName | params.min_samples_leaf | metrics.cv_auc |
+| --- | --- | --- | --- |
+| 0 | rf_leaf20 | 20 | 0.729 |
 
 The run logs a cross-validated AUC, so the test rows stay untouched for the final comparison.
 
@@ -737,7 +736,7 @@ encounters = pd.DataFrame({
 })
 
 history = encounters[encounters['admit_time'] < pd.Timestamp('2025-03-01')]
-print(history.groupby('patient_id').agg(
+display(history.groupby('patient_id').agg(
     n_encounters=('encounter_id', 'count'),
     mean_los=('los_days', 'mean'),
     max_los=('los_days', 'max'),
@@ -745,13 +744,11 @@ print(history.groupby('patient_id').agg(
 ))
 ```
 
-```text
-            n_encounters  mean_los  max_los  n_types
-patient_id                                          
-P01                    2      2.15      4.0        2
-P02                    1      0.10      0.1        1
-P03                    1      0.10      0.1        1
-```
+| patient_id | n_encounters | mean_los | max_los | n_types |
+| --- | --- | --- | --- | --- |
+| P01 | 2 | 2.15 | 4.0 | 2 |
+| P02 | 1 | 0.10 | 0.1 | 1 |
+| P03 | 1 | 0.10 | 0.1 | 1 |
 
 The three encounters after March 1 stay out of every feature.
 
@@ -782,16 +779,14 @@ cutoffs = pd.DataFrame({'patient_id': ['P01', 'P02', 'P03'],
 feature_matrix, feature_defs = ft.dfs(
     entityset=es, target_dataframe_name='patients', cutoff_time=cutoffs,
     agg_primitives=['count', 'mean', 'max', 'num_unique'], trans_primitives=[])
-print(feature_matrix.to_string())
+display(feature_matrix)
 ```
 
-```text
-            birth_year  COUNT(encounters)  MAX(encounters.los_days)  MEAN(encounters.los_days)  NUM_UNIQUE(encounters.encounter_type)
-patient_id                                                                                                                           
-P01               1948                  2                       4.0                       2.15                                      2
-P02               1971                  1                       0.1                       0.10                                      1
-P03               1990                  1                       0.1                       0.10                                      1
-```
+| patient_id | birth_year | COUNT(encounters) | MAX(encounters.los_days) | MEAN(encounters.los_days) | NUM_UNIQUE(encounters.encounter_type) |
+| --- | --- | --- | --- | --- | --- |
+| P01 | 1948 | 2 | 4.0 | 2.15 | 2 |
+| P02 | 1971 | 1 | 0.1 | 0.10 | 1 |
+| P03 | 1990 | 1 | 0.1 | 0.10 | 1 |
 
 The counts match the pandas version, because `cutoff_time` applies the same March 1 boundary.
 
@@ -861,25 +856,30 @@ april = cohort.sample(400, random_state=2).assign(a1c=lambda d: (d['a1c'] + 0.4)
 
 for month, batch in {'March': march, 'April': april}.items():
     print(month)
-    print(ks_drift(X_train, batch, ['age', 'bmi', 'sbp', 'a1c']))
+    display(ks_drift(X_train, batch, ['age', 'bmi', 'sbp', 'a1c']))
 ```
 
 ```text
 March
-        ks_stat  p_value   flag
-column                         
-age       0.023    0.991  False
-bmi       0.046    0.467  False
-sbp       0.024    0.984  False
-a1c       0.038    0.679  False
-April
-        ks_stat  p_value   flag
-column                         
-age       0.048    0.412  False
-bmi       0.045    0.490  False
-sbp       0.037    0.715  False
-a1c       0.283    0.000   True
 ```
+
+| column | ks_stat | p_value | flag |
+| --- | --- | --- | --- |
+| age | 0.023 | 0.991 | False |
+| bmi | 0.046 | 0.467 | False |
+| sbp | 0.024 | 0.984 | False |
+| a1c | 0.039 | 0.679 | False |
+
+```text
+April
+```
+
+| column | ks_stat | p_value | flag |
+| --- | --- | --- | --- |
+| age | 0.048 | 0.412 | False |
+| bmi | 0.045 | 0.490 | False |
+| sbp | 0.037 | 0.715 | False |
+| a1c | 0.283 | 0.000 | True |
 
 April flags only A1c (KS 0.283). The next step is a call to the lab about the assay, not an automatic retrain: retraining requires explicit review, leakage checks, and validation against the current model.
 
@@ -904,16 +904,18 @@ new_model = np.where(rng.random(1000) < 0.87, sepsis, ~sepsis)
 
 table = pd.crosstab(old_alert == sepsis, new_model == sepsis,
                     rownames=['old correct'], colnames=['new correct'])
-print(table)
+display(table)
 result = mcnemar(table, exact=False, correction=True)
 print(f"Accuracy old {np.mean(old_alert == sepsis):.3f}, new {np.mean(new_model == sepsis):.3f}, p = {result.pvalue:.1e}")
 ```
 
+| new correct | False | True |
+| --- | --- | --- |
+| old correct |  |  |
+| False | 20 | 179 |
+| True | 109 | 692 |
+
 ```text
-new correct  False  True 
-old correct              
-False           20    179
-True           109    692
 Accuracy old 0.801, new 0.871, p = 4.8e-05
 ```
 

@@ -280,7 +280,6 @@ ax.set_xlabel('Fitted SBP (mmHg)')
 ax.set_ylabel('Residual (observed - fitted)')
 fig.savefig('residuals_vs_fitted.png', dpi=150, bbox_inches='tight')
 plt.show()
-plt.close(fig)
 ```
 
 |  | observed | fitted | residual |
@@ -344,7 +343,7 @@ Comparing the errors on these sets shows two failure modes:
 - **Underfitting**, or high **bias**: a model too rigid to capture the pattern, so both errors stay high.
 - More flexibility lowers bias and raises variance; validation error is lowest in between (degree 1 below).
 
-![Curves fit to 30 diabetes patients' progression against BMI and scored on 402 others in the same BMI range: degree 0 underfits (train MAE 64, validation 68), degree 1 fits (52, 53), and degree 10 overfits (45, 82).](media/overfit_polynomial.png)
+![Curves fit to 30 diabetes patients' progression against BMI and scored on 402 others in the same BMI range: degree 0 underfits (train mean absolute error, MAE, 64, validation 68), degree 1 fits (52, 53), and degree 10 overfits (45, 82).](media/overfit_polynomial.png)
 
 - Independent rows with no time order: split at random (`train_test_split`, in the next topic).
 - A model that will predict the _future_: split into chronological blocks of target times.
@@ -526,7 +525,7 @@ print(model.predict(clinic_valid).round(1))  # [141.6 147.7]
 
 ### Reference Card: `sklearn.metrics`
 
-Import each by name: `from sklearn.metrics import mean_absolute_error, r2_score, roc_auc_score, average_precision_score`.
+Import each by name: `from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, accuracy_score, precision_score, recall_score, roc_auc_score, average_precision_score, confusion_matrix, classification_report`.
 
 | Metric | Question it answers | Function | Typical output |
 | --- | --- | --- | --- |
@@ -707,7 +706,7 @@ _"Did you ever think that maybe there's more to life than being really, really, 
 | `train_test_split(..., stratify=y)` | Split a class label so each part keeps the same share of each class; without it a small split can land lopsided. | Same four parts as before |
 | `RandomForestClassifier(n_estimators=..., random_state=...)` / `RandomForestRegressor(...)` | Build a classification or regression forest from randomized trees (`from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor`). | Estimator |
 | `max_features=...` | How many features each question may choose from. Defaults to the square root of the count for `RandomForestClassifier` but to all of them for `RandomForestRegressor`; fewer features make the trees less alike. | Setting |
-| `max_depth=...`, `min_samples_split=...` | Limit how deep each tree grows and how many rows a question needs before it splits; smaller trees memorize less. | Settings |
+| `max_depth=...`, `min_samples_split=...`, `min_samples_leaf=...` | Limit how deep each tree grows, how many rows a question needs before it splits, and the fewest rows a leaf may hold; smaller trees memorize less. | Settings |
 | `n_jobs=-1` | Build trees on all CPU cores at once. | Setting |
 | `model.feature_importances_` | Read impurity-based feature importance scores (how much each feature's questions reduced error while training). Tree models only, and measured on the training fit; `permutation_importance` measures held-out reliance for any model. | Array; not causal evidence |
 
@@ -865,7 +864,7 @@ print(len(history.history['val_loss']), probability.shape)  # 10 (114,)
 - Dataset, implementation, hardware, and budget rule out universal rankings, so the same validation rows decide.
 - For a probability flag, also check **calibration**: whether predicted probabilities match observed rates, e.g. 30% of patients scored 0.3 are readmitted.
 
-![Validation accuracy on the same 114 biopsies: every model beats the majority-class baseline (0.6228, 71 of 114), and logistic regression ties the forest and two networks at 0.9737 (111 of 114).](media/model_comparison.png)
+![Validation accuracy on the same 114 biopsies: every model beats the majority-class baseline (0.6228, 71 of 114), and logistic regression ties the forest and the 64-32 network at 0.9737 (111 of 114).](media/model_comparison.png)
 
 ![xkcd 2400: Statistics. When the data are good enough, the answer is obvious without any statistics; better data settles what no model choice can.](media/xkcd_2400.png)
 

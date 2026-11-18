@@ -119,7 +119,7 @@ A straight line in age may miss a curve, and older patients' readings vary more.
 > The header line `age_band,patients,mean_residual,sd_residual`, then six rows, `18-39` to `80+`. The first reads about `18-39,24239,1.79,12.94`. Values may be rounded to one decimal.
 
 > **Checkpoint: `output/residuals_vs_fitted.png`**
-> A PNG of the step 5 scatter. The check confirms only that the file is a PNG.
+> A PNG of the step 5 scatter. The check confirms only that the file is a PNG image that is not blank.
 
 ## Task 2: Frame the prediction problem
 
@@ -177,7 +177,7 @@ Lecture 10's "Freeze, Then Test Once" section and Demo 2 step 8 show this step. 
 1. Predict the test rows once with the fitted `pipeline`, and name the result `test_predicted`.
 2. Build `test_metrics`, one row with `approach` `"linear_pipeline"` and its test `mae`, `rmse`, and `r2`. A dictionary of single values makes `pd.DataFrame()` stop with `If using all scalar values, you must pass an index`; put each value in a one-item list.
     - Expect: a test MAE of about 8.96 mmHg, close to validation's 9.01, so the frozen pipeline held up through the winter months.
-3. Build `errors`: `test`'s `clinic` column with two new columns, `error` (the actual `sbp_followup` minus the prediction) and `abs_error` (its absolute value).
+3. Build `errors`: `test`'s `clinic` column with two new columns, `error` (the actual `sbp_followup` minus the prediction) and `abs_error` (its absolute value, `.abs()` on the column).
 4. Build `clinic_errors`, one row per clinic with `clinic` as a column, with named aggregation: `test_visits` (the number of rows), `mae` (the mean `abs_error`), and `mean_error` (the mean `error`).
     - Expect: `rows: 8`. Eastmont's and Fruitvale's follow-ups run about 3.1 and 2.3 mmHg above the predictions; every other clinic is within 1.3. Those two clinics use manual cuffs, which read high, and the features carry no clinic; Lecture 10's "Code Snippet: Variation with Mixed Numeric and Categorical Columns" adds one.
 5. Save `test_metrics` to `TEST_METRICS_PATH` and `clinic_errors` to `CLINIC_ERRORS_PATH`, both without the index.

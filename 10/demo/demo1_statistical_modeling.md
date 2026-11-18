@@ -117,7 +117,7 @@ print("share missing BMI, age 80 and over:", round(missing[cohort["age"] >= 80].
       " under 80:", round(missing[cohort["age"] < 80].mean(), 3))
 ```
 
-Expect the formula `sbp ~ age + bmi + C(sex)`, then `rows used: 148219 of 159345`: `statsmodels` silently dropped the 11,126 patients with no BMI. Expect R-squared 0.13: age, BMI, and sex explain a modest share of SBP, which also depends on medication, activity, and a patient's own baseline. The missing BMIs are not spread evenly: Marina is missing 19.9%, every other clinic 5.3% to 7.8%, and patients 80 and over 11.1% against 6.8% for younger ones. The estimates describe patients with a recorded BMI, so Marina's patients and the oldest patients count less than their share.
+Expect the formula `sbp ~ age + bmi + C(sex)`, then `rows used: 148219 of 159345`: `statsmodels` silently dropped the 11,126 patients with no BMI. Expect R-squared 0.127: age, BMI, and sex explain a modest share of SBP, which also depends on medication, activity, and a patient's own baseline. The missing BMIs are not spread evenly: Marina is missing 19.9%, every other clinic 5.3% to 7.8%, and patients 80 and over 11.1% against 6.8% for younger ones. The estimates describe patients with a recorded BMI, so Marina's patients and the oldest patients count less than their share.
 
 ### 4. How much higher does SBP run per BMI unit?
 
@@ -160,7 +160,7 @@ display(results.get_prediction(new_patient).summary_frame(alpha=0.05).round(1))
 
 Expect a fitted 120.0 mmHg, a mean-response interval of 119.9 to 120.1, and a prediction interval of 89.8 to 150.2. The 148,219 rows pin down the _average_ for patients like her to within a fraction of a mmHg, but _her_ SBP could sit anywhere in a 60 mmHg range. More rows shrink the first interval, not the second.
 
-The slide version draws both intervals for every BMI from 18 to 45 at age 55, over a sample of real women aged 50 to 60.
+The slide version draws both intervals for every BMI from 18 to 45 at age 55, over a sample of real women aged 50 to 60; `np.linspace(18, 45, 50)` gives 50 evenly spaced values.
 
 ```python
 grid = pd.DataFrame({"age": 55, "bmi": np.linspace(18, 45, 50), "sex": "F"})
@@ -301,7 +301,7 @@ display(audit)
 
 Expect four `keep` rows and two `exclude (leakage)` rows. This week's mean _with_ late uploads looks like the same feature, but at 08:00 on Monday some of those readings are still on a phone.
 
-The care team also mentions that morning readings run high and that some night-shift patients measure around midnight. A week's mean reading time is a useful feature, but a plain mean of hours fails at midnight: readings at 23:00 and 01:00 average to 12:00. Averaging the sine and cosine of each hour keeps the mean on the clock face: (0, 1) is midnight, (1, 0) 06:00, (0, -1) noon, and (-1, 0) 18:00. The cell finds the patient whose readings straddle midnight most evenly and compares the two averages.
+The care team also mentions that morning readings run high and that some night-shift patients measure around midnight. A week's mean reading time is a useful feature, but a plain mean of hours fails at midnight: readings at 23:00 and 01:00 average to 12:00. Averaging the sine and cosine of each hour keeps the mean on the clock face: (0, 1) is midnight, (1, 0) 06:00, (0, -1) noon, and (-1, 0) 18:00. The cell finds the patient whose readings straddle midnight most evenly and compares the two averages; `assign(hour=...)` returns a copy with one added column.
 
 ```python
 scheduled = scheduled.assign(hour=scheduled["reading_time"].dt.hour + scheduled["reading_time"].dt.minute / 60)

@@ -6,7 +6,8 @@ README does, builds submissions in ignored `scratch/`, and confirms what each
 kind scores: a correct answer and the same answers written differently earn
 100; an empty folder and the untouched handout earn 0; one mistake per check
 costs exactly that check; each common slip is charged once, at the check that
-names its cause; and the handout's README, CHECKS.md, notebook, and checker
+names its cause; a mistake no slip names is charged once per file; a blank
+plot fails; and the handout's README, CHECKS.md, notebook, and checker
 files agree with the checks.
 
     uv run --python 3.13 --with numpy==2.3.3 --with pandas==3.0.5 --with pyarrow==25.0.0 \\
@@ -53,11 +54,17 @@ ARTIFACT_OF = {  # the short names the frozen variants use
 }
 
 
-def minimal_png() -> bytes:
+def png(width: int, height: int, color: int, rows: bytes) -> bytes:
+    """An 8-bit PNG from its filtered rows: color 0 is gray, 2 is RGB."""
     def chunk(kind: bytes, payload: bytes) -> bytes:
         return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload))
-    header = struct.pack(">IIBBBBB", 1, 1, 8, 0, 0, 0, 0)
-    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(b"\x00\x00")) + chunk(b"IEND", b"")
+    header = struct.pack(">IIBBBBB", width, height, 8, color, 0, 0, 0)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(rows)) + chunk(b"IEND", b"")
+
+
+def minimal_png() -> bytes:
+    """Two gray pixels, one black and one white: the smallest image that is not blank."""
+    return png(2, 1, 0, b"\x00\x00\xff")
 
 
 def load() -> dict[str, pd.DataFrame]:
@@ -305,6 +312,119 @@ def check_slips() -> None:
     print(f"slips: each of {len(value_checks.VARIANTS)} common mistakes costs one check and names its cause")
 
 
+def changed(path: str, key: str, **values) -> dict[str, pd.DataFrame]:
+    """The correct answers with one row's cells replaced."""
+    frames = correct()
+    table = frames[path].astype(object)
+    for column, value in values.items():
+        table.loc[table[table.columns[0]] == key, column] = value
+    frames[path] = table
+    return frames
+
+
+def check_shared_causes() -> None:
+    """A mistake no slip names is charged once per file; its later checks say "likely the same cause" and keep their hint."""
+    same = value_checks.SAME_CAUSE
+    validation, split = value_checks.VALIDATION.path, value_checks.SPLIT.path
+    # Persistence predicted from prior_sbp: its three metrics are wrong, and the rmse and r2 formulas are right.
+    result = graded(write(SCRATCH / "shared", changed(validation, "persistence", mae=11.18, rmse=14.04, r2=0.0048)),
+                    cli=True)
+    assert failing(result) == ["validation metrics: mae values"] and result["score"] == 97, failing(result)
+    for name in ("validation metrics: rmse values", "validation metrics: r2 values"):
+        message = detail(result, name)
+        assert f'{same} "validation metrics: mae values"' in message and "expected" in message, message
+        assert "If this line stays" in message and ("np.sqrt" in message or "r2_score" in message), message
+    # Fit rows cut with < in place of <=: six rows short, and the last target time a minute early.
+    result = graded(write(SCRATCH / "shared", changed(split, "fit", row_count=245355,
+                                                      last_target_time="2025-04-08T18:47:00Z")))
+    assert failing(result) == ["split summary: row_count values"], failing(result)
+    assert "on or before" in detail(result, "split summary: row_count values")
+    message = detail(result, "split summary: last_target_time values")
+    assert f'{same} "split summary: row_count values"' in message and "full timestamp" in message, message
+    # Two mistakes in the same rows, counts 100 short and times saved as dates: the time checks keep their hint.
+    frames = correct()
+    table = frames[split].astype(object)
+    table["row_count"] = table["row_count"].astype(int) - 100
+    for column in ("first_target_time", "last_target_time"):
+        table[column] = table[column].astype(str).str[:10]
+    frames[split] = table
+    result = graded(write(SCRATCH / "shared", frames), cli=True)
+    assert failing(result) == ["split summary: row_count values"] and result["score"] == 96, failing(result)
+    for column in ("first_target_time", "last_target_time"):
+        message = detail(result, f"split summary: {column} values")
+        assert f'Likely the {same} "split summary: row_count values"' in message, message
+        assert "run the checks again. If this line stays, fix it in" in message and "full timestamp" in message, message
+    # Wrong cells in different rows are two mistakes: each keeps its own hint and its own charge.
+    frames = changed(validation, "persistence", mae=11.18)
+    frames[validation].loc[frames[validation]["approach"] == "mean_baseline", "rmse"] = 15.5
+    result = graded(write(SCRATCH / "shared", frames))
+    assert failing(result) == ["validation metrics: mae values", "validation metrics: rmse values"], failing(result)
+    assert same not in detail(result, "validation metrics: rmse values")
+    # A cell holding the marker text is a wrong value: a check keeps its points by name, never by its message.
+    result = graded(write(SCRATCH / "shared", changed(validation, "persistence", mae=same)), cli=True)
+    assert failing(result) == ["validation metrics: mae values"] and result["score"] == 97, failing(result)
+    assert same in detail(result, "validation metrics: mae values")
+    print("shared causes: an unnamed mistake costs one check per file and the rest say same cause")
+
+
+def check_generous_cases() -> None:
+    """Keeping one leaky feature names that feature alone; mean imputation passes; a blank plot does not."""
+    # a1c_result kept (rule hours <= 24), with the model's metrics within tolerance: not the no-audit slip.
+    frames = changed(value_checks.AVAILABILITY.path, "a1c_result", available=True, decision="Keep")
+    result = graded(write(SCRATCH / "generous", frames))
+    assert failing(result) == ["availability: available values"], failing(result)
+    message = detail(result, "availability: available values")
+    assert "a1c_result has available True" in message and "callback_sbp" not in message, message
+
+    # a1c_result and callback_sbp kept (rule hours <= 72) and used by the models: one charge, at the availability
+    # check, and no message names refill_gap_days, which this table excludes.
+    for feature in ("a1c_result", "callback_sbp"):
+        table = frames[value_checks.AVAILABILITY.path]
+        table.loc[table["candidate_feature"] == feature, ["available", "decision"]] = [True, "Keep"]
+    for path, values in ((value_checks.VALIDATION.path, {"mae": 8.3515, "rmse": 10.4579, "r2": 0.4482}),
+                         (value_checks.TEST_METRICS.path, {"mae": 8.3375, "rmse": 10.4646, "r2": 0.4454})):
+        table = frames[path].astype(object)
+        for column, value in values.items():
+            table.loc[table["approach"] == "linear_pipeline", column] = value
+        frames[path] = table
+    frames[value_checks.CLINIC_ERRORS.path]["mae"] -= 0.6
+    result = graded(write(SCRATCH / "generous", frames), cli=True)
+    assert failing(result) == ["availability: available values"] and result["score"] == 97, failing(result)
+    assert not any("refill_gap_days" in test["detail"] for test in result["tests"])
+    for name in ("validation metrics: mae values", "test metrics: r2 value", "clinic errors: mae values"):
+        assert f'{value_checks.SAME_CAUSE} "availability: available values"' in detail(result, name), name
+
+    # SimpleImputer(strategy="mean") moves each clinic's errors by about 0.01 mmHg.
+    frames = correct()
+    clinics = frames[value_checks.CLINIC_ERRORS.path]
+    clinics["mean_error"] += 0.01
+    clinics["mae"] -= 0.01
+    assert graded(write(SCRATCH / "generous", frames))["score"] == 100
+    clinics["mean_error"] += 0.2
+    assert failing(graded(write(SCRATCH / "generous", frames))) == ["clinic errors: mean_error values"]
+
+    # One color throughout is blank, however the PNG row filters (0 None, 1 Sub, 2 Up, 3 Average, 4 Paeth) store it.
+    white, zero = b"\xff\xff\xff", b"\x00\x00\x00"
+    blank = {
+        "1x1": png(1, 1, 0, b"\x00\xff"),
+        "unfiltered": png(3, 2, 2, (b"\x00" + white * 3) * 2),
+        "sub and up": png(3, 3, 2, b"\x01" + white + zero * 2 + b"\x02" + zero * 3 + b"\x01" + white + zero * 2),
+        "average and paeth": png(3, 3, 2, b"\x03" + white + b"\x80\x80\x80" * 2 + b"\x04" + zero * 3
+                                 + b"\x03" + b"\x80\x80\x80" + zero * 2),
+    }
+    for label, image in blank.items():
+        result = graded(write(SCRATCH / "generous", correct(), png=image))
+        assert failing(result) == ["residual plot: PNG image"], (label, failing(result))
+        assert "blank" in detail(result, "residual plot: PNG image"), label
+    drawn = {
+        "one dark pixel": png(3, 2, 2, b"\x00" + white * 3 + b"\x00" + white * 2 + zero),
+        "one dark pixel, filtered": png(3, 2, 2, b"\x01" + white + zero * 2 + b"\x02" + zero * 2 + b"\x01\x01\x01"),
+    }
+    for label, image in drawn.items():
+        assert graded(write(SCRATCH / "generous", correct(), png=image))["score"] == 100, label
+    print("generous cases: one leaky feature named alone, mean imputation passes, blank plots fail")
+
+
 def check_missing_file() -> None:
     for artifact in value_checks.ARTIFACTS:
         frames = {path: table for path, table in correct().items() if path != artifact.path}
@@ -389,6 +509,8 @@ def run() -> None:
     check_scores()
     check_single_mistakes()
     check_slips()
+    check_shared_causes()
+    check_generous_cases()
     check_missing_file()
     check_readme()
     check_handout_files()
