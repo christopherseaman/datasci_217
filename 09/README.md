@@ -24,17 +24,17 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 <callout icon="🧭" color="blue_bg">
 	# This Lecture
 	## Covers
-	- **Dated data**: timestamps, periods, panels, Python `datetime`, the DatetimeIndex, frequency grids, and calendar slicing.
-	- **Resampling and rolling windows**: time bins and their edges, upsampling, per-patient grids, gap runs, and count and time windows.
-	- **Time series visualization**: spacing, level, and profile checks, raw readings under a smoother, line breaks at gaps, and seasonal bars.
-	- **Clocks and honest history**: UTC conversion, clock changes, grouped lags, past-only windows, and availability at prediction time.
+	- **Dated data**: timestamps, panels, Python `datetime`, the DatetimeIndex, and calendar slicing.
+	- **Resampling and rolling windows**: time bins, missing readings, per-patient grids, gap runs, and count and time windows.
+	- **Time series visualization**: spacing and profile checks, a smoother over raw readings, and line breaks at gaps.
+	- **Clocks and honest history**: UTC conversion, clock changes, past-only windows, and availability at prediction time.
 	- **Readings**: McKinney, _Python for Data Analysis_ (3rd ed.) 9.2, 11.1 to 11.4, 11.6, and 11.7.
 	## Enables
 	- Parse text timestamps into a DatetimeIndex and select one day or week of readings.
-	- Resample heart rates into daily means and counts, and count gap runs on a per-patient hourly grid.
+	- Resample heart rates into daily means and count gap runs on a per-patient hourly grid.
 	- Plot a 7-day rolling mean over raw daily readings in matplotlib.
 	- Convert local clinic times to UTC and flag repeated or skipped clock times.
-	- Build previous-reading and past-only rolling-mean features per patient with `groupby()`, `shift()`, and `rolling(..., closed='left')`.
+	- Build past-only features per patient with `groupby()`, `shift()`, and `rolling(..., closed='left')`.
 </callout>
 
 # Understanding Time Series Data
@@ -86,7 +86,7 @@ _Some time series are as regular as a Swiss watch; others are as unpredictable a
 - `datetime.strptime(text, format)`: Parse text into a datetime ("string parse time").
 - `dt.strftime(format)`: Format a datetime as text ("string format time").
 - `timedelta(days=30)`: A duration (also `hours=`, `weeks=`) to add to a datetime. Subtracting two datetimes returns a `timedelta`; `.days` reads its whole days.
-- Format codes: `%Y` four-digit year, `%m` month 01-12, `%d` day, `%H` 24-hour hour, `%M` minute, `%S` second, `%I` with `%p` 12-hour clock with AM/PM, `%B` full month name (`%b`: `Mar`), `%A` weekday name (`%a`: `Thu`).
+- Format codes: `%Y` four-digit year, `%m` month 01-12, `%d` day, `%H` 24-hour hour, `%M` minute, `%S` second, `%I` with `%p` 12-hour clock with AM/PM, `%B` full month name (`%b`: `Mar`), `%A` weekday name.
 
 ### Code Snippet: Python `datetime`
 
@@ -245,7 +245,7 @@ Freq: D, Name: value, dtype: int64
 - `ts.resample('D').mean()`: Daily means, labeled with the date; also `.sum()`, `.max()`, `.min()`, `.std()`
 - `ts.resample('W').mean()`: Weekly means, labeled with each week's ending Sunday
 - `ts.resample('ME').mean()`: Monthly means, labeled with the month's last day
-- `ts.resample('D').count()`: Non-missing readings per bin; `0` marks an empty bin
+- `ts.resample('D').count()`: Non-missing readings per bin; `0` marks an empty bin; report it beside every mean or sum
 - `ts.resample('D').agg(['mean', 'std', 'min', 'max'])`: Multiple aggregations
 - `df.resample('W').agg({'temperature': ['mean', 'std'], 'heart_rate': 'mean'})`: Different summaries per column; `df.resample('ME').mean()` on a table with a text column raises `TypeError`
 
@@ -274,7 +274,6 @@ Aggregations skip `NaN`, and `resample()` still returns a row for a bin with not
 
 ### Reference Card: Missing Readings in a Bin
 
-- `ts.resample('h').count()`: Non-missing readings per bin; report it beside every mean or sum.
 - `ts.resample('h').size()`: Rows per bin, missing or not; `size` above `count` means blank readings, and `size` of `0` means no rows at all.
 - `ts.resample('h').sum(min_count=1)`: `NaN` in place of `0` for a bin with no readings.
 
@@ -496,7 +495,6 @@ A patient with no gaps has no rows in `runs`; report 0 runs for them.
 - `ts.rolling('7D').mean()`: A **time window**: the readings in the 7 days ending at each row, for irregular data such as clinic visits; needs a sorted DatetimeIndex; starts at one nonmissing reading
 - `ts.rolling('2h', closed='left').mean()`: A past-only time window: at 11:00 it covers 09:00 up to but excluding 11:00
 - `ts.rolling(window=7, min_periods=3).mean()`: Start once the window holds 3 readings, not all 7
-- `ts.rolling(window=7, center=True).mean()`: A **centered window**: 3 rows before, the current row, and 3 after, so each value uses later readings; for describing a finished series
 - `ax.fill_between(ts.index, mean - std, mean + std, alpha=0.2)`: Shade the figure's band on an `Axes`; `alpha` keeps the lines visible
 
 ### Code Snippet: Count Window vs Time Window
@@ -621,15 +619,14 @@ plt.show()
 
 ### Reference Card: Time Zones
 
-- `ts.tz_localize('America/New_York')`: Attach the recording zone to a naive DatetimeIndex; clock times are unchanged.
+- `ts.tz_localize('America/New_York')`: Attach the recording zone, by its full IANA name, to a naive DatetimeIndex; clock times are unchanged.
 - `ts.tz_convert('UTC')`: Show aware timestamps in another zone; instants are unchanged. Raises `TypeError` on naive data.
 - `df['t'].dt.tz_localize(...)` and `.dt.tz_convert(...)`: The same operations on a datetime column.
 - `ts.index.tz` / `s.dt.tz`: The attached zone; `None` means naive.
 - `ax.set(xlabel='Time (UTC)')`: Name the zone on a plot's time axis.
 - `pd.to_datetime(text, utc=True)`: Parse text that has an offset or is known UTC to aware UTC values.
-- `pd.Timestamp('2024-03-09 14:00', tz='UTC')`, `pd.Timestamp.now(tz='UTC')`, `pd.date_range(..., tz='UTC')`: Build aware timestamps and ranges directly; `.tz_convert(...)` works on each.
+- `pd.Timestamp('2024-03-09 14:00', tz='UTC')`, `pd.date_range(..., tz='UTC')`: Build aware timestamps and ranges directly.
 - `df['t_utc'] < pd.Timestamp('2024-01-01', tz='America/New_York')`: Give a cutoff a `tz`: the column's, or the local zone for a local-midnight cutoff; pandas compares instants (05:00 UTC here). A naive `Timestamp` here or in a subtraction raises `TypeError`.
-- Zone names: full IANA time-zone database names (the standard world list), such as `'America/New_York'`; `'US/Eastern'` exists only for backward compatibility.
 
 ### Code Snippet: Local Clinic Times to UTC
 

@@ -648,6 +648,8 @@ Freq: 24h, dtype: int64
 
 # Window Alignment Example
 
+A **centered window**, `ts.rolling(window=7, center=True)`, takes 3 rows before, the current row, and 3 after. Each value uses later readings, so it suits describing a finished series and never an alert.
+
 ## Code Snippet: Rolling Statistics
 
 ```python
