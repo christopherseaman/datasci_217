@@ -38,8 +38,6 @@ DataSci 217 is a practical introduction to the tools and reasoning used in Pytho
 
 [WSL Troubleshooting](wsl_troubleshooting.md)
 
-[tmux and SSH Cheat Sheet](tmux_ssh_cheat_sheet.md)
-
 # Course Format
 
 - **Lectures** explain concepts and are presentation materials, not notebooks intended to be executed from top to bottom.
@@ -56,10 +54,13 @@ DataSci 217 is a practical introduction to the tools and reasoning used in Pytho
 6. 2026-10-30 **Midterm Exam!** [https://github.com/UCSF-DataSci/ds217-26f-06](https://github.com/UCSF-DataSci/ds217-26f-06)
 7. 2026-11-06 [https://github.com/UCSF-DataSci/ds217-26f-07](https://github.com/UCSF-DataSci/ds217-26f-07)
 8. 2026-11-13 [https://github.com/UCSF-DataSci/ds217-26f-08](https://github.com/UCSF-DataSci/ds217-26f-08)
+9. 2026-12-04 [https://github.com/UCSF-DataSci/ds217-26f-09](https://github.com/UCSF-DataSci/ds217-26f-09)
 
 Just for fun:
 
 [Shell Workout](shell_workout.md)
+
+[`tmux` and SSH Practice](tmux_ssh_cheat_sheet.md)
 
 - [Advent of Code](https://adventofcode.com): short programming puzzles for continued practice.
 - [GameShell](https://github.com/phyver/GameShell): a game for practicing the Unix shell.

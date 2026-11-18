@@ -1,15 +1,15 @@
 ---
-title: tmux and SSH Cheat Sheet
+title: tmux and SSH Practice
 permalink: /tmux-ssh-cheat-sheet/
 notion:
-  title_line: "# tmux and SSH Cheat Sheet"
+  title_line: "# `tmux` and SSH Practice"
   role: reference
   status: mapped
   page_id: "41cd9fdd-1a1a-81d7-ad95-d43f6aeb502c"
   url: "https://app.notion.com/p/41cd9fdd1a1a81d7ad95d43f6aeb502c"
 ---
 
-# tmux and SSH Cheat Sheet
+# `tmux` and SSH Practice
 
 # Log In with SSH
 
