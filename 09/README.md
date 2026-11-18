@@ -381,35 +381,41 @@ The chain reads one step per line, and every grouped resample below reuses its f
 
 `per_patient = df.set_index('recorded_at').groupby('patient_id')`
 
-| Task | Code | Result |
-| --- | --- | --- |
-| Summarize bins | `per_patient['heart_rate'].resample('2h').agg(['mean', 'count'])` | One row per patient per bin, with a `(patient_id, recorded_at)` MultiIndex |
-| Name the summaries | `per_patient.resample('2h').agg(mean_hr=('heart_rate', 'mean'), n_rows=('source_row', 'count'))` | `(column, function)` pairs; `count` skips missing values, so counting `source_row` includes readings with no heart rate |
-| Build a grid | `per_patient[['heart_rate', 'source_row']].resample('h').asfreq()` | Each patient's hourly grid, first reading's hour to last; empty hours are `NaN`, off-hour readings are dropped |
-| Flatten | `.reset_index()` | `patient_id` and `recorded_at` as ordinary columns |
+**Task:**
 
-Checks before `asfreq()`:
-
-- `df['recorded_at'].eq(df['recorded_at'].dt.floor('h')).all()`: `True` only if every reading sits exactly on the hour.
-- `df.duplicated(['patient_id', 'recorded_at']).sum()`: Repeated keys; `0` means one row per slot. `df.groupby(['patient_id', 'recorded_at'], as_index=False)['heart_rate'].mean()` keeps one row per key.
-- `df['source_row'] = 1`: Grid-created rows get `NaN` there, so `grid['source_row'].isna()` separates them from real readings with a missing value.
+- Summarize bins
+    - `per_patient['heart_rate'].resample('2h').agg(['mean', 'count'])`
+    - Result: One row per patient per bin, with a `(patient_id, recorded_at)` MultiIndex
+- Name the summaries
+    - `per_patient.resample('2h').agg(mean_hr=('heart_rate', 'mean'), n_rows=('source_row', 'count'))`
+    - Result: `(column, function)` pairs; `count` skips missing values, so counting `source_row` includes readings with no heart rate
+- Flatten
+    - `.reset_index()`
+    - Result: `patient_id` and `recorded_at` as ordinary columns
+- Check that readings sit on the hour
+    - `df['recorded_at'].eq(df['recorded_at'].dt.floor('h')).all()`
+    - Result: `True` only if every reading is exactly on the hour; a grid drops the rest
+- Check for repeated keys
+    - `df.duplicated(['patient_id', 'recorded_at']).sum()`
+    - Result: `0` means one row per slot; otherwise average each key first with `df.groupby(['patient_id', 'recorded_at'], as_index=False)['heart_rate'].mean()`
+- Mark real rows
+    - `df['source_row'] = 1`
+    - Result: Grid-created rows get `NaN` there, so `grid['source_row'].isna()` separates them from real readings with a missing value
+- Build a grid
+    - `per_patient[['heart_rate', 'source_row']].resample('h').asfreq()`
+    - Result: Each patient's hourly grid, first reading's hour to last; empty hours are `NaN`
 
 ### Code Snippet: Hourly Grid per Patient
 
 `vitals` has datetime `recorded_at` on March 1, 2024: P1 has 72 bpm at 08:00 and a row with no heart rate at 11:00; P2 has 90 and 94 at 09:00 and 10:00.
 
 ```python
-print(vitals['recorded_at'].eq(vitals['recorded_at'].dt.floor('h')).all())
 vitals['source_row'] = 1
 per_patient = vitals.set_index('recorded_at').groupby('patient_id')
 grid = per_patient[['heart_rate', 'source_row']].resample('h').asfreq().reset_index()
 grid['grid_created'] = grid['source_row'].isna()
 grid['value_missing'] = grid['source_row'].notna() & grid['heart_rate'].isna()
 display(grid.drop(columns='source_row'))
-```
-
-```text
-True
 ```
 
 |  | patient_id | recorded_at | heart_rate | grid_created | value_missing |
@@ -431,9 +437,17 @@ A **gap run** is consecutive grid hours with no reading, such as a monitor unplu
 
 ### Reference Card: Gap Runs
 
-- `df['source_observed'] = ~df['grid_created']`: `True` for real rows, even with a missing value; for readings off the hour, use `hourly['n_rows'] > 0` on a grouped `resample('h')` count.
-- `df['run_id'] = df.groupby('patient_id')['source_observed'].cumsum()`: Running count of each patient's real readings (`cumsum()` counts `True` as 1).
-- `df[~df['source_observed']].groupby(['patient_id', 'run_id']).size()`: Each gap run's length in hours; count the runs and take their `max()` per patient.
+**Task:**
+
+- Flag real rows
+    - `df['source_observed'] = ~df['grid_created']`
+    - Result: `True` for real rows, even with a missing value; for readings off the hour, use `hourly['n_rows'] > 0` on a grouped `resample('h')` count
+- Number the runs
+    - `df['run_id'] = df.groupby('patient_id')['source_observed'].cumsum()`
+    - Result: Running count of each patient's real readings (`cumsum()` counts `True` as 1)
+- Measure each gap run
+    - `df[~df['source_observed']].groupby(['patient_id', 'run_id']).size()`
+    - Result: Each gap run's length in hours; count the runs and take their `max()` per patient
 
 ### Code Snippet: Count Gap Runs per Patient
 
@@ -728,14 +742,28 @@ Sort by patient and time first: `shift()` reads row order, so on unsorted rows a
 
 ### Reference Card: Past-Only Panel Features
 
-| Task | Code | Result |
-| --- | --- | --- |
-| Order each history | `df.sort_values(['patient_id', 'recorded_at'])` | Patients together, oldest reading first |
-| Previous value | `df.groupby('patient_id')['heart_rate'].shift(1)` | Same-patient previous reading; `NaN` on each patient's first row |
-| Next value (the one a score predicts) | `df.groupby('patient_id')['heart_rate'].shift(-1)` | Same-patient next reading; never use this later value as a current feature |
-| Change | `df.groupby('patient_id')['heart_rate'].diff()` | Current minus previous, same patient |
-| Mean of previous n readings | `df.groupby('patient_id')['heart_rate'].transform(lambda s: s.shift(1).rolling(n, min_periods=1).mean())` | Excludes the current row; aligned to the original rows |
-| Mean over previous 2 hours | `df.set_index('recorded_at').groupby('patient_id')['heart_rate'].rolling('2h', closed='left').mean()` | `closed='left'` excludes the current time; `reset_index()`, then `merge(..., validate='one_to_one')` it back |
+`hr = df.groupby('patient_id')['heart_rate']`
+
+**Task:**
+
+- Order each history
+    - `df.sort_values(['patient_id', 'recorded_at'])`
+    - Result: Patients together, oldest reading first; do this before building `hr`
+- Previous value
+    - `hr.shift(1)`
+    - Result: Same-patient previous reading; `NaN` on each patient's first row
+- Next value (the one a score predicts)
+    - `hr.shift(-1)`
+    - Result: Same-patient next reading; never use this later value as a current feature
+- Change
+    - `hr.diff()`
+    - Result: Current minus previous, same patient
+- Mean of previous n readings
+    - `hr.transform(lambda s: s.shift(1).rolling(n, min_periods=1).mean())`
+    - Result: Excludes the current row; aligned to the original rows
+- Mean over previous 2 hours
+    - `df.set_index('recorded_at').groupby('patient_id')['heart_rate'].rolling('2h', closed='left').mean()`
+    - Result: `closed='left'` excludes the current time; `reset_index()`, then `merge(..., validate='one_to_one')` it back
 
 ### Code Snippet: Grouped Past-Only Features
 
