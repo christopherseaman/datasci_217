@@ -696,7 +696,7 @@ A ward census exported daily infers `'D'`. One patient's clinic visits, a week a
 | `'QS'` / `'QE'` | Quarter start / end | Quarterly assessment |
 | `'YS'` / `'YE'` | Year start / end | Annual summary |
 
-Custom holiday calendars are in [Custom Business Day Frequencies](#custom-business-day-frequencies). Use the current timestamp aliases: pandas 3 rejects older `'Q'`, `'A'`, and `'Y'` aliases.
+Custom holiday calendars are in the Custom Business Day Frequencies section. Use the current timestamp aliases: pandas 3 rejects older `'Q'`, `'A'`, and `'Y'` aliases.
 
 ### Code Snippet: Quarterly and Annual Schedules
 

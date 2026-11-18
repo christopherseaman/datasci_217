@@ -31,7 +31,7 @@ echo "Made ~/11-demo with the Lecture 11 demo notebooks, pyproject.toml, and uv.
 # The piped script cannot change the student's shell directory, so it builds the environment here.
 command -v uv >/dev/null 2>&1 || { echo "uv is not installed. Install it from https://docs.astral.sh/uv/ and run this script again."; exit 1; }
 uv venv --seed
-uv sync
+uv sync || { echo "uv sync stopped, often on a slow download. To finish: cd ~/11-demo, then run uv sync, then open the folder in VS Code."; exit 1; }
 
 # VS Code selects the folder's .venv for notebooks.
 if command -v code >/dev/null 2>&1; then
