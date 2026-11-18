@@ -485,6 +485,38 @@ def alternative(root: Path) -> None:
     assert re.search(r";\d+,\d", (out / "q1_station_coverage.csv").read_text(encoding="utf-8"))
 
 
+def utc_boundaries(root: Path, monthly: bool, drop: int = 0, month_zone: str = TZ) -> None:
+    """Rebuild Q6 (and the Q5 monthly summary) from the Q4 file with boundaries at UTC midnight, not local midnight.
+
+    `drop` also leaves that many rows out of the test X and y files and the split summary. `month_zone="UTC"`
+    takes the Q5 year and month from UTC time, as a student who never converts to local time does.
+    """
+    out = root / "output"
+    features = pd.read_csv(out / "q4_features.csv")
+    eligible = features[features["model_eligible"]].copy()
+    target = pd.to_datetime(eligible["target_timestamp_utc"], utc=True)
+    split = np.where(target < pd.Timestamp("2024-01-01", tz="UTC"), "train",
+                     np.where(target < pd.Timestamp("2024-07-01", tz="UTC"), "validation", "test"))
+    if monthly:
+        training = eligible[split == "train"].copy()
+        local = target[split == "train"].dt.tz_convert(month_zone)
+        training["year"], training["month"] = local.dt.year, local.dt.month
+        training.groupby(["station_name", "year", "month"])["target_air_temperature_c"].agg(
+            n_observed="count", mean_air_temperature_c="mean", std_air_temperature_c="std",
+            min_air_temperature_c="min", max_air_temperature_c="max").reset_index().to_csv(
+            out / "q5_monthly_station_summary.csv", index=False)
+    rows = []
+    for name in grading.SPLITS:
+        part = eligible[split == name].sort_values(["target_timestamp_utc", "station_name"])
+        part = part.iloc[drop:] if name == "test" else part
+        part[["row_id", "station_name", "cutoff_timestamp_utc", "target_timestamp_utc", *NUMERIC]].to_csv(
+            out / f"q6_X_{name}.csv", index=False)
+        part[["row_id", "target_air_temperature_c"]].to_csv(out / f"q6_y_{name}.csv", index=False)
+        rows.append({"split": name, "n_rows": len(part), "target_start": part["target_timestamp_utc"].min(),
+                     "target_end": part["target_timestamp_utc"].max(), "n_features": len(FEATURES)})
+    pd.DataFrame(rows).to_csv(out / "q6_split_summary.csv", index=False)
+
+
 def mutations() -> list[tuple[str, str, object, dict[str, int]]]:
     """(label, file, change, expected losses) for single mistakes."""
     def column(name, func):
@@ -619,15 +651,32 @@ def run() -> None:
         (image_root / "output").mkdir(parents=True)
         image_path = image_root / "output/q1_visualizations.png"
         for mode in ("1", "L", "P", "RGB", "RGBA", "I;16"):
-            Image.new(mode, (1, 1)).save(image_path)
+            picture = Image.new(mode, (3, 3))
+            picture.putpixel((1, 1), 1)
+            picture.save(image_path)
             assert grading.valid_png(image_root, image_path.name) == (True, ""), mode
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        blanks = [("an empty figure", lambda: plt.figure().savefig(image_path))]
+        blanks += [(f"a one-color {mode} image", lambda mode=mode: Image.new(mode, (3, 3)).save(image_path))
+                   for mode in ("L", "RGB", "RGBA", "I;16")]  # Pillow saves a small "P" palette under 8 bits
+        for label, save in blanks:
+            save()
+            valid, message = grading.valid_png(image_root, image_path.name)
+            assert not valid and "is blank" in message, (label, valid, message)
+        (image_root / "report.md").write_text("![Q1](output/q1_visualizations.png)\n", encoding="utf-8")
+        note = grading.check_report(grading.Submission(image_root), 0)[1]
+        assert "output/q1_visualizations.png is blank or not a readable PNG" in note, note
+        plt.close("all")
+        Image.new("RGB", (3, 3)).save(image_path)
         image = image_path.read_bytes()
         for label, broken in (("signature-only", image[:8]), ("header-only", image[:24]),
                               ("missing-end", image[:-12]), ("bad-checksum", image[:-1] + b"x")):
             image_path.write_bytes(broken)
             valid, message = grading.valid_png(image_root, image_path.name)
             assert not valid and "complete PNG" in message, (label, valid, message)
-        print("real PNG encodings accepted; truncated images and bad checksums rejected")
+        print("real PNG encodings accepted; blank, truncated, and bad-checksum images rejected")
 
         correct = base / "correct"
         solve(correct)
@@ -665,6 +714,7 @@ def run() -> None:
             assert not unexpected or set(unexpected) <= set(owned), (label, unexpected, details(result))
             assert (not lost if label == "weekday Monday=1" else bool(lost)) and all(result["tests"][i]["detail"] for i, t in enumerate(result["tests"])
                                                    if t["score"] < t["max-score"]), (label, lost)
+            assert label != "monthly one wrong mean" or "Only the last training month is off" not in details(result)
             print(f"single mistake '{label}': -{sum(lost.values())} ({', '.join(f'{k} -{v}' for k, v in lost.items())})")
 
         # A wrong upstream file costs only its own points: downstream files built from it still pass.
@@ -722,7 +772,7 @@ def run() -> None:
             parts["validation"][~move].to_csv(output / f"q6_{kind}_validation.csv", index=False)
         result, _ = checker(cutoff)
         assert losses(result) == {"Q6 q6_X_train/validation/test.csv: rows": 2}, details(result)
-        assert "target_timestamp_utc, not cutoff_timestamp_utc" in details(result), details(result)
+        assert "target_timestamp_utc (not cutoff_timestamp_utc)" in details(result), details(result)
         print(f"split on cutoff time ({len(moved)} rows moved in X and y): -2, in the X rows only, naming the cause")
 
         # Validation predictions overwritten by the test rows: the file's own checks, not the metrics built from
@@ -746,6 +796,91 @@ def run() -> None:
         result, _ = checker(semicolons)
         assert losses(result) == {"Q8 q8_station_metrics.csv": 1}, details(result)
         print("a wrong mae in a semicolon-separated q8_station_metrics.csv: -1, that check only")
+
+        # Feedback names a cause only for the mistake that has it. These read two checks in-process: no score changes.
+        hinted = copy(correct, base / "hints")
+        rewrite(hinted / "output" / "q8_test_metrics.csv",
+                lambda f: f.assign(rmse=(pd.to_numeric(f["rmse"]) ** 2).astype(str)))
+        score, feedback = grading.metrics_check("q8_test_metrics.csv", "q8_test_predictions.csv", "test", False)(
+            grading.Submission(hinted), 2)
+        assert score == 1 and "it is the MSE" in feedback, (score, feedback)
+        monthly_path = hinted / "output" / "q5_monthly_station_summary.csv"
+        monthly = pd.read_csv(monthly_path, dtype=str, keep_default_na=False)
+        last = (monthly["year"] == "2023") & (monthly["month"] == "12")
+        assert last.sum() == 2, monthly[["year", "month"]].drop_duplicates()
+        for change, hint_shown in ((lambda n: str(int(n) - 6), True), (lambda n: str(int(n) + 1), False),
+                                   (lambda n: "", False), (lambda n: "abc", False)):
+            monthly.assign(n_observed=monthly["n_observed"].where(~last, monthly["n_observed"].map(change))).to_csv(
+                monthly_path, index=False)
+            score, feedback = grading.check_monthly(grading.Submission(hinted), 2)
+            assert score == 1 and ("Only the last training month is off" in feedback) == hint_shown, (score, feedback)
+        print("squared rmse values: feedback names the MSE; December counts 6 short: feedback names the last "
+              "training month, and counts 1 too high, empty, or text do not get that cause")
+
+        # The MSE saved as rmse in all three metrics files is one mistake: charged in the first file, and the
+        # later files say "Same cause" and keep their points. A second, independent mistake still costs.
+        square = lambda f: f.assign(rmse=(pd.to_numeric(f["rmse"]) ** 2).astype(str))  # noqa: E731
+        metric_files = ["q7_validation_metrics.csv", "q8_test_metrics.csv", "q8_station_metrics.csv"]
+        mse = copy(correct, base / "mse-everywhere")
+        for name in metric_files:
+            rewrite(mse / "output" / name, square)
+        result, _ = checker(mse)
+        assert losses(result) == {"Q7 q7_validation_metrics.csv": 1}, details(result)
+        assert details(result).count("Same cause as the q7_validation_metrics.csv check") == 2, details(result)
+        rewrite(mse / "output" / "q8_station_metrics.csv", lambda f: f.assign(mae=["9.0", *f["mae"][1:]]))
+        result, _ = checker(mse)
+        assert losses(result) == {"Q7 q7_validation_metrics.csv": 1, "Q8 q8_station_metrics.csv": 1}, details(result)
+        late = copy(correct, base / "mse-in-q8-only")
+        for name in metric_files[1:]:
+            rewrite(late / "output" / name, square)
+        result, _ = checker(late)
+        assert losses(result) == {"Q8 q8_test_metrics.csv": 1}, details(result)
+        assert details(result).count("Same cause as the q8_test_metrics.csv check") == 1, details(result)
+        print("the MSE saved as rmse in three files: -1, in the first file only, the others say same cause; "
+              "with a wrong mae as well: -1 more; in the Q8 files only: -1, in q8_test_metrics.csv")
+
+        # UTC-midnight boundaries are charged only in the Q5 monthly summary: the Q6 rows say "Same cause" and
+        # keep their points. A missing row still costs. UTC boundaries in Q6 alone cost nothing, and the Q6
+        # rows name the boundary and the fix.
+        shifted = copy(correct, base / "utc-boundaries")
+        utc_boundaries(shifted, monthly=True)
+        result, _ = checker(shifted)
+        assert losses(result) == {"Q5 q5_monthly_station_summary.csv": 1}, details(result)
+        assert details(result).count("Same cause as the q5_monthly_station_summary.csv check") == 3, details(result)
+        utc_boundaries(shifted, monthly=True, drop=1)
+        result, _ = checker(shifted)
+        assert losses(result) == {"Q5 q5_monthly_station_summary.csv": 1,
+                                  "Q6 q6_X_train/validation/test.csv: rows": 1}, details(result)
+        splits_only = copy(correct, base / "utc-boundaries-in-q6-only")
+        utc_boundaries(splits_only, monthly=False)
+        result, _ = checker(splits_only)
+        assert losses(result) == {}, details(result)
+        assert "Same cause" not in details(result), details(result)
+        assert details(result).count("split at UTC midnight, which costs nothing here") == 3, details(result)
+        utc_boundaries(splits_only, monthly=False, drop=1)
+        result, _ = checker(splits_only)
+        assert losses(result) == {"Q6 q6_X_train/validation/test.csv: rows": 1}, details(result)
+        print("UTC-midnight boundaries in Q5 and Q6: -1, in the Q5 monthly summary only, the Q6 rows say same cause; "
+              "with a test row missing as well: -1 more; in Q6 only: 0, the X rows name the boundary; "
+              "in Q6 only with a test row missing: -1")
+
+        # A student who never converts to local time has UTC boundaries and UTC months in Q5: still one charge,
+        # in Q5. UTC months with a local boundary (a row in 2024-01) show no UTC boundary: Q5 charges its extra
+        # rows, and the Q6 rows keep their points and name the boundary.
+        unconverted = copy(correct, base / "utc-boundaries-utc-months")
+        utc_boundaries(unconverted, monthly=True, month_zone="UTC")
+        result, _ = checker(unconverted)
+        assert losses(result) == {"Q5 q5_monthly_station_summary.csv": 1}, details(result)
+        assert details(result).count("Same cause as the q5_monthly_station_summary.csv check") == 3, details(result)
+        rewrite(unconverted / "output" / "q5_monthly_station_summary.csv",
+                lambda f: pd.concat([f, f.drop_duplicates("station_name").assign(year="2024", month="1",
+                                                                               n_observed="6")]))
+        result, _ = checker(unconverted)
+        assert list(losses(result)) == ["Q5 q5_monthly_station_summary.csv"], details(result)
+        assert "Same cause" not in details(result), details(result)
+        assert details(result).count("split at UTC midnight, which costs nothing here") == 3, details(result)
+        print("UTC boundaries and UTC months in Q5, UTC boundaries in Q6: -1, in the Q5 monthly summary only; "
+              "UTC months with a 2024-01 row in Q5: charged in Q5 only, the Q6 rows name the boundary")
 
         # Without its predictions file a metrics file is judged on what can still be checked: the missing file
         # costs its own six points, while a model n that disagrees with the baseline's still costs the metrics.

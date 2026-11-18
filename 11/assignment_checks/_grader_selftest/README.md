@@ -11,10 +11,12 @@ Course-side QA for the final exam's checks, not a second grading mode. `run.py` 
 - 24 single variations accept an equivalent weekday numbering and charge actual mistakes, from a kept ambiguous row to a flipped error sign, only to their own checks; every lost point comes with feedback;
 - a mistake carried downstream is charged once, where it was made: a nonfinite model prediction does not also cost its unrecomputable metrics, a Q2 mistake carried into the Q3 panel, a kept ambiguous row the audit also records, a panel without its unobserved hours carried into Q4 (with feedback naming the join), and a split on cutoff time carried from X into y (with feedback naming the cause);
 - a missing test predictions file, or validation predictions overwritten with the test rows, costs only that file's checks (the feedback names the test split), while a metrics file without its predictions still loses points for a model row count that disagrees with the baseline's;
+- one mistake repeated in later files is charged in the first file that shows it, and the later checks say "Same cause" and keep their points: the MSE saved as `rmse` in the three metrics files costs 1 point, in the first of them, and UTC-midnight boundaries in Q5 and Q6 cost 1 point, in the Q5 monthly summary, with local or UTC months there; a second mistake beside either still costs, and UTC-midnight boundaries in Q6 alone cost nothing, with the X rows check naming the boundary and the fix;
+- squared `rmse` values get feedback naming the MSE, and 2023-12 counts that are short get feedback naming the last training month, while counts that are too high, empty, or text do not;
 - each notebook Checkpoint and `assignment.md` name every output file with its first line (or say it is a PNG image) and line count, and no handout page mentions a checker, GitHub Actions, or automated feedback.
 
 ```bash
 uv run --isolated --project 11/assignment --locked python3 11/assignment_checks/_grader_selftest/run.py
 ```
 
-It runs the checker 37 times, so it takes about nine minutes.
+It runs the checker 45 times, so it takes about ten minutes.

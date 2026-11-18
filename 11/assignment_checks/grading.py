@@ -21,7 +21,10 @@ present. A downstream value also passes when it follows from the student's own
 upstream file (the Q2 audit from the Q2 table, Q3 from Q2, Q4 from Q3, Q5 and
 Q6 from Q4, the y files from the X files, Q7 and Q8 from Q6, and metrics from
 the predictions they summarize), so one mistake is charged once, where it was
-made. Without predictions for the split's rows, the student model's metrics
+made. The MSE saved as rmse in several files is charged in the first file that
+shows it; the later checks keep their points and say "Same cause". UTC-midnight
+split boundaries are charged only in the Q5 monthly summary: the Q6 X rows check
+always accepts the rows they give, and names the boundary and the fix. Without predictions for the split's rows, the student model's metrics
 cannot be recomputed, so they need only be numbers with the right row count;
 without model_prediction, model_error need only hold numbers.
 """
@@ -482,20 +485,28 @@ def build_features(panel: pd.DataFrame) -> pd.DataFrame:
     return features
 
 
-def split_of(target_ns) -> np.ndarray:
-    local = as_utc(target_ns).dt.tz_convert(LOCAL_TZ)
-    return np.select([local.lt(VALIDATION_START).to_numpy(dtype=bool), local.lt(TEST_START).to_numpy(dtype=bool),
-                      local.notna().to_numpy(dtype=bool)], ["train", "validation", "test"], default="")
+def split_of(target_ns, zone: str = LOCAL_TZ, end: bool = False) -> np.ndarray:
+    """Each target time's split, with boundaries at midnight in `zone`.
+
+    zone="UTC" rebuilds the UTC-midnight boundary mistake; `end` also leaves out targets at or after the window's
+    end date at midnight in that zone.
+    """
+    stamps = as_utc(target_ns)
+    validation, test, stop = (pd.Timestamp(f"{start:%Y-%m-%d}", tz=zone)
+                              for start in (VALIDATION_START, TEST_START, WINDOW[1]))
+    return np.select([stamps.lt(validation).to_numpy(dtype=bool), stamps.lt(test).to_numpy(dtype=bool),
+                      (stamps.lt(stop) if end else stamps.notna()).to_numpy(dtype=bool)],
+                     ["train", "validation", "test"], default="")
 
 
-def build_training(features: pd.DataFrame) -> pd.DataFrame:
+def build_training(features: pd.DataFrame, zone: str = LOCAL_TZ) -> pd.DataFrame:
     eligible = features.loc[features["model_eligible"].to_numpy() == 1.0]
-    return eligible.loc[split_of(eligible["target_ts"]) == "train"]
+    return eligible.loc[split_of(eligible["target_ts"], zone) == "train"]
 
 
-def build_monthly(features: pd.DataFrame) -> pd.DataFrame:
-    training = build_training(features).copy()
-    local = as_utc(training["target_ts"]).dt.tz_convert(LOCAL_TZ)
+def build_monthly(features: pd.DataFrame, zone: str = LOCAL_TZ, month_zone: str = LOCAL_TZ) -> pd.DataFrame:
+    training = build_training(features, zone).copy()
+    local = as_utc(training["target_ts"]).dt.tz_convert(month_zone)
     training["year"], training["month"] = local.dt.year.to_numpy(), local.dt.month.to_numpy()
     grouped = training.groupby(["station", "year", "month"], sort=True)[TARGET]
     monthly = grouped.agg(n_observed="count", mean_air_temperature_c="mean", min_air_temperature_c="min",
@@ -510,9 +521,9 @@ def build_correlations(features: pd.DataFrame) -> pd.DataFrame:
     return build_training(features)[CURRENT_FEATURES].corr(method="pearson")
 
 
-def build_splits(features: pd.DataFrame) -> dict[str, pd.DataFrame]:
+def build_splits(features: pd.DataFrame, zone: str = LOCAL_TZ, end: bool = False) -> dict[str, pd.DataFrame]:
     eligible = features.loc[features["model_eligible"].to_numpy() == 1.0]
-    labels = split_of(eligible["target_ts"])
+    labels = split_of(eligible["target_ts"], zone, end)
     return {split: eligible.loc[labels == split].drop_duplicates("row_id").set_index("row_id") for split in SPLITS}
 
 
@@ -947,8 +958,8 @@ def split_rows_hint(split: str) -> Callable[[pd.Index, pd.Index], str]:
                     return (f"Its rows are the {other} split's rows, so the {other} table was saved under this "
                             f"name; save the {split} rows here")
                 return (f"The extra rows belong to the {other} period by their target time; assign each row to a "
-                        f"split by comparing target_timestamp_utc, not cutoff_timestamp_utc, with the local-midnight "
-                        f"boundary")
+                        f"split by comparing target_timestamp_utc (not cutoff_timestamp_utc) with a local-midnight "
+                        f"boundary such as pd.Timestamp(\"2024-01-01\", tz=\"America/Chicago\"), not UTC midnight")
         return ""
     return hint
 
@@ -978,15 +989,18 @@ def cell_matches(cell: str, want, kind: str, candidate: pd.DataFrame | None = No
 
 def cells_check(points: int, table: Table, keys: pd.Series, candidates: list[pd.DataFrame | None],
                 columns: dict[str, str], expected_keys, name: str, task: str, advice: str,
-                unverifiable: frozenset = frozenset(), extra_rows_cost: bool = False) -> tuple[int, str]:
+                unverifiable: frozenset = frozenset(), extra_rows_cost: bool = False,
+                hint: Callable[[list, bool], str] | None = None) -> tuple[int, str]:
     """Score every (row, column) cell of a small table against any candidate.
 
     A (key, column) cell in `unverifiable`, which no file can check, needs only hold a finite number. An extra row,
     such as a total or a row for another column, is ignored unless `extra_rows_cost`, for a table whose extra rows
     show a mistake: training months after the training period, or a second model scored on the test rows.
+    `hint` reads the wrong cells as (key, column, cell), and whether they are the only problems, and returns a
+    likely cause for the message; it changes no score.
     """
     rows = keyed(table.frame, keys).unique
-    right, total, problems = 0, 0, []
+    right, total, problems, wrong = 0, 0, [], []
     for key in expected_keys:
         for column, kind in columns.items():
             total += 1
@@ -1008,15 +1022,17 @@ def cells_check(points: int, table: Table, keys: pd.Series, candidates: list[pd.
                 reference_value = candidates[0].loc[key, column] if key in candidates[0].index else None
                 shown = time_label(reference_value) if kind == "time" else number_label(reference_value)
                 problems.append(f"{describe_key(key)} {column}: expected {shown}, found {cell or 'an empty cell'}")
+                wrong.append((key, column, cell))
     extra_keys = sorted(set(rows.index) - {str(key) for key in expected_keys}) if extra_rows_cost else []
     total += len(extra_keys) * len(columns)
     if extra_keys:
         problems.insert(0, f"{len(extra_keys)} rows are not expected (first: {describe_key(extra_keys[0])})")
+    cause = hint(wrong, len(wrong) == len(problems)) if hint and wrong else ""
     if not problems:
         return points, ""
     return proportional(points, right, total), (
         f"output/{name}: {right} of {total} values right; {'; '.join(problems[:3])}"
-        f"{' ...' if len(problems) > 3 else ''}. {advice}; fix {task}.")
+        f"{' ...' if len(problems) > 3 else ''}. {f'{cause}. ' if cause else ''}{advice}; fix {task}.")
 
 
 def _png_complete(data: bytes) -> bool:
@@ -1081,6 +1097,46 @@ def _png_complete(data: bytes) -> bool:
     return position == len(pixels)
 
 
+def _png_is_blank(data: bytes) -> bool:
+    """Whether every pixel of a complete PNG is the same color, as in a figure saved with nothing drawn on it.
+
+    Each stored row is compared with the bytes a one-color image stores for that row's filter (PNG filter types
+    0 to 4), so no pixel needs decoding. An interlaced PNG, or one under 8 bits per sample, counts as not blank.
+    """
+    position, compressed = 8, []
+    while position + 12 <= len(data):
+        size, kind = int.from_bytes(data[position:position + 4], "big"), data[position + 4:position + 8]
+        payload = data[position + 8:position + 8 + size]
+        if kind == b"IHDR":
+            header = payload
+        if kind == b"IDAT":
+            compressed.append(payload)
+        position += 12 + size
+    width, height = int.from_bytes(header[:4], "big"), int.from_bytes(header[4:8], "big")
+    depth, color, interlace = header[8], header[9], header[12]
+    if interlace or depth < 8:
+        return False
+    raw = zlib.decompress(b"".join(compressed))
+    size = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}[color] * depth // 8
+    stride = width * size
+    pixel = raw[1:1 + size]  # the first pixel, stored unchanged whatever the first row's filter
+    half = bytes((value - value // 2) % 256 for value in pixel)
+    rest = bytes(stride - size)
+    # filter type -> (the first row's stored bytes, every later row's) when every pixel equals `pixel`
+    one_color = {
+        0: (pixel * width, pixel * width),
+        1: (pixel + rest, pixel + rest),
+        2: (pixel * width, bytes(stride)),
+        3: (pixel + half * (width - 1), half + rest),
+        4: (pixel + rest, bytes(stride)),
+    }
+    for row in range(height):
+        start = row * (stride + 1)
+        if raw[start + 1:start + 1 + stride] != one_color[raw[start]][1 if row else 0]:
+            return False
+    return True
+
+
 def valid_png(root: Path, name: str) -> tuple[bool, str]:
     path = root / "output" / name
     task = ARTIFACTS[name][1]
@@ -1089,6 +1145,9 @@ def valid_png(root: Path, name: str) -> tuple[bool, str]:
     data = path.read_bytes()
     if not _png_complete(data):
         return False, f"output/{name} is not a complete PNG image; save the whole figure with plt.savefig('output/{name}') in {task}."
+    if _png_is_blank(data):
+        return False, (f"output/{name} is blank: every pixel is the same color; draw the figure before plt.savefig "
+                       f"in {task}.")
     return True, ""
 
 
@@ -1573,6 +1632,56 @@ def check_manifest(sub: Submission, points: int) -> tuple[int, str]:
 # Q5
 
 
+def _monthly_keys(table: Table) -> pd.Series:
+    year = pd.Series(numbers(table.text("year"))[0]).fillna(-1).astype(int).astype(str).to_numpy()
+    month = pd.Series(parse_month(table.text("month"))[0]).fillna(-1).astype(int).astype(str).to_numpy()
+    return station_key(table.text("station_name")) + "|" + year + "-" + month
+
+
+def utc_boundary_in_q5(sub: Submission) -> bool:
+    """Whether the Q5 monthly summary ends its training period at UTC midnight, which its own check charges.
+
+    True when every station's last training month has the n_observed a UTC-midnight boundary gives, from the
+    reference features or the student's Q4 file, and not the count the local-midnight boundary gives. Also true when
+    the summary never converts to local time: every n_observed is the count of UTC months ending at UTC midnight.
+    """
+    def build() -> bool:
+        table, _ = sub.table("q5_monthly_station_summary.csv")
+        if table is None or table.missing(["station_name", "year", "month", "n_observed"]):
+            return False
+        rows = keyed(table.frame, _monthly_keys(table)).unique
+        sources = [reference().features] + ([sub.features()] if sub.features() is not None else [])
+        local = [reference().monthly, *(build_monthly(features) for features in sources[1:])]
+        shifted = [build_monthly(features, "UTC") for features in sources]
+        last = [key for key in reference().monthly.index if key.endswith(f"|{VALIDATION_START.year - 1}-12")]
+
+        def matches(key, candidates) -> bool:
+            return any(key in candidate.index and cell_matches(rows.loc[key, "n_observed"],
+                                                               candidate.loc[key, "n_observed"], "exact")
+                       for candidate in candidates)
+        if bool(last) and all(key in rows.index and matches(key, shifted) and not matches(key, local)
+                              for key in last):
+            return True
+        # UTC months hold the same hours of the last month either way, so the whole table decides: no row in the
+        # month after UTC midnight, every count the UTC one, and at least one count not the local one.
+        in_utc = [build_monthly(features, "UTC", "UTC") for features in sources]
+        after = f"|{VALIDATION_START.year}-{VALIDATION_START.month}"
+        keys = reference().monthly.index
+        return (not any(str(key).endswith(after) for key in rows.index)
+                and all(key in rows.index and matches(key, in_utc) for key in keys)
+                and not all(matches(key, local) for key in keys))
+    return bool(sub.cached("utc-boundary:q5", build))
+
+
+UTC_BOUNDARY_SAME_CAUSE = (
+    "Same cause as the q5_monthly_station_summary.csv check: these splits use the UTC-midnight boundaries that Q5 "
+    "used, so the boundary is charged there and this check keeps its points")
+UTC_BOUNDARY_NO_COST = (
+    "these rows are split at UTC midnight, which costs nothing here (the boundary is charged only in the Q5 monthly "
+    "summary); split at local midnight instead, with boundaries such as "
+    f"pd.Timestamp(\"{VALIDATION_START:%Y-%m-%d}\", tz=\"{LOCAL_TZ}\")")
+
+
 def check_monthly(sub: Submission, points: int) -> tuple[int, str]:
     name = "q5_monthly_station_summary.csv"
     task = ARTIFACTS[name][1]
@@ -1583,14 +1692,25 @@ def check_monthly(sub: Submission, points: int) -> tuple[int, str]:
     if missing:
         return 0, f"output/{name} is missing column(s) {', '.join(missing)} ({task})."
     own = sub.cached("own:monthly", lambda: build_monthly(sub.features()) if sub.features() is not None else None)
-    year = pd.Series(numbers(table.text("year"))[0]).fillna(-1).astype(int).astype(str).to_numpy()
-    month = pd.Series(parse_month(table.text("month"))[0]).fillna(-1).astype(int).astype(str).to_numpy()
-    keys = station_key(table.text("station_name")) + "|" + year + "-" + month
+    keys = _monthly_keys(table)
     columns = {"n_observed": "exact", **{column: "number" for column in ARTIFACTS[name][0][4:]}}
+    last_month = f"|{VALIDATION_START.year - 1}-12"
+
+    def hint(wrong: list, only_wrong_cells: bool) -> str:
+        counts = [(numbers(text_series([cell]))[0][0], reference().monthly.loc[key, "n_observed"])
+                  for key, column, cell in wrong if column == "n_observed"]
+        # A boundary before local midnight only drops rows, so a count that is too high, empty, or text has
+        # another cause.
+        if (only_wrong_cells and all(str(key).endswith(last_month) for key, _, _ in wrong)
+                and counts and all(np.isfinite(found) and found < expected for found, expected in counts)):
+            return ("Only the last training month is off: the training period ends at local midnight, "
+                    f"pd.Timestamp(\"{VALIDATION_START:%Y-%m-%d}\", tz=\"{LOCAL_TZ}\"); "
+                    "a UTC-midnight or earlier boundary drops its last hours")
+        return ""
     # A month after the training period shows validation or test rows in the summary, so extra rows cost here.
     return cells_check(points, table, keys, [reference().monthly, own], columns, reference().monthly.index, name,
                        task, "Summarize the target temperatures of the eligible training rows by station and by the "
-                             "target's local year and month", extra_rows_cost=True)
+                             "target's local year and month", extra_rows_cost=True, hint=hint)
 
 
 def check_correlations(sub: Submission, points: int) -> tuple[int, str]:
@@ -1642,6 +1762,14 @@ def _split_found(sub: Submission, name: str) -> tuple[Keyed | None, str]:
     return sub.cached(f"found:{name}", build) or (None, unreadable(name))
 
 
+def _utc_split_rows(sub: Submission, split: str) -> list[pd.Index]:
+    """The row_ids a UTC-midnight boundary puts in a split, with and without a UTC end to the test period."""
+    def build():
+        sources = [reference().features] + ([sub.features()] if sub.features() is not None else [])
+        return [build_splits(features, "UTC", end)[split].index for features in sources for end in (False, True)]
+    return sub.cached(f"utc-boundary:rows:{split}", build) or []
+
+
 def check_x_rows(sub: Submission, points: int) -> tuple[int, str]:
     earned, details = 0, []
     for split in SPLITS:
@@ -1651,10 +1779,15 @@ def check_x_rows(sub: Submission, points: int) -> tuple[int, str]:
             details.append(problem)
             continue
         candidates = _split_candidates(sub, split)
-        score, detail = rows_check(1, found, candidates[0].index, name,
+        regular = [candidate.index for candidate in candidates]
+        # A UTC-midnight boundary is charged only in Q5: the rows it gives are always accepted here.
+        shifted = _utc_split_rows(sub, split)
+        score, detail = rows_check(1, found, regular[0], name,
                                    f"eligible Q4 rows whose target time falls in the {split} period",
-                                   "Q6 section 6.2", [candidate.index for candidate in candidates[1:]],
-                                   split_rows_hint(split))
+                                   "Q6 section 6.2", [*regular[1:], *shifted], split_rows_hint(split))
+        present = pd.Index(found.unique.index)
+        if score and not any(present.symmetric_difference(option).empty for option in regular):
+            detail = f"output/{name}: {UTC_BOUNDARY_SAME_CAUSE if utc_boundary_in_q5(sub) else UTC_BOUNDARY_NO_COST}"
         earned += score
         details.append(detail)
     return earned * points // len(SPLITS), join(*details)
@@ -1928,6 +2061,37 @@ def _predictions_cover(sub: Submission, predictions_name: str, split: str) -> bo
                for candidate in _prediction_candidates(sub, split))
 
 
+# The metrics files in handout order: (name, predictions file, split, one row per station).
+METRIC_FILES = [("q7_validation_metrics.csv", "q7_validation_predictions.csv", "validation", False),
+                ("q8_test_metrics.csv", "q8_test_predictions.csv", "test", False),
+                ("q8_station_metrics.csv", "q8_test_predictions.csv", "test", True)]
+
+
+def _squared(candidates: list[pd.DataFrame]) -> list[pd.DataFrame]:
+    """The metric candidates with the MSE in place of each rmse."""
+    return [candidate.assign(rmse=candidate["rmse"] ** 2) for candidate in candidates if "rmse" in candidate.columns]
+
+
+def mse_saved(sub: Submission, name: str) -> bool:
+    """Whether a metrics file holds an rmse that is the MSE and not the RMSE, which its own check charges."""
+    def build() -> bool:
+        _, predictions_name, split, by_station = next(item for item in METRIC_FILES if item[0] == name)
+        table, _ = sub.table(name)
+        if table is None or table.missing(["model", "rmse", *(["station_name"] if by_station else [])]):
+            return False
+        keys = model_key(table.text("model"))
+        if by_station:
+            keys = keys + "|" + station_key(table.text("station_name"))
+        rows = keyed(table.frame, keys).unique
+        candidates = _metric_candidates(sub, predictions_name, split, by_station)
+
+        def matches(key, options) -> bool:
+            return any(key in option.index and cell_matches(rows.loc[key, "rmse"], option.loc[key, "rmse"], "number")
+                       for option in options)
+        return any(matches(key, _squared(candidates)) and not matches(key, candidates) for key in rows.index)
+    return bool(sub.cached(f"mse:{name}", build))
+
+
 def metrics_check(name: str, predictions_name: str, split: str, by_station: bool):
     task = ARTIFACTS[name][1]
 
@@ -1938,6 +2102,8 @@ def metrics_check(name: str, predictions_name: str, split: str, by_station: bool
         missing = table.missing(["model", "station_name"] if by_station else ["model"])
         if missing:
             return 0, f"output/{name} is missing column(s) {', '.join(missing)}; fix {task}."
+        earlier = [item[0] for item in METRIC_FILES]
+        charged = next((file for file in earlier[:earlier.index(name)] if mse_saved(sub, file)), None)
         keys = model_key(table.text("model"))
         if by_station:
             keys = keys + "|" + station_key(table.text("station_name"))
@@ -1959,11 +2125,28 @@ def metrics_check(name: str, predictions_name: str, split: str, by_station: bool
                 reference_rows.loc[key.replace(MODELS[0], MODELS[1], 1), "n"] = reference_rows.loc[key, "n"]
             unverifiable = frozenset((key, metric) for key in expected if key.startswith(MODELS[1])
                                      for metric in METRICS)
+        def hint(wrong: list, only_wrong_cells: bool) -> str:
+            for key, column, cell in wrong:
+                value = numbers(text_series([cell]))[0]
+                if column == "rmse" and any(
+                        candidate is not None and key in candidate.index
+                        and same(value, [candidate.loc[key, "rmse"] ** 2])[0] for candidate in candidates):
+                    return ("An rmse here is the expected value squared, so it is the MSE: take "
+                            "np.sqrt(mean_squared_error(...))")
+            return ""
+        # The MSE saved as rmse is charged once, in the first metrics file that shows it. A later file that
+        # repeats it is judged against that earlier file: its squared rmse cells count as right.
+        repeated = charged is not None and mse_saved(sub, name)
         # Validation may score several candidates, but a second model scored on the test rows costs.
-        return cells_check(points, table, keys, candidates,
-                           {"mae": "number", "rmse": "number", "r2": "number", "n": "exact"}, expected, name, task,
-                           f"Compute MAE, RMSE, R2, and n from the rows of {predictions_name}", unverifiable,
-                           extra_rows_cost=split == "test")
+        score, detail = cells_check(points, table, keys, candidates + (_squared(candidates) if repeated else []),
+                                    {"mae": "number", "rmse": "number", "r2": "number", "n": "exact"}, expected,
+                                    name, task, f"Compute MAE, RMSE, R2, and n from the rows of {predictions_name}",
+                                    unverifiable, extra_rows_cost=split == "test", hint=hint)
+        if repeated:
+            same_cause = (f"Same cause as the {charged} check: rmse here is again the MSE, which is charged there "
+                          f"and costs nothing here; take np.sqrt(mean_squared_error(...)) in both")
+            detail = f"{detail} {same_cause}." if detail else f"output/{name}: {same_cause}."
+        return score, detail
     return check
 
 
@@ -2043,7 +2226,7 @@ def check_report(sub: Submission, points: int) -> tuple[int, str]:
         if not re.search(r"!\[[^\]]*\]\(\s*(?:\./)?" + re.escape(image) + r"\s*\)", text):
             problems.append(f"no image embed for {image}")
         elif not valid_png(sub.root, image.split("/", 1)[1])[0]:
-            problems.append(f"{image} is not a readable PNG")
+            problems.append(f"{image} is blank or not a readable PNG")
     if problems:
         return 0, f"report.md (for the human reviewer): {'; '.join(problems)}."
     return 0, ""

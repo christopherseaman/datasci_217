@@ -8,7 +8,7 @@ The exam totals 100 points: 75 points graded from your committed files after the
 | --- | --- | ---: |
 | `output/q1_release_audit.csv` | Each of the seven checks with the manifest value in `expected`, your measured value in `observed`, and `passed` True | 2 |
 | `output/q1_station_coverage.csv` | Each station's six values, in proportion to the values right | 2 |
-| `output/q1_visualizations.png` | A PNG image | 1 |
+| `output/q1_visualizations.png` | A PNG image that is not blank | 1 |
 | `output/q2_cleaned_observations.csv` | 2 for exactly the valid release rows; 2 for `measurement_timestamp_utc`; 2 for `solar_radiation_w_m2` and the other sensor columns whose values a range rule changes, in proportion to those right; 1 for the sensor columns no rule changes | 7 |
 | `output/q2_cleaning_audit.csv` | The `affected_values` totals of the `rows_rejected`, `set_missing`, and `set_to_zero` rows | 2 |
 | `output/q2_missingness.csv` | Every station and sensor column's missing count and percent | 1 |
@@ -18,7 +18,7 @@ The exam totals 100 points: 75 points graded from your committed files after the
 | `output/q4_feature_manifest.csv` | Each predictor's offsets, role, and a nonblank source, in proportion to the rows right | 2 |
 | `output/q5_monthly_station_summary.csv` | Each station-month's five values, in proportion to the values right | 2 |
 | `output/q5_correlations.csv` | The 49 correlations, in proportion to the values right | 2 |
-| `output/q5_patterns.png` | A PNG image | 1 |
+| `output/q5_patterns.png` | A PNG image that is not blank | 1 |
 | `output/q6_X_*.csv` | 1 for each file's rows; 2 for the values, in proportion to the columns right across the three files | 5 |
 | `output/q6_y_*.csv` | Each file's rows and target values, in proportion to the six parts right | 3 |
 | `output/q6_split_summary.csv` | Each split's four values, in proportion to the values right | 2 |
@@ -29,7 +29,7 @@ The exam totals 100 points: 75 points graded from your committed files after the
 | `output/q8_test_predictions.csv` | 1 each for: the rows; a finite `model_prediction`; `model_error`; `model_absolute_error`. 2 for `station_name`, `target_timestamp_utc`, `actual`, and `persistence_prediction`, in proportion to those right | 6 |
 | `output/q8_test_metrics.csv` | The eight values, computed from your `q8_test_predictions.csv`, in proportion to the values right | 2 |
 | `output/q8_station_metrics.csv` | The 16 values, computed from your `q8_test_predictions.csv`, in proportion to the values right | 2 |
-| `output/q8_final_visualizations.png` | A PNG image | 1 |
+| `output/q8_final_visualizations.png` | A PNG image that is not blank | 1 |
 
 "In proportion" means the part's points times the share right, rounded down.
 
@@ -42,7 +42,7 @@ The exam totals 100 points: 75 points graded from your committed files after the
 - Also accepted: `missing_pct` as a fraction instead of a percent, the population standard deviation (`ddof=0`) instead of the sample one, `q5_correlations.csv` saved with an unnamed first column, and your regressor's name, such as `Ridge`, in place of `student_model`.
 - Repeated column names are accepted when their values agree. Conflicting copies fail the affected value check rather than silently choosing one.
 - A missing or extra row costs only the rows part; the value parts judge the rows you have, as long as at least half of the expected rows are there.
-- A file built correctly from one of your own earlier files counts as right even when that earlier file has a mistake: for example, a Q3 panel joined from your Q2 table, Q4 features computed from your Q3 panel, Q6 splits taken from your Q4 file, and metrics computed from your prediction files. A mistake costs points once, where you made it.
+- A file built correctly from one of your own earlier files counts as right even when that earlier file has a mistake: for example, a Q3 panel joined from your Q2 table, Q4 features computed from your Q3 panel, Q6 splits taken from your Q4 file, and metrics computed from your prediction files. A mistake costs points once, where you made it. The same mistake repeated in a later file costs points in the first file only: an `rmse` saved without its square root in all three metrics files. UTC-midnight boundaries cost points only in the Q5 summary; the Q6 splits they give keep their points, and the feedback names the boundary.
 - The model's accuracy is not graded: it does not need to beat persistence.
 
 ## Human review
