@@ -51,6 +51,11 @@ DataSci 217 is a practical introduction to the tools and reasoning used in Pytho
 1. 2026-09-25 [https://github.com/UCSF-DataSci/ds217-26f-01](https://github.com/UCSF-DataSci/ds217-26f-01)
 2. 2026-10-02 [https://github.com/UCSF-DataSci/ds217-26f-02](https://github.com/UCSF-DataSci/ds217-26f-02)
 3. 2026-10-09 [https://github.com/UCSF-DataSci/ds217-26f-03](https://github.com/UCSF-DataSci/ds217-26f-03)
+4. 2026-10-16 [https://github.com/UCSF-DataSci/ds217-26f-04](https://github.com/UCSF-DataSci/ds217-26f-04)
+5. 2026-10-23 [https://github.com/UCSF-DataSci/ds217-26f-05](https://github.com/UCSF-DataSci/ds217-26f-05)
+6. 2026-10-30 **Midterm Exam!** [https://github.com/UCSF-DataSci/ds217-26f-06](https://github.com/UCSF-DataSci/ds217-26f-06)
+7. 2026-11-06 [https://github.com/UCSF-DataSci/ds217-26f-07](https://github.com/UCSF-DataSci/ds217-26f-07)
+8. 2026-11-13 [https://github.com/UCSF-DataSci/ds217-26f-08](https://github.com/UCSF-DataSci/ds217-26f-08)
 
 Just for fun:
 
