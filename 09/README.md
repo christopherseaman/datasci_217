@@ -265,6 +265,35 @@ display(daily.resample('W').agg({'temperature': ['mean', 'max'], 'heart_rate': [
 
 `count` shows the first weekly mean describes one day and the second seven.
 
+## Missing Readings in a Bin
+
+Aggregations skip `NaN`, and `resample()` still returns a row for a bin with nothing in it:
+
+- **Partly missing bin**: the summary uses the readings that remain, so one reading can stand for the whole hour.
+- **All-missing or empty bin**: `.mean()` is `NaN`, but `.sum()` is `0`, which reads as a real total.
+
+### Reference Card: Missing Readings in a Bin
+
+- `ts.resample('h').count()`: Non-missing readings per bin; report it beside every mean or sum.
+- `ts.resample('h').size()`: Rows per bin, missing or not; `size` above `count` means blank readings, and `size` of `0` means no rows at all.
+- `ts.resample('h').sum(min_count=1)`: `NaN` in place of `0` for a bin with no readings.
+
+### Code Snippet: Partial, Missing, and Empty Bins
+
+`hr` holds half-hourly heart rates on March 1, 2024: 70 and 74 in the 08:00 hour, 80 and `NaN` in the 09:00 hour, two `NaN` in the 10:00 hour, no rows in the 11:00 hour, and 76 at 12:00.
+
+```python
+display(hr.resample('h').agg(['mean', 'sum', 'count', 'size']))
+```
+
+|  | mean | sum | count | size |
+| --- | --- | --- | --- | --- |
+| 2024-03-01 08:00:00 | 72.0 | 144.0 | 2 | 2 |
+| 2024-03-01 09:00:00 | 80.0 | 80.0 | 1 | 2 |
+| 2024-03-01 10:00:00 | NaN | 0.0 | 0 | 2 |
+| 2024-03-01 11:00:00 | NaN | 0.0 | 0 | 0 |
+| 2024-03-01 12:00:00 | 76.0 | 76.0 | 1 | 1 |
+
 ## How Resampling Draws Bins
 
 `resample('2h')` makes two-hour bins; two arguments control their edges:
