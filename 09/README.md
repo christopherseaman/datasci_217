@@ -323,18 +323,9 @@ display(readings.resample('2h').agg(['mean', 'count']))
 
 ![xkcd 1985: Meteorologist. Five hourly 20% chances of rain do not say how likely rain is this afternoon; a longer bin needs an aggregation that answers the question being asked.](media/xkcd_1985.png)
 
-# LIVE DEMO!
-
-[Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo1_ed_timestamps.ipynb)
-
-# Resampling Summaries, Grids, and Groups
-
-- **Grid**: one row per time step, such as every hour, with or without a reading.
-- **Grouped resampling**: binning each patient's readings separately (split-apply-combine), so no bin mixes patients.
-
 ## Upsampling: Filling a Finer Grid
 
-`asfreq()` lays a series onto a grid without combining observations: values exactly on the grid stay, and other slots are `NaN` until `ffill()` or `interpolate()` fills them.
+A **grid** has one row per time step, such as every hour, with or without a reading. `asfreq()` lays a series onto a grid without combining observations: values exactly on the grid stay, and other slots are `NaN` until `ffill()` or `interpolate()` fills them.
 
 ![Six temperatures charted every 4 hours on January 15, 2024, on an hourly grid: `asfreq()` leaves 15 of 21 slots NaN, `ffill(limit=2)` leaves 5, and `interpolate()` fills all 21 with straight lines.](media/charted_temp_upsampling.png)
 
@@ -368,6 +359,8 @@ display(pd.DataFrame({
 ![xkcd 2316: Hair Growth Rate. The same monthly total fits steady growth or one five-foot hair on the hour; an upsampled grid fills slots nobody observed, so its filled values are guesses.](media/xkcd_2316.png)
 
 ## Resampling Each Patient Separately
+
+**Grouped resampling** bins each patient's readings separately (split-apply-combine), so no bin mixes patients.
 
 ![Two-hour bins on March 1, 2024: P1's means are 73.5 and 80.0 bpm and P2's 90.0 and 94.0; the whole-table means, 79.0 and 87.0, fall between the patients and describe neither.](media/per_patient_bins.png)
 
@@ -449,12 +442,16 @@ display(runs.groupby('patient_id')['gap_hours'].agg(['count', 'max']))
 
 A patient with no gaps has no rows in `runs`; report 0 runs for them.
 
-![xkcd 605: Extrapolating. Two readings make a line, not a trend; a rolling mean over several readings is steadier than any single change.](media/xkcd_605.png)
+# LIVE DEMO!
+
+[Open Demo 1 in Colab](https://colab.research.google.com/github/christopherseaman/datasci_217/blob/main/09/demo/demo1_ed_timestamps.ipynb)
 
 # Rolling Window Operations
 
 - **Rolling window**: a fixed-size frame that slides along a series and computes a statistic at every row, such as the mean of the last seven daily blood pressures.
 - `resample('W').mean()` returns one row per week; `rolling(7).mean()` returns one row per original reading.
+
+![xkcd 605: Extrapolating. Two readings make a line, not a trend; a rolling mean over several readings is steadier than any single change.](media/xkcd_605.png)
 
 ## Basic Rolling Operations
 
