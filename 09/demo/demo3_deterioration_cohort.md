@@ -121,7 +121,9 @@ Plot the wall clock against UTC. The dotted lines show daylight time (UTC minus 
 ```python
 import matplotlib.dates as mdates
 
-night = night.assign(wall_clock=pd.to_datetime(night['recorded_local'])).sort_values('wall_clock')
+night = night.copy()
+night['wall_clock'] = pd.to_datetime(night['recorded_local'])
+night = night.sort_values('wall_clock')
 kept = night.dropna(subset=['recorded_at'])
 unsure = night[night['recorded_at'].isna()]
 hours_utc = pd.date_range('2024-11-03 05:00', '2024-11-03 10:00', freq='h', tz='UTC')

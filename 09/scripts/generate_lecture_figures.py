@@ -604,8 +604,8 @@ def per_patient_bins():
 def gap_run_tiles():
     """Gap Runs: each patient's observed hours, the running count, and the gap runs it numbers."""
     hours = pd.DataFrame({
-        "patient_id": ["P1"] * 7 + ["P2"] * 4,
-        "source_observed": [True, False, False, True, False, False, False, True, True, False, True],
+        "patient_id": ["P1"] * 8 + ["P2"] * 4,
+        "source_observed": [True, False, False, True, False, False, False, True, True, True, False, True],
     })
     hours["run_id"] = hours.groupby("patient_id")["source_observed"].cumsum()
     runs = hours[~hours["source_observed"]].groupby(["patient_id", "run_id"]).size()
@@ -636,7 +636,7 @@ def gap_run_tiles():
                     color=ORANGE, lw=1.5)
             ax.text((left + right) / 2, top - 0.95, f"gap run {run_id}: {size} h", ha="center", va="top",
                     color=ORANGE, fontweight="bold")
-    ax.set_xlim(-0.1, x0 + 7 * w + 0.1)
+    ax.set_xlim(-0.1, x0 + 8 * w + 0.1)
     ax.set_ylim(-0.2, 5.5)
     save(fig, "gap_run_tiles.png")
 

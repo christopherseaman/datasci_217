@@ -61,7 +61,7 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 
 _Some time series are as regular as a Swiss watch; others are as unpredictable as a toddler's nap schedule._
 
-![Regular: an hourly monitor on January 5, 2024, with 14 of 24 readings and no rows 08:00 to 17:00. Irregular: one patient charted at 02:00, 03:30, 04:30, 08:00, and 09:00 UTC on November 3, 1 to 3.5 hours apart.](media/regular_irregular.png)
+![Regular: an hourly monitor on January 5, 2024, with 14 of 24 readings and no rows 08:00 to 17:00. Irregular: one patient charted at 02:00, 03:30, 04:30, 08:00, and 09:00 UTC (the worldwide reference clock) on November 3, 1 to 3.5 hours apart.](media/regular_irregular.png)
 
 ## Single Series and Panels
 
