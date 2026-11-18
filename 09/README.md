@@ -364,15 +364,35 @@ display(pd.DataFrame({
 
 ![Two-hour bins on March 1, 2024: P1's means are 73.5 and 80.0 bpm and P2's 90.0 and 94.0; the whole-table means, 79.0 and 87.0, fall between the patients and describe neither.](media/per_patient_bins.png)
 
+The chain reads one step per line, and every grouped resample below reuses its first two steps as `per_patient`:
+
+```python
+(
+    df.set_index('recorded_at')    # 1. time becomes the index
+    .groupby('patient_id')         # 2. split the rows by patient
+    ['heart_rate']                 # 3. pick the column
+    .resample('2h')                # 4. two-hour bins inside each patient
+    .mean()                        # 5. one summary per patient per bin
+    .reset_index()                 # 6. patient and time back as columns
+)
+```
+
 ### Reference Card: Grouped Resampling
 
-- `df.set_index('recorded_at').groupby('patient_id')['heart_rate'].resample('2h').agg(['mean', 'count'])`: One row per patient per two-hour bin, with a `(patient_id, recorded_at)` MultiIndex.
-- `df.set_index('recorded_at').groupby('patient_id')[['heart_rate', 'source_row']].resample('h').asfreq()`: Each patient's hourly grid, first reading's hour to last; empty hours become `NaN`; off-hour readings are dropped.
-- `df['recorded_at'].eq(df['recorded_at'].dt.floor('h')).all()`: `True` only if every reading sits exactly on the hour; check before `asfreq()`.
-- `df['source_row'] = 1` before `asfreq()`: Grid-created rows get `NaN` there, so `grid['source_row'].isna()` separates them from real readings with a missing value.
-- `df.set_index('recorded_at').groupby('patient_id').resample('2h').agg(mean_hr=('heart_rate', 'mean'), n_rows=('source_row', 'count'))`: Named summaries in `(column, function)` form; `count()` skips missing values, so counting `source_row` includes readings with a missing heart rate.
-- `.reset_index()`: The MultiIndex back as ordinary `patient_id` and `recorded_at` columns.
-- `df.duplicated(['patient_id', 'recorded_at']).sum()`: Repeated patient and timestamp keys; `0` means `asfreq()` can place one row per slot. `df.groupby(['patient_id', 'recorded_at'], as_index=False)['heart_rate'].mean()` keeps one row per key.
+`per_patient = df.set_index('recorded_at').groupby('patient_id')`
+
+| Task | Code | Result |
+| --- | --- | --- |
+| Summarize bins | `per_patient['heart_rate'].resample('2h').agg(['mean', 'count'])` | One row per patient per bin, with a `(patient_id, recorded_at)` MultiIndex |
+| Name the summaries | `per_patient.resample('2h').agg(mean_hr=('heart_rate', 'mean'), n_rows=('source_row', 'count'))` | `(column, function)` pairs; `count` skips missing values, so counting `source_row` includes readings with no heart rate |
+| Build a grid | `per_patient[['heart_rate', 'source_row']].resample('h').asfreq()` | Each patient's hourly grid, first reading's hour to last; empty hours are `NaN`, off-hour readings are dropped |
+| Flatten | `.reset_index()` | `patient_id` and `recorded_at` as ordinary columns |
+
+Checks before `asfreq()`:
+
+- `df['recorded_at'].eq(df['recorded_at'].dt.floor('h')).all()`: `True` only if every reading sits exactly on the hour.
+- `df.duplicated(['patient_id', 'recorded_at']).sum()`: Repeated keys; `0` means one row per slot. `df.groupby(['patient_id', 'recorded_at'], as_index=False)['heart_rate'].mean()` keeps one row per key.
+- `df['source_row'] = 1`: Grid-created rows get `NaN` there, so `grid['source_row'].isna()` separates them from real readings with a missing value.
 
 ### Code Snippet: Hourly Grid per Patient
 
@@ -381,10 +401,8 @@ display(pd.DataFrame({
 ```python
 print(vitals['recorded_at'].eq(vitals['recorded_at'].dt.floor('h')).all())
 vitals['source_row'] = 1
-grid = (
-    vitals.set_index('recorded_at').groupby('patient_id')[['heart_rate', 'source_row']]
-    .resample('h').asfreq().reset_index()
-)
+per_patient = vitals.set_index('recorded_at').groupby('patient_id')
+grid = per_patient[['heart_rate', 'source_row']].resample('h').asfreq().reset_index()
 grid['grid_created'] = grid['source_row'].isna()
 grid['value_missing'] = grid['source_row'].notna() & grid['heart_rate'].isna()
 display(grid.drop(columns='source_row'))
