@@ -29,7 +29,7 @@ Do not use live downloads or external data.
 - A column whose name ends in `_utc` holds UTC times with their offset, such as `2024-07-01 05:00:00+00:00`; pandas writes that form for a UTC column.
 - Sort as each checkpoint says. Rows are matched by their key when graded, so the sort order is for you, not the grade.
 - The persistence baseline predicts that the next hour equals the current `air_temperature_c_t` (Lecture 10).
-- MAE is the primary metric. Also report RMSE and R2, calculated from unrounded predictions.
+- MAE is the primary metric. Also report RMSE (the square root of the mean squared error, so it is in °C like MAE) and R2, calculated from unrounded predictions.
 - Choose one regressor from the pinned scikit-learn. Do not add model libraries such as XGBoost.
 - Use an sklearn `Pipeline` whose `ColumnTransformer` applies `OneHotEncoder(handle_unknown="ignore", sparse_output=False)` to `station_name` and `SimpleImputer(strategy="median")` to the numeric predictors (Lecture 10). Fit the pipeline on the fitting rows only.
 - Set `random_state=217` and `n_jobs=1` when the chosen estimator has those parameters.

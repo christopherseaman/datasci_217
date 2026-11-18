@@ -2,7 +2,7 @@
 
 ## Overview
 
-Forecast each Chicago beach weather station's air temperature one hour ahead: clean the sensor data, build a station-by-hour panel and past-only features, split by time, fit one scikit-learn pipeline against a persistence baseline, test once, and write a report. Nine notebooks, Q1 to Q9, each save files in `output/`.
+Forecast each Chicago beach weather station's air temperature one hour ahead: clean the sensor data, build a station-by-hour panel and past-only features, split by time, fit one scikit-learn pipeline against a persistence baseline, test once, and write a report. Nine notebooks: Q1 to Q8 each save files in `output/`, and Q9 completes `report.md`.
 
 `data/chicago_beach_sensors_2022_2024.csv` is a frozen extract of the City of Chicago's beach weather sensors: 50,895 hourly readings from Foster Weather Station and Oak Street Weather Station, for local 2022-01-01 through 2024-12-31.
 
@@ -82,7 +82,7 @@ assignment/
 
 ## Check your work
 
-1. Restart each notebook's kernel and **Run All**, Q1 through Q8.
+1. Restart each notebook's kernel and **Run All**, Q1 through Q9.
     - Expect: every cell finishes without an error.
 2. Save each notebook after **Run All** so its outputs are committed. In Source Control, stage the nine notebooks, `report.md`, and the 28 `output/` files from the Checkpoints, commit (for example `Complete the final exam`), and sync. The course grades your fork's `main` branch after the deadline.
     - Expect: on GitHub, `report.md` shows its table and images, and `data/` shows no change.

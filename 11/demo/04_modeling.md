@@ -82,7 +82,7 @@ def build_model_table(panel):
     table["month"] = local.dt.month
     table["is_weekend"] = (local.dt.dayofweek >= 5).astype("int8")
 
-    grouped = table.groupby("pickup_zone_id", sort=False)["pickup_count"]
+    grouped = table.groupby("pickup_zone_id")["pickup_count"]
     for lag in (1, 24, 168):
         table[f"lag_{lag}"] = grouped.shift(lag)
     for window in (24, 168):

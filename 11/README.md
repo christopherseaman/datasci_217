@@ -34,7 +34,7 @@ curl -fsSL https://raw.githubusercontent.com/christopherseaman/datasci_217/main/
 	- Turn a vague goal such as "analyze ED visits" into a question with a unit, an outcome, a time frame, and a claim the data could contradict.
 	- Verify a data release against its JSON manifest with SHA-256 hashes and row counts before using it.
 	- Build a complete hourly panel with a cross merge and a validated left merge, filling true zeros and flagging missing readings with `source_observed`.
-	- Explore training rows step by step, from `info()` and missing shares by group to `sns.pairplot()` and a weekday-by-hour heatmap.
+	- Explore training rows step by step, from an IQR fence on pickup counts to `sns.pairplot()` and a weekday-by-hour heatmap.
 	- Create past-only features with `groupby().shift()`, split rows on a local-midnight boundary, and compare a pipeline with a same-hour-last-week baseline in one frozen test run.
 </callout>
 
@@ -100,7 +100,7 @@ _Your capstone is not Pokémon for obscure ML: you don't have to catch 'em all._
 | Object | Row grain | Key | Rows | Pickups represented |
 | --- | --- | --- | --- | --- |
 | Cleaned teaching sample | one sampled pickup event | `course_row_id` | 13,342 | 13,342 |
-| Derived full panel | one zone at one UTC hour | `pickup_zone_id` + `target_hour_utc` | 52,116 | 8,607,337 |
+| Derived full panel | one zone at one UTC hour | `pickup_zone_id` and `target_hour_utc` | 52,116 | 8,607,337 |
 
 The sample is for audit practice; the panel was built from all source rows, so summing the sample never reproduces it.
 
@@ -177,7 +177,7 @@ display(panel.drop(columns="_merge"))
 | Step | For the taxi table | Method |
 | --- | --- | --- |
 | 1 to 5. Grain, structure, missing values, distributions, relationships | Training rows only; one row is one zone-hour, so check the key first | `df.duplicated(subset=key).any()`, then Lecture 08's card |
-| 6. Time structure | Are hours missing, and is there a daily or weekly cycle? | `s.asfreq("h")` turns absent hours into `NaN` rows; `df.groupby(df["t"].dt.hour)["x"].mean()` gives the hour profile |
+| 6. Time structure | Are hours missing, and is there a daily or weekly cycle? | `source_observed` from the expected-grid merge marks absent hours; `df.groupby(df["t"].dt.hour)["x"].mean()` gives the hour profile |
 
 ## Pairwise plots
 
@@ -304,7 +304,7 @@ display(frame)
 | Settings saved as JSON text in one CSV cell (`json.dumps`, `json.loads`) | Lecture 07, Save the Chart and Its Record | `03_model_prep.ipynb`: split manifest; final Q7 and Q8: model specification |
 | Missingness, row meaning, and keys | Lecture 05, What Clean Means: The Data Contract; Handling Missing Data | `01_setup.ipynb`: audit records |
 | Expected grid, coverage join, and `source_observed` | Lecture 06, Database-Style DataFrame Joins | `02_wrangling.ipynb`: confirm that every zone-hour is present; final Q3: hourly panel |
-| Gap runs: consecutive missing hours within each entity | Lecture 09, Resampling Each Patient Separately | final Q3: gap summary (the taxi panel has no gaps, because an hour without trips is a true 0) |
+| Gap runs: consecutive missing hours within each entity | Lecture 09, Gap Runs | final Q3: gap summary (the taxi panel has no gaps, because an hour without trips is a true 0) |
 | UTC keys, local calendar fields, and daylight-saving transitions | Lecture 09, Time Zone Handling | `02_wrangling.ipynb`: local calendar fields; `03_model_prep.ipynb`: split boundaries |
 | Times written as text (`Series.dt.strftime`) | Lecture 09, pandas DatetimeIndex | `01_setup.ipynb`: audit records; final Q4: `row_id` |
 | Past-only lags and rolling windows | Lecture 09, Entity-Aware Features and Past-Only Windows | `02_wrangling.ipynb`: construct history features |

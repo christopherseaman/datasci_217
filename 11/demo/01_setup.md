@@ -105,6 +105,7 @@ The manifest also records the official source URLs, the zone-selection rule, and
 - One row is one sampled pickup event, identified by `course_row_id`; it is **not** one zone-hour.
 - It was drawn for audit practice, not for estimating totals.
 - The lookup table adds each zone's name; the first table joins it onto the events.
+- `.to_frame()` turns a Series into a one-column table for display.
 
 ```python
 events = pd.read_parquet(data_dir / manifest["artifacts"]["sample"]["filename"])
