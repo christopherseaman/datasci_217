@@ -221,6 +221,7 @@ Organization first, styling last. Fix substance (add the missing explanation, vi
 - Setup follows Lecture 03 (`uv venv --seed`, activate, `uv sync` on the supplied `pyproject.toml` and `uv.lock`). Terminal and git-identity setup appear only in Assignment 01, git identity as a fallback for when a commit or push asks for it. No Windows or troubleshooting paragraphs.
 - Check your work is very brief. Homework notebooks list both the manual `python3 check_assignment.py` run and the notebook's final `run_checks()` cell (GitHub runs the latest checks on push), then commit the outputs. Exams: Restart and Run All, then commit and push, with no file table or shell checks (each task's Checkpoint names its artifact, header, and line count) and no separate Submit section. The positive, artifact-based completion contract lives in a linked `CHECKS.md`. Say "checks," not "public checks."
 - Checks run on every push; a new fork may need Actions enabled once.
+- Structure each assignment (its split, tasks, and artifacts) to teach the material the way an analyst would most likely use it; this file sets no per-assignment structure.
 - Size: homework stays near Assignment 04 (about 9 subtasks, 6 artifacts); the midterm is the larger, cumulative task.
 - Exams withhold graded counts; give worked examples on tiny samples, self-check invariants, and a `HINTS.md` for diagnosis instead.
 
@@ -273,7 +274,7 @@ Instructor decisions; do not reopen them in reviews.
 - 06 keeps the join-type comparison and cross-join audit. 07 keeps its accepted compaction.
 - 08 keeps SSH/tmux/Jupyter in the lecture, with `gh codespace ssh --config` named as a practice machine; its demos carry no terminal steps until the instructor sets up a course server. 08 also keeps filter thresholds, within-group apply (sorting, `nlargest`), the MultiIndex result, the `.values` length error, the instructor's video, PDFs, and bookmark after the callout, and `research.png`.
 - 09's blocks are dated data plus basic resampling, then grids and windows, then clocks (time zones) and honest entity history; its Python `datetime` section stays in main; frequency inference, specialized schedules, clock-time alternatives, percentage changes, and Grouper are BONUS.
-- 10 keeps XGBoost and Keras, the Zoolander hook, and the lab-analyzer, practice-exam, and scrambled-chart analogies. Assignment 10's 30/8/10 split is retrospective; Demo 10's prospective workflow uses only labels available at its first validation cutoff.
+- 10 keeps XGBoost and Keras, the Zoolander hook, and the lab-analyzer, practice-exam, and scrambled-chart analogies. Demo 10's prospective workflow uses only labels available at its first validation cutoff.
 - 11 stays at its pre-pacing version plus "A Step-by-Step EDA Pass" and the EDA step in Demo 03. Lecture 11 uses NYC taxis; Assignment 11 uses Chicago beach weather.
 - The midterm is `06/mid-term`; its data keep `E04` as an unmatched satellite code and 70/250 mmHg as teaching boundaries. Assignment 01's report gets full credit when the summary prints sit inside the loop.
 - Spoken-practice material (mock interviews, talk-through prompts) is covered by another course. Colab validation is out of scope.
