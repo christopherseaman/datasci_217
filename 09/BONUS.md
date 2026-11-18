@@ -13,7 +13,7 @@ Everything in this document is optional for Lecture 09. It collects specialized 
 
 The forecasting and stationarity tools below are specialized reference. Lecture 10 teaches the general prediction workflow, including temporal splits and feature availability; it does not require these dedicated time-series models.
 
-The decomposition, forecasting, and autocorrelation examples use `statsmodels`, and the interactive plot uses `plotly`. Colab includes both, but the course environment does not: add them to a project with `uv add statsmodels plotly` (Lecture 03).
+The decomposition, forecasting, and ACF and PACF examples use `statsmodels`, and the interactive plot uses `plotly`. Colab includes both, but the course environment does not: add them to a project with `uv add statsmodels plotly` (Lecture 03).
 
 # Period Arithmetic and Fiscal Year Handling
 
@@ -328,7 +328,7 @@ display(quarterly.head().round(1))
 
 # More Window and Selection Options
 
-_The lecture's rolling and EWM windows cover daily work; these options cover the rest._
+_The lecture's rolling windows cover daily work; these options cover the rest._
 
 ## Expanding Windows, Rolling Quantiles, and Custom Functions
 
@@ -447,6 +447,24 @@ DatetimeIndex(['2024-03-10 03:00:00-04:00'], dtype='datetime64[us, America/New_Y
 
 `nonexistent='shift_forward'` changes the recorded clock time; it can put several readings at the same instant. Use it only when that correction is justified by the source system, and retain the original time for review.
 
+### Reference Card: Hours in a Clock-Change Day
+
+- `pd.date_range(start, end, freq='h', tz='America/New_York', inclusive='left')`: Every elapsed hour from `start` up to, but not including, `end`; a spring-forward day has 23 and a fall-back day has 25.
+
+### Code Snippet: Count a Local Day's Hours
+
+```python
+for day in ['2024-03-10', '2024-11-03']:
+    hours = pd.date_range(day, pd.Timestamp(day) + pd.Timedelta(days=1), freq='h',
+                          tz='America/New_York', inclusive='left')
+    print(day, len(hours), 'hours')
+```
+
+```text
+2024-03-10 23 hours
+2024-11-03 25 hours
+```
+
 ## Operations Between Different Time Zones
 
 Arithmetic aligns aware indexes by instant, even when their displayed clocks differ. An instant present in only one series produces `NaN` with ordinary arithmetic.
@@ -526,12 +544,40 @@ fig.show()
 
 ## Autocorrelation and Partial Autocorrelation
 
-- **Autocorrelation (ACF)**: correlation between a series and its earlier values at each lag.
+- **Autocorrelation**: the correlation between a series and itself a fixed number of rows earlier (the **lag**). Near 1, a value predicts the one a lag later; near 0, it does not; negative, high values tend to follow low ones. It is the fourth EDA check, after the lecture's spacing, level, and profiles.
+- **Autocorrelation function (ACF)**: the autocorrelation at every lag, drawn as one bar per lag.
 - **Partial autocorrelation (PACF)**: the association at one lag after accounting for the shorter lags. Both plots help describe serial dependence; peaks alone do not identify a reliable forecasting model.
-- Each ACF bar measures what the lecture's `s.autocorr(lag=k)` measures for one lag `k` (0.86 against 0.96 at lag 40 here, because the bar uses the whole-series mean); bars inside the shaded band are within what chance alone produces.
-- Use the regular, nonmissing `ili_visits` series above. Forty PACF lags need at least 80 observations. Its trend puts every ACF bar after lag 0 between 0.86 and 0.97; plot `ili_visits.diff().dropna()` to see what remains (-0.45 at lag 1, near 0 after).
+
+![Four weeks of hourly ED arrivals, each hour against the same hour the next day: a diagonal cloud, autocorrelation 0.58 at lag 24.](media/lag_plot_24h.png)
+
+### Reference Card: Autocorrelation at One Lag
+
+- `s.asfreq('h')`: Regular hourly grid with `NaN` in missing hours; do this before `autocorr()`, whose lag counts rows, not hours.
+- `s.autocorr(lag=24)`: Correlation of each value with the value 24 rows earlier, skipping `NaN` pairs; returns a float from -1 to 1.
+- `pd.plotting.lag_plot(s, lag=24, ax=ax)`: Scatter of each value against the value 24 rows later; a diagonal cloud means strong autocorrelation.
+
+### Code Snippet: Autocorrelation of Hourly ED Arrivals
+
+`arrivals` is the lecture's "Spacing and Hour Profile" series: hourly ED arrival counts for four weeks of March 2024, with no rows for a 6-hour feed outage.
+
+```python
+grid = arrivals.asfreq('h')
+for lag in [1, 12, 24]:
+    print(f'lag {lag}:', round(grid.autocorr(lag=lag), 2))
+```
+
+```text
+lag 1: 0.59
+lag 12: -0.51
+lag 24: 0.58
+```
+
+All three values come from the daily cycle: lag 12 pairs a busy noon with a quiet midnight, and lags 1 and 24 pair busy hours with busy hours.
 
 ### Reference Card: ACF and PACF Plots
+
+- Each ACF bar measures what `s.autocorr(lag=k)` measures for one lag `k` (0.86 against 0.96 at lag 40 here, because the bar uses the whole-series mean); bars inside the shaded band are within what chance alone produces.
+- Use the regular, nonmissing `ili_visits` series above. Forty PACF lags need at least 80 observations. Its trend puts every ACF bar after lag 0 between 0.86 and 0.97; plot `ili_visits.diff().dropna()` to see what remains (-0.45 at lag 1, near 0 after).
 
 ```python
 import matplotlib.pyplot as plt
@@ -631,13 +677,19 @@ The centered mean on January 2 equals the trailing mean on January 3: it already
 
 ## Exponentially Weighted Functions
 
-`ts.ewm(span=3).mean()` is comparable to a 3-reading rolling mean; the table below shows it reacting sooner to a jump.
+- **Exponentially weighted moving average (EWM)**: a smoother that gives every earlier reading some weight, shrinking by the same factor at each step back.
+- With `span=7`, the current reading's weight is 100% on row 1, 29% on row 7, and settles at 2/(7+1) = 25%.
+- Unlike `rolling(7)`, it has a value from the first row, and it reacts sooner to a jump.
+
+![Weight each day gets in today's smoothed value: `rolling(7).mean()` gives the last 7 days 1/7 each and older days 0; `ewm(span=7).mean()` gives today 0.25 and each earlier day 3/4 of the day after it.](media/window_weights.png)
+
+![Daily mean heart rate (gray dots), a 7-day rolling mean (blue) with its ±1 SD band, and an EWM (span 7, dashed orange): over the January 15 to 17 fever, EWM rises and falls sooner, peaking at 86.9 bpm against 84.7 on January 17.](media/daily_hr_rolling_ewm.png)
 
 ![EWM against a simple moving average: the EWM line responds faster to recent changes.](media/ewm_comparison.png)
 
 ### Reference Card: Exponentially Weighted Windows
 
-- `ts.ewm(span=5).mean()`: Weighted mean with decay `alpha = 2 / (span + 1)`; larger span means slower decay
+- `ts.ewm(span=5).mean()`: One smoothed value per row, with decay `alpha = 2 / (span + 1)`; larger span means slower decay
 
 ### Code Snippet: Exponentially Weighted Features
 
@@ -787,3 +839,63 @@ P1          2024-03-01 08:00:00    70.0
             2024-03-01 12:00:00    80.0
 Name: heart_rate, dtype: float64
 ```
+
+# Review: tmux and SSH
+
+## Terminal Sessions with tmux
+
+### Reference Card: tmux Commands
+
+Every shortcut starts with the **prefix**, `Ctrl+b`: press it, release, then press the next key.
+
+| Task | Command or keys | Result |
+| :--- | :--- | :--- |
+| Install | `brew install tmux` (macOS), `sudo apt install tmux` (Ubuntu or WSL); `tmux -V` | Version such as `tmux 3.6`; servers usually have it |
+| Start | `tmux new -s analysis` | New session named `analysis`, status bar at the bottom |
+| Detach | `Ctrl+b`, then `d` | Back at the normal prompt; the session keeps running |
+| List | `tmux ls` | `analysis: 1 windows (created ...)`, or `no server running` when none exist |
+| Reattach | `tmux attach -t analysis` | The session, exactly as you left it |
+| New window | `Ctrl+b`, then `c`; switch with `Ctrl+b`, then `n` (next) or `p` (previous) | A second shell in the same session |
+| Split | `Ctrl+b`, then `%` (side by side) or `"` (stacked); move with `Ctrl+b`, then an arrow key | Two shells on one screen |
+| Scroll | `Ctrl+b`, then `[`; arrow keys or Page Up; `q` to leave | Read output that scrolled off the screen |
+| End | `exit` inside the session, or `tmux kill-session -t analysis` from outside | Session closed, stopping anything still running in it |
+| screen | `screen -S analysis`; detach `Ctrl+a`, then `d`; `screen -r analysis` | The same idea with `screen` |
+
+### Code Snippet: Keep an Analysis Running
+
+In a project folder with a `uv` environment, on your laptop or after `ssh`:
+
+```bash
+tmux new -s analysis
+source .venv/bin/activate
+time python3 analysis.py
+```
+
+Press `Ctrl+b`, then `d`, to detach; now it is safe to close the terminal or disconnect. Later, find the session and attach to it; when the job ends, `time` reports how long it ran:
+
+```bash
+tmux ls
+tmux attach -t analysis
+```
+
+## Remote Computing with SSH
+
+### Reference Card: Connect and Copy
+
+| Command | Purpose and key arguments | Result |
+| :--- | :--- | :--- |
+| `ssh user@host` | Open a remote shell; `exit` returns | Remote prompt |
+| `ssh -p port user@host` | Connect through a nondefault port | Remote prompt |
+| `ssh user@host 'command'` | Run one command remotely | Command output locally |
+| `scp local user@host:path` | Copy a local file to the server | Remote file |
+| `scp user@host:path local` | Copy a remote file back | Local file |
+| `gh codespace ssh --config >> ~/.ssh/config` | Write an SSH entry for each of your GitHub Codespaces, a cloud machine you can practice on | Plain `ssh` and `scp` reach the codespace by the name it prints |
+
+### Reference Card: SSH Keys
+
+| Command | Purpose and key arguments | Result |
+| :--- | :--- | :--- |
+| `ssh-keygen -t ed25519` | Create a public/private key pair; `-C "email"` labels it | `~/.ssh/id_ed25519` and `~/.ssh/id_ed25519.pub` |
+| `ssh-keygen -t ed25519 -f path` | Save the pair at `path` instead of the default, such as a practice key that must not replace your real one | `path` and `path.pub` |
+| `ssh-copy-id user@host` | Install the public key where supported | Passwordless key login |
+| `ssh-add` | Unlock your private key once per login session; the SSH agent keeps it unlocked | Later `ssh` and `scp` stop asking for the passphrase |

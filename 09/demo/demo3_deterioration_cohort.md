@@ -321,6 +321,8 @@ These are follow-up requests from the hospitals and reviewers; continue on your 
 
 The New York hospital counts its readings per day on its own clock, and its numbers differ from a report binned in UTC. Convert to the reporting zone before `resample('D')`; binning in UTC starts each New York day at 19:00 or 20:00 the evening before. `vitals` is sorted by encounter, not time, so sort the index before slicing dates.
 
+Prerequisite: BONUS.md, Resolving Clock-Change Times, for the `date_range` loop. Nothing in the core route or the assignment needs this.
+
 ```python
 ny = vitals[vitals['site'] == 'New York'].set_index('recorded_at')['heart_rate'].sort_index()
 utc_days = ny.loc['2024-11-01':'2024-11-05'].resample('D').count()

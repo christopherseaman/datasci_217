@@ -19,7 +19,7 @@ jupyter:
 
 Phase 2 of Dr. Reyes's winter program moves from the ED to 4 West, a 24-bed step-down unit where every patient wears bedside telemetry: a monitor writes heart rate and oxygen saturation (SpO2) every 5 minutes.
 
-**This phase's ask.** The unit's nurse manager, Sam Okoye, and the patient-safety officer meet at the end of the month to decide whether to buy portable telemetry units, which keep a patient monitored during imaging and walks. They want, from last winter's monitor archive (January to March 2024): how much of patients' time on the unit was monitored, when the gaps happen, which stays had 3 or more clock hours in a row with no reading, and a review of stay `S0023`, transferred to the ICU on January 6, including which smoother the unit's heart-rate alert should use. All stays and readings are synthetic.
+**This phase's ask.** The unit's nurse manager, Sam Okoye, and the patient-safety officer meet at the end of the month to decide whether to buy portable telemetry units, which keep a patient monitored during imaging and walks. They want, from last winter's monitor archive (January to March 2024): how much of patients' time on the unit was monitored, when the gaps happen, which stays had 3 or more clock hours in a row with no reading, and a review of stay `S0023`, transferred to the ICU on January 6, including which window the unit's heart-rate alert should use. All stays and readings are synthetic.
 
 Run the cells from top to bottom.
 
@@ -203,7 +203,7 @@ plt.show()
 
 Expect the table to end with `S0023`'s last three rounds, `97.4`, `98.6`, and `99.4` °F at 08:00, 12:00, and 16:00. `asfreq` is `NaN` between rounds. `ffill_2` repeats each round for two hours, and the hour before the next round stays `NaN`, so the orange steps break there. `interpolate` climbs from 12:00 and reaches `99.2` at 15:00, a value that needs the 16:00 reading, which no alert running at 15:00 could have seen. Only the black dots were measured.
 
-### 6. Rapid-response review: which smoother should the alert use?
+### 6. Rapid-response review: which window should the alert use?
 
 `S0023` went to the ICU at 17:12 on January 6, after almost two and a half hours off the monitor late that morning. The unit's alert smooths heart rate before comparing it with 120 bpm. Compare a 12-reading count window (one hour when nothing is missing) with a 1-hour time window around the patient's return.
 
@@ -219,19 +219,17 @@ display(windows.loc['2024-01-06 10:30':'2024-01-06 14:30'].round(1))
 
 Expect the jump from `11:30` straight to `13:55`: the heart rate rose from about 100 to `118.0` while nobody could see it. At 13:55, `last_12_readings` is `98.3`, still mostly readings from before the gap, while `last_1_hour` is `118.0`, the 13:55 reading alone. By 14:30 the count window has climbed only to `116.7`; the time window reads `125.0`. A count window follows rows; a time window follows the clock.
 
-Plot the last 24 hours for the review slide: the raw readings, a 1-hour rolling mean with a band of plus or minus one rolling standard deviation, an exponentially weighted mean (EWM) with `span=12`, and a dotted line at the 120 bpm alert. Every reading sits on a 5-minute mark, so `asfreq('5min')` adds `NaN` rows across the gap and the lines break there instead of bridging it.
+Plot the last 24 hours for the review slide: the raw readings, a 1-hour rolling mean with a band of plus or minus one rolling standard deviation, and a dotted line at the 120 bpm alert. Every reading sits on a 5-minute mark, so `asfreq('5min')` adds `NaN` rows across the gap and the line breaks there instead of bridging it.
 
 ```python
 last_day = s0023.loc['2024-01-05 17:12':]
 mean_1h = last_day.rolling('1h').mean().asfreq('5min')
 sd_1h = last_day.rolling('1h').std().asfreq('5min')
-ewm_12 = last_day.ewm(span=12).mean().asfreq('5min')
 
 fig, ax = plt.subplots(figsize=(10, 4))
 ax.plot(last_day.index, last_day, '.', color='gray', markersize=3, label='Reading (every 5 min)')
 ax.plot(mean_1h.index, mean_1h, color='#0072B2', label='1-hour rolling mean')
 ax.fill_between(mean_1h.index, mean_1h - sd_1h, mean_1h + sd_1h, color='#0072B2', alpha=0.2, label='± 1 SD')
-ax.plot(ewm_12.index, ewm_12, color='#D55E00', linestyle='--', label='EWM, span 12')
 ax.axhline(120, color='black', linestyle=':', label='Alert (120 bpm)')
 ax.set(title='Stay S0023: heart rate in the 24 hours before ICU transfer',
        xlabel='Time (unit clock)', ylabel='Heart rate (bpm)')
@@ -241,9 +239,9 @@ plt.show()
 print('First hour mean:', round(last_day.iloc[:12].mean(), 1), ' Last hour mean:', round(last_day.iloc[-12:].mean(), 1))
 ```
 
-Expect `First hour mean: 93.3  Last hour mean: 136.8`. The band drifts from about 82 bpm overnight to about 97 by 11:30. The gray dots stop after 11:30 and resume at 13:55, and both lines break across that gap. After the gap, the 1-hour mean starts near 118, while the dashed EWM starts near 100 and takes 55 minutes to reach 120: like a count window, EWM weights rows, so it still carries the readings from before the gap. The 1-hour mean stays above the alert line from 14:00 to the transfer and climbs to about 137. Right after a gap the 1-hour window averages one or two readings, so a single bad reading can trip it; `rolling('1h', min_periods=3)` waits for three readings and still passes 120 at 14:05.
+Expect `First hour mean: 93.3  Last hour mean: 136.8`. The band drifts from about 82 bpm overnight to about 97 by 11:30. The gray dots stop after 11:30 and resume at 13:55, and the line and its band break across that gap. After the gap, the 1-hour mean starts near 118 and stays above the alert line from 14:00 to the transfer and climbs to about 137. Right after a gap the 1-hour window averages one or two readings, so a single bad reading can trip it; `rolling('1h', min_periods=3)` waits for three readings and still passes 120 at 14:05.
 
-**What we tell Sam:** after a patient returns to the monitor, a 1-hour time window reaches the alert level within 10 minutes, while a 12-reading window or an EWM lags by up to an hour. The alert should use the time window, and the heart rate that climbed unseen during this patient's 2.5-hour gap is the case for portable units.
+**What we tell Sam:** after a patient returns to the monitor, a 1-hour time window reaches the alert level within 10 minutes, while a 12-reading window lags by up to an hour. The alert should use the time window, and the heart rate that climbed unseen during this patient's 2.5-hour gap is the case for portable units.
 
 ## Independent practice
 
@@ -375,6 +373,8 @@ Expect five blocks, the last one at `16:00` because the transfer came at 17:12. 
 
 Before changing a threshold, run the time series EDA steps on the series it watches. Start with spacing: `S0023`'s readings are 5 minutes apart except where the monitor went quiet. Then build one unit-wide heart rate per clock hour (the mean of every stay's hourly mean, a unit-level summary like practice 1) and check its level, its hour and weekday profiles, and its autocorrelation.
 
+Prerequisite: BONUS.md, Autocorrelation and Partial Autocorrelation, for the `autocorr()` and `lag_plot()` lines. Nothing in the core route or the assignment needs this.
+
 ```python
 display(s0023.index.diff().value_counts())
 
@@ -399,3 +399,35 @@ plt.show()
 Expect `S0023`'s spacing to be `0 days 00:05:00` for `1311` gaps between readings and `7` of 10 minutes, then 11 longer breaks, from 25 minutes up to `0 days 06:35:00` earlier in the stay, including the `0 days 02:25:00` off the monitor in step 6. The unit series has `2184` hours and `0` missing: some patient is always on the monitor. Monthly means are `83.5`, `81.6`, and `81.9` bpm, so there is no trend. The lowest hour is `3` at `76.3` bpm and the highest is `15` at `88.5`, a 12 bpm daily swing, while the weekday means differ by under 2 bpm (`81.5` to `83.4`). The line climbs from 03:00 to a mid-afternoon peak. Autocorrelation is `0.95` at lag 1, `-0.51` at lag 12 (afternoon against early morning), and `0.88` at lag 24, the tight diagonal in the lag plot.
 
 **What we tell the alert team:** the unit's heart rate follows the clock, not the weekday, and swings about 12 bpm each day. A fixed 120 bpm line sits 44 bpm above the 03:00 mean and 32 above the 15:00 mean, so a night-time rise has further to climb before it alerts; the team can weigh an hour-aware threshold.
+
+### 8. Sam asks whether an exponentially weighted mean would catch the rise sooner
+
+Prerequisite: BONUS.md, Exponentially Weighted Means. Nothing in the core route or the assignment needs this. These cells use `last_day` and `mean_1h` from step 6.
+
+A vendor's alert smooths with an exponentially weighted mean (EWM) in place of a window. Put `ewm(span=12)` beside step 6's two windows for the hour after `S0023` returned to the monitor, then draw it over the readings from 10:00 to the transfer.
+
+```python
+smoothers = pd.DataFrame({
+    'heart_rate': last_day,
+    'last_1_hour': last_day.rolling('1h').mean(),
+    'last_12_readings': last_day.rolling(12).mean(),
+    'ewm_12': last_day.ewm(span=12).mean(),
+})
+display(smoothers.loc['2024-01-06 13:55':'2024-01-06 14:55'].round(1))
+
+ewm_12 = smoothers['ewm_12'].asfreq('5min')
+fig, ax = plt.subplots(figsize=(10, 4))
+ax.plot(last_day.loc['2024-01-06 10:00':].index, last_day.loc['2024-01-06 10:00':], '.', color='gray', markersize=4, label='Reading (every 5 min)')
+ax.plot(mean_1h.loc['2024-01-06 10:00':].index, mean_1h.loc['2024-01-06 10:00':], color='#0072B2', label='1-hour rolling mean')
+ax.plot(ewm_12.loc['2024-01-06 10:00':].index, ewm_12.loc['2024-01-06 10:00':], color='#D55E00', linestyle='--', label='EWM, span 12')
+ax.axhline(120, color='black', linestyle=':', label='Alert (120 bpm)')
+ax.set(title='Stay S0023: two smoothers after the monitor gap, January 6',
+       xlabel='Time (unit clock)', ylabel='Heart rate (bpm)')
+ax.legend(loc='upper left')
+ax.grid(alpha=0.3)
+plt.show()
+```
+
+Expect 13 rows, `13:55` to `14:55`. `last_1_hour` passes 120 at `14:00` (`120.5`), 5 minutes after the patient returned. `ewm_12` starts at `100.2` and first passes 120 at `14:50` (`120.9`), 55 minutes after the return and 10 minutes behind `last_12_readings` (`120.8` at `14:40`). Like a count window, EWM weights rows, so it still carries the readings from before the gap. In the chart, the dashed EWM line resumes near 100 after the gap and climbs toward the 1-hour mean, meeting it at about 15:40.
+
+**What we tell Sam:** an EWM would have alerted 50 minutes after the 1-hour time window did. The recommendation from step 6 stands.

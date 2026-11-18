@@ -645,7 +645,7 @@ def gap_run_tiles():
 
 
 def daily_hr_rolling_ewm():
-    """Basic Rolling Operations: Demo 2's daily mean heart rate, 7-day rolling mean with ±1 SD, and EWM."""
+    """Basic Rolling Operations: Demo 2's daily mean heart rate and 7-day rolling mean with ±1 SD; BONUS adds EWM."""
     daily_hr = demo2_monitor()["heart_rate"].resample("D").mean()
     rolling = daily_hr.rolling(7).mean()
     sd = daily_hr.rolling(7).std()
@@ -660,17 +660,21 @@ def daily_hr_rolling_ewm():
     ax.fill_between(xd, rolling - sd, rolling + sd, color=BLUE, alpha=0.15, lw=0, label="Rolling mean ± 1 SD")
     ax.plot(xd, daily_hr, "o", color=GREY, ms=5, label="Daily mean")
     ax.plot(xd, rolling, color=BLUE, lw=2, label="7-day rolling mean")
-    ax.plot(xd, ewm, "--", color=ORANGE, lw=2.2, label="EWM, span 7")
     xp = mdates.date2num(peak)
-    ax.plot([xp, xp], [ewm[peak], rolling[peak]], "o", color=INK, ms=4, zorder=4)
-    ax.text(xp + 0.4, ewm[peak] + 0.4, f"EWM {ewm[peak]:.1f} on Jan 17", color=ORANGE, va="bottom",
-            fontweight="bold")
+    ax.plot(xp, rolling[peak], "o", color=INK, ms=4, zorder=4)
     # above the rolling plateau, clear of the falling EWM line
     ax.text(xp + 2.2, rolling[peak] + 0.4, f"rolling {rolling[peak]:.1f} on Jan 17", color=BLUE, va="bottom",
             fontweight="bold")
     ax.set(ylabel="Heart rate (bpm)", xlabel="Date, January 2024", xlim=(xd[0] - 0.7, xd[-1] + 0.7))
     ax.xaxis.set_major_locator(mdates.DayLocator(bymonthday=[1, 8, 15, 22, 28]))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %-d"))
+    ax.legend(loc="upper left", frameon=False)
+    fig.savefig(MEDIA_DIR / "daily_hr_rolling.png", dpi=150, bbox_inches="tight", facecolor="white")
+
+    ax.plot(xd, ewm, "--", color=ORANGE, lw=2.2, label="EWM, span 7")
+    ax.plot(xp, ewm[peak], "o", color=INK, ms=4, zorder=4)
+    ax.text(xp + 0.4, ewm[peak] + 0.4, f"EWM {ewm[peak]:.1f} on Jan 17", color=ORANGE, va="bottom",
+            fontweight="bold")
     ax.legend(loc="upper left", frameon=False)
     save(fig, "daily_hr_rolling_ewm.png")
 
@@ -711,7 +715,7 @@ def count_vs_time_window():
 
 
 def window_weights():
-    """Another Smoother: the weight each earlier day gets in rolling(7).mean() and ewm(span=7).mean()."""
+    """BONUS, Exponentially Weighted Means: the weight each earlier day gets in rolling(7).mean() and ewm(span=7).mean()."""
     days_back = np.arange(14)
     alpha = 2 / (7 + 1)
     ewm_w = alpha * (1 - alpha) ** days_back
@@ -916,21 +920,20 @@ def ili_outage_gap():
 
 
 def time_series_eda():
-    """A First Look at a Series: spacing, level, hour and weekday profiles, and a lag-24 plot."""
+    """A First Look at a Series: spacing, level, and hour and weekday profiles."""
     arrivals = ed_arrivals()
     grid = arrivals.asfreq("h")
     spacing = arrivals.index.diff().value_counts()
     assert spacing[pd.Timedelta("1h")] == 664 and spacing[pd.Timedelta("7h")] == 1
     assert grid.isna().sum() == 6
-    r1, r12, r24 = (round(grid.autocorr(lag=k), 2) for k in (1, 12, 24))
-    assert (r1, r12, r24) == (0.59, -0.51, 0.58)
     by_hour = arrivals.groupby(arrivals.index.hour).mean()
     by_weekday = arrivals.groupby(arrivals.index.dayofweek).mean()
     assert round(by_hour[4], 1) == 2.4 and round(by_hour[12], 1) == 13.3
+    assert (by_hour.idxmin(), by_hour.idxmax(), round(by_hour[11], 1)) == (4, 11, 13.8)
     assert round(by_weekday[0], 1) == 9.8 and round(by_weekday[6], 1) == 7.7
 
     fig = plt.figure(figsize=(11, 6.6))
-    spec = fig.add_gridspec(2, 3, height_ratios=[1, 1.1], hspace=0.5, wspace=0.32)
+    spec = fig.add_gridspec(2, 2, height_ratios=[1, 1.1], hspace=0.5, wspace=0.32)
     top = fig.add_subplot(spec[0, :])
     gap = grid.index[grid.isna()]
     top.axvspan(mdates.date2num(gap[0]) - 1 / 48, mdates.date2num(gap[-1]) + 1 / 48, color=VERMILLION, alpha=0.15, lw=0)
@@ -952,10 +955,18 @@ def time_series_eda():
     ax_w.bar(by_weekday.index, by_weekday.to_numpy(), color=ORANGE, width=0.7)
     ax_w.set(title="3. Weekday profile", xlabel="Day of week", ylabel="Mean arrivals",
              xticks=range(7), xticklabels=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
-    ax_l = fig.add_subplot(spec[1, 2])
-    pd.plotting.lag_plot(grid, lag=24, ax=ax_l, c=GREEN, s=9, alpha=0.5)
-    ax_l.set(title=f"4. Lag plot, 24 hours: autocorr {r24}", xlabel="Arrivals at hour t", ylabel="Arrivals at t + 24 h")
     save(fig, "time_series_eda.png")
+
+
+def lag_plot_24h():
+    """BONUS, Autocorrelation: each hour's ED arrivals against the same hour the next day."""
+    grid = ed_arrivals().asfreq("h")
+    r1, r12, r24 = (round(grid.autocorr(lag=k), 2) for k in (1, 12, 24))
+    assert (r1, r12, r24) == (0.59, -0.51, 0.58)
+    fig, ax = plt.subplots(figsize=(4.6, 4.2))
+    pd.plotting.lag_plot(grid, lag=24, ax=ax, c=GREEN, s=9, alpha=0.5)
+    ax.set(title=f"Lag plot, 24 hours: autocorr {r24}", xlabel="Arrivals at hour t", ylabel="Arrivals at t + 24 h")
+    save(fig, "lag_plot_24h.png")
 
 
 def types_of_time_series():
@@ -1009,7 +1020,7 @@ if __name__ == "__main__":
                  two_clinics_utc, clock_changes, time_series_indexing, resampling_example, resample_bins_2h,
                  daily_reading_counts, charted_temp_upsampling, per_patient_bins, gap_run_tiles,
                  daily_hr_rolling_ewm, count_vs_time_window, window_weights, shifting_lagging,
-                 grouped_shift_leak, lab_availability_timeline, ili_outage_gap, time_series_eda,
+                 grouped_shift_leak, lab_availability_timeline, ili_outage_gap, time_series_eda, lag_plot_24h,
                  types_of_time_series]:
         if len(sys.argv) == 1 or make.__name__ in sys.argv[1:]:  # optional: name figures to redraw only those
             make()
